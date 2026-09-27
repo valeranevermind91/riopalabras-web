@@ -1,0 +1,76 @@
+:root {
+  --tg-bg-color: #ffffff;
+  --tg-text-color: #222222;
+  --tg-hint-color: #999999;
+  --tg-link-color: #2678b6;
+  --tg-button-color: #50a8eb;
+  --tg-button-text-color: #ffffff;
+  --tg-secondary-bg-color: #f0f0f0;
+
+  font: 16px/1.45 system-ui, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  color: var(--tg-text-color);
+  background: var(--tg-bg-color);
+}
+
+.screen {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  box-sizing: border-box;
+}
+
+h1 {
+  font-size: 28px;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  color: var(--tg-hint-color);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 16px;
+}
+
+.badge-mock {
+  background: #f4c542;
+  color: #222;
+}
+
+.badge-live {
+  background: #4caf50;
+  color: #fff;
+}
+
+.card {
+  background: var(--tg-secondary-bg-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+dl {
+  margin: 0 0 8px;
+}
+
+dt {
+  font-size: 12px;
+  color: var(--tg-hint-color);
+}
+
+dd {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
