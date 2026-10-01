@@ -19,7 +19,10 @@ app falls back to a mocked Telegram user so the UI is visible — you'll see a y
 Telegram, or in a production build, that badge disappears and real data is used.
 
 To test against Supabase locally, copy `.env.example` to `.env.local` and fill in
-your project's URL and anon key:
+your project's URL and anon key, plus `VITE_PROXY_URL` (the proxy's base URL, no
+trailing path). Real sign-in only works with real Telegram `initData`; in a plain
+browser the app shows "Open inside Telegram to sign in" instead (the mock user is
+for the layout only and would fail the proxy's HMAC check anyway):
 
 ```bash
 cp .env.example .env.local
@@ -35,6 +38,8 @@ cp .env.example .env.local
    set:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_PROXY_URL` (e.g. `https://<proxy>.railway.app`; the proxy's
+     `CORS_ALLOWED_ORIGINS` must include this site's origin)
 
    Set these yourself with your actual Supabase project values — they are not stored
    in this repo.

@@ -3,7 +3,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export function createSupabaseClient(): { client: SupabaseClient | null; error: string | null } {
+interface SupabaseResult {
+  client: SupabaseClient | null
+  error: string | null
+}
+
+function build(): SupabaseResult {
   if (!supabaseUrl || !supabaseAnonKey) {
     return {
       client: null,
@@ -12,8 +17,25 @@ export function createSupabaseClient(): { client: SupabaseClient | null; error: 
   }
 
   try {
-    return { client: createClient(supabaseUrl, supabaseAnonKey), error: null }
+    return {
+      client: createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          // Telegram passes launch params in the URL hash; there is no OAuth redirect to parse.
+          detectSessionInUrl: false,
+        },
+      }),
+      error: null,
+    }
   } catch (err) {
     return { client: null, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+// Singleton: a second client on the same storage key would race the first one's token refreshes.
+const result = build()
+
+export function getSupabase(): SupabaseResult {
+  return result
 }
