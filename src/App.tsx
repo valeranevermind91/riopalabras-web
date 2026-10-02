@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { DataSection } from './DataSection'
+import { useUserData } from './data/useUserData'
 import { ensureSession, type AuthResult } from './lib/auth'
 import { getSupabase } from './lib/supabase'
 import { applyTelegramTheme, getWebApp, type TelegramUser } from './lib/telegram'
@@ -27,6 +29,8 @@ function App() {
   const auth: AuthState = client
     ? asyncAuth
     : { status: 'error', message: clientError ?? 'Supabase client unavailable' }
+
+  const data = useUserData(auth, client)
 
   useEffect(() => {
     const { webApp } = getWebApp()
@@ -85,6 +89,8 @@ function App() {
           <p className="error">Sign-in failed: {auth.message}</p>
         )}
       </section>
+
+      <DataSection state={data} />
 
       <section className="card">
         <h2>Telegram identity</h2>

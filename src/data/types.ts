@@ -1,0 +1,39 @@
+export interface Word {
+  readonly esWord: string
+  readonly esRioplatense: string | null
+  readonly enTranslation: string
+  readonly ruTranslation: string
+  readonly exampleSentence: string
+  readonly exampleTranslationEn: string
+  readonly exampleTranslationRu: string
+  readonly wordFormInExample: string | null
+  readonly isRioplatenseVariant: boolean
+  readonly pos: string
+  /** Raw corpus count (higher = more common). Never sort by this — use `rank`. */
+  readonly frequency: number
+  /** 1 = most frequent. Null for custom words, which have no place in the ranking. */
+  readonly rank: number | null
+
+  readonly easeFactor: number
+  readonly interval: number
+  readonly repetitions: number
+  readonly nextReview: Date | null
+  readonly isFavorite: boolean
+  readonly isHidden: boolean
+  readonly isCustom: boolean
+  readonly isEnriched: boolean
+}
+
+export interface UserSettings {
+  readonly dailyNewWordLimit: number
+  readonly streakCount: number
+  readonly streakLastActivityDate: string | null
+  readonly newWordsLearnedTodayCount: number
+  readonly newWordsLearnedTodayDate: string | null
+  readonly showRuTranslation: boolean
+  readonly showEnTranslation: boolean
+  readonly learnPicks: readonly string[]
+  readonly pendingWordDeletes: readonly string[]
+  /** The complete blob as read, unknown keys included — merge into this when writing settings back. */
+  readonly raw: Readonly<Record<string, unknown>>
+}
