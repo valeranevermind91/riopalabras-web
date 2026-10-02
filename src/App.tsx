@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useUserData } from './data/useUserData'
+import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, type AuthState } from './lib/auth'
 import { getSupabase } from './lib/supabase'
 import { applyTelegramTheme, getWebApp, nativeBackButton } from './lib/telegram'
@@ -36,10 +37,20 @@ function App() {
     leaveGuard.current = guard
   }, [])
 
-  const goHome = useCallback(async () => {
+  // Every screen change goes through the active screen's leave guard (unsaved work asks first).
+  const go = useCallback(async (to: Screen) => {
     if (leaveGuard.current && !(await leaveGuard.current())) return
-    setScreen('home')
+    setScreen(to)
   }, [])
+
+  // One write queue for the whole session, so ratings still being sent survive leaving Review.
+  const readyData = data.status === 'ready' ? data.data : null
+  const getSettings = readyData?.getSettings ?? null
+  const userId = auth.status === 'signed-in' ? auth.userId : null
+  const queue = useMemo(
+    () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings) : null),
+    [client, userId, getSettings],
+  )
 
   useEffect(() => {
     const { webApp } = getWebApp()
@@ -70,33 +81,43 @@ function App() {
       return
     }
     native.show()
-    const onClick = () => void goHome()
+    const onClick = () => void go('home')
     native.onClick(onClick)
     return () => native.offClick(onClick)
-  }, [native, screen, goHome])
+  }, [native, screen, go])
 
   // Telegram's BackButton does the job where it exists; elsewhere each screen draws its own.
-  const inPageBack = native ? undefined : () => void goHome()
+  const inPageBack = native ? undefined : () => void go('home')
 
   if (screen === 'debug') {
     return <DebugScreen telegram={telegram} auth={auth} data={data} onBack={inPageBack} />
   }
 
-  if (screen === 'learn' && data.status === 'ready' && auth.status === 'signed-in' && client) {
+  if (screen === 'learn' && readyData && auth.status === 'signed-in' && client) {
     return (
       <LearnScreen
-        data={data.data}
+        data={readyData}
         client={client}
         userId={auth.userId}
-        onHome={() => void goHome()}
+        onHome={() => void go('home')}
+        onReview={() => void go('review')}
         onBack={inPageBack}
         registerLeaveGuard={registerLeaveGuard}
       />
     )
   }
 
-  if (screen === 'review') {
-    return <ReviewScreen onBack={inPageBack} />
+  if (screen === 'review' && readyData && queue) {
+    return (
+      <ReviewScreen
+        data={readyData}
+        queue={queue}
+        onHome={() => void go('home')}
+        onLearn={() => void go('learn')}
+        onBack={inPageBack}
+        registerLeaveGuard={registerLeaveGuard}
+      />
+    )
   }
 
   return (

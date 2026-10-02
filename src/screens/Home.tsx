@@ -6,9 +6,6 @@ import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
 
-// Review arrives in the next phase; the button and its route are wired so enabling it is this one flag.
-const REVIEW_ENABLED = false
-
 interface HomeScreenProps {
   auth: AuthState
   data: DataState
@@ -60,14 +57,13 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScree
             <button
               type="button"
               className="btn btn-secondary"
-              disabled={!REVIEW_ENABLED}
+              disabled={stats.reviewDue === 0}
               onClick={() => {
                 haptic('tap')
                 onReview()
               }}
             >
-              {strings.home.review}
-              {!REVIEW_ENABLED && <small className="btn-note">{strings.home.reviewSoon}</small>}
+              {stats.reviewDue > 0 ? strings.home.reviewWithCount(stats.reviewDue) : strings.home.reviewNothingDue}
             </button>
           </div>
         </>

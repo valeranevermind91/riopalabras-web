@@ -17,12 +17,13 @@ interface LearnScreenProps {
   client: SupabaseClient
   userId: string
   onHome: () => void
+  onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
   registerLeaveGuard: (guard: LeaveGuard | null) => void
 }
 
-export function LearnScreen({ data, client, userId, onHome, onBack, registerLeaveGuard }: LearnScreenProps) {
+export function LearnScreen({ data, client, userId, onHome, onReview, onBack, registerLeaveGuard }: LearnScreenProps) {
   const buildSession = (source: UserData) => {
     const batch = selectLearnBatch(source.words, source.settings, new Date())
     const finish = createBatchFinisher(batch, {
@@ -112,7 +113,7 @@ export function LearnScreen({ data, client, userId, onHome, onBack, registerLeav
     return (
       <main className="screen">
         <ScreenHeader title={strings.learn.title} onBack={onBack} />
-        <PostBatch data={data} onNextBatch={startNextBatch} onHome={onHome} />
+        <PostBatch data={data} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
       </main>
     )
   }
@@ -163,7 +164,17 @@ export function LearnScreen({ data, client, userId, onHome, onBack, registerLeav
   )
 }
 
-function PostBatch({ data, onNextBatch, onHome }: { data: UserData; onNextBatch: () => void; onHome: () => void }) {
+function PostBatch({
+  data,
+  onNextBatch,
+  onReview,
+  onHome,
+}: {
+  data: UserData
+  onNextBatch: () => void
+  onReview: () => void
+  onHome: () => void
+}) {
   const { stats, settings } = data
 
   let title: string
@@ -181,17 +192,26 @@ function PostBatch({ data, onNextBatch, onHome }: { data: UserData; onNextBatch:
     canContinue = true
   }
 
+  const canReview = stats.reviewDue > 0
+  // Exactly one primary button: the first action offered.
+  const secondary = (primary: boolean) => (primary ? 'btn btn-primary' : 'btn btn-secondary')
+
   return (
     <section className="post-batch">
       <h2>{title}</h2>
       {subtitle && <p className="subtitle">{subtitle}</p>}
       <div className="post-batch-actions">
         {canContinue && (
-          <button type="button" className="btn btn-primary" onClick={onNextBatch}>
+          <button type="button" className={secondary(true)} onClick={onNextBatch}>
             {strings.learn.learnNextBatch}
           </button>
         )}
-        <button type="button" className={canContinue ? 'btn btn-secondary' : 'btn btn-primary'} onClick={onHome}>
+        {canReview && (
+          <button type="button" className={secondary(!canContinue)} onClick={onReview}>
+            {strings.learn.reviewDueWords(stats.reviewDue)}
+          </button>
+        )}
+        <button type="button" className={secondary(!canContinue && !canReview)} onClick={onHome}>
           {strings.common.backToHome}
         </button>
       </div>

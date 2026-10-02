@@ -21,8 +21,8 @@ export const strings = {
     learnWithCount: (n: number) => `Learn new words (${n})`,
     learnCapReached: 'Daily limit reached',
     learnPoolEmpty: 'No new words available',
-    review: 'Review',
-    reviewSoon: 'Coming next',
+    reviewWithCount: (n: number) => `Review due words (${n})`,
+    reviewNothingDue: 'Nothing to review',
     debugLink: 'Debug',
   },
 
@@ -36,6 +36,7 @@ export const strings = {
     saveFailed: (message: string) => `Couldn't save your progress: ${message}`,
     leaveUnsaved: "This batch hasn't been fully saved yet. Leave anyway?",
     learnNextBatch: 'Learn next batch',
+    reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
     capReachedTitle: "Today's new words are done",
     capReachedSubtitle: 'Nice work. Come back tomorrow for more.',
@@ -45,7 +46,28 @@ export const strings = {
 
   review: {
     title: 'Review',
-    placeholder: 'Review is coming in the next update.',
+    cardNofM: (n: number, m: number) => `Card ${n} of ${m}`,
+    tapToReveal: 'Tap to reveal',
+    howWell: 'How well did you know it?',
+    again: 'Again',
+    hard: 'Hard',
+    good: 'Good',
+    easy: 'Easy',
+    emptyTitle: 'No cards to review',
+    emptyMessage: 'Complete a Learn batch first!',
+    goLearn: 'Learn',
+    allCaughtUp: 'All caught up!',
+    allCaughtUpSubtitle: 'No cards are due for review right now.',
+    refresh: 'Refresh',
+    saving: 'Saving…',
+    ratingsNotSaved: (n: number) => (n === 1 ? '1 rating not saved' : `${n} ratings not saved`),
+    progressNotSaved: 'Your progress is not saved',
+    notSavedHint: 'Check your connection and try again.',
+    retry: 'Retry',
+    leaveUnsaved: (n: number) =>
+      n > 0
+        ? `${n === 1 ? '1 rating isn\'t' : `${n} ratings aren't`} saved yet. Leave anyway?`
+        : "Your progress isn't fully saved yet. Leave anyway?",
   },
 
   card: {

@@ -400,3 +400,179 @@ dd {
   line-height: 1.4;
   color: var(--tg-hint-color);
 }
+
+/* ---- Review ---- */
+
+.review-slot {
+  margin: 16px 0;
+}
+
+.flip {
+  perspective: 1200px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.flip.is-flipped {
+  cursor: default;
+}
+
+.flip:focus-visible {
+  outline: 2px solid var(--tg-link-color);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+
+.flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 450ms ease-in-out;
+}
+
+.flip.is-flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+/* Both faces share one grid cell, so the card is as tall as the taller (back) face. */
+.flip-face {
+  grid-area: 1 / 1;
+  box-sizing: border-box;
+  min-height: 320px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+.flip-front {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.rf-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.rf-headword {
+  font-size: 40px;
+}
+
+.rf-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tg-hint-color);
+}
+
+.rb-headword {
+  font-size: 22px;
+  text-align: left;
+}
+
+.flip-back .wc-relation {
+  margin-top: 4px;
+  text-align: left;
+}
+
+.rating-prompt {
+  margin: 4px 0 12px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--tg-hint-color);
+}
+
+.rate-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* White text on each colour is >= 4.5:1; the label (not the colour) carries the meaning. */
+.rate-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 4px;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rate-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rate-interval {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+.rate-again {
+  background: #c62828;
+}
+
+.rate-hard {
+  background: #b45309;
+}
+
+.rate-good {
+  background: #2e7d32;
+}
+
+.rate-easy {
+  background: #1565c0;
+}
+
+.rate-btn:focus-visible,
+.btn:focus-visible,
+.btn-small:focus-visible {
+  outline: 2px solid var(--tg-text-color);
+  outline-offset: 2px;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(198, 40, 40, 0.5);
+  border-radius: 12px;
+  background: rgba(198, 40, 40, 0.12);
+  color: var(--tg-text-color);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-small {
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  background: var(--tg-button-color);
+  color: var(--tg-button-text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner {
+    transition: none;
+  }
+}
