@@ -7,6 +7,9 @@ export type AuthResult =
   | { status: 'no-telegram' }
   | { status: 'error'; message: string }
 
+/** Sign-in as the UI sees it: still working, or one of the three outcomes. */
+export type AuthState = { status: 'loading' } | AuthResult
+
 interface ProxySession {
   access_token: string
   refresh_token: string

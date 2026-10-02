@@ -1,19 +1,17 @@
-import { useEffect, useState } from 'react'
-import { DataSection } from './DataSection'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUserData } from './data/useUserData'
-import { ensureSession, type AuthResult } from './lib/auth'
+import { ensureSession, type AuthState } from './lib/auth'
 import { getSupabase } from './lib/supabase'
-import { applyTelegramTheme, getWebApp, type TelegramUser } from './lib/telegram'
+import { applyTelegramTheme, getWebApp, nativeBackButton } from './lib/telegram'
+import { DebugScreen, type TelegramInfo } from './screens/Debug'
+import { HomeScreen } from './screens/Home'
+import { LearnScreen } from './screens/Learn'
+import { ReviewScreen } from './screens/Review'
 
-interface TelegramState {
-  user: TelegramUser | null
-  initData: string
-  isMock: boolean
-}
+type Screen = 'home' | 'learn' | 'review' | 'debug'
+type LeaveGuard = () => boolean | Promise<boolean>
 
-type AuthState = { status: 'loading' } | AuthResult
-
-function readTelegramState(): TelegramState {
+function readTelegramInfo(): TelegramInfo {
   const { webApp, isMock } = getWebApp()
   return {
     user: webApp.initDataUnsafe.user ?? null,
@@ -23,7 +21,7 @@ function readTelegramState(): TelegramState {
 }
 
 function App() {
-  const [telegram] = useState(readTelegramState)
+  const [telegram] = useState(readTelegramInfo)
   const [asyncAuth, setAuth] = useState<AuthState>({ status: 'loading' })
   const { client, error: clientError } = getSupabase()
   const auth: AuthState = client
@@ -31,6 +29,17 @@ function App() {
     : { status: 'error', message: clientError ?? 'Supabase client unavailable' }
 
   const data = useUserData(auth, client)
+
+  const [screen, setScreen] = useState<Screen>('home')
+  const leaveGuard = useRef<LeaveGuard | null>(null)
+  const registerLeaveGuard = useCallback((guard: LeaveGuard | null) => {
+    leaveGuard.current = guard
+  }, [])
+
+  const goHome = useCallback(async () => {
+    if (leaveGuard.current && !(await leaveGuard.current())) return
+    setScreen('home')
+  }, [])
 
   useEffect(() => {
     const { webApp } = getWebApp()
@@ -53,64 +62,51 @@ function App() {
     }
   }, [client, telegram])
 
+  const native = nativeBackButton(getWebApp().webApp)
+  useEffect(() => {
+    if (!native) return
+    if (screen === 'home') {
+      native.hide()
+      return
+    }
+    native.show()
+    const onClick = () => void goHome()
+    native.onClick(onClick)
+    return () => native.offClick(onClick)
+  }, [native, screen, goHome])
+
+  // Telegram's BackButton does the job where it exists; elsewhere each screen draws its own.
+  const inPageBack = native ? undefined : () => void goHome()
+
+  if (screen === 'debug') {
+    return <DebugScreen telegram={telegram} auth={auth} data={data} onBack={inPageBack} />
+  }
+
+  if (screen === 'learn' && data.status === 'ready' && auth.status === 'signed-in' && client) {
+    return (
+      <LearnScreen
+        data={data.data}
+        client={client}
+        userId={auth.userId}
+        onHome={() => void goHome()}
+        onBack={inPageBack}
+        registerLeaveGuard={registerLeaveGuard}
+      />
+    )
+  }
+
+  if (screen === 'review') {
+    return <ReviewScreen onBack={inPageBack} />
+  }
+
   return (
-    <main className="screen">
-      <h1>Riopalabras</h1>
-
-      {telegram.isMock ? (
-        <p className="badge badge-mock">Using mock Telegram data (dev only)</p>
-      ) : (
-        <p className="badge badge-live">Live Telegram data</p>
-      )}
-
-      <section className="card">
-        <h2>Auth</h2>
-        {auth.status === 'loading' && <p>Signing in…</p>}
-
-        {auth.status === 'signed-in' && (
-          <>
-            <p>
-              <strong>Signed in as {auth.telegramFirstName ?? telegram.user?.first_name ?? 'unknown'}</strong>
-            </p>
-            <dl>
-              <dt>Supabase user id</dt>
-              <dd className="mono">{auth.userId}</dd>
-              <dt>Session</dt>
-              <dd>
-                active ({auth.source === 'existing' ? 'reused stored session' : 'new, from /auth/telegram'})
-              </dd>
-            </dl>
-          </>
-        )}
-
-        {auth.status === 'no-telegram' && <p>Open inside Telegram to sign in.</p>}
-
-        {auth.status === 'error' && (
-          <p className="error">Sign-in failed: {auth.message}</p>
-        )}
-      </section>
-
-      <DataSection state={data} />
-
-      <section className="card">
-        <h2>Telegram identity</h2>
-        {telegram.user ? (
-          <dl>
-            <dt>id</dt>
-            <dd>{telegram.user.id}</dd>
-            <dt>first_name</dt>
-            <dd>{telegram.user.first_name}</dd>
-            <dt>username</dt>
-            <dd>{telegram.user.username ?? '(none)'}</dd>
-          </dl>
-        ) : (
-          <p>No Telegram user found.</p>
-        )}
-        <p>
-          Raw initData present: <strong>{telegram.initData ? 'yes' : 'no'}</strong>
-        </p>
-      </section>
-    </main>
+    <HomeScreen
+      auth={auth}
+      data={data}
+      onLearn={() => setScreen('learn')}
+      onReview={() => setScreen('review')}
+      onDebug={() => setScreen('debug')}
+    />
   )
 }
 

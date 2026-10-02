@@ -28,6 +28,15 @@ for the layout only and would fail the proxy's HMAC check anyway):
 cp .env.example .env.local
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
+Vitest, with the timezone pinned to `America/Montevideo` (see `vitest.config.ts`) so the
+local-midnight and local-date tests exercise the UTC-3 case.
+
 ## Deploying to Vercel
 
 1. Push this repo to GitHub (if not already).

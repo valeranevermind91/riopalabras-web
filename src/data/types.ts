@@ -37,3 +37,16 @@ export interface UserSettings {
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */
   readonly raw: Readonly<Record<string, unknown>>
 }
+
+/** One word's SM-2 state to persist and mirror into the in-memory store. */
+export interface ProgressUpdate {
+  /** The word's ORIGINAL dictionary casing — conflict matching in Postgres is case-sensitive. */
+  readonly esWord: string
+  readonly easeFactor: number
+  readonly interval: number
+  readonly repetitions: number
+  readonly nextReview: Date
+}
+
+/** Keys to merge into the user_settings blob (snake_case, exactly as stored). */
+export type SettingsPatch = Record<string, unknown>

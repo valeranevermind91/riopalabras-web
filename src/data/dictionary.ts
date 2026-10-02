@@ -43,21 +43,8 @@ function toBaseWord(entry: unknown): Word | null {
   })
 }
 
-async function fetchDictionary(): Promise<readonly Word[]> {
-  let res: Response
-  try {
-    res = await fetch(DICTIONARY_URL)
-  } catch {
-    throw new Error('Could not download the dictionary (network error)')
-  }
-  if (!res.ok) throw new Error(`Dictionary download failed (HTTP ${res.status})`)
-
-  let raw: unknown
-  try {
-    raw = await res.json()
-  } catch {
-    throw new Error(`${DICTIONARY_URL} did not return JSON — is it deployed in public/?`)
-  }
+/** Validates the raw JSON array and returns frozen base words, skipping malformed and duplicate entries. */
+export function parseDictionary(raw: unknown): readonly Word[] {
   if (!Array.isArray(raw)) throw new Error('Dictionary is not a JSON array')
 
   const seen = new Set<string>()
@@ -73,6 +60,24 @@ async function fetchDictionary(): Promise<readonly Word[]> {
 
   if (words.length === 0) throw new Error('Dictionary contained no valid words')
   return Object.freeze(words)
+}
+
+async function fetchDictionary(): Promise<readonly Word[]> {
+  let res: Response
+  try {
+    res = await fetch(DICTIONARY_URL)
+  } catch {
+    throw new Error('Could not download the dictionary (network error)')
+  }
+  if (!res.ok) throw new Error(`Dictionary download failed (HTTP ${res.status})`)
+
+  let raw: unknown
+  try {
+    raw = await res.json()
+  } catch {
+    throw new Error(`${DICTIONARY_URL} did not return JSON — is it deployed in public/?`)
+  }
+  return parseDictionary(raw)
 }
 
 // One download per page load; callers (prefetch + consumer) share the same promise.

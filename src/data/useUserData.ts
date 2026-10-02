@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
-import type { AuthResult } from '../lib/auth'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { AuthState } from '../lib/auth'
 import { loadDictionary } from './dictionary'
+import { applyProgressUpdates, applySettingsPatch } from './mutations'
 import { fetchOverlay } from './overlay'
 import { parseSettings } from './settings'
 import { computeStats, getLearnPool, type Stats } from './stats'
-import type { UserSettings, Word } from './types'
+import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import { mergeWords, type MergeDiagnostics } from './words'
 
 export interface UserData {
@@ -15,6 +16,12 @@ export interface UserData {
   diagnostics: MergeDiagnostics
   /** First few learn-pool words in serving order, as visible proof of the rank sort. */
   learnPoolPreview: readonly Word[]
+  /** The latest in-memory settings, for code that outlives a render (e.g. a write that retries). */
+  getSettings: () => UserSettings
+  /** Mirror a successful progress write into the in-memory words. */
+  applyProgress: (updates: readonly ProgressUpdate[]) => void
+  /** Mirror a successful settings write into the in-memory settings (unknown keys kept). */
+  applySettings: (patch: SettingsPatch) => void
 }
 
 export type DataState =
@@ -23,14 +30,24 @@ export type DataState =
   | { status: 'ready'; data: UserData }
   | { status: 'error'; message: string }
 
-type AuthState = { status: 'loading' } | AuthResult
+interface Loaded {
+  words: readonly Word[]
+  settings: UserSettings
+  diagnostics: MergeDiagnostics
+}
+
+type Base =
+  | { status: 'loading' }
+  | { status: 'signed-out'; dictionaryCount: number }
+  | { status: 'ready'; loaded: Loaded }
+  | { status: 'error'; message: string }
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
 export function useUserData(auth: AuthState, client: SupabaseClient | null): DataState {
-  const [state, setState] = useState<DataState>({ status: 'loading' })
+  const [base, setBase] = useState<Base>({ status: 'loading' })
   const userId = auth.status === 'signed-in' ? auth.userId : null
   const authPending = auth.status === 'loading'
 
@@ -41,28 +58,24 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
     const dictionary = loadDictionary()
     if (authPending) return
 
-    const settle = (next: DataState) => {
-      if (!cancelled) setState(next)
+    const settle = (next: Base) => {
+      if (!cancelled) setBase(next)
     }
 
     if (!userId || !client) {
       dictionary
-        .then((base) => settle({ status: 'signed-out', dictionaryCount: base.length }))
+        .then((words) => settle({ status: 'signed-out', dictionaryCount: words.length }))
         .catch((err) => settle({ status: 'error', message: errorMessage(err) }))
     } else {
       Promise.all([dictionary, fetchOverlay(client, userId)])
-        .then(([base, overlay]) => {
-          const merged = mergeWords(base, overlay)
-          const settings = parseSettings(overlay.settings)
-          const stats = computeStats(merged.words, settings, new Date())
+        .then(([words, overlay]) => {
+          const merged = mergeWords(words, overlay)
           settle({
             status: 'ready',
-            data: {
+            loaded: {
               words: merged.words,
-              settings,
-              stats,
+              settings: parseSettings(overlay.settings),
               diagnostics: merged.diagnostics,
-              learnPoolPreview: getLearnPool(merged.words).slice(0, 8),
             },
           })
         })
@@ -74,5 +87,48 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
     }
   }, [authPending, userId, client])
 
-  return state
+  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
+    setBase((prev) =>
+      prev.status === 'ready'
+        ? { status: 'ready', loaded: { ...prev.loaded, words: applyProgressUpdates(prev.loaded.words, updates) } }
+        : prev,
+    )
+  }, [])
+
+  const applySettings = useCallback((patch: SettingsPatch) => {
+    setBase((prev) =>
+      prev.status === 'ready'
+        ? { status: 'ready', loaded: { ...prev.loaded, settings: applySettingsPatch(prev.loaded.settings, patch) } }
+        : prev,
+    )
+  }, [])
+
+  const loaded = base.status === 'ready' ? base.loaded : null
+
+  const latestSettings = useRef<UserSettings | null>(null)
+  const loadedSettings = loaded?.settings ?? null
+  useEffect(() => {
+    latestSettings.current = loadedSettings
+  })
+  const getSettings = useCallback(() => {
+    if (!latestSettings.current) throw new Error('Settings are not loaded')
+    return latestSettings.current
+  }, [])
+
+  return useMemo<DataState>(() => {
+    if (base.status !== 'ready' || !loaded) return base as DataState
+    return {
+      status: 'ready',
+      data: {
+        words: loaded.words,
+        settings: loaded.settings,
+        stats: computeStats(loaded.words, loaded.settings, new Date()),
+        diagnostics: loaded.diagnostics,
+        learnPoolPreview: getLearnPool(loaded.words).slice(0, 8),
+        getSettings,
+        applyProgress,
+        applySettings,
+      },
+    }
+  }, [base, loaded, getSettings, applyProgress, applySettings])
 }

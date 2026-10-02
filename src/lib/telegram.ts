@@ -22,6 +22,19 @@ interface WebAppThemeParams {
   [key: string]: string | undefined
 }
 
+interface WebAppBackButton {
+  show: () => void
+  hide: () => void
+  onClick: (callback: () => void) => void
+  offClick: (callback: () => void) => void
+}
+
+interface WebAppHapticFeedback {
+  impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
+  notificationOccurred: (type: 'error' | 'success' | 'warning') => void
+  selectionChanged: () => void
+}
+
 export interface TelegramWebApp {
   initData: string
   initDataUnsafe: WebAppInitDataUnsafe
@@ -29,6 +42,11 @@ export interface TelegramWebApp {
   themeParams: WebAppThemeParams
   ready: () => void
   expand: () => void
+  // Optional: absent in the dev mock and in Telegram clients older than the Bot API version that added them.
+  isVersionAtLeast?: (version: string) => boolean
+  BackButton?: WebAppBackButton
+  HapticFeedback?: WebAppHapticFeedback
+  showConfirm?: (message: string, callback: (confirmed: boolean) => void) => void
 }
 
 declare global {
@@ -98,4 +116,35 @@ export function applyTelegramTheme(webApp: TelegramWebApp) {
       root.style.setProperty(`--tg-${key.replace(/_/g, '-')}`, value)
     }
   }
+}
+
+/** Telegram's own back button (Bot API 6.1+), or null where it doesn't exist — callers then render an in-page one. */
+export function nativeBackButton(webApp: TelegramWebApp): WebAppBackButton | null {
+  return webApp.BackButton && webApp.isVersionAtLeast?.('6.1') ? webApp.BackButton : null
+}
+
+export type Haptic = 'tap' | 'select' | 'success' | 'error'
+
+/** Haptic feedback where Telegram supports it; a silent no-op everywhere else. */
+export function haptic(kind: Haptic): void {
+  const { webApp } = getWebApp()
+  const feedback = webApp.HapticFeedback
+  if (!feedback || !webApp.isVersionAtLeast?.('6.1')) return
+  try {
+    if (kind === 'tap') feedback.impactOccurred('light')
+    else if (kind === 'select') feedback.selectionChanged()
+    else feedback.notificationOccurred(kind)
+  } catch {
+    // Feedback is decoration; never let it break an interaction.
+  }
+}
+
+/** Telegram's native confirm popup (6.2+), falling back to window.confirm. */
+export function confirmDialog(message: string): Promise<boolean> {
+  const { webApp } = getWebApp()
+  if (webApp.showConfirm && webApp.isVersionAtLeast?.('6.2')) {
+    const showConfirm = webApp.showConfirm
+    return new Promise((resolve) => showConfirm.call(webApp, message, resolve))
+  }
+  return Promise.resolve(window.confirm(message))
 }
