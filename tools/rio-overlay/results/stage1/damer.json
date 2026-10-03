@@ -1,0 +1,5114 @@
+{
+  "acá": {
+    "headword": "ac&#xE1;",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx"
+        ]
+      }
+    ]
+  },
+  "vos": {
+    "headword": "vos",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx:SE",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Co:O,SO",
+          "Ve:O",
+          "Ec",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur",
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "nene": {
+    "headword": "nene",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "chico": {
+    "headword": "chico / chico, ca",
+    "found": true,
+    "ar": false,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      }
+    ]
+  },
+  "con vos": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "capaz": {
+    "headword": "capaz",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ve",
+          "Pe",
+          "Ch",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      }
+    ]
+  },
+  "auto": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "agarrar": {
+    "headword": "agarrar",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "RD",
+          "Pe",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "Ve",
+          "Ec",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "RD",
+          "Py",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "CR",
+          "Pa",
+          "PR",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "CR",
+          "Pa",
+          "Pe",
+          "Bo",
+          "Py",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "CR",
+          "Pa",
+          "Co",
+          "Ve",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ve",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "RD",
+          "Bo",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "PR",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "Ni",
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "lindo": {
+    "headword": "lindo / lindo, da",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Ch",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ni",
+          "Ch",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "su": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "ustedes": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "subte": {
+    "headword": "subte",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "diario": {
+    "headword": "diario",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "RD",
+          "PR",
+          "Co",
+          "Pe",
+          "Bo",
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "RD",
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Co"
+        ]
+      }
+    ]
+  },
+  "guapo": {
+    "headword": "guapo / guapo, pa",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Cu",
+          "RD",
+          "Co",
+          "Bo",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Co:O",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx:NE"
+        ]
+      },
+      {
+        "labels": [
+          "Cu",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "intendente": {
+    "headword": "intendente, ta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "boludez": {
+    "headword": "boludez",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ec",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "apartamento": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "departamento": {
+    "headword": "departamento",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Co",
+          "Pe",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "ruta": {
+    "headword": "ruta",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Cu"
+        ]
+      }
+    ]
+  },
+  "chancho": {
+    "headword": "chancho / chancho, cha",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch",
+          "Ar:NO",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Ch",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Bo",
+          "Ch",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur",
+          "RD",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "Pa",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "CR",
+          "Ec",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "elegir": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "control remoto": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "pelo": {
+    "headword": "pelo",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "ómnibus": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "colectivo": {
+    "headword": "colectivo",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "CR",
+          "Co",
+          "Pe",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ve",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "concha": {
+    "headword": "concha",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Co:N",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Co:N",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ni",
+          "CR",
+          "Pa",
+          "PR",
+          "Co:N",
+          "Ec",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "Co:N",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "torta": {
+    "headword": "torta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ni",
+          "Pa",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:E"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:S"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Bo:E,N",
+          "Ar:NO,O"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "enojado": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "mina": {
+    "headword": "mina",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ve",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ar:NE"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "valija": {
+    "headword": "valija",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Bo",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "rápido": {
+    "headword": "r&#xE1;pido, da",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "intendencia": {
+    "headword": "intendencia",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "municipalidad": {
+    "headword": "municipalidad",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "CR",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "CR",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Pe"
+        ]
+      }
+    ]
+  },
+  "computadora": {
+    "headword": "computadora",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "Cu",
+          "RD",
+          "PR",
+          "Ve",
+          "Pe",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "saco": {
+    "headword": "saco",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "RD",
+          "Co",
+          "Ec",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "mozo": {
+    "headword": "mozo, za",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "placard": {
+    "headword": "_placard_",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "pedazo": {
+    "headword": "pedazo",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "pileta": {
+    "headword": "pileta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "PR",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ec",
+          "Bo:E",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "enojar": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "galletita": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "sillón": {
+    "headword": "sill&#xF3;n / sill&#xF3;n, na",
+    "found": true,
+    "ar": false,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Cu",
+          "PR",
+          "Py",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "lapicera": {
+    "headword": "lapicera",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ar",
+          "Ur",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      }
+    ]
+  },
+  "estancia": {
+    "headword": "estancia",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Ni",
+          "Pa",
+          "PR",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Cu",
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "feria": {
+    "headword": "feria",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      }
+    ]
+  },
+  "nafta": {
+    "headword": "nafta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "papa": {
+    "headword": "papa",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "Cu",
+          "Co",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ur",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "coger": {
+    "headword": "coger",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "RD",
+          "Ve",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "apurar": {
+    "headword": "apurar",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Cu",
+          "Ve",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "lentes": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "anteojos": {
+    "headword": "anteojos",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Ho",
+          "Ni",
+          "CR",
+          "Cu",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec:O",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "tarta": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "colgado": {
+    "headword": "colgado, da",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "RD",
+          "PR"
+        ]
+      }
+    ]
+  },
+  "jean": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "manteca": {
+    "headword": "manteca",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Gu",
+          "Ni",
+          "Cu",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      }
+    ]
+  },
+  "costo": {
+    "headword": "costo",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Cu",
+          "PR"
+        ]
+      }
+    ]
+  },
+  "huevo": {
+    "headword": "huevo",
+    "found": true,
+    "ar": false,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ec",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Ve",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      }
+    ]
+  },
+  "recibir": {
+    "headword": "recibir",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "Ni",
+          "CR",
+          "RD",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur",
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "pelota": {
+    "headword": "pelota",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Cu",
+          "RD",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "pibe": {
+    "headword": "pibe, ba",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "PR",
+          "Bo",
+          "Ar",
+          "Ur",
+          "PR",
+          "Py"
+        ]
+      }
+    ]
+  },
+  "boludo": {
+    "headword": "boludo, da",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "CR",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "pollera": {
+    "headword": "pollera",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Co:N",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ho:C,E"
+        ]
+      }
+    ]
+  },
+  "felicitaciones": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "fibra": {
+    "headword": "fibra",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      }
+    ]
+  },
+  "gil": {
+    "headword": "gil / gil, la",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "pastilla": {
+    "headword": "pastilla",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      }
+    ]
+  },
+  "de más": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "copado": {
+    "headword": "copado, da",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ni",
+          "RD",
+          "Co",
+          "Ve",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Cu",
+          "RD",
+          "PR",
+          "Ec",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "arquero": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "competencia": {
+    "headword": "competencia",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "camioneta": {
+    "headword": "camioneta",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "ES",
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "balde": {
+    "headword": "balde",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "Cu:E",
+          "RD",
+          "PR",
+          "Ve",
+          "Py",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "PR",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ar:NO"
+        ]
+      }
+    ]
+  },
+  "suprema": {
+    "headword": "suprema",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Pe",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ec",
+          "Bo",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch:SO"
+        ]
+      }
+    ]
+  },
+  "polla": {
+    "headword": "polla",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Pa",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Bo:E",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ec",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Co:O"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "PR",
+          "Bo:N"
+        ]
+      }
+    ]
+  },
+  "media": {
+    "headword": "media",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "casa de salud": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "geriátrico": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "linyera": {
+    "headword": "linyera",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Py",
+          "Bo",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "básquetbol": {
+    "headword": "b&#xE1;squetbol",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "Ni",
+          "Cu",
+          "RD",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "techo": {
+    "headword": "techo",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Cu"
+        ]
+      }
+    ]
+  },
+  "estacionar": {
+    "headword": "estacionar",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "cubierta": {
+    "headword": "cubierta",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      }
+    ]
+  },
+  "picado": {
+    "headword": "picado / picado, da",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Co",
+          "Py",
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:E"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "PR",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ar",
+          "Ur",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "CR",
+          "Pa",
+          "Ec",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "propaganda": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "tirar": {
+    "headword": "tirar",
+    "found": true,
+    "ar": false,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Gu",
+          "Ni",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Cu",
+          "Ec",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Pa",
+          "Cu",
+          "PR",
+          "Ve",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "RD",
+          "Ec",
+          "Bo:O"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Co:N"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "Ni",
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Cu",
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "CR",
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "preservativo": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "gaseosa": {
+    "headword": "gaseosa",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ni",
+          "RD",
+          "Co",
+          "Bo",
+          "Py",
+          "Ar"
+        ]
+      }
+    ]
+  },
+  "levantar": {
+    "headword": "levantar",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "ES",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "Ve",
+          "Pe",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ni",
+          "Ec",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "ES",
+          "Bo",
+          "Py",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Cu",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Pa",
+          "Bo:N",
+          "E",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Pa",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "cara": {
+    "headword": "cara",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Bo:O,C,SO"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "trabajo": {
+    "headword": "trabajo",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "ES",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "vacaciones": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "estadounidense": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "puto": {
+    "headword": "puto / puto, ta",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Gu",
+          "Ni",
+          "CR",
+          "RD",
+          "PR",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ve",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "pucho": {
+    "headword": "pucho / pucho, cha",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "PR",
+          "Co:O,SO",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co:O,SO",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "Co:O,SO"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ni",
+          "Ec",
+          "Pe",
+          "Bo:E,O",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Co:C"
+        ]
+      },
+      {
+        "labels": [
+          "Co:C"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ch:S"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "cola": {
+    "headword": "cola",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ni",
+          "RD",
+          "Co",
+          "Py",
+          "Ar",
+          "Ur",
+          "Mx",
+          "ES",
+          "CR",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES",
+          "Ni",
+          "Bo",
+          "Py",
+          "Ar:NO"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "RD",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ni",
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:C,O"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      }
+    ]
+  },
+  "película": {
+    "headword": "pel&#xED;cula",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "ropero": {
+    "headword": "ropero",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ni",
+          "Bo:O",
+          "Ch",
+          "Ar",
+          "Ur",
+          "CR",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "galleta": {
+    "headword": "galleta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ve",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ve",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:C,O"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:C,O"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Pa",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      }
+    ]
+  },
+  "habitación": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "sueldo": {
+    "headword": "sueldo",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "esperar": {
+    "headword": "esperar",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "boleto": {
+    "headword": "boleto / boleto, ta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Ni",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      }
+    ]
+  },
+  "vaquero": {
+    "headword": "vaquero / vaquero, ra",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Ar:NO,O",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "cigarrillo": {
+    "headword": "cigarrillo",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "goma": {
+    "headword": "goma",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ni",
+          "Cu",
+          "RD",
+          "PR",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Pe",
+          "Bo",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ve:O"
+        ]
+      },
+      {
+        "labels": [
+          "Ch",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Pe",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "CR",
+          "Cu",
+          "Ec",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ve:O"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "radio": {
+    "headword": "radio",
+    "found": true,
+    "ar": false,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ni",
+          "CR",
+          "Pa",
+          "RD",
+          "Co",
+          "Ec",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "gallina": {
+    "headword": "gallina",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Cu",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      }
+    ]
+  },
+  "chance": {
+    "headword": "_chance_",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "EU",
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Ar",
+          "Ur",
+          "Cu",
+          "RD",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Co",
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "EU",
+          "Gu"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "CR"
+        ]
+      },
+      {
+        "labels": [
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Pa",
+          "PR",
+          "Ve",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "CR",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "mona": {
+    "headword": "mona",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Mx:N"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Co:C"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Co:N"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "ES"
+        ]
+      }
+    ]
+  },
+  "básquet": {
+    "headword": "b&#xE1;squet",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "marcador": {
+    "headword": "marcador",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "RD",
+          "PR",
+          "Co",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "foco": {
+    "headword": "foco",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "Pa",
+          "Cu",
+          "Co:N",
+          "O",
+          "Ve",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "CR",
+          "Pa",
+          "Cu",
+          "PR",
+          "Co:N",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "RD",
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "crío": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "neumático": {
+    "headword": "neum&#xE1;tico",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Bo",
+          "Ch",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "marido": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "eso": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "conseguir": {
+    "headword": "conseguir",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      }
+    ]
+  },
+  "usar": {
+    "headword": "usar",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "sus": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "fachero": {
+    "headword": "fachero, ra",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo:S",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Bo:S"
+        ]
+      }
+    ]
+  },
+  "pedir": {
+    "headword": "pedir",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co"
+        ]
+      }
+    ]
+  },
+  "postularse": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "laburo": {
+    "headword": "laburo",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ec",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "fresco": {
+    "headword": "fresco / fresco, ca",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co:N",
+          "NE",
+          "Ve",
+          "Pe",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "Ve",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "CR",
+          "Bo:C"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "profundizar": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "recién": {
+    "headword": "reci&#xE9;n",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "CR",
+          "Pa",
+          "RD",
+          "Co",
+          "Ec",
+          "Pe",
+          "Bo",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "Pa",
+          "Ec",
+          "Pe",
+          "Ar",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "Pa",
+          "Ec",
+          "Pe",
+          "Py",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Mx",
+          "Gu",
+          "Ho",
+          "ES",
+          "Ni",
+          "Py"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      }
+    ]
+  },
+  "de nuevo": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "llevar": {
+    "headword": "llevar",
+    "found": true,
+    "ar": true,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "ES",
+          "Ec"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      }
+    ]
+  },
+  "feriado": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "cheto": {
+    "headword": "cheto / cheto, ta",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "Ni",
+          "Pa"
+        ]
+      },
+      {
+        "labels": [
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "PR"
+        ]
+      },
+      {
+        "labels": [
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Py",
+          "Ar",
+          "Ur"
+        ]
+      }
+    ]
+  },
+  "che": {
+    "headword": "che",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ho",
+          "Pe",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      }
+    ]
+  },
+  "pasaje": {
+    "headword": "pasaje",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ve"
+        ]
+      },
+      {
+        "labels": [
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "obsessed": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "addicted": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "spaced out": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "cochera": {
+    "headword": "cochera",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co"
+        ]
+      },
+      {
+        "labels": [
+          "Gu"
+        ]
+      }
+    ]
+  },
+  "malla": {
+    "headword": "malla",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Bo",
+          "Py",
+          "Ar",
+          "Ur",
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho",
+          "ES"
+        ]
+      },
+      {
+        "labels": [
+          "Bo",
+          "Ar",
+          "Ur"
+        ]
+      },
+      {
+        "labels": [
+          "Ec",
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "para": {
+    "headword": "para",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Co",
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      }
+    ]
+  },
+  "encargado": {
+    "headword": "encargado, da",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "hacer pis": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "pollita": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "oportunidad": {
+    "headword": "oportunidad",
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "borracha": {
+    "headword": "borracha",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "RD"
+        ]
+      },
+      {
+        "labels": [
+          "RD"
+        ]
+      }
+    ]
+  },
+  "bebé": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "fibrón": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "lamparita": {
+    "headword": "lamparita",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Ve"
+        ]
+      }
+    ]
+  },
+  "publicidad": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "forro": {
+    "headword": "forro / forro, rra",
+    "found": true,
+    "ar": true,
+    "ur": true,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "Ho",
+          "ES",
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Mx"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ho"
+        ]
+      },
+      {
+        "labels": [
+          "Ni"
+        ]
+      },
+      {
+        "labels": [
+          "Ni",
+          "Pa",
+          "Ch",
+          "Py",
+          "Ar",
+          "Ur",
+          "Co",
+          "Ec",
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "CR",
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Cu"
+        ]
+      },
+      {
+        "labels": [
+          "Bo"
+        ]
+      },
+      {
+        "labels": [
+          "Pe"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      },
+      {
+        "labels": [
+          "Ar"
+        ]
+      },
+      {
+        "labels": [
+          "Ch"
+        ]
+      }
+    ]
+  },
+  "salud": {
+    "headword": "salud",
+    "found": true,
+    "ar": false,
+    "ur": false,
+    "senses": [
+      {
+        "labels": [
+          "Mx",
+          "ES",
+          "Ni",
+          "CR",
+          "Co",
+          "Ec"
+        ]
+      }
+    ]
+  },
+  "fenómeno meteorológico": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  },
+  "depresión atmosférica": {
+    "headword": null,
+    "found": false,
+    "ar": false,
+    "ur": false,
+    "senses": []
+  }
+}
