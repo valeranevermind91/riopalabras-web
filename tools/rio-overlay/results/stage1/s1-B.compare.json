@@ -1,0 +1,831 @@
+{
+  "run": "s1-B",
+  "compared": 134,
+  "disagreements": [
+    {
+      "es_word": "aquí",
+      "kind": "legacy_only",
+      "legacy": "acá",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: aquí; UY: aquí; std: aquí -> none. \"Aquí\" is used universally in Rioplatense Spanish, no specific regional form or meaning.",
+      "valid": true
+    },
+    {
+      "es_word": "chico",
+      "kind": "legacy_only",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chico/pibe; UY: chico/gurí; std: chico -> none. \"Chico\" is used as \"boy\" or \"small\" in Rioplatense, no meaning shift or replacement.",
+      "valid": true
+    },
+    {
+      "es_word": "niño",
+      "kind": "different",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "chico",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chico/pibe; UY: chico/gurí; std: niño -> replacement. \"Chico\" is more common for \"child/boy\" in everyday Rioplatense speech.",
+      "valid": false
+    },
+    {
+      "es_word": "pequeño",
+      "kind": "legacy_only",
+      "legacy": "chico",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: pequeño/chico; UY: pequeño/chico; std: pequeño -> none. \"Pequeño\" is widely used and understood, no specific Rioplatense angle.",
+      "valid": true
+    },
+    {
+      "es_word": "esposo",
+      "kind": "legacy_only",
+      "legacy": "marido",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: esposo/marido; UY: esposo/marido; std: esposo -> none. \"Esposo\" is used and understood, no specific Rioplatense angle.",
+      "valid": true
+    },
+    {
+      "es_word": "quizá",
+      "kind": "legacy_only",
+      "legacy": "capaz",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: quizá/quizás; UY: quizá/quizás; std: quizá -> none. Both forms are standard and used interchangeably in Rioplatense.",
+      "valid": true
+    },
+    {
+      "es_word": "ello",
+      "kind": "legacy_only",
+      "legacy": "eso",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ello; UY: ello; std: ello -> none. \"Ello\" is a formal, neuter pronoun, rarely used in everyday Rioplatense speech.",
+      "valid": true
+    },
+    {
+      "es_word": "quizás",
+      "kind": "legacy_only",
+      "legacy": "capaz",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: quizá/quizás; UY: quizá/quizás; std: quizás -> none. Both forms are standard and used interchangeably in Rioplatense.",
+      "valid": true
+    },
+    {
+      "es_word": "obtener",
+      "kind": "legacy_only",
+      "legacy": "conseguir",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: obtener; UY: obtener; std: obtener -> none",
+      "valid": true
+    },
+    {
+      "es_word": "utilizar",
+      "kind": "legacy_only",
+      "legacy": "usar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: usar; UY: usar; std: utilizar -> none (preference of frequency/formality, not a regional difference)",
+      "valid": true
+    },
+    {
+      "es_word": "guapo",
+      "kind": "different",
+      "legacy": "fachero",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "guapo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: valiente/bravo; UY: valiente/bravo; std: handsome, brave -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "bello",
+      "kind": "legacy_only",
+      "legacy": "lindo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: hermoso/lindo; UY: hermoso/lindo; std: bello -> none",
+      "valid": true
+    },
+    {
+      "es_word": "tony",
+      "kind": "legacy_only",
+      "legacy": "cheto",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "low",
+      "reasoning": "AR: ?; UY: ?; std: ? -> none",
+      "valid": true
+    },
+    {
+      "es_word": "solicitar",
+      "kind": "legacy_only",
+      "legacy": "pedir / postularse",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: pedir; UY: pedir; std: solicitar -> none. \"Solicitar\" is standard, formality difference exists everywhere, not Rioplatense specific.",
+      "valid": true
+    },
+    {
+      "es_word": "empleo",
+      "kind": "different",
+      "legacy": "laburo",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "trabajo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: trabajo; UY: trabajo; std: empleo -> replacement. \"Trabajo\" is the much more common word for \"job\" or \"employment\" in Rioplatense Spanish.",
+      "valid": true
+    },
+    {
+      "es_word": "fresco",
+      "kind": "legacy_only",
+      "legacy": "fresco",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: fresco; UY: fresco; std: fresco -> none. \"Fresco\" means \"cool\" or \"fresh\" in Rioplatense Spanish, just like in standard Spanish.",
+      "valid": true
+    },
+    {
+      "es_word": "puto",
+      "kind": "different",
+      "legacy": "Used as a strong intensifier or general expletive, often to express annoyance or emphasize something negative, beyond its literal derogatory meaning.",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "puto",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: puto (intensifier/insult); UY: puto (intensifier/insult); std: male prostitute, faggot -> meaning_shift",
+      "valid": false
+    },
+    {
+      "es_word": "profundar",
+      "kind": "legacy_only",
+      "legacy": "profundizar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: profundizar; UY: profundizar; std: profundizar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "recientemente",
+      "kind": "legacy_only",
+      "legacy": "recién",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: recientemente; UY: recientemente; std: recientemente -> none",
+      "valid": true
+    },
+    {
+      "es_word": "nuevamente",
+      "kind": "legacy_only",
+      "legacy": "de nuevo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: nuevamente; UY: nuevamente; std: nuevamente -> none",
+      "valid": true
+    },
+    {
+      "es_word": "ayuntamiento",
+      "kind": "different",
+      "legacy": "municipalidad",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "intendencia",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: intendencia; UY: intendencia; std: ayuntamiento -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "wow",
+      "kind": "legacy_only",
+      "legacy": "¡Qué bárbaro!",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "low",
+      "reasoning": "AR: wow; UY: wow; std: wow -> none",
+      "valid": true
+    },
+    {
+      "es_word": "portar",
+      "kind": "legacy_only",
+      "legacy": "llevar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: llevar/comportarse; UY: llevar/comportarse; std: portar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "galleta",
+      "kind": "different",
+      "legacy": "galletita",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "galleta",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: galleta (cracker); UY: galleta (cracker); std: galleta (biscuit/cookie) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "Hacienda",
+      "kind": "legacy_only",
+      "legacy": "estancia",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: Treasury, estate -> none",
+      "valid": true
+    },
+    {
+      "es_word": "feria",
+      "kind": "different",
+      "legacy": "feriado",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "feria",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: feria; UY: feria; std: fair, market (general) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "follar",
+      "kind": "legacy_only",
+      "legacy": "coger",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: follar (vulgar); UY: follar (vulgar); std: to fuck (vulgar) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "jo",
+      "kind": "legacy_only",
+      "legacy": "che",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: interjection of surprise/annoyance -> none",
+      "valid": true
+    },
+    {
+      "es_word": "boleto",
+      "kind": "different",
+      "legacy": "pasaje",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "boleto",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: boleto; UY: boleto; std: ticket (general) -> meaning_shift",
+      "valid": false
+    },
+    {
+      "es_word": "colgado",
+      "kind": "different",
+      "legacy": "(informal, for a person) obsessed, addicted, spaced out",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "colgado",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: colgado (distracted/obsessed); UY: colgado (distracted/obsessed); std: colgado (hanging) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "garaje",
+      "kind": "legacy_only",
+      "legacy": "cochera",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: garaje/cochera; UY: garaje/cochera; std: garaje -> none",
+      "valid": true
+    },
+    {
+      "es_word": "vaquero",
+      "kind": "different",
+      "legacy": "jean",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "vaquero",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: jean/vaquero; UY: jean/vaquero; std: vaquero (cowboy/denim) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "cojón",
+      "kind": "legacy_only",
+      "legacy": "huevo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: testículo/pelota (vulgar); UY: testículo/pelota (vulgar); std: cojón (testicle, vulgar) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "acoger",
+      "kind": "legacy_only",
+      "legacy": "recibir",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: recibir/dar la bienvenida; UY: recibir/dar la bienvenida; std: acoger (to welcome/receive) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "maya",
+      "kind": "legacy_only",
+      "legacy": "malla",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: maya (ethnic group) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "pa",
+      "kind": "legacy_only",
+      "legacy": "para",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: pa (short for para); UY: pa (short for para); std: pa (short for para) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "fibra",
+      "kind": "legacy_only",
+      "legacy": "fibra",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: fibra; UY: fibra; std: fibra -> none",
+      "valid": true
+    },
+    {
+      "es_word": "Gil",
+      "kind": "legacy_only",
+      "legacy": "gil",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "low",
+      "reasoning": "AR: Gil (surname); UY: Gil (surname); std: Gil (surname) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "portero",
+      "kind": "legacy_only",
+      "legacy": "arquero (goalkeeper), encargado (doorman)",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: portero; UY: portero; std: portero -> none",
+      "valid": true
+    },
+    {
+      "es_word": "cigarro",
+      "kind": "different",
+      "legacy": "pucho",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "cigarrillo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: cigarrillo; UY: cigarrillo; std: cigarro (cigar) -> replacement",
+      "valid": false
+    },
+    {
+      "es_word": "orinar",
+      "kind": "legacy_only",
+      "legacy": "hacer pis",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: orinar/hacer pis; UY: orinar/hacer pis; std: orinar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "boy",
+      "kind": "legacy_only",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: boy (English loanword) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "goma",
+      "kind": "different",
+      "legacy": "cubierta",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "goma",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: goma (eraser, tire); UY: goma (eraser, tire); std: goma (rubber, eraser, tire) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "polla",
+      "kind": "different",
+      "legacy": "pollita (for pullet)",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "gallina",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: gallina (for hen); UY: gallina (for hen); std: hen, pool/bet -> replacement (due to vulgarity)",
+      "valid": true
+    },
+    {
+      "es_word": "chance",
+      "kind": "different",
+      "legacy": "oportunidad",
+      "overlay": {
+        "rio_type": "regional_only",
+        "rio_form": "chance",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chance; UY: chance; std: oportunidad, suerte -> regional_only (common loanword)",
+      "valid": true
+    },
+    {
+      "es_word": "mona",
+      "kind": "different",
+      "legacy": "borracha",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "mona",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: resaca, mona; UY: resaca, mona; std: female monkey, cute -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "asilo",
+      "kind": "legacy_only",
+      "legacy": "geriátrico",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: asilo, hogar de ancianos; UY: asilo, hogar de ancianos; std: asylum, old people's home -> none",
+      "valid": true
+    },
+    {
+      "es_word": "baby",
+      "kind": "legacy_only",
+      "legacy": "bebé",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: bebé, baby; UY: bebé, baby; std: bebé -> none (common loanword, not uniquely Rioplatense)",
+      "valid": true
+    },
+    {
+      "es_word": "marcador",
+      "kind": "different",
+      "legacy": "fibrón",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "marcador",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: marcador; UY: marcador; std: marker (pen), scoreboard -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "foco",
+      "kind": "different",
+      "legacy": "lamparita",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "foco",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: foco; UY: foco; std: focus, spotlight -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "crío",
+      "kind": "different",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "crío",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: crío; UY: crío; std: baby animal, offspring -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "propaganda",
+      "kind": "different",
+      "legacy": "publicidad",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "propaganda",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: publicidad; UY: publicidad; std: propaganda -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "condón",
+      "kind": "different",
+      "legacy": "forro",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "preservativo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: preservativo; UY: preservativo; std: condón -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "sanidad",
+      "kind": "legacy_only",
+      "legacy": "salud",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: salud pública; UY: salud pública; std: sanidad (public health) -> none",
+      "valid": true
+    },
+    {
+      "es_word": "DANA",
+      "kind": "legacy_only",
+      "legacy": "fenómeno meteorológico / depresión atmosférica",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: DANA (acronym for a specific weather phenomenon in Spain) -> none",
+      "valid": true
+    }
+  ]
+}

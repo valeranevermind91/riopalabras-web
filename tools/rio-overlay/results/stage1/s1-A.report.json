@@ -1,0 +1,802 @@
+{
+  "model": "gemini-3.1-pro-preview",
+  "run": "s1-A",
+  "selected": 134,
+  "returned": 134,
+  "withErrors": 1,
+  "withWarnings": 59,
+  "missing": [],
+  "context": "sense",
+  "needsExampleCheck": [
+    {
+      "es_word": "aquí",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "tú",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "niño",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "pequeño",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "contigo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "quizá",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "quizás",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "coche",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "coger",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "bonito",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "vuestro",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "vosotros",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "metro",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "periódico",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "guapo",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "bello",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "alcalde",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "tontería",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "apartamento",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "vos",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "carretera",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "cerdo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "escoger",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "mando",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "cabello",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "autobús",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "coño",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "pastel",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "enfadado",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "mina",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "maleta",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "deprisa",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "ayuntamiento",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "ordenador",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "saco",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "camarero",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "armario",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "trozo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "piscina",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "enfadar",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "galleta",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "sofá",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "pluma",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "automóvil",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "Hacienda",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "feria",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "gasolina",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "patata",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "follar",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "apresurar",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "gafas",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "tarta",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "colgado",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "vaquero",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "mantequilla",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "coste",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "cojón",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "acoger",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "balón",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "chaval",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "gilipollas",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "falda",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "enhorabuena",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "fibra",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "Gil",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "píldora",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "guay",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "portero",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "competición",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "furgoneta",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "cubo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "suprema",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "polla",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "calcetín",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "asilo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "bus",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "vagabundo",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "baloncesto",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "tejado",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "aparcar",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "torta",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "lentes",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "crío",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "neumático",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "picado",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "propaganda",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "halar",
+      "currentExampleShowsForm": true
+    },
+    {
+      "es_word": "condón",
+      "currentExampleShowsForm": false
+    },
+    {
+      "es_word": "refresco",
+      "currentExampleShowsForm": true
+    }
+  ],
+  "pass2Queue": [
+    "niño",
+    "guapo",
+    "armario",
+    "tarta",
+    "lentes",
+    "crío",
+    "propaganda",
+    "condón"
+  ],
+  "usage": {
+    "requests": 14,
+    "prompt": 27031,
+    "output": 28361,
+    "thoughts": 58267
+  },
+  "estimatedCostUsd": 1.093598,
+  "failures": [
+    {
+      "es_word": "tú",
+      "errors": [],
+      "warnings": [
+        "form_type_notable_only: form is for pronouns and irregular voseo only; regular voseo is a general rule"
+      ]
+    },
+    {
+      "es_word": "chico",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "contigo",
+      "errors": [],
+      "warnings": [
+        "form_type_notable_only: form is for pronouns and irregular voseo only; regular voseo is a general rule"
+      ]
+    },
+    {
+      "es_word": "esposo",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "ello",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "muchacho",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "hermoso",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "obtener",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "utilizar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "recoger",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "periódico",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "rostro",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "alcalde",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "apartamento",
+      "errors": [
+        "rio_form_equals_es_word: replacement needs a different form"
+      ],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "tony",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "cerdo",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "solicitar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "empleo",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "vacación",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "fresco",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "norteamericano",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "coño",
+      "errors": [],
+      "warnings": [
+        "sensitive_register: vulgar"
+      ]
+    },
+    {
+      "es_word": "puto",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "profundar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "cigarrillo",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "carro",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "fila",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "recientemente",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "nuevamente",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "filme",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "saco",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "wow",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "portar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "dormitorio",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "salario",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "aguardar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "gasolina",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "follar",
+      "errors": [],
+      "warnings": [
+        "sensitive_register: vulgar"
+      ]
+    },
+    {
+      "es_word": "jo",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "boleto",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "garaje",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "mantequilla",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "cojón",
+      "errors": [],
+      "warnings": [
+        "sensitive_register: vulgar"
+      ]
+    },
+    {
+      "es_word": "maya",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "gilipollas",
+      "errors": [],
+      "warnings": [
+        "sensitive_register: vulgar"
+      ]
+    },
+    {
+      "es_word": "falda",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "pa",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "orinar",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "boy",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "cubo",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "emisora",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "chance",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "mona",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "calcetín",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "bus",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "baby",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "baloncesto",
+      "errors": [],
+      "warnings": [
+        "translation_unchanged: override equals the current translation"
+      ]
+    },
+    {
+      "es_word": "sanidad",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    },
+    {
+      "es_word": "DANA",
+      "errors": [],
+      "warnings": [
+        "none_high_confidence: check that a high-confidence none is not a missed angle"
+      ]
+    }
+  ]
+}

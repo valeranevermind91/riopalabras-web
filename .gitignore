@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Rioplatense overlay generation: raw model output and checkpoints
+tools/rio-overlay/out/
+
 # Environment variables
 .env
 .env.*

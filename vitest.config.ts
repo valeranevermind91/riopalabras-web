@@ -7,6 +7,6 @@ process.env.TZ = 'America/Montevideo'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tools/**/*.test.mjs'],
   },
 })

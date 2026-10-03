@@ -1,0 +1,861 @@
+{
+  "run": "s1-A",
+  "compared": 134,
+  "disagreements": [
+    {
+      "es_word": "chico",
+      "kind": "legacy_only",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chico; UY: chico; std: chico -> none",
+      "valid": true
+    },
+    {
+      "es_word": "niño",
+      "kind": "different",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "nene",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: nene; UY: nene; std: niño -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "esposo",
+      "kind": "legacy_only",
+      "legacy": "marido",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: marido; UY: marido; std: esposo -> none",
+      "valid": true
+    },
+    {
+      "es_word": "ello",
+      "kind": "legacy_only",
+      "legacy": "eso",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: eso; UY: eso; std: ello -> none",
+      "valid": true
+    },
+    {
+      "es_word": "muchacho",
+      "kind": "legacy_only",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: muchacho; UY: muchacho; std: muchacho -> none",
+      "valid": true
+    },
+    {
+      "es_word": "hermoso",
+      "kind": "legacy_only",
+      "legacy": "lindo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: hermoso; UY: hermoso; std: hermoso -> none",
+      "valid": true
+    },
+    {
+      "es_word": "obtener",
+      "kind": "legacy_only",
+      "legacy": "conseguir",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: obtener; UY: obtener; std: obtener -> none",
+      "valid": true
+    },
+    {
+      "es_word": "utilizar",
+      "kind": "legacy_only",
+      "legacy": "usar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: utilizar; UY: utilizar; std: utilizar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "recoger",
+      "kind": "legacy_only",
+      "legacy": "levantar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: recoger; UY: recoger; std: recoger -> none",
+      "valid": true
+    },
+    {
+      "es_word": "guapo",
+      "kind": "different",
+      "legacy": "fachero",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "guapo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: brave, tough; UY: brave, tough; std: handsome -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "rostro",
+      "kind": "legacy_only",
+      "legacy": "cara",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: cara; UY: cara; std: rostro -> none",
+      "valid": true
+    },
+    {
+      "es_word": "tony",
+      "kind": "legacy_only",
+      "legacy": "cheto",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: cheto; UY: cheto; std: ? -> none",
+      "valid": true
+    },
+    {
+      "es_word": "solicitar",
+      "kind": "legacy_only",
+      "legacy": "pedir / postularse",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: solicitar; UY: solicitar; std: solicitar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "empleo",
+      "kind": "legacy_only",
+      "legacy": "laburo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: empleo; UY: empleo; std: empleo -> none",
+      "valid": true
+    },
+    {
+      "es_word": "vacación",
+      "kind": "legacy_only",
+      "legacy": "vacaciones",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: vacaciones; UY: vacaciones; std: vacación -> none",
+      "valid": true
+    },
+    {
+      "es_word": "fresco",
+      "kind": "legacy_only",
+      "legacy": "fresco",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: fresco; UY: fresco; std: fresco -> none",
+      "valid": true
+    },
+    {
+      "es_word": "norteamericano",
+      "kind": "legacy_only",
+      "legacy": "estadounidense",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: norteamericano; UY: norteamericano; std: norteamericano -> none",
+      "valid": true
+    },
+    {
+      "es_word": "puto",
+      "kind": "legacy_only",
+      "legacy": "Used as a strong intensifier or general expletive, often to express annoyance or emphasize something negative, beyond its literal derogatory meaning.",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: puto; UY: puto; std: puto -> none",
+      "valid": true
+    },
+    {
+      "es_word": "profundar",
+      "kind": "legacy_only",
+      "legacy": "profundizar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: profundizar; UY: profundizar; std: profundar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "cigarrillo",
+      "kind": "legacy_only",
+      "legacy": "pucho",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: cigarrillo; UY: cigarrillo; std: cigarrillo -> none",
+      "valid": true
+    },
+    {
+      "es_word": "carro",
+      "kind": "legacy_only",
+      "legacy": "auto",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: carro; UY: carro; std: carro -> none",
+      "valid": true
+    },
+    {
+      "es_word": "fila",
+      "kind": "legacy_only",
+      "legacy": "cola",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: fila; UY: fila; std: fila -> none",
+      "valid": true
+    },
+    {
+      "es_word": "recientemente",
+      "kind": "legacy_only",
+      "legacy": "recién",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: recientemente; UY: recientemente; std: recientemente -> none",
+      "valid": true
+    },
+    {
+      "es_word": "nuevamente",
+      "kind": "legacy_only",
+      "legacy": "de nuevo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: nuevamente; UY: nuevamente; std: nuevamente -> none",
+      "valid": true
+    },
+    {
+      "es_word": "filme",
+      "kind": "legacy_only",
+      "legacy": "película",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: película; UY: película; std: película -> none",
+      "valid": true
+    },
+    {
+      "es_word": "wow",
+      "kind": "legacy_only",
+      "legacy": "¡Qué bárbaro!",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: guau; UY: guau; std: guau -> none",
+      "valid": true
+    },
+    {
+      "es_word": "armario",
+      "kind": "different",
+      "legacy": "ropero",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "placard",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: placard; UY: placard; std: armario -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "portar",
+      "kind": "legacy_only",
+      "legacy": "llevar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: llevar; UY: llevar; std: portar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "dormitorio",
+      "kind": "legacy_only",
+      "legacy": "habitación",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: dormitorio; UY: dormitorio; std: dormitorio -> none",
+      "valid": true
+    },
+    {
+      "es_word": "salario",
+      "kind": "legacy_only",
+      "legacy": "sueldo",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: sueldo; UY: sueldo; std: salario -> none",
+      "valid": true
+    },
+    {
+      "es_word": "aguardar",
+      "kind": "legacy_only",
+      "legacy": "esperar",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: esperar; UY: esperar; std: aguardar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "feria",
+      "kind": "different",
+      "legacy": "feriado",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "feria",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: feria; UY: feria; std: fair, festival -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "jo",
+      "kind": "legacy_only",
+      "legacy": "che",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: ?; UY: ?; std: jo -> none",
+      "valid": true
+    },
+    {
+      "es_word": "boleto",
+      "kind": "legacy_only",
+      "legacy": "pasaje",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: boleto; UY: boleto; std: billete -> none",
+      "valid": true
+    },
+    {
+      "es_word": "tarta",
+      "kind": "different",
+      "legacy": "torta",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "tarta",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: tarta (savory); UY: tarta (savory); std: tarta (sweet) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "colgado",
+      "kind": "different",
+      "legacy": "(informal, for a person) obsessed, addicted, spaced out",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "colgado",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: colgado (distracted); UY: colgado; std: colgado (hung) -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "garaje",
+      "kind": "legacy_only",
+      "legacy": "cochera",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: garaje; UY: garaje; std: garaje -> none",
+      "valid": true
+    },
+    {
+      "es_word": "maya",
+      "kind": "legacy_only",
+      "legacy": "malla",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: maya; UY: maya; std: maya -> none",
+      "valid": true
+    },
+    {
+      "es_word": "pa",
+      "kind": "legacy_only",
+      "legacy": "para",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: pa; UY: pa; std: para -> none",
+      "valid": true
+    },
+    {
+      "es_word": "cigarro",
+      "kind": "legacy_only",
+      "legacy": "pucho",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "medium",
+      "reasoning": "AR: cigarrillo; UY: cigarro; std: cigarro -> none",
+      "valid": true
+    },
+    {
+      "es_word": "orinar",
+      "kind": "legacy_only",
+      "legacy": "hacer pis",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: orinar; UY: orinar; std: orinar -> none",
+      "valid": true
+    },
+    {
+      "es_word": "boy",
+      "kind": "legacy_only",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chico; UY: chiquilín; std: chico -> none",
+      "valid": true
+    },
+    {
+      "es_word": "goma",
+      "kind": "legacy_only",
+      "legacy": "cubierta",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "medium",
+      "reasoning": "AR: goma; UY: goma; std: neumático -> none",
+      "valid": true
+    },
+    {
+      "es_word": "emisora",
+      "kind": "legacy_only",
+      "legacy": "radio",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: radio; UY: radio; std: emisora -> none",
+      "valid": true
+    },
+    {
+      "es_word": "polla",
+      "kind": "different",
+      "legacy": "pollita (for pullet)",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "polla",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: polla; UY: polla; std: young hen -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "chance",
+      "kind": "legacy_only",
+      "legacy": "oportunidad",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: chance; UY: chance; std: oportunidad -> none",
+      "valid": true
+    },
+    {
+      "es_word": "mona",
+      "kind": "legacy_only",
+      "legacy": "borracha",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: mona; UY: mona; std: mona -> none",
+      "valid": true
+    },
+    {
+      "es_word": "baby",
+      "kind": "legacy_only",
+      "legacy": "bebé",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: bebé; UY: bebé; std: bebé -> none",
+      "valid": true
+    },
+    {
+      "es_word": "baloncesto",
+      "kind": "different",
+      "legacy": "básquet",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "básquetbol",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: básquetbol; UY: básquetbol; std: baloncesto -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "marcador",
+      "kind": "legacy_only",
+      "legacy": "fibrón",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "medium",
+      "reasoning": "AR: marcador; UY: marcador; std: marcador -> none",
+      "valid": true
+    },
+    {
+      "es_word": "lentes",
+      "kind": "different",
+      "legacy": "anteojos",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "lentes",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: lentes, anteojos; UY: lentes; std: lenses -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "foco",
+      "kind": "legacy_only",
+      "legacy": "lamparita",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "medium",
+      "reasoning": "AR: lamparita, foco; UY: lamparita, foco; std: foco -> none",
+      "valid": true
+    },
+    {
+      "es_word": "crío",
+      "kind": "different",
+      "legacy": "pibe",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "nene",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: nene, pibe; UY: nene, chiquilín, gurí; std: crío -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "propaganda",
+      "kind": "different",
+      "legacy": "publicidad",
+      "overlay": {
+        "rio_type": "meaning_shift",
+        "rio_form": "propaganda",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: propaganda; UY: propaganda; std: political propaganda -> meaning_shift",
+      "valid": true
+    },
+    {
+      "es_word": "condón",
+      "kind": "different",
+      "legacy": "forro",
+      "overlay": {
+        "rio_type": "replacement",
+        "rio_form": "preservativo",
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: preservativo; UY: preservativo; std: condón -> replacement",
+      "valid": true
+    },
+    {
+      "es_word": "sanidad",
+      "kind": "legacy_only",
+      "legacy": "salud",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: salud; UY: salud; std: sanidad -> none",
+      "valid": true
+    },
+    {
+      "es_word": "DANA",
+      "kind": "legacy_only",
+      "legacy": "fenómeno meteorológico / depresión atmosférica",
+      "overlay": {
+        "rio_type": "none",
+        "rio_form": null,
+        "region": null,
+        "alt_form": null,
+        "alt_region": null
+      },
+      "confidence": "high",
+      "reasoning": "AR: temporal; UY: temporal; std: DANA -> none",
+      "valid": true
+    }
+  ]
+}
