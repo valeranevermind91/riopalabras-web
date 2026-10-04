@@ -1,0 +1,331 @@
+[
+  {
+    "es_word": "acoger",
+    "es": "La familia decidió acoger a un estudiante de intercambio este año.",
+    "en": "The family decided to host an exchange student this year.",
+    "ru": "В этом году семья решила принять у себя студента по обмену.",
+    "word_form": "acoger"
+  },
+  {
+    "es_word": "aguardar",
+    "es": "Vamos a aguardar los resultados del examen médico en la sala.",
+    "en": "We are going to wait for the medical test results in the room.",
+    "ru": "Мы подождем результатов медицинского обследования в палате.",
+    "word_form": "aguardar"
+  },
+  {
+    "es_word": "armario",
+    "es": "Guardé todas mis camperas de invierno en el armario grande del pasillo.",
+    "en": "I put all my winter jackets in the large closet in the hallway.",
+    "ru": "Я убрал все свои зимние куртки в большой шкаф в коридоре.",
+    "word_form": "armario"
+  },
+  {
+    "es_word": "automóvil",
+    "es": "Mi tío compró un automóvil usado muy barato la semana pasada.",
+    "en": "My uncle bought a very cheap used automobile last week.",
+    "ru": "На прошлой неделе мой дядя купил очень дешевый подержанный автомобиль.",
+    "word_form": "automóvil"
+  },
+  {
+    "es_word": "ayuntamiento",
+    "es": "Mañana tenemos que ir al ayuntamiento para pagar los impuestos del auto.",
+    "en": "Tomorrow we have to go to the town hall to pay the car taxes.",
+    "ru": "Завтра нам нужно пойти в мэрию, чтобы заплатить налоги на машину.",
+    "word_form": "ayuntamiento"
+  },
+  {
+    "es_word": "baby",
+    "es": "El baby lloró toda la noche y no pudimos dormir nada.",
+    "en": "The baby cried all night and we couldn't sleep at all.",
+    "ru": "Малыш плакал всю ночь, и мы совсем не могли спать.",
+    "word_form": "baby"
+  },
+  {
+    "es_word": "baloncesto",
+    "es": "Mis amigos y yo jugamos al baloncesto todos los fines de semana.",
+    "en": "My friends and I play basketball every weekend.",
+    "ru": "Мы с друзьями играем в баскетбол каждые выходные.",
+    "word_form": "baloncesto"
+  },
+  {
+    "es_word": "bello",
+    "es": "El paisaje del campo uruguayo es realmente bello en primavera.",
+    "en": "The landscape of the Uruguayan countryside is truly beautiful in spring.",
+    "ru": "Пейзаж уругвайской сельской местности по-настоящему красив весной.",
+    "word_form": "bello"
+  },
+  {
+    "es_word": "boy",
+    "es": "Ese boy siempre juega al fútbol con sus amigos en la plaza.",
+    "en": "That boy always plays soccer with his friends in the square.",
+    "ru": "Тот парень всегда играет в футбол со своими друзьями на площади.",
+    "word_form": "boy"
+  },
+  {
+    "es_word": "bus",
+    "es": "Perdí el bus porque me desperté muy tarde esta mañana.",
+    "en": "I missed the bus because I woke up very late this morning.",
+    "ru": "Я опоздал на автобус, потому что сегодня утром проснулся очень поздно.",
+    "word_form": "bus"
+  },
+  {
+    "es_word": "crío",
+    "es": "Ese crío siempre está corriendo por el parque con su perro grande.",
+    "en": "That kid is always running through the park with his big dog.",
+    "ru": "Этот ребенок всегда бегает по парку со своей большой собакой.",
+    "word_form": "crío"
+  },
+  {
+    "es_word": "deprisa",
+    "es": "Si caminamos muy deprisa, vamos a llegar a tiempo a la reunión.",
+    "en": "If we walk very quickly, we will arrive on time for the meeting.",
+    "ru": "Если мы пойдем очень быстро, то придем на встречу вовремя.",
+    "word_form": "deprisa"
+  },
+  {
+    "es_word": "dormitorio",
+    "es": "Pintamos las paredes del dormitorio de un color azul muy claro y relajante.",
+    "en": "We painted the bedroom walls a very light and relaxing blue color.",
+    "ru": "Мы покрасили стены спальни в очень светлый и расслабляющий синий цвет.",
+    "word_form": "dormitorio"
+  },
+  {
+    "es_word": "ello",
+    "es": "Tuvimos un problema grave en la empresa, pero no quiero hablar de ello.",
+    "en": "We had a serious problem at the company, but I don't want to talk about it.",
+    "ru": "У нас была серьезная проблема в компании, но я не хочу говорить об этом.",
+    "word_form": "ello"
+  },
+  {
+    "es_word": "emisora",
+    "es": "Mi abuelo escucha las noticias todas las mañanas en la misma emisora.",
+    "en": "My grandfather listens to the news every morning on the same radio station.",
+    "ru": "Мой дедушка каждое утро слушает новости по одной и той же радиостанции.",
+    "word_form": "emisora"
+  },
+  {
+    "es_word": "empleo",
+    "es": "Mi hermano está buscando un empleo de medio tiempo en la ciudad.",
+    "en": "My brother is looking for a part-time job in the city.",
+    "ru": "Мой брат ищет работу на неполный рабочий день в городе.",
+    "word_form": "empleo"
+  },
+  {
+    "es_word": "enhorabuena",
+    "es": "Les doy mi más sincera enhorabuena por el nacimiento del bebé.",
+    "en": "I give you my most sincere congratulations on the birth of the baby.",
+    "ru": "Примите мои самые искренние поздравления с рождением ребенка.",
+    "word_form": "enhorabuena"
+  },
+  {
+    "es_word": "esposo",
+    "es": "Mi esposo preparó la cena anoche mientras yo trabajaba con la computadora.",
+    "en": "My husband made dinner last night while I was working on the computer.",
+    "ru": "Мой муж приготовил ужин прошлым вечером, пока я работала за компьютером.",
+    "word_form": "esposo"
+  },
+  {
+    "es_word": "filme",
+    "es": "El director presentó su último filme en un festival internacional muy importante.",
+    "en": "The director presented his latest film at a very important international festival.",
+    "ru": "Режиссер представил свой последний фильм на очень важном международном фестивале.",
+    "word_form": "filme"
+  },
+  {
+    "es_word": "gafas",
+    "es": "Necesito comprar unas gafas nuevas porque no veo bien de lejos.",
+    "en": "I need to buy new glasses because I can't see well from afar.",
+    "ru": "Мне нужно купить новые очки, потому что я плохо вижу издалека.",
+    "word_form": "gafas"
+  },
+  {
+    "es_word": "garaje",
+    "es": "Por favor, tenés que estacionar el vehículo en el garaje grande.",
+    "en": "Please, you have to park the vehicle in the big garage.",
+    "ru": "Пожалуйста, тебе нужно припарковать машину в большом гараже.",
+    "word_form": "garaje"
+  },
+  {
+    "es_word": "goma",
+    "es": "Tuvimos que cambiar una goma del auto porque se pinchó en la ruta.",
+    "en": "We had to change a car tire because it got a flat on the highway.",
+    "ru": "Нам пришлось поменять колесо автомобиля, потому что оно спустило на трассе.",
+    "word_form": "goma"
+  },
+  {
+    "es_word": "hermoso",
+    "es": "Pasamos un día hermoso en la playa de Punta del Este con amigos.",
+    "en": "We spent a beautiful day at the beach in Punta del Este with friends.",
+    "ru": "Мы провели прекрасный день на пляже в Пунта-дель-Эсте с друзьями.",
+    "word_form": "hermoso"
+  },
+  {
+    "es_word": "jo",
+    "es": "Jo, otra vez se cortó la luz en todo el barrio.",
+    "en": "Damn, the power went out in the whole neighborhood again.",
+    "ru": "Блин, во всем районе опять отключили электричество.",
+    "word_form": "Jo"
+  },
+  {
+    "es_word": "lentes",
+    "es": "No puedo leer el diario si no me pongo los lentes nuevos.",
+    "en": "I can't read the newspaper if I don't put on my new glasses.",
+    "ru": "Я не могу читать газету, если не надену свои новые очки.",
+    "word_form": "lentes"
+  },
+  {
+    "es_word": "mona",
+    "es": "En el zoológico vimos una mona que llevaba a su cría en la espalda.",
+    "en": "At the zoo we saw a female monkey carrying her baby on her back.",
+    "ru": "В зоопарке мы видели обезьяну, которая несла своего детеныша на спине.",
+    "word_form": "mona"
+  },
+  {
+    "es_word": "muchacho",
+    "es": "Ese muchacho que trabaja en la panadería siempre atiende con una sonrisa.",
+    "en": "That young man who works at the bakery always serves with a smile.",
+    "ru": "Тот молодой человек, который работает в пекарне, всегда обслуживает с улыбкой.",
+    "word_form": "muchacho"
+  },
+  {
+    "es_word": "niño",
+    "es": "El niño estaba jugando con la pelota en el parque toda la tarde.",
+    "en": "The boy was playing with the ball in the park all afternoon.",
+    "ru": "Мальчик играл с мячом в парке весь день.",
+    "word_form": "niño"
+  },
+  {
+    "es_word": "norteamericano",
+    "es": "El turista norteamericano se sorprendió al ver la arquitectura de Montevideo.",
+    "en": "The North American tourist was surprised to see the architecture of Montevideo.",
+    "ru": "Североамериканский турист был удивлен, увидев архитектуру Монтевидео.",
+    "word_form": "norteamericano"
+  },
+  {
+    "es_word": "nuevamente",
+    "es": "El profesor explicó el tema nuevamente para que todos lo entendieran bien.",
+    "en": "The teacher explained the topic again so that everyone would understand it well.",
+    "ru": "Учитель снова объяснил тему, чтобы все её хорошо поняли.",
+    "word_form": "nuevamente"
+  },
+  {
+    "es_word": "obtener",
+    "es": "Si estudiás mucho para el examen, vas a obtener los mejores resultados.",
+    "en": "If you study hard for the exam, you will get the best results.",
+    "ru": "Если ты будешь много учиться к экзамену, ты получишь лучшие результаты.",
+    "word_form": "obtener"
+  },
+  {
+    "es_word": "orinar",
+    "es": "El paciente necesita tomar mucha agua y orinar frecuentemente para recuperarse.",
+    "en": "The patient needs to drink a lot of water and urinate frequently to recover.",
+    "ru": "Пациенту необходимо пить много воды и часто мочиться, чтобы выздороветь.",
+    "word_form": "orinar"
+  },
+  {
+    "es_word": "pequeño",
+    "es": "El departamento que alquilamos en el centro es muy pequeño para cuatro personas.",
+    "en": "The apartment we rented downtown is too small for four people.",
+    "ru": "Квартира, которую мы сняли в центре, слишком мала для четырех человек.",
+    "word_form": "pequeño"
+  },
+  {
+    "es_word": "píldora",
+    "es": "El médico me indicó tomar una píldora para la presión todos los días.",
+    "en": "The doctor told me to take a blood pressure pill every day.",
+    "ru": "Врач велел мне каждый день принимать таблетку от давления.",
+    "word_form": "píldora"
+  },
+  {
+    "es_word": "profundar",
+    "es": "El profesor decidió profundar en la historia del arte durante la clase.",
+    "en": "The professor decided to delve deeper into the history of art during the class.",
+    "ru": "Профессор решил углубиться в историю искусств во время занятия.",
+    "word_form": "profundar"
+  },
+  {
+    "es_word": "recientemente",
+    "es": "Ellos compraron una computadora nueva recientemente para trabajar desde su casa.",
+    "en": "They recently bought a new computer to work from home.",
+    "ru": "Они недавно купили новый компьютер, чтобы работать из дома.",
+    "word_form": "recientemente"
+  },
+  {
+    "es_word": "refresco",
+    "es": "Por favor, comprá un refresco bien frío para la cena de esta noche.",
+    "en": "Please, buy a very cold soft drink for tonight's dinner.",
+    "ru": "Пожалуйста, купи очень холодную газировку для сегодняшнего ужина.",
+    "word_form": "refresco"
+  },
+  {
+    "es_word": "rostro",
+    "es": "La mujer se lavó el rostro con agua fría esta mañana.",
+    "en": "The woman washed her face with cold water this morning.",
+    "ru": "Женщина умыла лицо холодной водой сегодня утром.",
+    "word_form": "rostro"
+  },
+  {
+    "es_word": "salario",
+    "es": "Me ofrecieron un excelente salario en la nueva empresa de tecnología.",
+    "en": "They offered me an excellent salary at the new tech company.",
+    "ru": "Мне предложили отличную зарплату в новой технологической компании.",
+    "word_form": "salario"
+  },
+  {
+    "es_word": "sanidad",
+    "es": "El gobierno anunció nuevas medidas para mejorar la sanidad en los hospitales.",
+    "en": "The government announced new measures to improve public health in hospitals.",
+    "ru": "Правительство объявило о новых мерах по улучшению здравоохранения в больницах.",
+    "word_form": "sanidad"
+  },
+  {
+    "es_word": "sofá",
+    "es": "Mi perro siempre se duerme en el sofá cuando miramos la televisión.",
+    "en": "My dog always falls asleep on the sofa when we watch television.",
+    "ru": "Моя собака всегда засыпает на диване, когда мы смотрим телевизор.",
+    "word_form": "sofá"
+  },
+  {
+    "es_word": "solicitar",
+    "es": "Tenés que completar este formulario para solicitar la tarjeta de crédito.",
+    "en": "You have to fill out this form to apply for the credit card.",
+    "ru": "Тебе нужно заполнить эту форму, чтобы подать заявку на кредитную карту.",
+    "word_form": "solicitar"
+  },
+  {
+    "es_word": "tarta",
+    "es": "Mi abuela preparó una deliciosa tarta de manzana para el postre.",
+    "en": "My grandmother prepared a delicious apple pie for dessert.",
+    "ru": "Моя бабушка приготовила вкусный яблочный пирог на десерт.",
+    "word_form": "tarta"
+  },
+  {
+    "es_word": "trozo",
+    "es": "Siempre me gusta comer un trozo de torta de chocolate con el mate.",
+    "en": "I always like to eat a piece of chocolate cake with my mate.",
+    "ru": "Мне всегда нравится съесть кусок шоколадного торта с мате.",
+    "word_form": "trozo"
+  },
+  {
+    "es_word": "utilizar",
+    "es": "Podés utilizar mi celular para llamar a tu familia si lo necesitás.",
+    "en": "You can use my cell phone to call your family if you need it.",
+    "ru": "Ты можешь воспользоваться моим сотовым телефоном, чтобы позвонить семье, если тебе нужно.",
+    "word_form": "utilizar"
+  },
+  {
+    "es_word": "vaquero",
+    "es": "Me compré un pantalón vaquero azul oscuro para salir esta noche.",
+    "en": "I bought dark blue jeans to go out tonight.",
+    "ru": "Я купил темно-синие джинсы, чтобы пойти куда-нибудь сегодня вечером.",
+    "word_form": "vaquero"
+  },
+  {
+    "es_word": "wow",
+    "es": "¡Wow, la vista desde este balcón es verdaderamente espectacular!",
+    "en": "Wow, the view from this balcony is truly spectacular!",
+    "ru": "Вау, вид с этого балкона поистине впечатляющий!",
+    "word_form": "Wow"
+  }
+]
