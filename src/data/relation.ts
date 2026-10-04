@@ -1,23 +1,69 @@
-import { headword } from './headword'
+import { headword, type HeadwordSource } from './headword'
+import type { Localized, RioRegion, RioType } from './rio'
 import type { Word } from './types'
 
 /**
  * How a card relates its headword to the standard Spanish word. Normalized so the UI doesn't care
- * where the data came from; today only 'replacement' is derived (from legacy es_rioplatense).
+ * where the data came from (the typed overlay, or the legacy es_rioplatense field as a fallback).
  */
 export type Relation = {
-  type: 'replacement' | 'meaning_shift' | 'regional_only' | 'form'
+  type: RioType
+  /** The Rioplatense form leads the card: the standard word is shown as the secondary note. */
   standardWord?: string
-  note?: string
-  register?: string
+  /** The standard word keeps the headword (the example doesn't show the form): the Rioplatense form is a note. */
+  rioForm?: string
+  /** For the note line next to rioForm: where it is used. */
+  region?: RioRegion | null
+  altForm?: string
+  altRegion?: RioRegion | null
+  note?: Localized | null
+  /** What the word means in standard Spanish (meaning_shift only). */
+  stdMeaning?: Localized | null
 } | null
 
-export function relationFor(word: Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'>): Relation {
+export function relationFor(word: HeadwordSource): Relation {
   const head = headword(word)
-  if (head.form === 'rioplatense' && head.secondary) {
-    return { type: 'replacement', standardWord: head.secondary }
+  const rio = word.rio
+
+  if (!rio) {
+    // Legacy fallback: only the replacement shape can be derived from the free-text field.
+    if (head.form === 'rioplatense' && head.secondary) return { type: 'replacement', standardWord: head.secondary }
+    return null
   }
-  // TODO(data pass): derive 'meaning_shift' | 'regional_only' | 'form' once the dictionary carries
-  // explicit relation data (see the data audit: the legacy es_rioplatense field can't express them).
-  return null
+
+  const common = {
+    type: rio.type,
+    ...(rio.altForm ? { altForm: rio.altForm, altRegion: rio.altRegion } : {}),
+    ...(rio.notes ? { note: rio.notes } : {}),
+  }
+
+  if (rio.type === 'replacement') {
+    return head.form === 'rioplatense'
+      ? { ...common, standardWord: head.secondary ?? word.esWord }
+      : { ...common, rioForm: rio.form, region: rio.region }
+  }
+  // meaning_shift, regional_only, form: the headword stays es_word; the note (and for a shifted
+  // meaning, the standard one) explains the Rioplatense side.
+  return { ...common, ...(rio.type === 'meaning_shift' && rio.stdMeaning ? { stdMeaning: rio.stdMeaning } : {}) }
+}
+
+/** The region tag that belongs next to the headword: not for a replacement whose form is only a note (the note carries its own). */
+export function headwordRegion(word: HeadwordSource): RioRegion | null {
+  const rio = word.rio
+  if (!rio?.region) return null
+  if (rio.type === 'replacement' && headword(word).form !== 'rioplatense') return null
+  return rio.region
+}
+
+/**
+ * The translations to show. The overlay's override describes the Rioplatense headword (or, for
+ * meaning_shift / regional_only, the Rioplatense meaning), so a replacement whose headword stayed
+ * the standard word keeps the dictionary translation: "coger" must not show "to grab" alone.
+ */
+export function translationsFor(word: Word): { en: string; ru: string } {
+  const t = word.rio?.translation
+  const dictionary = { en: word.enTranslation, ru: word.ruTranslation }
+  if (!word.rio || !t) return dictionary
+  if (word.rio.type === 'replacement' && headword(word).form !== 'rioplatense') return dictionary
+  return { en: t.en || dictionary.en, ru: t.ru || dictionary.ru }
 }

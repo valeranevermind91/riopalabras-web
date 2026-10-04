@@ -4,6 +4,7 @@ export function makeWord(esWord: string, overrides: Partial<Word> = {}): Word {
   return Object.freeze({
     esWord,
     esRioplatense: null,
+    rio: null,
     enTranslation: 'x',
     ruTranslation: 'y',
     exampleSentence: '',

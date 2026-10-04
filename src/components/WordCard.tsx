@@ -1,9 +1,11 @@
 import { headword } from '../data/headword'
 import { posLabel, showPosBadge } from '../data/pos'
-import { relationFor } from '../data/relation'
+import { headwordRegion, relationFor, translationsFor } from '../data/relation'
+import type { Lang } from '../data/rio'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { HighlightedSentence } from './HighlightedSentence'
+import { RegionTag } from './RegionTag'
 import { RelationBlock } from './RelationBlock'
 
 export function TranslationRow({ label, text }: { label: string; text: string }) {
@@ -29,8 +31,9 @@ export function ExampleBlock({ word }: { word: Word }) {
 }
 
 /** A word's full card. Shared by Learn now; Review and the Words tab reuse it. */
-export function WordCard({ word }: { word: Word }) {
+export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
   const head = headword(word)
+  const translations = translationsFor(word)
 
   return (
     <article className="word-card">
@@ -39,12 +42,13 @@ export function WordCard({ word }: { word: Word }) {
       <div className="wc-meta">
         {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         {head.form === 'rioplatense' && <span className="wc-rio">{strings.card.rioplatensePill}</span>}
+        <RegionTag region={headwordRegion(word)} lang={lang} />
       </div>
 
-      <RelationBlock relation={relationFor(word)} />
+      <RelationBlock relation={relationFor(word)} lang={lang} />
 
-      <TranslationRow label={strings.card.en} text={word.enTranslation} />
-      <TranslationRow label={strings.card.ru} text={word.ruTranslation} />
+      <TranslationRow label={strings.card.en} text={translations.en} />
+      <TranslationRow label={strings.card.ru} text={translations.ru} />
 
       <ExampleBlock word={word} />
     </article>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
+import { langFromSettings } from '../data/rio'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { buildReviewSession, createRater } from '../data/review'
 import type { UserData } from '../data/useUserData'
@@ -157,7 +158,7 @@ export function ReviewScreen({ data, queue, onHome, onLearn, onBack, registerLea
       </div>
 
       <div className="review-slot">
-        <ReviewCard key={index} word={word} revealed={revealed} onReveal={reveal} />
+        <ReviewCard key={index} word={word} lang={langFromSettings(data.settings)} revealed={revealed} onReveal={reveal} />
       </div>
 
       {revealed && <RatingButtons word={word} onRate={onRate} />}

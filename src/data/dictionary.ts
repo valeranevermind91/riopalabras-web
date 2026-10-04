@@ -1,7 +1,9 @@
+import { parseRioOverlay, type RioInfo } from './rio'
 import type { Word } from './types'
 import { wordKey } from './words'
 
 const DICTIONARY_URL = '/words_enriched.json'
+const RIO_OVERLAY_URL = '/rio_overlay.json'
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value : ''
@@ -11,7 +13,7 @@ function optionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-function toBaseWord(entry: unknown): Word | null {
+function toBaseWord(entry: unknown, rio: ReadonlyMap<string, RioInfo> | null): Word | null {
   if (!entry || typeof entry !== 'object') return null
   const e = entry as Record<string, unknown>
 
@@ -21,7 +23,9 @@ function toBaseWord(entry: unknown): Word | null {
 
   return Object.freeze({
     esWord,
-    esRioplatense: optionalText(e.es_rioplatense),
+    // With the typed overlay loaded, it replaces the legacy free-text field for every dictionary word.
+    esRioplatense: rio ? null : optionalText(e.es_rioplatense),
+    rio: rio?.get(wordKey(esWord)) ?? null,
     enTranslation: text(e.en_translation),
     ruTranslation: text(e.ru_translation),
     exampleSentence: text(e.example_sentence),
@@ -43,14 +47,17 @@ function toBaseWord(entry: unknown): Word | null {
   })
 }
 
-/** Validates the raw JSON array and returns frozen base words, skipping malformed and duplicate entries. */
-export function parseDictionary(raw: unknown): readonly Word[] {
+/**
+ * Validates the raw JSON array and returns frozen base words, skipping malformed and duplicate entries.
+ * `rio` is the parsed Rioplatense overlay; without it (null: it failed to load) the legacy es_rioplatense field is kept.
+ */
+export function parseDictionary(raw: unknown, rio: ReadonlyMap<string, RioInfo> | null = null): readonly Word[] {
   if (!Array.isArray(raw)) throw new Error('Dictionary is not a JSON array')
 
   const seen = new Set<string>()
   const words: Word[] = []
   for (const entry of raw) {
-    const word = toBaseWord(entry)
+    const word = toBaseWord(entry, rio)
     if (!word) continue
     const key = wordKey(word.esWord)
     if (seen.has(key)) continue
@@ -62,7 +69,7 @@ export function parseDictionary(raw: unknown): readonly Word[] {
   return Object.freeze(words)
 }
 
-async function fetchDictionary(): Promise<readonly Word[]> {
+async function fetchRawDictionary(): Promise<unknown> {
   let res: Response
   try {
     res = await fetch(DICTIONARY_URL)
@@ -77,7 +84,24 @@ async function fetchDictionary(): Promise<readonly Word[]> {
   } catch {
     throw new Error(`${DICTIONARY_URL} did not return JSON — is it deployed in public/?`)
   }
-  return parseDictionary(raw)
+  return raw
+}
+
+/** Never throws: if the overlay can't be loaded the app runs on the legacy field instead. */
+async function fetchRioOverlay(): Promise<ReadonlyMap<string, RioInfo> | null> {
+  try {
+    const res = await fetch(RIO_OVERLAY_URL)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return parseRioOverlay(await res.json())
+  } catch (err) {
+    console.warn('Rioplatense overlay unavailable, using the legacy field:', err)
+    return null
+  }
+}
+
+async function fetchDictionary(): Promise<readonly Word[]> {
+  const [raw, rio] = await Promise.all([fetchRawDictionary(), fetchRioOverlay()])
+  return parseDictionary(raw, rio)
 }
 
 // One download per page load; callers (prefetch + consumer) share the same promise.

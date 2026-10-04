@@ -1,21 +1,43 @@
+import { pickLocalized, type Lang } from '../data/rio'
 import type { Relation } from '../data/relation'
 import { strings } from '../strings'
+import { RegionTag } from './RegionTag'
 
-export function RelationBlock({ relation }: { relation: Relation }) {
+export function RelationBlock({ relation, lang }: { relation: Relation; lang: Lang }) {
   if (!relation) return null
 
-  switch (relation.type) {
-    case 'replacement':
-      return relation.standardWord ? (
-        <p className="wc-relation">
+  const t = strings.rio[lang]
+  const note = pickLocalized(relation.note ?? null, lang)
+  const stdMeaning = pickLocalized(relation.stdMeaning ?? null, lang)
+  if (!relation.standardWord && !relation.rioForm && !relation.altForm && !stdMeaning && !note) return null
+
+  return (
+    <div className="wc-relation">
+      {relation.standardWord && (
+        <p>
           {strings.card.standardWord}: <span>{relation.standardWord}</span>
         </p>
-      ) : null
-
-    // TODO(data pass): 'meaning_shift' (same word, different sense), 'regional_only' (no standard
-    // equivalent) and 'form' (conjugation/inflection note) get their UI here once the dictionary
-    // carries that data. Intentionally no placeholder markup until then.
-    default:
-      return null
-  }
+      )}
+      {relation.rioForm && (
+        <p>
+          {t.rioplatense}: <span>{relation.rioForm}</span> <RegionTag region={relation.region} lang={lang} />
+        </p>
+      )}
+      {relation.altForm && (
+        <p>
+          {t.also}: <span>{relation.altForm}</span> <RegionTag region={relation.altRegion} lang={lang} />
+        </p>
+      )}
+      {stdMeaning && (
+        <p>
+          {t.standardMeaning}: <span>{stdMeaning}</span>
+        </p>
+      )}
+      {note && (
+        <p className="wc-note">
+          <span>{t.note}:</span> {note}
+        </p>
+      )}
+    </div>
+  )
 }

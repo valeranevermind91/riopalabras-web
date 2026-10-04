@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordCard } from '../components/WordCard'
+import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
 import { createBatchFinisher, selectLearnBatch } from '../data/learn'
 import type { UserData } from '../data/useUserData'
@@ -134,7 +135,7 @@ export function LearnScreen({ data, client, userId, onHome, onReview, onBack, re
 
       <div className="swipe-area" style={swipe.style} {...swipe.handlers}>
         <div key={index} className={`card-enter card-enter-${direction}`}>
-          <WordCard word={words[index]} />
+          <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
         </div>
       </div>
 

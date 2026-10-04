@@ -1,10 +1,13 @@
+import { findFormRange, type FormRange } from './rio'
 import type { Word } from './types'
 
 // Which Spanish form a card leads with, and which word in the example sentence to highlight.
-// The Rioplatense form leads only when the data proves it: a clean value, genuinely different from
-// the standard word, and actually demonstrated by the example sentence's target form.
+// The Rioplatense form leads only when the data proves it. With the typed overlay: a replacement whose
+// form (or an inflection of it) appears in the example sentence. Without it (the overlay failed to
+// load, or a custom word): the legacy rule, a clean es_rioplatense value genuinely different from the
+// standard word and actually demonstrated by the example sentence's target form.
 
-type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'>
+export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> & Partial<Pick<Word, 'rio' | 'pos' | 'exampleSentence'>>
 type HighlightSource = HeadwordSource & Pick<Word, 'exampleSentence'>
 
 export type HeadwordForm = 'rioplatense' | 'standard'
@@ -54,7 +57,24 @@ export function formMatches(wordForm: string | null, variant: string): boolean {
   return prefix >= 3 && prefix >= Math.min(a.length, b.length) - 2
 }
 
+/** The overlay replacement form leads only if the example sentence shows it, as written or inflected. */
+function overlayHeadword(word: HeadwordSource): Headword {
+  const rio = word.rio
+  if (
+    rio &&
+    rio.type === 'replacement' &&
+    isCleanVariant(rio.form) &&
+    lower(rio.form) !== lower(word.esWord) &&
+    findFormRange(stripEmphasisMarkers(word.exampleSentence ?? ''), rio.form, word.pos)
+  ) {
+    return { text: rio.form, form: 'rioplatense', secondary: word.esWord }
+  }
+  return { text: word.esWord, form: 'standard', secondary: null }
+}
+
 export function headword(word: HeadwordSource): Headword {
+  if (word.rio) return overlayHeadword(word)
+
   const rio = word.esRioplatense?.trim() ?? ''
   const useRio =
     rio !== '' &&
@@ -103,20 +123,27 @@ export function highlightTarget(word: HighlightSource): HighlightResult {
   const sentence = stripEmphasisMarkers(word.exampleSentence)
   const head = headword(word)
 
-  const other =
-    head.form === 'rioplatense'
-      ? word.esWord
-      : word.esRioplatense && isCleanVariant(word.esRioplatense)
-        ? word.esRioplatense.trim()
-        : null
+  // The other forms worth trying after the headword: the standard word on a Rioplatense-first card,
+  // otherwise the Rioplatense form(s), from the overlay or from the legacy field.
+  const others: string[] = []
+  if (head.form === 'rioplatense') others.push(word.esWord)
+  else if (word.rio) others.push(word.rio.form, ...(word.rio.altForm ? [word.rio.altForm] : []))
+  else if (word.esRioplatense && isCleanVariant(word.esRioplatense)) others.push(word.esRioplatense.trim())
 
   const candidates: string[] = []
-  for (const term of [word.wordFormInExample?.trim() ?? '', head.text, other ?? '']) {
+  for (const term of [word.wordFormInExample?.trim() ?? '', head.text, ...others]) {
     if (term && !candidates.some((c) => lower(c) === lower(term))) candidates.push(term)
   }
 
   for (const term of candidates) {
     const range = findWholeWord(sentence, term)
+    if (range) return { sentence, range }
+  }
+  // Overlay forms also match inflected: the term is the headword or one of the Rioplatense forms.
+  const rioForms = word.rio ? [word.rio.form, ...(word.rio.altForm ? [word.rio.altForm] : [])].map(lower) : []
+  for (const term of candidates) {
+    if (!rioForms.includes(lower(term))) continue
+    const range: FormRange | null = findFormRange(sentence, term, word.pos)
     if (range) return { sentence, range }
   }
   for (const term of candidates) {

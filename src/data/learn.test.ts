@@ -23,6 +23,7 @@ function synthetic(esWord: string, rank: number, overrides: Partial<Word> = {}):
   return Object.freeze({
     esWord,
     esRioplatense: null,
+    rio: null,
     enTranslation: 'x',
     ruTranslation: 'y',
     exampleSentence: '',

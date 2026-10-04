@@ -1,6 +1,11 @@
+import type { RioInfo } from './rio'
+
 export interface Word {
   readonly esWord: string
+  /** Legacy free-text Rioplatense form. Only set when the typed overlay failed to load (or for custom words). */
   readonly esRioplatense: string | null
+  /** The typed Rioplatense overlay entry, when the word has an accepted one. */
+  readonly rio: RioInfo | null
   readonly enTranslation: string
   readonly ruTranslation: string
   readonly exampleSentence: string

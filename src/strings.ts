@@ -77,6 +77,26 @@ export const strings = {
     ru: 'RU',
   },
 
+  // Labels for the Rioplatense overlay, in the language the user reads (see langFromSettings).
+  rio: {
+    en: {
+      rioplatense: 'Rioplatense',
+      also: 'also',
+      note: 'Note',
+      standardMeaning: 'Standard meaning',
+      tag: { uy: 'UY', ar: 'AR' },
+      tagTitle: { uy: 'Used in Uruguay', ar: 'Used in Argentina' },
+    },
+    ru: {
+      rioplatense: 'Риоплатский вариант',
+      also: 'также',
+      note: 'Заметка',
+      standardMeaning: 'Обычное значение',
+      tag: { uy: 'UY', ar: 'AR' },
+      tagTitle: { uy: 'Используется в Уругвае', ar: 'Используется в Аргентине' },
+    },
+  },
+
   pos: {
     v: 'Verb',
     n: 'Noun',

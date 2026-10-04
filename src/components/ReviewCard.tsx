@@ -1,13 +1,16 @@
 import type { KeyboardEvent } from 'react'
 import { headword } from '../data/headword'
-import { relationFor } from '../data/relation'
+import { headwordRegion, relationFor, translationsFor } from '../data/relation'
+import type { Lang } from '../data/rio'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
+import { RegionTag } from './RegionTag'
 import { RelationBlock } from './RelationBlock'
 import { ExampleBlock, TranslationRow } from './WordCard'
 
 interface ReviewCardProps {
   word: Word
+  lang: Lang
   revealed: boolean
   onReveal: () => void
 }
@@ -17,8 +20,10 @@ interface ReviewCardProps {
  * there is no flipping back — and `revealed` flips immediately, so whatever depends on it (the
  * rating buttons) appears at the tap, not after the 450 ms animation.
  */
-export function ReviewCard({ word, revealed, onReveal }: ReviewCardProps) {
+export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) {
   const head = headword(word)
+  const translations = translationsFor(word)
+  const region = headwordRegion(word)
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (revealed || (e.key !== 'Enter' && e.key !== ' ')) return
@@ -40,15 +45,21 @@ export function ReviewCard({ word, revealed, onReveal }: ReviewCardProps) {
           <div className="rf-center">
             <h2 className="wc-headword rf-headword">{head.text}</h2>
             {head.form === 'rioplatense' && <span className="wc-rio">{strings.card.rioplatensePill}</span>}
+            <RegionTag region={region} lang={lang} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
 
         <div className="flip-face flip-back word-card" aria-hidden={!revealed} inert={!revealed}>
           <h2 className="wc-headword rb-headword">{head.text}</h2>
-          <RelationBlock relation={relationFor(word)} />
-          <TranslationRow label={strings.card.en} text={word.enTranslation} />
-          <TranslationRow label={strings.card.ru} text={word.ruTranslation} />
+          {region && (
+            <div className="wc-meta rb-meta">
+              <RegionTag region={region} lang={lang} />
+            </div>
+          )}
+          <RelationBlock relation={relationFor(word)} lang={lang} />
+          <TranslationRow label={strings.card.en} text={translations.en} />
+          <TranslationRow label={strings.card.ru} text={translations.ru} />
           <ExampleBlock word={word} />
         </div>
       </div>
