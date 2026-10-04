@@ -44,7 +44,7 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
         <div className="flip-face flip-front word-card" aria-hidden={revealed}>
           <div className="rf-center">
             <h2 className="wc-headword rf-headword">{head.text}</h2>
-            {head.form === 'rioplatense' && <span className="wc-rio">{strings.card.rioplatensePill}</span>}
+            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio[lang].pill}</span>}
             <RegionTag region={region} lang={lang} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>

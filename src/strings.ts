@@ -75,8 +75,6 @@ export const strings = {
   },
 
   card: {
-    rioplatensePill: 'rioplatense',
-    standardWord: 'estándar',
     en: 'EN',
     ru: 'RU',
   },
@@ -84,16 +82,23 @@ export const strings = {
   // Labels for the Rioplatense overlay, in the language the user reads (see langFromSettings).
   rio: {
     en: {
+      pill: 'Rioplatense',
       rioplatense: 'Rioplatense',
       also: 'also',
+      standard: 'standard',
+      // std_usage as a soft hint after the standard word; less_common says nothing
+      stdUsageHint: { equally_used: 'also common', less_common: null, not_used: 'rarely used here' } as Record<string, string | null>,
       note: 'Note',
       standardMeaning: 'Standard meaning',
       tag: { uy: 'UY', ar: 'AR' },
       tagTitle: { uy: 'Used in Uruguay', ar: 'Used in Argentina' },
     },
     ru: {
+      pill: 'риоплатский',
       rioplatense: 'Риоплатский вариант',
       also: 'также',
+      standard: 'стандарт',
+      stdUsageHint: { equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' } as Record<string, string | null>,
       note: 'Заметка',
       standardMeaning: 'Обычное значение',
       tag: { uy: 'UY', ar: 'AR' },
@@ -161,6 +166,7 @@ export const strings = {
         esWord: 'es_word',
         posRank: 'pos / rank',
         overlay: 'overlay type / form / region / status',
+        stdUsage: 'std_usage (is es_word used? decides its label)',
         alt: 'alt form (region)',
         registerConfidence: 'register / confidence',
         legacy: 'legacy es_rioplatense',

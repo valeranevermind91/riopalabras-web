@@ -5,6 +5,8 @@
 export type RioType = 'replacement' | 'meaning_shift' | 'regional_only' | 'form'
 export type RioRegion = 'uy' | 'ar'
 export type Lang = 'en' | 'ru'
+/** Is the standard word itself used in everyday Rioplatense speech? Decides how a card labels it. */
+export type StdUsage = 'not_used' | 'less_common' | 'equally_used'
 
 export interface Localized {
   readonly en: string
@@ -33,6 +35,8 @@ export interface RioInfo {
   readonly stdMeaning: Localized | null
   /** Replaces the dictionary translation where it applies (see translationsFor). */
   readonly translation: Localized | null
+  /** For a replacement: is es_word itself used in everyday speech there? Null when unknown or not applicable. */
+  readonly stdUsage: StdUsage | null
   /** When present it replaces the dictionary example on the card. */
   readonly example: RioExample | null
   readonly confidence: string
@@ -40,6 +44,8 @@ export interface RioInfo {
 
 const TYPES: readonly string[] = ['replacement', 'meaning_shift', 'regional_only', 'form']
 
+const STD_USAGES: readonly string[] = ['not_used', 'less_common', 'equally_used']
+const stdUsage = (v: unknown): StdUsage | null => (typeof v === 'string' && STD_USAGES.includes(v) ? (v as StdUsage) : null)
 const clean = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 const region = (v: unknown): RioRegion | null => (v === 'uy' || v === 'ar' ? v : null)
 
@@ -124,6 +130,7 @@ export function parseRioOverlay(raw: unknown): ReadonlyMap<string, RioInfo> {
       notes: localized(e.notes),
       stdMeaning: localized(e.std_meaning),
       translation: localized(e.translation),
+      stdUsage: stdUsage(e.std_usage),
       example: parseExample(e.example),
       confidence: clean(e.confidence) ?? 'medium',
     })

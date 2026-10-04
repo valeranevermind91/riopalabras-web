@@ -63,6 +63,7 @@ function RawBlock({ word }: { word: Word }) {
       <Row label={r.overlay}>
         {rio ? `${rio.type} / ${rio.form} / ${rio.region ?? 'both'} / ${t.status}` : t.noOverlay}
       </Row>
+      <Row label={r.stdUsage}>{rio ? (rio.stdUsage ?? t.none) : t.none}</Row>
       <Row label={r.alt}>{rio?.altForm ? `${rio.altForm} (${rio.altRegion ?? '-'})` : t.none}</Row>
       <Row label={r.registerConfidence}>{rio ? `${rio.register} / ${rio.confidence}` : t.none}</Row>
       <Row label={r.legacy}>{word.esRioplatense ?? t.none}</Row>

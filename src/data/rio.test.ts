@@ -598,6 +598,59 @@ describe('fallback examples (pass 3)', () => {
   }, 30_000)
 })
 
+describe('std_usage (is the standard word used in everyday speech?)', () => {
+  const replacements = words.filter((w) => w.rio?.type === 'replacement')
+
+  it('every replacement carries it, and no other type does', () => {
+    expect(replacements).toHaveLength(63)
+    expect(replacements.filter((w) => w.rio!.stdUsage === null).map((w) => w.esWord)).toEqual([])
+    expect(words.filter((w) => w.rio && w.rio.type !== 'replacement' && w.rio.stdUsage !== null)).toEqual([])
+  })
+
+  it('splits after the manual decisions: 8 not_used (unambiguously Peninsular-only words), 51 less_common, 4 equally_used', () => {
+    const count = (u: string) => replacements.filter((w) => w.rio!.stdUsage === u).length
+    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([8, 51, 4])
+    expect(replacements.filter((w) => w.rio!.stdUsage === 'not_used').map((w) => w.esWord).sort()).toEqual(['aparcar', 'chaval', 'gilipollas', 'guay', 'ordenador', 'patata', 'vosotros', 'vuestro'])
+    // words that also exist in the region in another sense, or are used there, are never "rarely used here"
+    for (const w of ['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón', 'pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'autobús', 'piscina', 'gasolina']) {
+      expect(entry(w).rio!.stdUsage, w).toBe('less_common')
+    }
+  })
+
+  it('reaches the relation: the switched headword carries it, a plain word has none', () => {
+    expect(relationFor(entry('ordenador'))).toMatchObject({ standardWord: 'ordenador', standardUsage: 'not_used' })
+    expect(relationFor(entry('autobús'))).toMatchObject({ standardWord: 'autobús', standardUsage: 'less_common' })
+    expect(relationFor(entry('pastel'))).toMatchObject({ standardUsage: 'less_common' }) // overridden by hand
+    expect(relationFor(entry('chico'))).toMatchObject({ standardWord: 'chico', standardUsage: 'equally_used' })
+    expect(relationFor(entry('periódico'))).toMatchObject({ standardUsage: 'less_common' })
+  })
+
+  it('parses only the three known values', () => {
+    const u = (v: unknown) => parseRioOverlay([{ es_word: 'x', rio_type: 'replacement', rio_form: 'y', std_usage: v }]).get('x')?.stdUsage
+    expect(u('not_used')).toBe('not_used')
+    expect(u('less_common')).toBe('less_common')
+    expect(u('equally_used')).toBe('equally_used')
+    expect(u('sometimes')).toBeNull()
+    expect(u(undefined)).toBeNull()
+    expect(u(3)).toBeNull()
+  })
+
+  it('has the labels in both languages, no Spanish word as UI chrome and no geography claim', () => {
+    for (const lang of ['en', 'ru'] as const) {
+      expect(strings.rio[lang].standard.length).toBeGreaterThan(0)
+      expect(strings.rio[lang].also.length).toBeGreaterThan(0)
+      expect(strings.rio[lang].pill.length).toBeGreaterThan(0)
+    }
+    expect(strings.rio.en.standard).toBe('standard')
+    expect(strings.rio.ru.standard).toBe('стандарт')
+    expect(strings.rio.en.stdUsageHint).toEqual({ equally_used: 'also common', less_common: null, not_used: 'rarely used here' })
+    expect(strings.rio.ru.stdUsageHint).toEqual({ equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' })
+    expect(strings.rio.en).not.toHaveProperty('inSpain')
+    expect(JSON.stringify(strings.card)).not.toMatch(/estándar|rioplatense/i)
+    expect(JSON.stringify(strings.rio)).not.toMatch(/estándar/i)
+  })
+})
+
 describe('standard meaning shows its first gloss only', () => {
   it.each([
     ['focus, spotlight', 'focus'],

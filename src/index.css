@@ -359,6 +359,11 @@ dd {
   margin: 0 0 4px;
 }
 
+.wc-relation .wc-hint {
+  color: var(--tg-hint-color);
+  font-weight: 400;
+}
+
 .wc-relation .wc-note {
   margin-top: 8px;
   font-style: italic;

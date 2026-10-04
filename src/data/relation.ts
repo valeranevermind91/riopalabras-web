@@ -1,5 +1,5 @@
 import { headword, type HeadwordSource } from './headword'
-import type { Localized, RioRegion, RioType } from './rio'
+import type { Localized, RioRegion, RioType, StdUsage } from './rio'
 import type { Word } from './types'
 
 /**
@@ -10,6 +10,8 @@ export type Relation = {
   type: RioType
   /** The Rioplatense form leads the card: the standard word is shown as the secondary note. */
   standardWord?: string
+  /** How common the standard word is: only a soft hint shown after it ("also common", "rarely used here"), never a claim about geography. Absent when unknown. */
+  standardUsage?: StdUsage | null
   /** The standard word keeps the headword (the example doesn't show the form): the Rioplatense form is a note. */
   rioForm?: string
   /** For the note line next to rioForm: where it is used. */
@@ -39,7 +41,7 @@ export function relationFor(word: HeadwordSource): Relation {
 
   if (rio.type === 'replacement') {
     return head.form === 'rioplatense'
-      ? { ...common, standardWord: head.secondary ?? word.esWord }
+      ? { ...common, standardWord: head.secondary ?? word.esWord, standardUsage: rio.stdUsage }
       : { ...common, rioForm: rio.form, region: rio.region }
   }
   // meaning_shift, regional_only, form: the headword stays es_word; the note (and for a shifted

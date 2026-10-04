@@ -42,7 +42,7 @@ export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
 
       <div className="wc-meta">
         {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
-        {head.form === 'rioplatense' && <span className="wc-rio">{strings.card.rioplatensePill}</span>}
+        {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio[lang].pill}</span>}
         <RegionTag region={headwordRegion(word)} lang={lang} />
       </div>
 

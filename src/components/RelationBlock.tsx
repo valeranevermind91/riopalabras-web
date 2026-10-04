@@ -8,6 +8,8 @@ export function RelationBlock({ relation, lang }: { relation: Relation; lang: La
 
   const t = strings.rio[lang]
   const note = pickLocalized(relation.note ?? null, lang)
+  // how common the standard word is: a soft hint after it, never a claim about where it is used
+  const hint = relation.standardUsage ? (t.stdUsageHint[relation.standardUsage] ?? null) : null
   const stdMeaningFull = pickLocalized(relation.stdMeaning ?? null, lang)
   const stdMeaning = stdMeaningFull ? firstGloss(stdMeaningFull) : null
   if (!relation.standardWord && !relation.rioForm && !relation.altForm && !stdMeaning && !note) return null
@@ -16,7 +18,8 @@ export function RelationBlock({ relation, lang }: { relation: Relation; lang: La
     <div className="wc-relation">
       {relation.standardWord && (
         <p>
-          {strings.card.standardWord}: <span>{relation.standardWord}</span>
+          {t.standard}: <span>{relation.standardWord}</span>
+          {hint && <span className="wc-hint"> · {hint}</span>}
         </p>
       )}
       {relation.rioForm && (
