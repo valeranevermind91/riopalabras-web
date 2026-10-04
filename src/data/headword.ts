@@ -7,7 +7,8 @@ import type { Word } from './types'
 // load, or a custom word): the legacy rule, a clean es_rioplatense value genuinely different from the
 // standard word and actually demonstrated by the example sentence's target form.
 
-export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> & Partial<Pick<Word, 'rio' | 'pos' | 'exampleSentence'>>
+export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> &
+  Partial<Pick<Word, 'rio' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu'>>
 type HighlightSource = HeadwordSource & Pick<Word, 'exampleSentence'>
 
 export type HeadwordForm = 'rioplatense' | 'standard'
@@ -57,37 +58,73 @@ export function formMatches(wordForm: string | null, variant: string): boolean {
   return prefix >= 3 && prefix >= Math.min(a.length, b.length) - 2
 }
 
+export interface EffectiveExample {
+  /** The example sentence with `**` markers removed. */
+  sentence: string
+  /** The exact form the example demonstrates, as stored with it. */
+  wordForm: string | null
+  en: string
+  ru: string
+  source: 'overlay' | 'dictionary'
+}
+
+/** The example a card shows: the overlay's pass-2 sentence when there is one, otherwise the dictionary's. */
+export function effectiveExample(word: HeadwordSource): EffectiveExample {
+  const overlay = word.rio?.example
+  if (overlay) return { sentence: stripEmphasisMarkers(overlay.es), wordForm: overlay.wordForm, en: overlay.en, ru: overlay.ru, source: 'overlay' }
+  return {
+    sentence: stripEmphasisMarkers(word.exampleSentence ?? ''),
+    wordForm: word.wordFormInExample?.trim() || null,
+    en: word.exampleTranslationEn ?? '',
+    ru: word.exampleTranslationRu ?? '',
+    source: 'dictionary',
+  }
+}
+
 export type HeadwordReason =
   | 'no-overlay'
   | 'legacy'
   | 'not-replacement'
   | 'unclean-form'
   | 'same-as-es-word'
-  | 'sentence-has-form'
-  | 'sentence-lacks-form'
+  | 'overlay-example-has-form'
+  | 'dictionary-example-has-form'
+  | 'no-example-has-form'
 
 export interface HeadwordDecision {
   switched: boolean
   reason: HeadwordReason
-  /** The text in the sentence that proved the form (as written there), when it switched through the overlay. */
+  /** The text in the shown example that proved the form (as written there), when the overlay switched the headword. */
   matched: string | null
+  /** Which example the card shows. */
+  exampleSource: 'overlay' | 'dictionary'
 }
 
-/** Why a card leads with the Rioplatense form or not. `headword()` is built on this, so the explanation cannot drift. */
+/**
+ * Why a card leads with the Rioplatense form or not. `headword()` is built on this, so the explanation cannot drift.
+ * A replacement ALWAYS leads with its form, provided the example the card shows (the overlay's, else the
+ * dictionary's) contains it. If neither does (a pass-2 failure), the standard word keeps the headword and the
+ * form is shown as a note, so no card leads with a word that is not visible in its sentence.
+ */
 export function headwordDecision(word: HeadwordSource): HeadwordDecision {
+  const example = effectiveExample(word)
   const rio = word.rio
+  const base = { matched: null, exampleSource: example.source } as const
   if (!rio) {
-    if (word.esRioplatense) return { switched: legacyHeadword(word) !== null, reason: 'legacy', matched: null }
-    return { switched: false, reason: 'no-overlay', matched: null }
+    if (word.esRioplatense) return { ...base, switched: legacyHeadword(word) !== null, reason: 'legacy' }
+    return { ...base, switched: false, reason: 'no-overlay' }
   }
-  if (rio.type !== 'replacement') return { switched: false, reason: 'not-replacement', matched: null }
-  if (!isCleanVariant(rio.form)) return { switched: false, reason: 'unclean-form', matched: null }
-  if (lower(rio.form) === lower(word.esWord)) return { switched: false, reason: 'same-as-es-word', matched: null }
-  const sentence = stripEmphasisMarkers(word.exampleSentence ?? '')
-  const range = findFormRange(sentence, rio.form, word.pos)
-  return range
-    ? { switched: true, reason: 'sentence-has-form', matched: sentence.slice(range.start, range.end) }
-    : { switched: false, reason: 'sentence-lacks-form', matched: null }
+  if (rio.type !== 'replacement') return { ...base, switched: false, reason: 'not-replacement' }
+  if (!isCleanVariant(rio.form)) return { ...base, switched: false, reason: 'unclean-form' }
+  if (lower(rio.form) === lower(word.esWord)) return { ...base, switched: false, reason: 'same-as-es-word' }
+  const range = findFormRange(example.sentence, rio.form, word.pos)
+  if (!range) return { ...base, switched: false, reason: 'no-example-has-form' }
+  return {
+    switched: true,
+    reason: example.source === 'overlay' ? 'overlay-example-has-form' : 'dictionary-example-has-form',
+    matched: example.sentence.slice(range.start, range.end),
+    exampleSource: example.source,
+  }
 }
 
 /** The legacy rule: a clean es_rioplatense value, different from es_word, shown by the example's word form. */
@@ -143,7 +180,8 @@ function findWordStart(sentence: string, term: string): HighlightRange | null {
  * Never falls straight back to the standard word on a Rioplatense-first card.
  */
 export function highlightTarget(word: HighlightSource): HighlightResult {
-  const sentence = stripEmphasisMarkers(word.exampleSentence)
+  const example = effectiveExample(word)
+  const sentence = example.sentence
   const head = headword(word)
 
   // The other forms worth trying after the headword: the standard word on a Rioplatense-first card,
@@ -154,7 +192,7 @@ export function highlightTarget(word: HighlightSource): HighlightResult {
   else if (word.esRioplatense && isCleanVariant(word.esRioplatense)) others.push(word.esRioplatense.trim())
 
   const candidates: string[] = []
-  for (const term of [word.wordFormInExample?.trim() ?? '', head.text, ...others]) {
+  for (const term of [example.wordForm ?? '', head.text, ...others]) {
     if (term && !candidates.some((c) => lower(c) === lower(term))) candidates.push(term)
   }
 

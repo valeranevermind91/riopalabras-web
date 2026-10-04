@@ -1,4 +1,4 @@
-import { pickLocalized, type Lang } from '../data/rio'
+import { firstGloss, pickLocalized, type Lang } from '../data/rio'
 import type { Relation } from '../data/relation'
 import { strings } from '../strings'
 import { RegionTag } from './RegionTag'
@@ -8,7 +8,8 @@ export function RelationBlock({ relation, lang }: { relation: Relation; lang: La
 
   const t = strings.rio[lang]
   const note = pickLocalized(relation.note ?? null, lang)
-  const stdMeaning = pickLocalized(relation.stdMeaning ?? null, lang)
+  const stdMeaningFull = pickLocalized(relation.stdMeaning ?? null, lang)
+  const stdMeaning = stdMeaningFull ? firstGloss(stdMeaningFull) : null
   if (!relation.standardWord && !relation.rioForm && !relation.altForm && !stdMeaning && !note) return null
 
   return (

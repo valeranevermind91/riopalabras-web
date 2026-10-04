@@ -71,16 +71,27 @@ describe('searchWords', () => {
 describe('headwordDecision (what the preview explains)', () => {
   const by = (w: string) => words.find((x) => x.esWord === w)!
   it.each([
-    ['aquí', true, 'sentence-has-form', 'acá'],
-    ['cigarrillo', false, 'sentence-lacks-form', null],
-    ['guapo', false, 'not-replacement', null],
-    ['mona', false, 'no-overlay', null],
-  ])('%s → switched %s (%s)', (esWord, switched, reason, matched) => {
-    expect(headwordDecision(by(esWord))).toEqual({ switched, reason, matched })
+    ['aquí', true, 'dictionary-example-has-form', 'acá', 'dictionary'],
+    ['metro', true, 'dictionary-example-has-form', 'subte', 'dictionary'],
+    ['cigarrillo', true, 'overlay-example-has-form', 'pucho', 'overlay'],
+    ['autobús', true, 'overlay-example-has-form', 'ómnibus', 'overlay'],
+    ['guapo', false, 'not-replacement', null, 'overlay'],
+    ['foco', false, 'not-replacement', null, 'overlay'],
+    ['tú', true, 'overlay-example-has-form', 'Vos', 'overlay'],
+    ['contigo', true, 'overlay-example-has-form', 'con vos', 'overlay'],
+    ['mona', false, 'no-overlay', null, 'dictionary'],
+  ])('%s → switched %s (%s)', (esWord, switched, reason, matched, exampleSource) => {
+    expect(headwordDecision(by(esWord))).toEqual({ switched, reason, matched, exampleSource })
+  })
+
+  it('reports the pass-2 fallback when neither example contains the form', () => {
+    const base = by('cigarrillo')
+    const failed = { ...base, rio: { ...base.rio!, example: null } }
+    expect(headwordDecision(failed)).toEqual({ switched: false, reason: 'no-example-has-form', matched: null, exampleSource: 'dictionary' })
   })
 
   it('reports the legacy rule when only the old field is present', () => {
     const legacy = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8'))).find((w) => w.esWord === 'periódico')!
-    expect(headwordDecision(legacy)).toEqual({ switched: true, reason: 'legacy', matched: null })
+    expect(headwordDecision(legacy)).toEqual({ switched: true, reason: 'legacy', matched: null, exampleSource: 'dictionary' })
   })
 })

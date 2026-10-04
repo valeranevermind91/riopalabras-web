@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadDictionary } from '../data/dictionary'
-import { headword, headwordDecision, highlightTarget, stripEmphasisMarkers, type HeadwordDecision } from '../data/headword'
+import { effectiveExample, headword, headwordDecision, highlightTarget, type HeadwordDecision } from '../data/headword'
 import { translationsFor } from '../data/relation'
 import { type Lang } from '../data/rio'
 import { searchWords } from '../data/search'
@@ -25,10 +25,12 @@ function explain(word: Word, decision: HeadwordDecision): string {
       return r['unclean-form']
     case 'same-as-es-word':
       return r['same-as-es-word']
-    case 'sentence-has-form':
-      return r['sentence-has-form'](word.rio?.form ?? '', decision.matched ?? '')
-    case 'sentence-lacks-form':
-      return r['sentence-lacks-form'](word.rio?.form ?? '')
+    case 'overlay-example-has-form':
+      return r['overlay-example-has-form'](word.rio?.form ?? '', decision.matched ?? '')
+    case 'dictionary-example-has-form':
+      return r['dictionary-example-has-form'](word.rio?.form ?? '', decision.matched ?? '')
+    case 'no-example-has-form':
+      return r['no-example-has-form'](word.rio?.form ?? '')
   }
 }
 
@@ -45,6 +47,7 @@ function RawBlock({ word }: { word: Word }) {
   const head = headword(word)
   const decision = headwordDecision(word)
   const translations = translationsFor(word)
+  const example = effectiveExample(word)
   const highlight = highlightTarget(word)
   const highlighted = highlight.range ? highlight.sentence.slice(highlight.range.start, highlight.range.end) : null
   const overridden = translations.en !== word.enTranslation || translations.ru !== word.ruTranslation
@@ -64,7 +67,13 @@ function RawBlock({ word }: { word: Word }) {
       <Row label={r.registerConfidence}>{rio ? `${rio.register} / ${rio.confidence}` : t.none}</Row>
       <Row label={r.legacy}>{word.esRioplatense ?? t.none}</Row>
       <Row label={r.wordForm}>{word.wordFormInExample ?? t.none}</Row>
-      <Row label={r.sentence}>{stripEmphasisMarkers(word.exampleSentence) || t.none}</Row>
+      <Row label={r.exampleUsed}>{t.exampleUsed[example.source]}</Row>
+      <Row label={r.sentence}>{example.sentence || t.none}</Row>
+      {example.source === 'overlay' && (
+        <Row label={r.overlayTranslations}>
+          {example.en} / {example.ru}
+        </Row>
+      )}
       <Row label={r.headword}>
         {head.text} ({head.form})
       </Row>

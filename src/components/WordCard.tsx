@@ -1,4 +1,4 @@
-import { headword } from '../data/headword'
+import { effectiveExample, headword } from '../data/headword'
 import { posLabel, showPosBadge } from '../data/pos'
 import { headwordRegion, relationFor, translationsFor } from '../data/relation'
 import type { Lang } from '../data/rio'
@@ -17,15 +17,16 @@ export function TranslationRow({ label, text }: { label: string; text: string })
   )
 }
 
-/** Highlighted example sentence with its EN/RU translations; renders nothing when there is no example. */
+/** Highlighted example sentence with its EN/RU translations (the overlay's example when there is one); renders nothing when there is no example. */
 export function ExampleBlock({ word }: { word: Word }) {
-  if (word.exampleSentence.trim() === '') return null
+  const example = effectiveExample(word)
+  if (example.sentence.trim() === '') return null
 
   return (
     <section className="wc-example">
       <HighlightedSentence word={word} />
-      {word.exampleTranslationEn.trim() !== '' && <p className="wc-translation">{word.exampleTranslationEn}</p>}
-      {word.exampleTranslationRu.trim() !== '' && <p className="wc-translation">{word.exampleTranslationRu}</p>}
+      {example.en.trim() !== '' && <p className="wc-translation">{example.en}</p>}
+      {example.ru.trim() !== '' && <p className="wc-translation">{example.ru}</p>}
     </section>
   )
 }

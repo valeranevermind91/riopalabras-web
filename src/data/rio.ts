@@ -11,6 +11,15 @@ export interface Localized {
   readonly ru: string
 }
 
+/** A pass-2 example sentence that shows the Rioplatense form or sense. */
+export interface RioExample {
+  readonly es: string
+  readonly en: string
+  readonly ru: string
+  /** The exact text of the form inside `es`. */
+  readonly wordForm: string | null
+}
+
 export interface RioInfo {
   readonly type: RioType
   /** rio_form: the Rioplatense headword candidate (equals the standard word for meaning_shift / regional_only). */
@@ -24,6 +33,8 @@ export interface RioInfo {
   readonly stdMeaning: Localized | null
   /** Replaces the dictionary translation where it applies (see translationsFor). */
   readonly translation: Localized | null
+  /** When present it replaces the dictionary example on the card. */
+  readonly example: RioExample | null
   readonly confidence: string
 }
 
@@ -38,6 +49,26 @@ function localized(v: unknown): Localized | null {
   const en = clean(o.en) ?? ''
   const ru = clean(o.ru) ?? ''
   return en || ru ? { en, ru } : null
+}
+
+function parseExample(v: unknown): RioExample | null {
+  if (!v || typeof v !== 'object') return null
+  const o = v as Record<string, unknown>
+  const es = clean(o.es)
+  if (!es) return null
+  return { es, en: clean(o.en) ?? '', ru: clean(o.ru) ?? '', wordForm: clean(o.word_form) }
+}
+
+/** The first meaning of a comma- or semicolon-separated gloss list, ignoring separators inside parentheses: "focus, spotlight" → "focus". */
+export function firstGloss(text: string): string {
+  let depth = 0
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === '(') depth++
+    else if (c === ')') depth = Math.max(0, depth - 1)
+    else if (depth === 0 && (c === ',' || c === ';')) return text.slice(0, i).trim()
+  }
+  return text.trim()
 }
 
 /** The note/meaning in the user's language, falling back to the other language; null if there is none. */
@@ -74,6 +105,7 @@ export function parseRioOverlay(raw: unknown): ReadonlyMap<string, RioInfo> {
       notes: localized(e.notes),
       stdMeaning: localized(e.std_meaning),
       translation: localized(e.translation),
+      example: parseExample(e.example),
       confidence: clean(e.confidence) ?? 'medium',
     })
   }

@@ -14,16 +14,25 @@
   },
   {
     "es_word": "tú",
-    "rio_type": "form",
+    "rio_type": "replacement",
     "rio_form": "vos",
     "alt_form": null,
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Standard (Peninsular) form: \"tú\". Rioplatense speakers say \"vos\".",
+      "ru": "Стандартная (испанская) форма: \"tú\". В Рио-де-ла-Плате говорят \"vos\"."
+    },
     "std_meaning": null,
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Vos siempre llegás tarde a las reuniones del trabajo.",
+      "en": "You always arrive late to work meetings.",
+      "ru": "Ты всегда опаздываешь на рабочие встречи.",
+      "word_form": "Vos"
+    }
   },
   {
     "es_word": "chico",
@@ -36,20 +45,35 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "El gurí estaba jugando a la pelota en la rambla.",
+      "en": "The kid was playing ball on the promenade.",
+      "ru": "Мальчишка играл в мяч на набережной.",
+      "word_form": "gurí"
+    }
   },
   {
     "es_word": "contigo",
-    "rio_type": "form",
+    "rio_type": "replacement",
     "rio_form": "con vos",
     "alt_form": null,
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Standard (Peninsular) form: \"contigo\". Rioplatense says \"con vos\".",
+      "ru": "Стандартная (испанская) форма: \"contigo\". В Рио-де-ла-Плате: \"con vos\"."
+    },
     "std_meaning": null,
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Mañana voy a la feria con vos a comprar verduras.",
+      "en": "Tomorrow I'm going to the street market with you to buy vegetables.",
+      "ru": "Завтра я пойду с тобой на рынок за овощами.",
+      "word_form": "con vos"
+    }
   },
   {
     "es_word": "quizá",
@@ -225,7 +249,13 @@
       "en": "brave, tough",
       "ru": "смелый, крутой"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Hay que ser muy guapo para caminar solo por ese barrio.",
+      "en": "You have to be very brave to walk alone in that neighborhood.",
+      "ru": "Нужно быть очень смелым, чтобы гулять одному по этому району.",
+      "word_form": "guapo"
+    }
   },
   {
     "es_word": "alcalde",
@@ -286,7 +316,13 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Me parece que vos tenés que descansar un poco más.",
+      "en": "I think you need to rest a little more.",
+      "ru": "Мне кажется, тебе нужно немного больше отдыхать.",
+      "word_form": "vos"
+    }
   },
   {
     "es_word": "carretera",
@@ -379,7 +415,13 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Tomé el ómnibus equivocado y terminé en el centro de Montevideo.",
+      "en": "I took the wrong bus and ended up in downtown Montevideo.",
+      "ru": "Я сел не на тот автобус и оказался в центре Монтевидео.",
+      "word_form": "ómnibus"
+    }
   },
   {
     "es_word": "coño",
@@ -437,7 +479,13 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Salgo un ratito al balcón a fumarme un pucho y vuelvo.",
+      "en": "I'm going out to the balcony for a bit to smoke a cigarette and I'll be back.",
+      "ru": "Я выйду на минутку на балкон выкурить сигарету и вернусь.",
+      "word_form": "pucho"
+    }
   },
   {
     "es_word": "carro",
@@ -488,7 +536,13 @@
       "en": "woman, girl, chick",
       "ru": "девушка, женщина"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Esa mina que trabaja en la panadería es re simpática.",
+      "en": "That chick who works at the bakery is really nice.",
+      "ru": "Та девушка, что работает в пекарне, очень милая.",
+      "word_form": "mina"
+    }
   },
   {
     "es_word": "maleta",
@@ -533,7 +587,13 @@
       "en": "suit jacket, blazer",
       "ru": "пиджак"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Para la entrevista de trabajo, ponete una camisa blanca y un saco azul.",
+      "en": "For the job interview, put on a white shirt and a blue blazer.",
+      "ru": "На собеседование надень белую рубашку и синий пиджак.",
+      "word_form": "saco"
+    }
   },
   {
     "es_word": "camarero",
@@ -639,7 +699,13 @@
       "en": "street market, farmers' market",
       "ru": "уличный рынок, продуктовый рынок"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Los domingos siempre compro la verdura y la fruta fresca en la feria.",
+      "en": "On Sundays I always buy fresh vegetables and fruit at the street market.",
+      "ru": "По воскресеньям я всегда покупаю свежие овощи и фрукты на рынке.",
+      "word_form": "feria"
+    }
   },
   {
     "es_word": "gasolina",
@@ -709,7 +775,13 @@
       "en": "bus ticket, lottery ticket",
       "ru": "билет на автобус, лотерейный билет"
     },
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto.",
+      "en": "He got on the bus along 18 de Julio and forgot to pay for the ticket.",
+      "ru": "Он сел в автобус на 18 Июля и забыл купить билет.",
+      "word_form": "boleto"
+    }
   },
   {
     "es_word": "apresurar",
@@ -744,7 +816,13 @@
       "en": "spaced out, distracted",
       "ru": "рассеянный, витающий в облаках"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Perdoná que no te escuché, estaba re colgado mirando por la ventana.",
+      "en": "Sorry I didn't hear you, I was totally spaced out looking out the window.",
+      "ru": "Извини, что не расслышал, я совсем завис, глядя в окно.",
+      "word_form": "colgado"
+    }
   },
   {
     "es_word": "mantequilla",
@@ -885,7 +963,13 @@
       "en": "cool, great",
       "ru": "круто, классный"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas.",
+      "en": "The concert on the promenade was awesome, all my favorite bands played.",
+      "ru": "Концерт на набережной был просто супер, играли все мои любимые группы.",
+      "word_form": "de más"
+    }
   },
   {
     "es_word": "portero",
@@ -901,7 +985,13 @@
       "en": "goalkeeper",
       "ru": "вратарь"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "El golero de Peñarol atajó un penal decisivo en el último minuto del partido.",
+      "en": "Peñarol's goalkeeper saved a decisive penalty in the last minute of the match.",
+      "ru": "Вратарь Пеньяроля отбил решающий пенальти на последней минуте матча.",
+      "word_form": "golero"
+    }
   },
   {
     "es_word": "competición",
@@ -981,7 +1071,13 @@
       "en": "breaded chicken breast",
       "ru": "куриный шницель (из грудки)"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Me pedí una suprema con puré para almorzar en el bar de la esquina.",
+      "en": "I ordered a breaded chicken breast with mashed potatoes for lunch at the corner bar.",
+      "ru": "Я заказал куриную отбивную с пюре на обед в баре на углу.",
+      "word_form": "suprema"
+    }
   },
   {
     "es_word": "chance",
@@ -997,7 +1093,13 @@
       "en": "chance, opportunity",
       "ru": "шанс, возможность"
     },
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "Si estudiás un poco más, tenés chance de salvar el examen de la facultad.",
+      "en": "If you study a bit more, you have a chance of passing the university exam.",
+      "ru": "Если ты еще немного поучишься, у тебя есть шанс сдать экзамен в университете.",
+      "word_form": "chance"
+    }
   },
   {
     "es_word": "calcetín",
@@ -1029,7 +1131,13 @@
       "en": "nursing home, retirement home",
       "ru": "дом престарелых"
     },
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Mi abuela vive en una casa de salud cerca de la rambla.",
+      "en": "My grandmother lives in a nursing home near the promenade.",
+      "ru": "Моя бабушка живет в доме престарелых недалеко от набережной.",
+      "word_form": "casa de salud"
+    }
   },
   {
     "es_word": "vagabundo",
@@ -1090,7 +1198,13 @@
       "ru": "лепешка, пощечина"
     },
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Para tu cumpleaños te voy a preparar una torta de chocolate riquísima.",
+      "en": "For your birthday I am going to bake you a delicious chocolate cake.",
+      "ru": "На твой день рождения я испеку тебе очень вкусный шоколадный торт.",
+      "word_form": "torta"
+    }
   },
   {
     "es_word": "marcador",
@@ -1109,7 +1223,13 @@
       "en": "marker (pen)",
       "ru": "маркер (ручка)"
     },
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "Prestame un marcador rojo para subrayar los títulos de estos apuntes.",
+      "en": "Lend me a red marker to underline the titles of these notes.",
+      "ru": "Одолжи мне красный маркер, чтобы подчеркнуть заголовки в этих конспектах.",
+      "word_form": "marcador"
+    }
   },
   {
     "es_word": "foco",
@@ -1128,7 +1248,13 @@
       "en": "light bulb",
       "ru": "лампочка"
     },
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "Comprá un foco nuevo en el súper porque se quemó el del pasillo.",
+      "en": "Buy a new light bulb at the supermarket because the hallway one burned out.",
+      "ru": "Купи новую лампочку в супермаркете, потому что в коридоре перегорела.",
+      "word_form": "foco"
+    }
   },
   {
     "es_word": "neumático",
@@ -1157,7 +1283,13 @@
       "ru": "политическая пропаганда"
     },
     "translation": null,
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Vi una propaganda en la tele sobre un champú muy bueno.",
+      "en": "I saw an advertisement on TV about a really good shampoo.",
+      "ru": "Я видел по телевизору рекламу очень хорошего шампуня.",
+      "word_form": "propaganda"
+    }
   },
   {
     "es_word": "halar",

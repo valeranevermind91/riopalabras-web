@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from './dictionary'
-import { headword, highlightTarget } from './headword'
+import { effectiveExample, headword, headwordDecision, highlightTarget } from './headword'
 import { headwordRegion, relationFor, translationsFor } from './relation'
-import { findFormRange, inflectionOf, langFromSettings, parseRioOverlay, pickLocalized } from './rio'
+import { findFormRange, firstGloss, inflectionOf, langFromSettings, parseRioOverlay, pickLocalized, type RioInfo } from './rio'
 import { strings } from '../strings'
 import { makeWord } from '../testing/makeWord'
 import type { Word } from './types'
@@ -176,13 +176,15 @@ describe('headword with the overlay', () => {
     expect(relationFor(w)).not.toHaveProperty('rioForm')
   })
 
-  it('cigarrillo → pucho: the sentence has no pucho, so the headword stays and pucho is a note', () => {
+  it('cigarrillo → pucho: the dictionary example has no pucho, so the overlay example is shown and pucho leads', () => {
     const w = entry('cigarrillo')
     expect(w.exampleSentence).not.toMatch(/pucho/i)
-    expect(headword(w)).toEqual({ text: 'cigarrillo', form: 'standard', secondary: null })
-    expect(relationFor(w)).toEqual({ type: 'replacement', rioForm: 'pucho', region: null })
-    expect(headwordRegion(w)).toBeNull()
-    expect(highlighted(w)).toBe('cigarrillo')
+    expect(effectiveExample(w).source).toBe('overlay')
+    expect(effectiveExample(w).sentence).toMatch(/pucho/)
+    expect(headword(w)).toEqual({ text: 'pucho', form: 'rioplatense', secondary: 'cigarrillo' })
+    expect(relationFor(w)).toMatchObject({ type: 'replacement', standardWord: 'cigarrillo' })
+    expect(headwordRegion(w)).toBeNull() // both countries
+    expect(highlighted(w)).toBe('pucho')
   })
 
   it('metro → subte carries the AR tag; aquí → acá carries none', () => {
@@ -257,10 +259,13 @@ describe('notes, alternatives and translations', () => {
     expect(relationFor(w)).toMatchObject({ type: 'meaning_shift', stdMeaning: { en: 'handsome, good-looking' } })
   })
 
-  it('shows both forms on autobús: ómnibus (UY) as a note and colectivo (AR) as the alternative', () => {
+  it('autobús leads with ómnibus (UY tag) from its overlay example, with colectivo (AR) as "also"', () => {
     const w = entry('autobús')
-    expect(headword(w).form).toBe('standard')
-    expect(relationFor(w)).toMatchObject({ type: 'replacement', rioForm: 'ómnibus', region: 'uy', altForm: 'colectivo', altRegion: 'ar' })
+    expect(effectiveExample(w).source).toBe('overlay')
+    expect(headword(w)).toEqual({ text: 'ómnibus', form: 'rioplatense', secondary: 'autobús' })
+    expect(relationFor(w)).toMatchObject({ type: 'replacement', standardWord: 'autobús', altForm: 'colectivo', altRegion: 'ar' })
+    expect(headwordRegion(w)).toBe('uy')
+    expect(highlighted(w)).toBe('ómnibus')
   })
 
   it('picks the note by language and falls back to the other one', () => {
@@ -287,8 +292,9 @@ describe('highlight with the overlay', () => {
     ['vosotros', 'Ustedes'],
     ['vuestro', 'su'],
     ['metro', 'subte'],
-    ['cigarrillo', 'cigarrillo'],
-    ['foco', 'lamparita'],
+    ['cigarrillo', 'pucho'],
+    ['autobús', 'ómnibus'],
+    ['foco', 'foco'],
   ])('%s highlights %s', (esWord, expected) => {
     expect(highlighted(entry(esWord))).toBe(expected)
   })
@@ -313,14 +319,16 @@ describe('highlight with the overlay', () => {
     expect(highlighted(w)).toBe('estaciono')
   })
 
-  it('on a note-only replacement, the alternative is a fallback when the Rioplatense form is absent', () => {
-    const w = { ...entry('autobús'), wordFormInExample: null, exampleSentence: 'Tomé el colectivo para ir al centro.' }
+  it('on a note-only replacement (no overlay example, form absent) the alternative is a fallback', () => {
+    const base = entry('autobús')
+    const w = { ...base, rio: { ...base.rio!, example: null }, wordFormInExample: null, exampleSentence: 'Tomé el colectivo para ir al centro.' }
     expect(headword(w).form).toBe('standard')
     expect(highlighted(w)).toBe('colectivo')
   })
 
-  it('autobús leads with ómnibus when the sentence shows it, and highlights it', () => {
-    const w = { ...entry('autobús'), wordFormInExample: null, exampleSentence: 'Tomé el ómnibus y después el colectivo.' }
+  it('autobús leads with ómnibus when the dictionary example shows it, and highlights it', () => {
+    const base = entry('autobús')
+    const w = { ...base, rio: { ...base.rio!, example: null }, wordFormInExample: null, exampleSentence: 'Tomé el ómnibus y después el colectivo.' }
     expect(headword(w)).toEqual({ text: 'ómnibus', form: 'rioplatense', secondary: 'autobús' })
     expect(highlighted(w)).toBe('ómnibus')
   })
@@ -333,13 +341,138 @@ describe('highlight with the overlay', () => {
   }, 30_000)
 })
 
+describe('overlay examples (pass 2)', () => {
+  const withExample = words.filter((w) => w.rio?.example)
+
+  it('21 words carry an example in the client file: the 6 pass-2 replacements, tú and contigo, and the 13 confirmed meaning_shift / regional_only entries', () => {
+    expect(withExample.map((w) => w.esWord).sort()).toEqual(
+      ['asilo', 'autobús', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'contigo', 'feria', 'foco', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
+    )
+    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(8)
+    expect(withExample.filter((w) => w.rio!.type !== 'replacement')).toHaveLength(13)
+    expect(words.filter((w) => w.rio?.type === ('form' as string))).toEqual([]) // tú and contigo are replacements now
+  })
+
+  it('every overlay example is valid: it contains its form once, the form is a substring, and a replacement never uses the standard word', () => {
+    for (const w of withExample) {
+      const ex = w.rio!.example!
+      expect(ex.wordForm && ex.es.includes(ex.wordForm), w.esWord).toBeTruthy()
+      expect(findFormRange(ex.es, w.rio!.form, w.pos), w.esWord).not.toBeNull()
+      if (w.rio!.type === 'replacement') {
+        expect(new RegExp(`(^|[^\\p{L}])${w.esWord}(?![\\p{L}])`, 'iu').test(ex.es), `${w.esWord} appears in its own replacement example`).toBe(false)
+      }
+      expect(ex.en.length).toBeGreaterThan(0)
+      expect(ex.ru.length).toBeGreaterThan(0)
+    }
+  })
+
+  it.each([
+    ['foco', 'foco', 'foco', 'standard'],
+    ['guapo', 'guapo', 'guapo', 'standard'],
+    ['mina', 'mina', 'mina', 'standard'],
+    ['saco', 'saco', 'saco', 'standard'],
+    ['feria', 'feria', 'feria', 'standard'],
+    ['boleto', 'boleto', 'boleto', 'standard'],
+    ['colgado', 'colgado', 'colgado', 'standard'],
+    ['suprema', 'suprema', 'suprema', 'standard'],
+    ['chance', 'chance', 'chance', 'standard'],
+    ['torta', 'torta', 'torta', 'standard'],
+    ['marcador', 'marcador', 'marcador', 'standard'],
+    ['propaganda', 'propaganda', 'propaganda', 'standard'],
+    ['vos', 'vos', 'vos', 'standard'],
+    ['tú', 'vos', 'Vos', 'rioplatense'],
+    ['contigo', 'con vos', 'con vos', 'rioplatense'],
+  ])('%s: headword %s, shown in its overlay sentence as “%s”', (esWord, head, shownAs, form) => {
+    const w = entry(esWord)
+    expect(effectiveExample(w).source).toBe('overlay')
+    expect(headword(w)).toMatchObject({ text: head, form })
+    expect(highlighted(w)).toBe(shownAs)
+    expect(findFormRange(effectiveExample(w).sentence, head, w.pos), 'the headword is in the sentence the card shows').not.toBeNull()
+  })
+
+  it('tú and contigo are replacements: vos / con vos lead, the note names the standard Peninsular form', () => {
+    for (const [esWord, form] of [['tú', 'vos'], ['contigo', 'con vos']] as const) {
+      const w = entry(esWord)
+      expect(w.rio).toMatchObject({ type: 'replacement', form, region: null })
+      expect(headword(w)).toEqual({ text: form, form: 'rioplatense', secondary: esWord })
+      const rel = relationFor(w)
+      expect(rel).toMatchObject({ type: 'replacement', standardWord: esWord })
+      expect(pickLocalized(rel?.note ?? null, 'en')).toContain(`"${esWord}"`)
+      expect(pickLocalized(rel?.note ?? null, 'en')).toContain('Peninsular')
+      expect(pickLocalized(rel?.note ?? null, 'ru')).toContain(`"${esWord}"`)
+    }
+  })
+
+  it('the card shows the overlay example, with its own translations, instead of the dictionary one', () => {
+    const w = entry('autobús')
+    const shown = effectiveExample(w)
+    expect(shown.source).toBe('overlay')
+    expect(shown.sentence).toBe(w.rio!.example!.es)
+    expect(shown.en).toBe(w.rio!.example!.en)
+    expect(shown.ru).toBe(w.rio!.example!.ru)
+    expect(shown.sentence).not.toBe(w.exampleSentence.replace(/\*+/g, ''))
+    expect(highlightTarget(w).sentence).toBe(shown.sentence)
+  })
+
+  it('without an overlay example the dictionary example (and its translations) is shown', () => {
+    for (const esWord of ['aquí', 'metro', 'coger']) {
+      const w = entry(esWord)
+      const shown = effectiveExample(w)
+      expect(shown.source, esWord).toBe('dictionary')
+      expect(shown.en).toBe(w.exampleTranslationEn)
+      expect(shown.ru).toBe(w.exampleTranslationRu)
+    }
+  })
+
+  it('pass-2 failure fallback: no overlay example and none in the dictionary means the standard word keeps the headword and the form is a note', () => {
+    const base = entry('cigarrillo')
+    const w = { ...base, rio: { ...base.rio!, example: null } as RioInfo } // as if pass 2 had failed for it
+    expect(w.exampleSentence).not.toMatch(/pucho/i)
+    expect(headword(w)).toEqual({ text: 'cigarrillo', form: 'standard', secondary: null })
+    expect(headwordDecision(w)).toMatchObject({ switched: false, reason: 'no-example-has-form', exampleSource: 'dictionary' })
+    expect(relationFor(w)).toEqual({ type: 'replacement', rioForm: 'pucho', region: null })
+    expect(highlighted(w)).toBe('cigarrillo') // never a headword that is not in its sentence
+    expect(translationsFor(w)).toEqual({ en: w.enTranslation, ru: w.ruTranslation })
+  })
+
+  it('a broken overlay example (it does not contain the form) is not trusted: the card falls back to the note', () => {
+    const base = entry('autobús')
+    const w = { ...base, rio: { ...base.rio!, example: { es: 'Esta frase no tiene la palabra.', en: 'x', ru: 'y', wordForm: 'palabra' } } }
+    expect(headwordDecision(w).switched).toBe(false)
+    expect(headword(w).text).toBe('autobús')
+  })
+
+  it('parses the example from the overlay file and ignores an empty or malformed one', () => {
+    const e = (example: unknown) => parseRioOverlay([{ es_word: 'x', rio_type: 'replacement', rio_form: 'y', example }]).get('x')?.example
+    expect(e({ es: 'Frase y.', en: 'Sentence.', ru: 'Фраза.', word_form: 'y' })).toEqual({ es: 'Frase y.', en: 'Sentence.', ru: 'Фраза.', wordForm: 'y' })
+    expect(e({ es: '', en: 'a', ru: 'b', word_form: 'y' })).toBeNull()
+    expect(e('nope')).toBeNull()
+    expect(e(undefined)).toBeNull()
+  })
+})
+
+describe('standard meaning shows its first gloss only', () => {
+  it.each([
+    ['focus, spotlight', 'focus'],
+    ['marker (pen), scoreboard', 'marker (pen)'],
+    ['ticket (general)', 'ticket (general)'],
+    ['handsome; good-looking', 'handsome'],
+    ['thing (a, b), other', 'thing (a, b)'],
+    ['single', 'single'],
+    ['  padded , x', 'padded'],
+  ])('%j → %j', (input, expected) => expect(firstGloss(input)).toBe(expected))
+})
+
 describe('what the overlay does to the dictionary', () => {
-  it('55 words lead with a Rioplatense headword, 21 show a note only, 4677 are untouched', () => {
+  it('63 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4677 are untouched', () => {
     const withOverlay = words.filter((w) => w.rio)
     const led = withOverlay.filter((w) => headword(w).form === 'rioplatense')
     const noteOnly = withOverlay.filter((w) => headword(w).form === 'standard' && relationFor(w))
-    expect(led).toHaveLength(55)
-    expect(noteOnly).toHaveLength(21)
+    expect(led).toHaveLength(63)
+    expect(led.every((w) => w.rio!.type === 'replacement')).toBe(true)
+    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(63)
+    expect(noteOnly).toHaveLength(13)
+    expect(noteOnly.every((w) => w.rio!.type !== 'replacement')).toBe(true)
     expect(withOverlay.filter((w) => headword(w).form === 'standard' && !relationFor(w))).toHaveLength(0)
     expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 76)
     for (const w of words.filter((x) => !x.rio)) {
@@ -348,10 +481,19 @@ describe('what the overlay does to the dictionary', () => {
     }
   })
 
-  it('every overlay replacement that leads really shows its form in the sentence', { timeout: 30_000 }, () => {
+  it('every replacement that leads really shows its form in the example it displays', { timeout: 30_000 }, () => {
     for (const w of words.filter((x) => x.rio && headword(x).form === 'rioplatense')) {
-      expect(findFormRange(highlightTarget(w).sentence, w.rio!.form, w.pos), w.esWord).not.toBeNull()
+      expect(findFormRange(effectiveExample(w).sentence, w.rio!.form, w.pos), w.esWord).not.toBeNull()
+      expect(highlightTarget(w).range, w.esWord).not.toBeNull()
     }
+  })
+
+  it('no overlay card shows a headword that is missing from the sentence it shows (headword text or an inflection of it)', () => {
+    const missing = words
+      .filter((w) => w.rio)
+      .filter((w) => findFormRange(effectiveExample(w).sentence, headword(w).text, w.pos) === null)
+      .map((w) => w.esWord)
+    expect(missing).toEqual([])
   })
 
   it('makeWord defaults keep custom and synthetic words overlay-free', () => {
