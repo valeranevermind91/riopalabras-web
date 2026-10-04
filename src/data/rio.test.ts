@@ -3,15 +3,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from './dictionary'
 import { effectiveExample, headword, headwordDecision, highlightTarget } from './headword'
 import { headwordRegion, relationFor, translationsFor } from './relation'
-import { findFormRange, firstGloss, inflectionOf, langFromSettings, parseRioOverlay, pickLocalized, type RioInfo } from './rio'
+import { findFormRange, firstGloss, inflectionOf, langFromSettings, parseFallbackExamples, parseRioOverlay, pickLocalized, type RioInfo } from './rio'
 import { strings } from '../strings'
 import { makeWord } from '../testing/makeWord'
 import type { Word } from './types'
 
 const rawDictionary = JSON.parse(readFileSync('public/words_enriched.json', 'utf8'))
 const rawOverlay = JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))
+const rawFallback = JSON.parse(readFileSync('public/examples_fallback.json', 'utf8'))
 const overlay = parseRioOverlay(rawOverlay)
-const words = parseDictionary(rawDictionary, overlay)
+const fallback = parseFallbackExamples(rawFallback)
+const words = parseDictionary(rawDictionary, overlay, fallback)
 const byWord = new Map(words.map((w) => [w.esWord, w]))
 const entry = (esWord: string): Word => {
   const w = byWord.get(esWord)
@@ -78,12 +80,16 @@ describe('the legacy field is only a fallback', () => {
       vi.unstubAllGlobals()
       vi.resetModules()
     })
-    const stubFetch = (overlayResponse: () => Response | Promise<Response>) => {
+    const stubFetch = (
+      overlayResponse: () => Response | Promise<Response>,
+      fallbackResponse: () => Response | Promise<Response> = () => new Response(JSON.stringify(rawFallback)),
+    ) => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async (url: string) => {
           if (url === '/words_enriched.json') return new Response(JSON.stringify(rawDictionary))
           if (url === '/rio_overlay.json') return overlayResponse()
+          if (url === '/examples_fallback.json') return fallbackResponse()
           throw new Error('unexpected ' + url)
         }),
       )
@@ -97,6 +103,33 @@ describe('the legacy field is only a fallback', () => {
       const metro = loaded.find((w) => w.esWord === 'metro')!
       expect(metro.rio?.form).toBe('subte')
       expect(metro.esRioplatense).toBeNull()
+    })
+
+    it('attaches the fallback examples when the file loads, and keeps the old dictionary example when it does not', async () => {
+      stubFetch(() => new Response(JSON.stringify(rawOverlay)))
+      vi.resetModules()
+      const ok = await (await import('./dictionary')).loadDictionary()
+      const nino = ok.find((w) => w.esWord === 'niño')!
+      expect(nino.fallbackExample?.es).toMatch(/niño/)
+      expect(effectiveExample(nino).source).toBe('fallback')
+
+      for (const [label, response] of [
+        ['HTTP 404', () => new Response('nope', { status: 404 })],
+        ['not JSON', () => new Response('<html>')],
+        ['not an array', () => new Response('{}')],
+        ['network error', () => Promise.reject(new TypeError('offline'))],
+      ] as const) {
+        stubFetch(() => new Response(JSON.stringify(rawOverlay)), response)
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.resetModules()
+        const failed = await (await import('./dictionary')).loadDictionary()
+        const same = failed.find((w) => w.esWord === 'niño')!
+        expect(same.fallbackExample, label).toBeNull()
+        expect(effectiveExample(same).source, label).toBe('dictionary')
+        expect(same.exampleSentence, label).toMatch(/pibe/) // exactly today's behaviour
+        expect(same.rio, label).toBeNull() // niño is not in the overlay either way
+        expect(failed.find((w) => w.esWord === 'autobús')?.rio?.form, label).toBe('ómnibus') // the overlay is independent of the fallback file
+      }
     })
 
     it.each([
@@ -142,8 +175,54 @@ describe('inflectionOf / findFormRange', () => {
     ['suyo', 'su', 'pron', false],
     ['colar', 'cola', 'n', false],
     ['tiraje', 'tirar', 'v', false],
+    // verb stem changes and spelling changes (pass 3)
+    ['siento', 'sentir', 'v', true],
+    ['sintió', 'sentir', 'v', true],
+    ['muera', 'morir', 'v', true],
+    ['murió', 'morir', 'v', true],
+    ['pido', 'pedir', 'v', true],
+    ['juego', 'jugar', 'v', true],
+    ['jugué', 'jugar', 'v', true],
+    ['llegué', 'llegar', 'v', true],
+    ['empiezo', 'empezar', 'v', true],
+    ['empecé', 'empezar', 'v', true],
+    ['tengo', 'tener', 'v', true],
+    ['tienes', 'tener', 'v', true],
+    ['supongo', 'suponer', 'v', true],
+    ['conozco', 'conocer', 'v', true],
+    ['salgo', 'salir', 'v', true],
+    ['sigo', 'seguir', 'v', true],
+    ['cojo', 'coger', 'v', true],
+    ['elijo', 'elegir', 'v', true],
+    ['construyo', 'construir', 'v', true],
+    ['sentido', 'sentir', 'v', true], // the participle is a form of sentir too
+    ['sentada', 'sentir', 'v', false], // sentar, not sentir
+    ['fiarle', 'fiar', 'v', true], // infinitive + clitic
+    ['levantarlo', 'levantar', 'v', true],
+    ['darmelo', 'dar', 'v', true],
+    ['algún', 'alguno', 'det', true], // apocope
+    ['tercer', 'tercero', 'adj', true],
+    ['buen', 'bueno', 'adj', true],
+    ['mal', 'malo', 'adj', true],
+    ['francesa', 'francés', 'adj', true], // feminine of a consonant-ending adjective
+    ['encantadora', 'encantador', 'adj', true],
+    ['musulmanas', 'musulmán', 'adj', true],
+    ['sos', 'ser', 'v', false], // irregular beyond patterns: stays unmatched
   ])('%s vs %s (%s) → %s', (token, form, pos, expected) => {
     expect(inflectionOf(token, form, pos)).toBe(expected)
+  })
+
+  it('loose accents (opt-in) accept a different accent, strict mode does not', () => {
+    expect(inflectionOf('dónde', 'donde', 'pron')).toBe(false)
+    expect(inflectionOf('dónde', 'donde', 'pron', true, true)).toBe(true)
+    expect(inflectionOf('Quién', 'quien', 'pron', true, true)).toBe(true)
+    expect(inflectionOf('papá', 'papa', 'n')).toBe(false) // overlay forms stay strict: papá is not papa
+    expect(findFormRange('¿Dónde vivís?', 'donde', 'pron', true)).toEqual({ start: 1, end: 6 })
+    expect(findFormRange('¿Dónde vivís?', 'donde', 'pron')).toBeNull()
+    // accent-less verb endings still match in loose mode (Recibí / recibir, Vení / venir)
+    expect(inflectionOf('Recibí', 'recibir', 'v', true, true)).toBe(true)
+    expect(inflectionOf('Recibí', 'recibir', 'v')).toBe(true)
+    expect(inflectionOf('Vení', 'venir', 'v', true, true)).toBe(true)
   })
 
   it('finds multi-word forms as consecutive words, not across punctuation', () => {
@@ -449,6 +528,74 @@ describe('overlay examples (pass 2)', () => {
     expect(e('nope')).toBeNull()
     expect(e(undefined)).toBeNull()
   })
+})
+
+describe('fallback examples (pass 3)', () => {
+  const withFallback = words.filter((w) => w.fallbackExample)
+  const SAMPLE = ['niño', 'pequeño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
+
+  it('the file has 47 examples, none for an overlay word, none for tony (a junk entry)', () => {
+    expect(rawFallback).toHaveLength(47)
+    expect(withFallback).toHaveLength(47)
+    expect(withFallback.filter((w) => w.rio)).toEqual([])
+    expect(entry('tony').fallbackExample).toBeNull()
+    expect(entry('casa').fallbackExample).toBeNull()
+    expect(entry('ser').fallbackExample).toBeNull() // an irregular form of itself (sos): nothing to fix
+  })
+
+  it.each(SAMPLE)('%s: the old example showed another word; the card now shows a sentence with %s itself', (esWord) => {
+    const w = entry(esWord)
+    expect(w.exampleSentence.replace(/\*+/g, '')).not.toMatch(new RegExp(`(^|[^\\p{L}])${esWord}(?![\\p{L}])`, 'iu'))
+    const shown = effectiveExample(w)
+    expect(shown.source).toBe('fallback')
+    expect(shown.sentence).toBe(w.fallbackExample!.es)
+    expect(shown.en).toBe(w.fallbackExample!.en)
+    expect(shown.ru).toBe(w.fallbackExample!.ru)
+    expect(headword(w)).toEqual({ text: esWord, form: 'standard', secondary: null }) // the standard word keeps the headword
+    expect(highlighted(w)!.toLowerCase()).toBe(esWord)
+    expect(findFormRange(shown.sentence, esWord, w.pos, true)).not.toBeNull()
+  })
+
+  it('every fallback sentence is valid: es_word once, the word form a substring, none of the old Rioplatense words, EN and RU present', () => {
+    const rawBy = new Map(rawDictionary.map((d: { es_word: string; word_form_in_example: string | null }) => [d.es_word, d]))
+    for (const w of withFallback) {
+      const ex = w.fallbackExample!
+      expect(ex.wordForm && ex.es.includes(ex.wordForm), w.esWord).toBeTruthy()
+      expect(findFormRange(ex.es, w.esWord, w.pos, true), w.esWord).not.toBeNull()
+      const oldForm = (rawBy.get(w.esWord) as { word_form_in_example: string }).word_form_in_example
+      expect(new RegExp(`(^|[^\\p{L}])${oldForm}(?![\\p{L}])`, 'iu').test(ex.es), `${w.esWord} reuses its old form «${oldForm}»`).toBe(false)
+      expect(ex.en.length).toBeGreaterThan(0)
+      expect(ex.ru.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('the overlay example still wins over a fallback one, and a word with neither keeps its dictionary example', () => {
+    const base = entry('autobús')
+    const both = { ...base, fallbackExample: { es: 'Otra frase con autobús.', en: 'x', ru: 'y', wordForm: 'autobús' } }
+    expect(effectiveExample(both).source).toBe('overlay')
+    expect(effectiveExample(entry('casa')).source).toBe('dictionary')
+  })
+
+  it('parses the file and ignores empty or malformed entries', () => {
+    const parsed = parseFallbackExamples([
+      { es_word: 'a', es: 'Frase a.', en: 'A.', ru: 'А.', word_form: 'a' },
+      { es_word: 'b', es: '', en: 'B.', ru: 'Б.', word_form: 'b' },
+      { es_word: 'c', es: 'Frase c.', en: 'C.', ru: 'Ц.' },
+      { es: 'Frase d.', en: 'D.', ru: 'Д.', word_form: 'd' },
+      null,
+    ])
+    expect([...parsed.keys()]).toEqual(['a'])
+    expect(() => parseFallbackExamples({})).toThrow(/array/)
+  })
+
+  it('across all 4753 cards, the headword is in the sentence shown, except irregular verb forms (ser, ver, oír, oler, detener, distraer), the letter r and tony', () => {
+    const missing = words
+      .filter((w) => findFormRange(effectiveExample(w).sentence, headword(w).text, w.pos, true) === null)
+      .map((w) => w.esWord)
+      .sort()
+    expect(missing).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'tony', 'ver'])
+    expect(words.filter((w) => highlightTarget(w).range === null)).toEqual([]) // every card still highlights something
+  }, 30_000)
 })
 
 describe('standard meaning shows its first gloss only', () => {

@@ -24,6 +24,7 @@ function synthetic(esWord: string, rank: number, overrides: Partial<Word> = {}):
     esWord,
     esRioplatense: null,
     rio: null,
+    fallbackExample: null,
     enTranslation: 'x',
     ruTranslation: 'y',
     exampleSentence: '',

@@ -680,3 +680,29 @@ dd {
   font-size: 14px;
   word-break: break-word;
 }
+
+/* ---- Non-blocking notices and the user-data load log ---- */
+
+.notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tg-hint-color) 14%, transparent);
+  color: var(--tg-text-color);
+  font-size: 14px;
+}
+
+.notice .btn-small {
+  margin-left: 6px;
+  padding: 3px 10px;
+}
+
+.load-log {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.load-log li {
+  margin-bottom: 6px;
+}

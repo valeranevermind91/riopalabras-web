@@ -50,6 +50,7 @@ function customWordFromRow(row: UserWordRow): Word {
     esWord: row.es_word.trim(),
     esRioplatense: row.es_rioplatense?.trim() || null,
     rio: null,
+    fallbackExample: null,
     enTranslation,
     ruTranslation,
     exampleSentence: row.example_sentence ?? '',

@@ -1,4 +1,5 @@
 import { DataSection } from '../DataSection'
+import { LoadLogSection } from '../components/LoadLogSection'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordPreview } from '../components/WordPreview'
 import { langFromSettings } from '../data/rio'
@@ -55,6 +56,8 @@ export function DebugScreen({ telegram, auth, data, onBack }: DebugScreenProps) 
       </section>
 
       <DataSection state={data} />
+
+      <LoadLogSection degraded={data.status === 'ready' ? data.data.degraded : []} />
 
       <WordPreview defaultLang={data.status === 'ready' ? langFromSettings(data.data.settings) : 'ru'} />
 

@@ -2,8 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthState } from '../lib/auth'
 import { loadDictionary } from './dictionary'
-import { applyProgressUpdates, applySettingsPatch } from './mutations'
-import { fetchOverlay } from './overlay'
+import { applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { loadOverlay, recoverTables, type NonCriticalTable } from './overlay'
+import { createBackgroundRetrier, type Retrier } from './recovery'
 import { parseSettings } from './settings'
 import { computeStats, getLearnPool, type Stats } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
@@ -22,6 +23,10 @@ export interface UserData {
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   /** Mirror a successful settings write into the in-memory settings (unknown keys kept). */
   applySettings: (patch: SettingsPatch) => void
+  /** Non-critical tables (favorites, hidden words) that failed at launch and are still being retried in the background. */
+  degraded: readonly NonCriticalTable[]
+  /** Retry the degraded tables now instead of waiting for the next background attempt. */
+  retryDegraded: () => void
 }
 
 export type DataState =
@@ -34,6 +39,7 @@ interface Loaded {
   words: readonly Word[]
   settings: UserSettings
   diagnostics: MergeDiagnostics
+  degraded: readonly NonCriticalTable[]
 }
 
 type Base =
@@ -67,8 +73,9 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
         .then((words) => settle({ status: 'signed-out', dictionaryCount: words.length }))
         .catch((err) => settle({ status: 'error', message: errorMessage(err) }))
     } else {
-      Promise.all([dictionary, fetchOverlay(client, userId)])
-        .then(([words, overlay]) => {
+      // loadOverlay retries transient failures itself; only a critical table that still fails ends up in the catch.
+      Promise.all([dictionary, loadOverlay(client, userId)])
+        .then(([words, { overlay, degraded }]) => {
           const merged = mergeWords(words, overlay)
           settle({
             status: 'ready',
@@ -76,6 +83,7 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
               words: merged.words,
               settings: parseSettings(overlay.settings),
               diagnostics: merged.diagnostics,
+              degraded,
             },
           })
         })
@@ -105,6 +113,37 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
 
   const loaded = base.status === 'ready' ? base.loaded : null
 
+  // Degraded mode: the app is already usable; favorites / hidden words keep being retried in the background.
+  const degradedKey = loaded?.degraded.join(',') ?? ''
+  const retrier = useRef<Retrier | null>(null)
+  useEffect(() => {
+    if (!client || !userId || degradedKey === '') return
+    const tables = degradedKey.split(',') as NonCriticalTable[]
+    let cancelled = false
+    const current = createBackgroundRetrier({
+      run: async () => {
+        const result = await recoverTables(client, userId, tables)
+        if (cancelled) return true
+        if (result.favorites || result.hidden) {
+          setBase((prev) =>
+            prev.status === 'ready'
+              ? { status: 'ready', loaded: { ...prev.loaded, words: applyFlagLists(prev.loaded.words, result), degraded: result.failed } }
+              : prev,
+          )
+        }
+        return result.failed.length === 0
+      },
+    })
+    retrier.current = current
+    current.start()
+    return () => {
+      cancelled = true
+      current.stop()
+      if (retrier.current === current) retrier.current = null
+    }
+  }, [client, userId, degradedKey])
+  const retryDegraded = useCallback(() => retrier.current?.retryNow(), [])
+
   const latestSettings = useRef<UserSettings | null>(null)
   const loadedSettings = loaded?.settings ?? null
   useEffect(() => {
@@ -128,7 +167,9 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
         getSettings,
         applyProgress,
         applySettings,
+        degraded: loaded.degraded,
+        retryDegraded,
       },
     }
-  }, [base, loaded, getSettings, applyProgress, applySettings])
+  }, [base, loaded, getSettings, applyProgress, applySettings, retryDegraded])
 }

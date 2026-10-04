@@ -5,6 +5,7 @@ export function makeWord(esWord: string, overrides: Partial<Word> = {}): Word {
     esWord,
     esRioplatense: null,
     rio: null,
+    fallbackExample: null,
     enTranslation: 'x',
     ruTranslation: 'y',
     exampleSentence: '',

@@ -1,4 +1,4 @@
-import type { RioInfo } from './rio'
+import type { RioExample, RioInfo } from './rio'
 
 export interface Word {
   readonly esWord: string
@@ -6,6 +6,8 @@ export interface Word {
   readonly esRioplatense: string | null
   /** The typed Rioplatense overlay entry, when the word has an accepted one. */
   readonly rio: RioInfo | null
+  /** A neutral sentence with es_word, for words whose dictionary example shows another word (pass 3). */
+  readonly fallbackExample: RioExample | null
   readonly enTranslation: string
   readonly ruTranslation: string
   readonly exampleSentence: string

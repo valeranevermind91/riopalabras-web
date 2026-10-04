@@ -59,6 +59,25 @@ function parseExample(v: unknown): RioExample | null {
   return { es, en: clean(o.en) ?? '', ru: clean(o.ru) ?? '', wordForm: clean(o.word_form) }
 }
 
+/**
+ * Pass 3: neutral example sentences for dictionary words outside the overlay whose old example showed another
+ * word (public/examples_fallback.json). Keyed by trimmed lower-case es_word; malformed entries are skipped.
+ */
+export function parseFallbackExamples(raw: unknown): ReadonlyMap<string, RioExample> {
+  if (!Array.isArray(raw)) throw new Error('Fallback examples are not a JSON array')
+  const out = new Map<string, RioExample>()
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const e = item as Record<string, unknown>
+    const esWord = clean(e.es_word)
+    const example = parseExample(e)
+    if (!esWord || !example || !example.wordForm) continue
+    const key = esWord.toLowerCase()
+    if (!out.has(key)) out.set(key, example)
+  }
+  return out
+}
+
 /** The first meaning of a comma- or semicolon-separated gloss list, ignoring separators inside parentheses: "focus, spotlight" → "focus". */
 export function firstGloss(text: string): string {
   let depth = 0
@@ -124,20 +143,23 @@ const ACCENTED: Record<string, string> = { á: 'a', é: 'e', í: 'i', ó: 'o', �
 
 function nominalForms(b: string): string[] {
   const last = b[b.length - 1]
+  // apocope before a noun: alguno → algún, tercero → tercer, bueno → buen
+  const apocope = b.endsWith('uno') ? [b.slice(0, -3) + 'ún'] : b.endsWith('o') && b.length > 3 ? [b.slice(0, -1)] : []
   if (/[aeiouáéíóú]/.test(last)) {
     const base = b.slice(0, -1)
     const swaps = last === 'o' ? ['o', 'a'] : last === 'a' ? ['a', 'o'] : [last]
-    return swaps.flatMap((v) => [base + v, base + v + 's'])
+    return [...swaps.flatMap((v) => [base + v, base + v + 's']), ...apocope]
   }
-  if (last === 'z') return [b, b.slice(0, -1) + 'ces']
-  // consonant ending: plural -es, which drops a written accent on -ón / -án / -én / -ín / -ús ("sillón" → "sillones")
+  if (last === 'z') return [b, b.slice(0, -1) + 'ces', b + 'a', b + 'as']
+  // consonant ending: plural -es, which drops a written accent on -ón / -án / -én / -ín / -ús ("sillón" → "sillones"),
+  // and the feminine -a / -as (francés → francesa, encantador → encantadora)
   const noAccent = b.replace(/[áéíóú](?=[ns]$)/, (m) => ACCENTED[m])
-  return [b, b + 'es', b + 's', noAccent + 'es']
+  return [b, b + 'es', b + 's', noAccent + 'es', b + 'a', b + 'as', noAccent + 'a', noAccent + 'as']
 }
 
 // Regular conjugation endings after the stem (voseo included), without a trailing clitic (apurate, levantarlo).
 const VERB_ENDINGS: Record<'ar' | 'er' | 'ir', readonly string[]> = {
-  ar: ['ar', 'o', 'a', 'as', 'á', 'ás', 'és', 'amos', 'an', 'e', 'es', 'é', 'en', 'ó', 'aste', 'aron', 'ado', 'ada', 'ados', 'adas', 'ando', 'aba', 'abas', 'aban', 'ábamos', 'aré', 'arás', 'ará', 'aremos', 'arán', 'aría', 'arías', 'aríamos', 'arían', 'ara', 'aras', 'aran', 'ase', 'ases', 'asen', 'áis', 'éis'],
+  ar: ['ar', 'o', 'a', 'as', 'á', 'ás', 'és', 'amos', 'emos', 'an', 'e', 'es', 'é', 'en', 'ó', 'aste', 'aron', 'ado', 'ada', 'ados', 'adas', 'ando', 'aba', 'abas', 'aban', 'ábamos', 'aré', 'arás', 'ará', 'aremos', 'arán', 'aría', 'arías', 'aríamos', 'arían', 'ara', 'aras', 'aran', 'ase', 'ases', 'asen', 'áis', 'éis'],
   er: ['er', 'o', 'e', 'es', 'é', 'emos', 'en', 'és', 'ió', 'í', 'iste', 'ieron', 'ido', 'ida', 'idos', 'idas', 'iendo', 'ía', 'ías', 'ían', 'íamos', 'erá', 'erás', 'eré', 'erán', 'ería', 'a', 'as', 'an', 'amos', 'iera', 'ieras', 'ieran'],
   ir: ['ir', 'o', 'e', 'es', 'é', 'imos', 'en', 'ís', 'ió', 'í', 'iste', 'ieron', 'ido', 'ida', 'idos', 'idas', 'iendo', 'ía', 'ías', 'ían', 'íamos', 'irá', 'irás', 'iré', 'irán', 'iría', 'a', 'as', 'an', 'amos', 'iera', 'ieras', 'ieran'],
 }
@@ -150,24 +172,67 @@ function stripClitic(ending: string): string {
 }
 
 /**
+ * The stems a verb can take when it conjugates, beyond the plain one: the stem vowel change (sentir → sient-/sint-,
+ * morir → muer-/mur-, pedir → pid-, jugar → jueg-) and the spelling changes (llegar → llegu-, empezar → empec-,
+ * coger → coj-, conocer → conozc-, tener → teng-, salir → salg-, seguir → sig-, construir → construy-).
+ */
+export function verbStems(stem: string): string[] {
+  // a stem ending in gu keeps it while the vowel before it changes (seguir: segu- → sigu- → sig-)
+  const suffix = stem.endsWith('gu') ? 'gu' : ''
+  const base = suffix ? stem.slice(0, -2) : stem
+  const vowelChanges: string[] = [stem]
+  const lastVowel = Math.max(base.lastIndexOf('e'), base.lastIndexOf('o'), base.lastIndexOf('u'))
+  const tail = lastVowel >= 0 ? base.slice(lastVowel + 1) : ''
+  if (lastVowel >= 0 && tail.length <= 2 && !/[aeiouáéíóú]/.test(tail)) {
+    const head = base.slice(0, lastVowel)
+    const v = base[lastVowel]
+    if (v === 'e') vowelChanges.push(head + 'ie' + tail + suffix, head + 'i' + tail + suffix)
+    if (v === 'o') vowelChanges.push(head + 'ue' + tail + suffix, head + 'u' + tail + suffix)
+    if (v === 'u' && !suffix) vowelChanges.push(head + 'ue' + tail)
+  }
+  const out = new Set<string>()
+  for (const v of vowelChanges) {
+    out.add(v)
+    if (v.endsWith('gu')) out.add(v.slice(0, -2) + 'g').add(v.slice(0, -2) + 'gü')
+    if (v.endsWith('g')) out.add(v + 'u').add(v.slice(0, -1) + 'j')
+    if (v.endsWith('c')) out.add(v.slice(0, -1) + 'qu').add(v.slice(0, -1) + 'z').add(v.slice(0, -1) + 'zc')
+    if (v.endsWith('z')) out.add(v.slice(0, -1) + 'c')
+    if (v.endsWith('n') || v.endsWith('l')) out.add(v + 'g')
+    if (v.endsWith('u')) out.add(v + 'y')
+  }
+  return [...out]
+}
+
+const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+/**
  * One sentence word against one word of the form. Equal ignoring case, or an inflection: plural and
  * gender for nouns and adjectives (pelo/pelos/pela, never pelota), conjugation for verbs (apurar →
- * apuro, apurás), never a different word that merely starts the same way (auto ≠ automóvil).
+ * apuro, apurás, sentir → siento), never a different word that merely starts the same way (auto ≠ automóvil).
+ * `looseAccents` also accepts a different accent (donde / dónde); it is off for overlay forms, where
+ * papa and papá are different words.
  */
-export function inflectionOf(token: string, formWord: string, pos: string | undefined, isFirstWord = true): boolean {
-  const a = token.toLowerCase()
-  const b = formWord.toLowerCase()
+export function inflectionOf(token: string, formWord: string, pos: string | undefined, isFirstWord = true, looseAccents = false): boolean {
+  let a = token.toLowerCase()
+  let b = formWord.toLowerCase()
+  if (looseAccents) {
+    a = stripAccents(a)
+    b = stripAccents(b)
+  }
   if (a === b) return true
   if (pos === 'v' && isFirstWord) {
+    // the infinitive with clitics: fiarle, levantarlo, darmelo
+    if (/(ar|er|ir)$/.test(b) && a.startsWith(b) && /^(me|te|se|nos|le|les|lo|la|los|las)(lo|la|los|las)?$/.test(a.slice(b.length))) return true
     const m = b.match(/^(.{2,}?)(ar|er|ir)(se)?$/)
-    if (!m || m[1].length < 3 || !a.startsWith(m[1])) return false
-    return VERB_ENDINGS[m[2] as 'ar' | 'er' | 'ir'].includes(stripClitic(a.slice(m[1].length)))
+    if (!m || m[1].length < 3) return false
+    const endings = looseAccents ? VERB_ENDINGS[m[2] as 'ar' | 'er' | 'ir'].map(stripAccents) : VERB_ENDINGS[m[2] as 'ar' | 'er' | 'ir']
+    return verbStems(m[1]).some((stem) => a.startsWith(stem) && endings.includes(stripClitic(a.slice(stem.length))))
   }
-  return nominalForms(b).includes(a)
+  return (looseAccents ? nominalForms(b).map(stripAccents) : nominalForms(b)).includes(a)
 }
 
 /** The first place in the sentence where the form (one or several words) or an inflection of it appears as whole words. */
-export function findFormRange(sentence: string, form: string, pos?: string): FormRange | null {
+export function findFormRange(sentence: string, form: string, pos?: string, looseAccents = false): FormRange | null {
   const formWords = form.match(TOKEN)
   if (!formWords) return null
   const tokens = [...sentence.matchAll(TOKEN)].map((m) => ({ text: m[0], start: m.index, end: m.index + m[0].length }))
@@ -176,7 +241,7 @@ export function findFormRange(sentence: string, form: string, pos?: string): For
     let ok = true
     for (let j = 0; j < formWords.length && ok; j++) {
       const t = tokens[i + j]
-      ok = inflectionOf(t.text, formWords[j], pos, j === 0)
+      ok = inflectionOf(t.text, formWords[j], pos, j === 0, looseAccents)
       if (ok && j > 0 && !/^\s+$/.test(sentence.slice(tokens[i + j - 1].end, t.start))) ok = false
     }
     if (ok) return { start: tokens[i].start, end: tokens[i + formWords.length - 1].end }

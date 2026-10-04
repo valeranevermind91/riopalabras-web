@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { computeStats } from '../data/stats'
-import type { DataState } from '../data/useUserData'
+import type { DataState, UserData } from '../data/useUserData'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
@@ -37,6 +37,8 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScree
               <div className="stat-label">{strings.home.newToLearn}</div>
             </div>
           </div>
+
+          {data.status === 'ready' && data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
           <div className="home-actions">
             <button
@@ -77,6 +79,20 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScree
         {strings.home.debugLink}
       </button>
     </main>
+  )
+}
+
+/** A small, non-blocking notice: favorites / hidden words didn't load yet and are being retried. */
+function DegradedNotice({ data }: { data: UserData }) {
+  const names = data.degraded.map((table) => strings.home.degradedTables[table] ?? table)
+  return (
+    <p className="notice" role="status">
+      {strings.home.degraded(names)}
+      {data.degraded.includes('user_hidden_words') && ` ${strings.home.degradedHiddenWarning}`}{' '}
+      <button type="button" className="btn-small wp-off" onClick={data.retryDegraded}>
+        {strings.home.retryNow}
+      </button>
+    </p>
   )
 }
 

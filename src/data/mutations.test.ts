@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { parseSettings } from './settings'
 import type { Word } from './types'
 
@@ -8,6 +8,7 @@ function word(esWord: string, rank: number, overrides: Partial<Word> = {}): Word
     esWord,
     esRioplatense: null,
     rio: null,
+    fallbackExample: null,
     enTranslation: 'x',
     ruTranslation: 'y',
     exampleSentence: '',
@@ -84,5 +85,28 @@ describe('applySettingsPatch', () => {
     applySettingsPatch(settings, { streak_count: 2 })
     expect(settings.streakCount).toBe(1)
     expect(settings.raw).toEqual({ streak_count: 1 })
+  })
+})
+
+describe('applyFlagLists (favorites / hidden words recovered in the background)', () => {
+  const words = [word('casa', 1), word('Perro', 2), word('gato', 3)]
+
+  it('marks the listed words by key, case-insensitively, and leaves the others and the input untouched', () => {
+    const next = applyFlagLists(words, { favorites: ['CASA'], hidden: ['perro', 'orphan'] })
+    expect(next.map((w) => [w.esWord, w.isFavorite, w.isHidden])).toEqual([
+      ['casa', true, false],
+      ['Perro', false, true],
+      ['gato', false, false],
+    ])
+    expect(next[2]).toBe(words[2]) // unchanged words keep their identity
+    expect(words.every((w) => !w.isFavorite && !w.isHidden)).toBe(true)
+  })
+
+  it('returns the same list when there is nothing to apply, and never un-marks a word', () => {
+    expect(applyFlagLists(words, {})).toBe(words)
+    expect(applyFlagLists(words, { favorites: [], hidden: [] })).toBe(words)
+    const flagged = [word('casa', 1, { isFavorite: true, isHidden: true })]
+    expect(applyFlagLists(flagged, { favorites: ['otra'] })[0].isHidden).toBe(true)
+    expect(applyFlagLists(flagged, { favorites: ['casa'] })[0]).toBe(flagged[0]) // already flagged: the same word object
   })
 })

@@ -24,6 +24,10 @@ export const strings = {
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
     debugLink: 'Debug',
+    degradedTables: { user_favorites: 'favorites', user_hidden_words: 'hidden words' } as Record<string, string>,
+    degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
+    degradedHiddenWarning: 'Words you hid may still show up until it loads.',
+    retryNow: 'Retry now',
   },
 
   learn: {
@@ -126,6 +130,16 @@ export const strings = {
     sessionNew: 'active (new, from /auth/telegram)',
     signInFailed: (message: string) => `Sign-in failed: ${message}`,
 
+    // User-data load log: the real cause of a failed (or retried) load, kept even when a retry succeeded.
+    loadLog: {
+      title: 'User-data load errors',
+      empty: 'No load errors recorded in this session.',
+      degraded: (tables: string[]) => `Degraded now (still retrying in the background): ${tables.join(', ')}`,
+      entry: (e: { at: string; table: string; attempt: number; kind: string; status: number | null; code: string | null; message: string; outcome: string }) =>
+        `${e.at.slice(11, 19)} ${e.table} #${e.attempt} ${e.kind}${e.status !== null ? ` HTTP ${e.status}` : ''}${e.code ? ` [${e.code}]` : ''} → ${e.outcome}: ${e.message}`,
+      clear: 'Clear',
+    },
+
     // Word preview (dev tool, English only): no progress writes, no queue, no Supabase.
     preview: {
       title: 'Word preview',
@@ -153,7 +167,7 @@ export const strings = {
         wordForm: 'word_form_in_example (dictionary)',
         exampleUsed: 'example used',
         sentence: 'example shown (** removed)',
-        overlayTranslations: 'overlay example EN / RU',
+        overlayTranslations: 'example EN / RU (from the overlay or the fallback file)',
         headword: 'headword',
         decision: 'why',
         translation: 'translation shown',
@@ -172,7 +186,7 @@ export const strings = {
         'dictionary-example-has-form': (form: string, matched: string) => `Switched: the dictionary example contains «${form}» (as “${matched}”).`,
         'no-example-has-form': (form: string) => `Not switched (pass-2 fallback): neither the overlay example nor the dictionary example contains «${form}» or an inflection of it, so the standard word keeps the headword and the form is a note.`,
       },
-      exampleUsed: { overlay: 'overlay example used', dictionary: 'dictionary example used' },
+      exampleUsed: { overlay: 'overlay example used', fallback: 'fallback example used (pass 3: the dictionary example showed another word)', dictionary: 'dictionary example used' },
       translationOverride: (applied: boolean) => (applied ? 'overlay override' : 'dictionary'),
     },
   },

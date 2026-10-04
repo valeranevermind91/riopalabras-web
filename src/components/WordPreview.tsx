@@ -69,7 +69,7 @@ function RawBlock({ word }: { word: Word }) {
       <Row label={r.wordForm}>{word.wordFormInExample ?? t.none}</Row>
       <Row label={r.exampleUsed}>{t.exampleUsed[example.source]}</Row>
       <Row label={r.sentence}>{example.sentence || t.none}</Row>
-      {example.source === 'overlay' && (
+      {example.source !== 'dictionary' && (
         <Row label={r.overlayTranslations}>
           {example.en} / {example.ru}
         </Row>

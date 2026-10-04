@@ -8,7 +8,7 @@ import type { Word } from './types'
 // standard word and actually demonstrated by the example sentence's target form.
 
 export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> &
-  Partial<Pick<Word, 'rio' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu'>>
+  Partial<Pick<Word, 'rio' | 'fallbackExample' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu'>>
 type HighlightSource = HeadwordSource & Pick<Word, 'exampleSentence'>
 
 export type HeadwordForm = 'rioplatense' | 'standard'
@@ -65,13 +65,18 @@ export interface EffectiveExample {
   wordForm: string | null
   en: string
   ru: string
-  source: 'overlay' | 'dictionary'
+  source: 'overlay' | 'fallback' | 'dictionary'
 }
 
-/** The example a card shows: the overlay's pass-2 sentence when there is one, otherwise the dictionary's. */
+/**
+ * The example a card shows: the overlay's pass-2 sentence when there is one, else the pass-3 fallback sentence
+ * (for words whose dictionary example shows another word), else the dictionary's own.
+ */
 export function effectiveExample(word: HeadwordSource): EffectiveExample {
   const overlay = word.rio?.example
   if (overlay) return { sentence: stripEmphasisMarkers(overlay.es), wordForm: overlay.wordForm, en: overlay.en, ru: overlay.ru, source: 'overlay' }
+  const fallback = word.fallbackExample
+  if (fallback) return { sentence: stripEmphasisMarkers(fallback.es), wordForm: fallback.wordForm, en: fallback.en, ru: fallback.ru, source: 'fallback' }
   return {
     sentence: stripEmphasisMarkers(word.exampleSentence ?? ''),
     wordForm: word.wordFormInExample?.trim() || null,
@@ -97,7 +102,7 @@ export interface HeadwordDecision {
   /** The text in the shown example that proved the form (as written there), when the overlay switched the headword. */
   matched: string | null
   /** Which example the card shows. */
-  exampleSource: 'overlay' | 'dictionary'
+  exampleSource: 'overlay' | 'fallback' | 'dictionary'
 }
 
 /**
