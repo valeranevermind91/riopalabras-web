@@ -3,7 +3,7 @@
 
 export const RIO_TYPES = ['replacement', 'meaning_shift', 'regional_only', 'form', 'none']
 export const REGIONS = ['ar', 'uy']
-export const REGISTERS = ['neutral', 'informal', 'vulgar', 'offensive']
+export const REGISTERS = ['neutral', 'informal', 'vulgar', 'offensive', 'pejorative']
 export const CONFIDENCES = ['high', 'medium', 'low']
 
 export const LIMITS = { note: 100, reasoning: 200, stdMeaning: 80 }
@@ -56,7 +56,7 @@ const buildProperties = (context) => ({
   alt_region: oneOf(REGIONS, 'Country of alt_form (ar when both countries have their own form); null exactly when alt_form is null.', true),
   std_meaning_en: str(`Standard (Peninsular) meaning in English, max ${LIMITS.stdMeaning} chars. meaning_shift only, else null.`, true),
   std_meaning_ru: str(`Same in Russian, max ${LIMITS.stdMeaning} chars. meaning_shift only, else null.`, true),
-  register: oneOf(REGISTERS, 'How rio_form sounds as a learner would use it (rio_form, not es_word; for none, es_word): neutral | informal | vulgar | offensive.'),
+  register: oneOf(REGISTERS, 'How rio_form sounds as a learner would use it (rio_form, not es_word; for none, es_word): neutral | informal | vulgar | offensive | pejorative (dismissive or belittling about people, milder than offensive).'),
   note_en: str(`HARD limit ${LIMITS.note} chars including spaces, aim for 70. Only when it prevents a real mistake, else null.`, true),
   note_ru: str(`Russian version of note_en, HARD limit ${LIMITS.note} chars including spaces (Russian runs long: aim for 70); null exactly when note_en is null.`, true),
   ...(context === 'full'
@@ -184,7 +184,7 @@ VULGAR OR TABOO STANDARD MEANING
 When the standard meaning of es_word is vulgar or taboo in everyday Rioplatense speech and an ordinary, everyday word is used for that meaning instead, record it as replacement: es_word is the standard word, rio_form is the everyday word, and the warning goes in note_en / note_ru (what es_word sounds like to Rioplatense ears, and what to say). Do not use meaning_shift for this, and do not make the vulgar word the rio_form.
 
 REGISTER AND NOTES
-register describes how rio_form sounds when a learner uses it: neutral, informal, vulgar or offensive. It describes rio_form, not es_word; for none, which has no rio_form, it describes es_word. note_en and note_ru are only for cases where a learner could make a real mistake without them, for example: standard "coger" means "to take, to grab", but in Argentina and Uruguay it is vulgar (to have sex) and the everyday verb is "agarrar". Otherwise both are null (both or neither).
+register describes how rio_form sounds when a learner uses it: neutral, informal, vulgar, offensive or pejorative (dismissive or belittling about people, milder than offensive). It describes rio_form, not es_word; for none, which has no rio_form, it describes es_word. note_en and note_ru are only for cases where a learner could make a real mistake without them, for example: standard "coger" means "to take, to grab", but in Argentina and Uruguay it is vulgar (to have sex) and the everyday verb is "agarrar". Otherwise both are null (both or neither).
 
 LENGTH LIMITS ARE HARD
 note_en and note_ru must each be at most 100 characters INCLUDING spaces; aim for about 70. Russian runs longer than English, so shorten the Russian first. reasoning is at most 200 characters. Anything longer is rejected.

@@ -1332,7 +1332,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Cigarro\" or \"cigarrillo\" is the more usual everyday word; \"pucho\" is the colloquial one.",
+      "ru": "\"Cigarro\" или \"cigarrillo\" — более обычное слово в повседневной речи; \"pucho\" — разговорное."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "high",
@@ -1352,6 +1355,7 @@
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
       "proposed by B (informal, high) and the legacy field; A and Claude said none",
       "questionnaire item 25 (cigarro → pucho): n=8, yes=8",
+      "manual override (Valera): register informal and a note; reason: questionnaire free-text (Salto respondent)",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage equally_used (gemini-3.1-pro-preview): 'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used."
     ]
@@ -2972,7 +2976,10 @@
     "alt_region": null,
     "region": "uy",
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Cigarro\" or \"cigarrillo\" is the more usual everyday word; \"pucho\" is the colloquial one.",
+      "ru": "\"Cigarro\" или \"cigarrillo\" — более обычное слово в повседневной речи; \"pucho\" — разговорное."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "medium",
@@ -2987,6 +2994,7 @@
       "proposal from legacy (A said none); region set to uy by rule",
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
       "register informal taken from B's entry for the same form (cigarrillo → pucho)",
+      "manual override (Valera): register informal and a note; reason: questionnaire free-text (Salto respondent)",
       "std_usage equally_used (gemini-3.1-pro-preview): \"Cigarro\" is the standard everyday word for cigarette, while \"pucho\" is a very common informal slang term; both are widely used."
     ]
   },
@@ -3375,8 +3383,11 @@
     "alt_form": null,
     "alt_region": null,
     "region": null,
-    "register": "informal",
-    "notes": null,
+    "register": "pejorative",
+    "notes": {
+      "en": "Dismissive word. The neutral phrase is \"persona en situación de calle\".",
+      "ru": "Пренебрежительное слово. Нейтральное выражение: \"persona en situación de calle\"."
+    },
     "std_meaning": null,
     "translation": {
       "en": "homeless person, tramp",
@@ -3393,6 +3404,7 @@
       "questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision)",
       "DAMER: «linyera» has Ar and Ur labels (rio_form, any sense)",
       "A and B agree: replacement linyera",
+      "manual override (Valera): register pejorative and a note; reason: questionnaire free-text (Salto respondent)",
       "std_usage less_common (gemini-3.1-pro-preview): Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary."
     ]
   },

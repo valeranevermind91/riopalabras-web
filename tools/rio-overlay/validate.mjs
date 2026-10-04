@@ -195,7 +195,7 @@ function validateEntryRules(entry, input) {
 
   // ---- audit hints (not failures) ----
   if (entry.confidence === 'low') warn('low_confidence', 'non-none entry with low confidence')
-  if (entry.register === 'vulgar' || entry.register === 'offensive') warn('sensitive_register', entry.register)
+  if (entry.register === 'vulgar' || entry.register === 'offensive' || entry.register === 'pejorative') warn('sensitive_register', entry.register)
 
   return { errors, warnings, flags, currentExampleShowsForm }
 }

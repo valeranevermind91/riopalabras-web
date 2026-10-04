@@ -249,6 +249,39 @@ for (const w of MANUAL_PENDING) {
   result.get(w).evidence.push('manual triage (Valera): left pending')
 }
 
+// ---------------------------------------------------------------- rule 4b: manual overrides from questionnaire free text
+// Applied after every automatic step, before the validator (so the new register value is checked too). Each one is a hand decision.
+const FREE_TEXT_REASON = 'questionnaire free-text (Salto respondent)'
+const CIGARRO_NOTE = {
+  form: 'pucho',
+  register: 'informal',
+  notes: {
+    en: '"Cigarro" or "cigarrillo" is the more usual everyday word; "pucho" is the colloquial one.',
+    ru: '"Cigarro" или "cigarrillo" — более обычное слово в повседневной речи; "pucho" — разговорное.',
+  },
+}
+const MANUAL_OVERRIDES = {
+  vagabundo: {
+    form: 'linyera',
+    register: 'pejorative',
+    notes: {
+      en: 'Dismissive word. The neutral phrase is "persona en situación de calle".',
+      ru: 'Пренебрежительное слово. Нейтральное выражение: "persona en situación de calle".',
+    },
+  },
+  cigarrillo: CIGARRO_NOTE,
+  cigarro: CIGARRO_NOTE, // same note, same reason: it is the same pucho entry from the other standard word
+}
+const manualOverrideLog = []
+for (const [w, ov] of Object.entries(MANUAL_OVERRIDES)) {
+  const o = result.get(w)
+  if (!o || o.status !== 'accepted' || o.rio_form !== ov.form) throw new Error(`manual override for ${w}: expected an accepted entry with rio_form ${ov.form}`)
+  manualOverrideLog.push({ es_word: w, rio_form: o.rio_form, register: { from: o.register, to: ov.register }, hadNote: o.notes !== null })
+  o.register = ov.register
+  o.notes = ov.notes
+  o.evidence.push(`manual override (Valera): register ${ov.register} and a note; reason: ${FREE_TEXT_REASON}`)
+}
+
 // ---------------------------------------------------------------- rule 5: validator
 const validatorIssues = []
 for (const w of words) {
@@ -406,6 +439,8 @@ for (const o of ordered.filter((x) => x.status === 'pending')) {
 const weak = ordered.filter((o) => o.status === 'accepted' && o.evidence.some((e) => e.startsWith('questionnaire')) && (o.evidence.some((e) => /^proposal from/.test(e)) || (!o.evidence.some((e) => e.startsWith('DAMER')) && !o.evidence.includes('3-way agree'))))
 md.push('', '## Accepted on questionnaire evidence only (the weakest accepted entries)', '', 'Either the form came from a proposal where A said none (confidence medium, region uy by rule), or the only support is the questionnaire (no DAMER label, no 3-way agreement).', '')
 for (const o of weak) md.push(`- ${o.es_word} → ${o.rio_form}${o.region ? ` @${o.region}` : ''} (${o.confidence}): ${o.evidence.filter((e) => e.startsWith('questionnaire') || e.startsWith('proposal')).join('; ')}`)
+md.push('', '## Manual overrides from questionnaire free text', '', `Reason recorded for each: ${FREE_TEXT_REASON}.`, '')
+for (const m of manualOverrideLog) md.push(`- ${m.es_word} → ${m.rio_form}: register ${m.register.from} → ${m.register.to}; note ${m.hadNote ? 'replaced' : 'added'} (EN and RU)`)
 md.push('', '## Pass 2 examples', '')
 if (!pass2) md.push('No examples.v1.json: no pass-2 examples attached.')
 else {
@@ -427,11 +462,11 @@ md.push('', '## Standard-word usage (pass 4)', '')
 if (!pass4) md.push('No std-usage.v1.json: no std_usage attached.')
 else {
   const withUsage = ordered.filter((o) => o.std_usage)
-  const groups = { not_used: 'in Spain', less_common: 'also', equally_used: 'also' }
+  const groups = { not_used: 'hint "rarely used here"', less_common: 'no hint', equally_used: 'hint "also common"' }
   md.push(`Question asked of \`${pass4.meta.model}\` (run \`${pass4.meta.run}\`), per entry whose form differs from es_word: is es_word itself used in everyday speech in that region? ${pass4.meta.generated} answered, ${pass4.meta.failed} failed, cost about $${(pass4.meta.costUsd ?? 0).toFixed(4)}. Overrides applied: ${Object.keys(STD_USAGE_OVERRIDES).length}.`, '')
   for (const [value, label] of Object.entries(groups)) {
     const list = withUsage.filter((o) => o.std_usage === value)
-    md.push(`### ${value} (${list.length}; the standard word is labelled "${label}")`, '')
+    md.push(`### ${value} (${list.length}; card shows: ${label})`, '')
     for (const o of list) md.push(`- ${o.es_word} → ${o.rio_form}${o.region ? ` @${o.region}` : ''}: ${o.std_usage_reason}`)
     md.push('')
   }

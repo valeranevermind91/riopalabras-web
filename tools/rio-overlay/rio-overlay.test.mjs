@@ -414,6 +414,13 @@ describe('validateEntry: every rule reports, nothing is repaired', () => {
     const warned = r.warnings.map((x) => x.split(':')[0])
     expect(warned).toEqual(expect.arrayContaining(['low_confidence', 'sensitive_register', 'translation_unchanged']))
   })
+
+  it('accepts the pejorative register (added for linyera) and flags it as sensitive', () => {
+    expect(REGISTERS).toContain('pejorative')
+    const r = bad({ register: 'pejorative' })
+    expect(r.errors).toEqual([])
+    expect(r.warnings.map((x) => x.split(':')[0])).toContain('sensitive_register')
+  })
 })
 
 describe('validateBatch', () => {
