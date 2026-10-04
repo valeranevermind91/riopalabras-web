@@ -57,32 +57,55 @@ export function formMatches(wordForm: string | null, variant: string): boolean {
   return prefix >= 3 && prefix >= Math.min(a.length, b.length) - 2
 }
 
-/** The overlay replacement form leads only if the example sentence shows it, as written or inflected. */
-function overlayHeadword(word: HeadwordSource): Headword {
+export type HeadwordReason =
+  | 'no-overlay'
+  | 'legacy'
+  | 'not-replacement'
+  | 'unclean-form'
+  | 'same-as-es-word'
+  | 'sentence-has-form'
+  | 'sentence-lacks-form'
+
+export interface HeadwordDecision {
+  switched: boolean
+  reason: HeadwordReason
+  /** The text in the sentence that proved the form (as written there), when it switched through the overlay. */
+  matched: string | null
+}
+
+/** Why a card leads with the Rioplatense form or not. `headword()` is built on this, so the explanation cannot drift. */
+export function headwordDecision(word: HeadwordSource): HeadwordDecision {
   const rio = word.rio
-  if (
-    rio &&
-    rio.type === 'replacement' &&
-    isCleanVariant(rio.form) &&
-    lower(rio.form) !== lower(word.esWord) &&
-    findFormRange(stripEmphasisMarkers(word.exampleSentence ?? ''), rio.form, word.pos)
-  ) {
-    return { text: rio.form, form: 'rioplatense', secondary: word.esWord }
+  if (!rio) {
+    if (word.esRioplatense) return { switched: legacyHeadword(word) !== null, reason: 'legacy', matched: null }
+    return { switched: false, reason: 'no-overlay', matched: null }
   }
-  return { text: word.esWord, form: 'standard', secondary: null }
+  if (rio.type !== 'replacement') return { switched: false, reason: 'not-replacement', matched: null }
+  if (!isCleanVariant(rio.form)) return { switched: false, reason: 'unclean-form', matched: null }
+  if (lower(rio.form) === lower(word.esWord)) return { switched: false, reason: 'same-as-es-word', matched: null }
+  const sentence = stripEmphasisMarkers(word.exampleSentence ?? '')
+  const range = findFormRange(sentence, rio.form, word.pos)
+  return range
+    ? { switched: true, reason: 'sentence-has-form', matched: sentence.slice(range.start, range.end) }
+    : { switched: false, reason: 'sentence-lacks-form', matched: null }
+}
+
+/** The legacy rule: a clean es_rioplatense value, different from es_word, shown by the example's word form. */
+function legacyHeadword(word: HeadwordSource): string | null {
+  const rio = word.esRioplatense?.trim() ?? ''
+  const useRio = rio !== '' && isCleanVariant(rio) && lower(rio) !== lower(word.esWord) && formMatches(word.wordFormInExample, rio)
+  return useRio ? rio : null
 }
 
 export function headword(word: HeadwordSource): Headword {
-  if (word.rio) return overlayHeadword(word)
+  if (word.rio) {
+    return headwordDecision(word).switched
+      ? { text: word.rio.form, form: 'rioplatense', secondary: word.esWord }
+      : { text: word.esWord, form: 'standard', secondary: null }
+  }
 
-  const rio = word.esRioplatense?.trim() ?? ''
-  const useRio =
-    rio !== '' &&
-    isCleanVariant(rio) &&
-    lower(rio) !== lower(word.esWord) &&
-    formMatches(word.wordFormInExample, rio)
-
-  return useRio
+  const rio = legacyHeadword(word)
+  return rio !== null
     ? { text: rio, form: 'rioplatense', secondary: word.esWord }
     : { text: word.esWord, form: 'standard', secondary: null }
 }

@@ -605,3 +605,78 @@ dd {
     transition: none;
   }
 }
+
+/* ---- Debug: word preview ---- */
+
+.wp h3 {
+  margin: 20px 0 8px;
+  font-size: 14px;
+  color: var(--tg-hint-color);
+}
+
+.wp-quick,
+.wp-lang {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.wp-label {
+  display: block;
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--tg-hint-color);
+}
+
+.wp-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--tg-hint-color);
+  border-radius: 8px;
+  background: var(--tg-bg-color);
+  color: var(--tg-text-color);
+  font: inherit;
+}
+
+.wp-results {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wp-hit {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--tg-hint-color) 25%, transparent);
+  background: transparent;
+  color: var(--tg-text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wp-hit.is-selected {
+  background: color-mix(in srgb, var(--tg-button-color) 18%, transparent);
+}
+
+.wp-hit-rio {
+  color: var(--tg-hint-color);
+  font-size: 13px;
+}
+
+.wp-off {
+  background: transparent;
+  color: var(--tg-text-color);
+  border: 1px solid var(--tg-hint-color);
+}
+
+.wp-raw dd {
+  font-size: 14px;
+  word-break: break-word;
+}

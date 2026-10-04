@@ -1,5 +1,7 @@
 import { DataSection } from '../DataSection'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { WordPreview } from '../components/WordPreview'
+import { langFromSettings } from '../data/rio'
 import type { DataState } from '../data/useUserData'
 import type { AuthState } from '../lib/auth'
 import type { TelegramUser } from '../lib/telegram'
@@ -53,6 +55,8 @@ export function DebugScreen({ telegram, auth, data, onBack }: DebugScreenProps) 
       </section>
 
       <DataSection state={data} />
+
+      <WordPreview defaultLang={data.status === 'ready' ? langFromSettings(data.data.settings) : 'ru'} />
 
       <section className="card">
         <h2>Telegram identity</h2>
