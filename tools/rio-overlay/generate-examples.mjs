@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { EXAMPLE_SCHEMA, SYSTEM_PROMPT, buildUserText, selectScope, validateExample } from './examples.mjs'
+import { STD_USAGE_SCHEMA, STD_USAGE_SYSTEM_PROMPT, buildStdUsageUserText, selectStdUsageScope, validateStdUsage } from './stdusage.mjs'
 import { FALLBACK_SCHEMA, FALLBACK_SYSTEM_PROMPT, buildFallbackUserText, selectFallbackScope, validateFallback } from './fallback.mjs'
 import { GeminiError, OUT_DIR, PRICING, ROOT, chunk, loadApiKey, log, logErr, MISSING_KEY_HELP, request, setSecret, sleep, writeJson } from './generate.mjs'
 
@@ -51,14 +52,32 @@ const PASSES = {
     failure: (item) => ({ es_word: item.es_word, old_word_form: item.old_word_form }),
     show: (w) => w,
   },
+  // Pass 4: is the standard word itself used in everyday speech? (stdusage.mjs). One short answer per overlay entry.
+  stdusage: {
+    resultKey: 'usage',
+    scopeNote: 'to classify (is the standard word itself used in everyday speech?)',
+    temperature: 0.2,
+    systemPrompt: STD_USAGE_SYSTEM_PROMPT,
+    schema: STD_USAGE_SCHEMA,
+    userText: buildStdUsageUserText,
+    validate: validateStdUsage,
+    defaultOut: 'tools/rio-overlay/results/overlay-v1/std-usage.v1.json',
+    select: (args, dictionary) => ({ items: selectStdUsageScope(readJsonFile(args.overlay), dictionary), excluded: [] }),
+    columns: ['word', 'rio_form', 'pos', 'region'],
+    row: (i) => [i.es_word, i.rio_form, i.pos, String(i.region ?? 'both')],
+    example: (item, r) => ({ std_usage: r.row.std_usage, reason: r.row.reason, rio_form: item.rio_form, warnings: r.warnings }),
+    failure: (item) => ({ es_word: item.es_word, rio_form: item.rio_form }),
+    show: (w, e) => `${w} → ${e.rio_form}: ${e.std_usage}`,
+  },
 }
 
 const HELP = `Usage: node tools/rio-overlay/generate-examples.mjs [options]
 
 Without --run: dry run (scope + cost estimate, no API call, no key needed).
 
-  --pass overlay|fallback  overlay (default): pass 2, examples for overlay entries. fallback: pass 3, neutral sentences with the standard word
-                       for words outside the overlay whose old example shows another word.
+  --pass overlay|fallback|stdusage  overlay (default): pass 2, examples for overlay entries. fallback: pass 3, neutral sentences with the standard word
+                       for words outside the overlay whose old example shows another word. stdusage: is es_word itself used in
+                       everyday speech? (decides the label of the standard word on a card).
   --run NAME           actually generate; names out/NAME.checkpoint.json, out/NAME.raw.jsonl
   --model ID           default ${DEFAULT_MODEL}
   --batch-size N       entries per request (default 8)
@@ -93,10 +112,11 @@ function parseArgs(argv) {
   return {
     ...args,
     pass,
+    passName: args.pass ?? 'overlay',
     model: args.model ?? DEFAULT_MODEL,
     batchSize: Math.max(1, num('batch-size', 8)),
     delayMs: num('delay-ms', 6000),
-    temperature: num('temperature', 0.7),
+    temperature: num('temperature', pass.temperature ?? 0.7),
     thinking: args.thinking === undefined ? null : num('thinking', 0),
     maxOutputTokens: num('max-output-tokens', 16384),
     retryBaseMs: num('retry-base-ms', 4000),
@@ -120,7 +140,7 @@ function estimate(items, batchSize, pass) {
 }
 
 function printScope(items, excluded, pass) {
-  log(`${items.length} entries need a new example:`)
+  log(`${items.length} entries ${pass.scopeNote ?? 'need a new example'}:`)
   const widths = pass.columns.map((c, i) => Math.max(c.length, ...items.map((it) => String(pass.row(it)[i]).length)))
   const line = (cells) => cells.map((c, i) => String(c).padEnd(widths[i])).join('  ')
   log(line(pass.columns))
@@ -210,14 +230,17 @@ function finish(args, items, cp, hash) {
     else failed.push({ ...args.pass.failure(item), errors: r ? r.errors : [cp.failedWords[item.es_word] ?? 'not requested'], raw: r?.row ?? null })
   }
   const result = {
-    meta: { pass: args.pass === PASSES.fallback ? 'fallback' : 'overlay', model: args.model, run: args.run, promptHash: hash, generatedAt: new Date().toISOString(), selected: items.length, generated: Object.keys(examples).length, failed: failed.length, usage: cp.usage, costUsd: cost },
-    examples,
+    meta: { pass: args.passName, model: args.model, run: args.run, promptHash: hash, generatedAt: new Date().toISOString(), selected: items.length, generated: Object.keys(examples).length, failed: failed.length, usage: cp.usage, costUsd: cost },
+    [args.pass.resultKey ?? 'examples']: examples,
     failed,
   }
   writeJson(args.out, result)
 
   if (args.verbose) {
-    for (const [w, e] of Object.entries(examples)) log(`\n${args.pass.show(w, e)}\n  ES ${e.es}\n  EN ${e.en}\n  RU ${e.ru}\n  form: ${e.word_form}${e.warnings.length ? `\n  warnings: ${e.warnings.join('; ')}` : ''}`)
+    for (const [w, e] of Object.entries(examples)) {
+      if (args.passName === 'stdusage') log(`${args.pass.show(w, e)}  (${e.reason})`)
+      else log(`\n${args.pass.show(w, e)}\n  ES ${e.es}\n  EN ${e.en}\n  RU ${e.ru}\n  form: ${e.word_form}${e.warnings.length ? `\n  warnings: ${e.warnings.join('; ')}` : ''}`)
+    }
   }
   for (const f of failed) log(`FAILED ${f.es_word}: ${f.errors.join('; ')}`)
   log(`\nWrote ${path.relative(ROOT, args.out)}: ${result.meta.generated} generated, ${failed.length} failed`)

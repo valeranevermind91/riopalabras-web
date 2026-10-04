@@ -10,6 +10,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -26,6 +27,7 @@
     },
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high",
     "example": {
       "es": "Vos siempre llegás tarde a las reuniones del trabajo.",
@@ -45,6 +47,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "equally_used",
     "confidence": "medium",
     "example": {
       "es": "El gurí estaba jugando a la pelota en la rambla.",
@@ -67,6 +70,7 @@
     },
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high",
     "example": {
       "es": "Mañana voy a la feria con vos a comprar verduras.",
@@ -86,6 +90,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -99,6 +104,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -115,6 +121,7 @@
       "en": "car",
       "ru": "машина, автомобиль"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -134,6 +141,7 @@
       "en": "to grab, to catch",
       "ru": "брать, хватать"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -150,6 +158,7 @@
       "en": "pretty, nice, beautiful",
       "ru": "красивый, милый"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -166,6 +175,7 @@
       "en": "your (plural)",
       "ru": "ваш (множественное число)"
     },
+    "std_usage": "not_used",
     "confidence": "medium"
   },
   {
@@ -182,6 +192,7 @@
       "en": "to pick up, to lift",
       "ru": "поднимать, подбирать"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -198,6 +209,7 @@
       "en": "you (plural)",
       "ru": "вы (множественное число)"
     },
+    "std_usage": "not_used",
     "confidence": "medium"
   },
   {
@@ -214,6 +226,7 @@
       "en": "subway",
       "ru": "метро"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -230,6 +243,7 @@
       "en": "newspaper",
       "ru": "газета"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -249,6 +263,7 @@
       "en": "brave, tough",
       "ru": "смелый, крутой"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Hay que ser muy guapo para caminar solo por ese barrio.",
@@ -271,6 +286,7 @@
       "en": "mayor",
       "ru": "мэр"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -287,6 +303,7 @@
       "en": "nonsense, stupid thing",
       "ru": "глупость, ерунда"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -303,6 +320,7 @@
       "en": "apartment",
       "ru": "квартира"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -316,6 +334,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Me parece que vos tenés que descansar un poco más.",
@@ -338,6 +357,7 @@
       "en": "highway, route",
       "ru": "шоссе, трасса"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -354,6 +374,7 @@
       "en": "pig",
       "ru": "свинья"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -370,6 +391,7 @@
       "en": "to choose, to select",
       "ru": "выбирать, выбрать"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -386,6 +408,7 @@
       "en": "remote control",
       "ru": "пульт дистанционного управления, пульт"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -402,6 +425,7 @@
       "en": "hair",
       "ru": "волосы"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -415,6 +439,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high",
     "example": {
       "es": "Tomé el ómnibus equivocado y terminé en el centro de Montevideo.",
@@ -434,6 +459,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -453,6 +479,7 @@
       "en": "cake",
       "ru": "торт"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -466,6 +493,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -479,6 +507,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "equally_used",
     "confidence": "high",
     "example": {
       "es": "Salgo un ratito al balcón a fumarme un pucho y vuelvo.",
@@ -501,6 +530,7 @@
       "en": "car",
       "ru": "автомобиль, машина"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -517,6 +547,7 @@
       "en": "queue, line",
       "ru": "очередь"
     },
+    "std_usage": "equally_used",
     "confidence": "medium"
   },
   {
@@ -536,6 +567,7 @@
       "en": "woman, girl, chick",
       "ru": "девушка, женщина"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Esa mina que trabaja en la panadería es re simpática.",
@@ -555,6 +587,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -568,6 +601,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "not_used",
     "confidence": "high"
   },
   {
@@ -587,6 +621,7 @@
       "en": "suit jacket, blazer",
       "ru": "пиджак"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Para la entrevista de trabajo, ponete una camisa blanca y un saco azul.",
@@ -606,6 +641,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -622,6 +658,7 @@
       "en": "swimming pool, sink",
       "ru": "бассейн, раковина"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -635,6 +672,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -648,6 +686,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -664,6 +703,7 @@
       "en": "pen",
       "ru": "ручка"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -680,6 +720,7 @@
       "en": "estate, ranch",
       "ru": "поместье, ранчо"
     },
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -699,6 +740,7 @@
       "en": "street market, farmers' market",
       "ru": "уличный рынок, продуктовый рынок"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Los domingos siempre compro la verdura y la fruta fresca en la feria.",
@@ -721,6 +763,7 @@
       "en": "gasoline, petrol",
       "ru": "бензин"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -737,6 +780,7 @@
       "en": "potato",
       "ru": "картофель, картошка"
     },
+    "std_usage": "not_used",
     "confidence": "high"
   },
   {
@@ -756,6 +800,7 @@
       "en": "to fuck",
       "ru": "трахаться"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -775,6 +820,7 @@
       "en": "bus ticket, lottery ticket",
       "ru": "билет на автобус, лотерейный билет"
     },
+    "std_usage": null,
     "confidence": "medium",
     "example": {
       "es": "Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto.",
@@ -797,6 +843,7 @@
       "en": "to hurry, to rush",
       "ru": "торопить, спешить"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -816,6 +863,7 @@
       "en": "spaced out, distracted",
       "ru": "рассеянный, витающий в облаках"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Perdoná que no te escuché, estaba re colgado mirando por la ventana.",
@@ -838,6 +886,7 @@
       "en": "butter",
       "ru": "сливочное масло"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -854,6 +903,7 @@
       "en": "cost",
       "ru": "стоимость, цена"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -870,6 +920,7 @@
       "en": "testicle, ball",
       "ru": "яичко, яйцо"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -886,6 +937,7 @@
       "en": "ball",
       "ru": "мяч"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -902,6 +954,7 @@
       "en": "kid, lad",
       "ru": "парень, мальчик"
     },
+    "std_usage": "not_used",
     "confidence": "high"
   },
   {
@@ -915,6 +968,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "medium"
   },
   {
@@ -931,6 +985,7 @@
       "en": "idiot, jerk",
       "ru": "придурок, идиот"
     },
+    "std_usage": "not_used",
     "confidence": "high"
   },
   {
@@ -947,6 +1002,7 @@
       "en": "skirt",
       "ru": "юбка"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -963,6 +1019,7 @@
       "en": "cool, great",
       "ru": "круто, классный"
     },
+    "std_usage": "not_used",
     "confidence": "high",
     "example": {
       "es": "El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas.",
@@ -985,6 +1042,7 @@
       "en": "goalkeeper",
       "ru": "вратарь"
     },
+    "std_usage": "less_common",
     "confidence": "high",
     "example": {
       "es": "El golero de Peñarol atajó un penal decisivo en el último minuto del partido.",
@@ -1007,6 +1065,7 @@
       "en": "competition",
       "ru": "соревнование"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1020,6 +1079,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "equally_used",
     "confidence": "medium"
   },
   {
@@ -1036,6 +1096,7 @@
       "en": "van, pickup truck",
       "ru": "фургон, пикап"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1052,6 +1113,7 @@
       "en": "bucket",
       "ru": "ведро"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1071,6 +1133,7 @@
       "en": "breaded chicken breast",
       "ru": "куриный шницель (из грудки)"
     },
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Me pedí una suprema con puré para almorzar en el bar de la esquina.",
@@ -1093,6 +1156,7 @@
       "en": "chance, opportunity",
       "ru": "шанс, возможность"
     },
+    "std_usage": null,
     "confidence": "medium",
     "example": {
       "es": "Si estudiás un poco más, tenés chance de salvar el examen de la facultad.",
@@ -1115,6 +1179,7 @@
       "en": "sock",
       "ru": "носок"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1131,6 +1196,7 @@
       "en": "nursing home, retirement home",
       "ru": "дом престарелых"
     },
+    "std_usage": "less_common",
     "confidence": "high",
     "example": {
       "es": "Mi abuela vive en una casa de salud cerca de la rambla.",
@@ -1153,6 +1219,7 @@
       "en": "homeless person, tramp",
       "ru": "бездомный, бродяга"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1169,6 +1236,7 @@
       "en": "roof, ceiling",
       "ru": "крыша, потолок"
     },
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1182,6 +1250,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "not_used",
     "confidence": "high"
   },
   {
@@ -1198,6 +1267,7 @@
       "ru": "лепешка, пощечина"
     },
     "translation": null,
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Para tu cumpleaños te voy a preparar una torta de chocolate riquísima.",
@@ -1223,6 +1293,7 @@
       "en": "marker (pen)",
       "ru": "маркер (ручка)"
     },
+    "std_usage": null,
     "confidence": "medium",
     "example": {
       "es": "Prestame un marcador rojo para subrayar los títulos de estos apuntes.",
@@ -1248,6 +1319,7 @@
       "en": "light bulb",
       "ru": "лампочка"
     },
+    "std_usage": null,
     "confidence": "medium",
     "example": {
       "es": "Comprá un foco nuevo en el súper porque se quemó el del pasillo.",
@@ -1267,6 +1339,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1283,6 +1356,7 @@
       "ru": "политическая пропаганда"
     },
     "translation": null,
+    "std_usage": null,
     "confidence": "high",
     "example": {
       "es": "Vi una propaganda en la tele sobre un champú muy bueno.",
@@ -1302,6 +1376,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "high"
   },
   {
@@ -1315,6 +1390,7 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
+    "std_usage": "less_common",
     "confidence": "medium"
   }
 ]

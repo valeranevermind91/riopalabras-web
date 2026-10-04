@@ -1,0 +1,400 @@
+{
+  "meta": {
+    "pass": "stdusage",
+    "model": "gemini-3.1-pro-preview",
+    "run": "p4-stdusage",
+    "promptHash": "24c89b7110b7",
+    "generatedAt": "2026-10-04T04:00:13.908Z",
+    "selected": 63,
+    "generated": 63,
+    "failed": 0,
+    "usage": {
+      "requests": 8,
+      "prompt": 5490,
+      "output": 2875,
+      "thoughts": 24819
+    },
+    "costUsd": 0.343308
+  },
+  "usage": {
+    "aquí": {
+      "std_usage": "less_common",
+      "reason": "'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech.",
+      "rio_form": "acá",
+      "warnings": []
+    },
+    "tú": {
+      "std_usage": "less_common",
+      "reason": "'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall.",
+      "rio_form": "vos",
+      "warnings": []
+    },
+    "chico": {
+      "std_usage": "equally_used",
+      "reason": "Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children.",
+      "rio_form": "gurí",
+      "warnings": []
+    },
+    "contigo": {
+      "std_usage": "less_common",
+      "reason": "'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech.",
+      "rio_form": "con vos",
+      "warnings": []
+    },
+    "quizá": {
+      "std_usage": "less_common",
+      "reason": "'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation.",
+      "rio_form": "capaz",
+      "warnings": []
+    },
+    "quizás": {
+      "std_usage": "less_common",
+      "reason": "While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often.",
+      "rio_form": "capaz",
+      "warnings": []
+    },
+    "coche": {
+      "std_usage": "less_common",
+      "reason": "'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently.",
+      "rio_form": "auto",
+      "warnings": []
+    },
+    "coger": {
+      "std_usage": "not_used",
+      "reason": "'Coger' is vulgar slang for sex in this region. It is never used in everyday speech to mean 'to grab' or 'to take'.",
+      "rio_form": "agarrar",
+      "warnings": []
+    },
+    "bonito": {
+      "std_usage": "less_common",
+      "reason": "Lindo is the default adjective for beautiful or pretty. Bonito sounds a bit like a TV dub or foreign, but is occasionally used.",
+      "rio_form": "lindo",
+      "warnings": []
+    },
+    "vuestro": {
+      "std_usage": "not_used",
+      "reason": "Vuestro is strictly Peninsular or archaic. Rioplatense speakers exclusively use su or de ustedes for the plural possessive.",
+      "rio_form": "su",
+      "warnings": []
+    },
+    "recoger": {
+      "std_usage": "less_common",
+      "reason": "While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech.",
+      "rio_form": "levantar",
+      "warnings": []
+    },
+    "vosotros": {
+      "std_usage": "not_used",
+      "reason": "Vosotros is strictly Peninsular Spanish. Rioplatense speakers exclusively use ustedes for the plural you in all contexts.",
+      "rio_form": "ustedes",
+      "warnings": []
+    },
+    "metro": {
+      "std_usage": "not_used",
+      "reason": "In Argentina, the local subway is exclusively called subte. Metro is only used when referring to subway systems in other countries.",
+      "rio_form": "subte",
+      "warnings": []
+    },
+    "periódico": {
+      "std_usage": "less_common",
+      "reason": "Diario is the everyday word for newspaper. Periódico is understood but sounds formal, bookish, or like a translation.",
+      "rio_form": "diario",
+      "warnings": []
+    },
+    "alcalde": {
+      "std_usage": "less_common",
+      "reason": "Intendente is the traditional title. Alcalde sounds foreign in Argentina, though Uruguay recently introduced it for a lower municipal role.",
+      "rio_form": "intendente",
+      "warnings": []
+    },
+    "tontería": {
+      "std_usage": "less_common",
+      "reason": "Boludez or pavada are the go-to everyday terms. Tontería is understood and sometimes used to avoid swearing, but it is much less frequent.",
+      "rio_form": "boludez",
+      "warnings": []
+    },
+    "apartamento": {
+      "std_usage": "not_used",
+      "reason": "Argentines exclusively say departamento or depto. Apartamento sounds like a translation or foreign Spanish.",
+      "rio_form": "departamento",
+      "warnings": []
+    },
+    "carretera": {
+      "std_usage": "not_used",
+      "reason": "Ruta is the standard everyday word. Carretera sounds bookish, foreign, or like a dubbed movie.",
+      "rio_form": "ruta",
+      "warnings": []
+    },
+    "cerdo": {
+      "std_usage": "less_common",
+      "reason": "Chancho is the everyday word for the animal, but cerdo is still used, especially when referring to pork meat or in slightly more formal contexts.",
+      "rio_form": "chancho",
+      "warnings": []
+    },
+    "escoger": {
+      "std_usage": "not_used",
+      "reason": "Elegir is used universally. Escoger sounds very foreign or bookish, partly avoided due to the taboo nature of the verb coger.",
+      "rio_form": "elegir",
+      "warnings": []
+    },
+    "mando": {
+      "std_usage": "not_used",
+      "reason": "Locals say control remoto or el control. Mando is strictly Peninsular Spanish and never used in everyday speech.",
+      "rio_form": "control remoto",
+      "warnings": []
+    },
+    "cabello": {
+      "std_usage": "less_common",
+      "reason": "Pelo is the everyday word. Cabello is understood but sounds formal, mostly restricted to shampoo commercials or literature.",
+      "rio_form": "pelo",
+      "warnings": []
+    },
+    "autobús": {
+      "std_usage": "not_used",
+      "reason": "Uruguayans say ómnibus or bondi. Autobús sounds like a dubbed TV show and is not used in natural local speech.",
+      "rio_form": "ómnibus",
+      "warnings": []
+    },
+    "coño": {
+      "std_usage": "not_used",
+      "reason": "Coño is strongly associated with Spain or the Caribbean. Rioplatense speakers use concha for the anatomy and as a swear word.",
+      "rio_form": "concha",
+      "warnings": []
+    },
+    "pastel": {
+      "std_usage": "not_used",
+      "reason": "'Pastel' refers to specific savory dishes like pastel de papa. For sweet cakes, it sounds like a TV dub; 'torta' is the true everyday word.",
+      "rio_form": "torta",
+      "warnings": []
+    },
+    "enfadado": {
+      "std_usage": "not_used",
+      "reason": "'Enfadado' sounds extremely Peninsular or literary; locals exclusively say 'enojado' or 'caliente' in everyday conversation.",
+      "rio_form": "enojado",
+      "warnings": []
+    },
+    "cigarrillo": {
+      "std_usage": "equally_used",
+      "reason": "'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used.",
+      "rio_form": "pucho",
+      "warnings": []
+    },
+    "carro": {
+      "std_usage": "not_used",
+      "reason": "'Carro' means a horse-drawn cart or shopping cart; for a car, it sounds foreign (Caribbean or Mexican). Locals say 'auto' or 'coche'.",
+      "rio_form": "auto",
+      "warnings": []
+    },
+    "fila": {
+      "std_usage": "equally_used",
+      "reason": "Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people.",
+      "rio_form": "cola",
+      "warnings": []
+    },
+    "maleta": {
+      "std_usage": "less_common",
+      "reason": "'Valija' is the absolute standard. 'Maleta' is understood and appears in some phrases, but sounds a bit foreign or literary in daily speech.",
+      "rio_form": "valija",
+      "warnings": []
+    },
+    "ordenador": {
+      "std_usage": "not_used",
+      "reason": "'Ordenador' is strictly Peninsular Spanish and sounds completely foreign in the region; locals exclusively say 'computadora' or 'compu'.",
+      "rio_form": "computadora",
+      "warnings": []
+    },
+    "camarero": {
+      "std_usage": "less_common",
+      "reason": "'Mozo' is the everyday word. 'Camarero' is understood and seen in formal hospitality contexts, but is much rarer in normal conversation.",
+      "rio_form": "mozo",
+      "warnings": []
+    },
+    "piscina": {
+      "std_usage": "not_used",
+      "reason": "In Argentina, pileta is the absolute standard for swimming pool; piscina sounds formal, bookish, or foreign in everyday speech.",
+      "rio_form": "pileta",
+      "warnings": []
+    },
+    "enfadar": {
+      "std_usage": "not_used",
+      "reason": "Enfadar is strongly marked as Peninsular or dubbed Spanish; Rioplatense speakers exclusively use enojar in daily conversation.",
+      "rio_form": "enojar",
+      "warnings": []
+    },
+    "galleta": {
+      "std_usage": "less_common",
+      "reason": "Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap.",
+      "rio_form": "galletita",
+      "warnings": []
+    },
+    "pluma": {
+      "std_usage": "not_used",
+      "reason": "For writing instruments, lapicera is standard; pluma means feather or specifically a fountain pen, not a regular everyday pen.",
+      "rio_form": "lapicera",
+      "warnings": []
+    },
+    "Hacienda": {
+      "std_usage": "less_common",
+      "reason": "Estancia is the estate; hacienda is used in daily speech but typically refers to the livestock itself or the tax authority.",
+      "rio_form": "estancia",
+      "warnings": []
+    },
+    "gasolina": {
+      "std_usage": "not_used",
+      "reason": "Gasolina sounds like a song lyric or dubbed TV; locals exclusively say nafta when referring to car fuel.",
+      "rio_form": "nafta",
+      "warnings": []
+    },
+    "patata": {
+      "std_usage": "not_used",
+      "reason": "Patata is strictly Peninsular Spanish; Rioplatense speakers exclusively use papa for potato.",
+      "rio_form": "papa",
+      "warnings": []
+    },
+    "follar": {
+      "std_usage": "not_used",
+      "reason": "Follar is recognized as slang from Spain; locals use coger or other regional slang for sexual intercourse.",
+      "rio_form": "coger",
+      "warnings": []
+    },
+    "apresurar": {
+      "std_usage": "not_used",
+      "reason": "Apresurar is formal and bookish; in everyday conversation, Rioplatense speakers almost exclusively use apurar.",
+      "rio_form": "apurar",
+      "warnings": []
+    },
+    "mantequilla": {
+      "std_usage": "not_used",
+      "reason": "Mantequilla sounds like TV dubbing or foreign Spanish; locals exclusively say manteca for butter.",
+      "rio_form": "manteca",
+      "warnings": []
+    },
+    "coste": {
+      "std_usage": "not_used",
+      "reason": "Coste is distinctly Peninsular Spanish; Rioplatense speakers always use costo in everyday speech.",
+      "rio_form": "costo",
+      "warnings": []
+    },
+    "cojón": {
+      "std_usage": "not_used",
+      "reason": "Cojón is heavily marked as Peninsular Spanish; locals use huevo in slang and everyday speech.",
+      "rio_form": "huevo",
+      "warnings": []
+    },
+    "balón": {
+      "std_usage": "not_used",
+      "reason": "Balón sounds like sports journalism or TV dubbing; in everyday life, people play with a pelota.",
+      "rio_form": "pelota",
+      "warnings": []
+    },
+    "chaval": {
+      "std_usage": "not_used",
+      "reason": "Chaval is exclusively Peninsular Spanish; Rioplatense speakers use pibe, chico, or gurí.",
+      "rio_form": "pibe",
+      "warnings": []
+    },
+    "maya": {
+      "std_usage": "not_used",
+      "reason": "Maya refers to the Mayan people. The word for swimsuit is malla. They sound identical due to yeísmo, but maya is not used for the garment.",
+      "rio_form": "malla",
+      "warnings": []
+    },
+    "gilipollas": {
+      "std_usage": "not_used",
+      "reason": "Gilipollas is strictly Peninsular Spanish slang; locals exclusively use boludo or pelotudo.",
+      "rio_form": "boludo",
+      "warnings": []
+    },
+    "falda": {
+      "std_usage": "not_used",
+      "reason": "\"Pollera\" is the absolute standard for a skirt; \"falda\" sounds foreign or bookish in this context, though it is used for a cut of meat.",
+      "rio_form": "pollera",
+      "warnings": []
+    },
+    "guay": {
+      "std_usage": "not_used",
+      "reason": "\"Guay\" is strictly Peninsular Spanish and completely absent from natural Uruguayan speech.",
+      "rio_form": "de más",
+      "warnings": []
+    },
+    "portero": {
+      "std_usage": "not_used",
+      "reason": "For a goalie, \"golero\" or \"arquero\" are used; \"portero\" sounds foreign in sports, though it is the standard word for a building doorman.",
+      "rio_form": "golero",
+      "warnings": []
+    },
+    "competición": {
+      "std_usage": "less_common",
+      "reason": "\"Competencia\" is the standard everyday term, while \"competición\" is mostly restricted to sports journalism or formal contexts.",
+      "rio_form": "competencia",
+      "warnings": []
+    },
+    "cigarro": {
+      "std_usage": "equally_used",
+      "reason": "\"Cigarro\" is the standard everyday word for cigarette, while \"pucho\" is a very common informal slang term; both are widely used.",
+      "rio_form": "pucho",
+      "warnings": []
+    },
+    "furgoneta": {
+      "std_usage": "not_used",
+      "reason": "\"Furgoneta\" sounds like dubbed television or Peninsular Spanish; locals exclusively say \"camioneta\" or \"furgón\" in everyday speech.",
+      "rio_form": "camioneta",
+      "warnings": []
+    },
+    "cubo": {
+      "std_usage": "not_used",
+      "reason": "For a bucket, \"balde\" is exclusively used; \"cubo\" refers to the geometric shape and sounds foreign if used for the container.",
+      "rio_form": "balde",
+      "warnings": []
+    },
+    "calcetín": {
+      "std_usage": "not_used",
+      "reason": "\"Media\" or \"soquete\" are the only words used for socks; \"calcetín\" sounds entirely foreign or like a television dub.",
+      "rio_form": "media",
+      "warnings": []
+    },
+    "asilo": {
+      "std_usage": "less_common",
+      "reason": "Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common.",
+      "rio_form": "casa de salud",
+      "warnings": []
+    },
+    "vagabundo": {
+      "std_usage": "less_common",
+      "reason": "Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary.",
+      "rio_form": "linyera",
+      "warnings": []
+    },
+    "tejado": {
+      "std_usage": "not_used",
+      "reason": "Rioplatense speakers almost exclusively say techo; tejado sounds very Peninsular or bookish and is rarely used in daily speech.",
+      "rio_form": "techo",
+      "warnings": []
+    },
+    "aparcar": {
+      "std_usage": "not_used",
+      "reason": "Aparcar is strictly Peninsular Spanish; Rioplatense speakers exclusively use estacionar in everyday conversation.",
+      "rio_form": "estacionar",
+      "warnings": []
+    },
+    "neumático": {
+      "std_usage": "less_common",
+      "reason": "Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts.",
+      "rio_form": "cubierta",
+      "warnings": []
+    },
+    "halar": {
+      "std_usage": "not_used",
+      "reason": "Halar is completely absent from Rioplatense speech; locals exclusively use tirar for pulling objects, such as doors.",
+      "rio_form": "tirar",
+      "warnings": []
+    },
+    "condón": {
+      "std_usage": "not_used",
+      "reason": "Forro (slang) and preservativo (standard) are the local terms; condón sounds like TV dubbing and is rarely used in natural everyday speech.",
+      "rio_form": "forro",
+      "warnings": []
+    }
+  },
+  "failed": []
+}

@@ -294,16 +294,94 @@ for (const w of words) {
   o.evidence.push(`pass-2 example (${pass2.meta.model}), review: ${o.example_review}${o.example_review === 'confirmed' ? ' (Valera)' : ''}`)
 }
 
+// ---------------------------------------------------------------- pass 4: is the standard word itself used? (std-usage.v1.json)
+// Written by `node tools/rio-overlay/generate-examples.mjs --pass stdusage --run NAME`. It decides how a card labels the
+// other word: "in Spain" (not_used) or "also" (less_common / equally_used). Manual overrides go here, applied AFTER the
+// model, each with a reason; there are none yet (the model's answers are being sanity-checked first).
+// std_usage is only a soft hint on the card ("rarely used here", "also common"), never a geography claim. Manual decisions, all final,
+// applied AFTER the model's answers:
+//  1. eight words that do occur in the region, in another sense or less often;
+//  2. eleven words that have another everyday sense in the region;
+//  3. the principle: "not_used" stays ONLY where es_word is unambiguously Peninsular-only AND has no other common sense in
+//     Rioplatense. Every other entry the model called not_used goes down to less_common (when unsure, it goes down).
+const OCCURS_IN_REGION = 'does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)'
+const ANOTHER_SENSE = 'has another everyday sense in the region (decided by hand)'
+const NOT_USED_KEPT = {
+  vuestro: 'the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense',
+  vosotros: 'Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense',
+  ordenador: 'Peninsular word for a computer (computadora here); the "one who orders" sense is rare and bookish',
+  patata: 'Peninsular word for potato (papa here); no other common sense',
+  aparcar: 'Peninsular verb for parking (estacionar here); no other sense',
+  gilipollas: 'Peninsular vulgar insult (boludo / pelotudo here); no other sense',
+  chaval: 'Peninsular slang for a kid (pibe / gurí here); no other sense',
+  guay: 'Peninsular slang for "cool" (copado / bárbaro here); no other sense',
+}
+const DOWNGRADED_BY_PRINCIPLE = {
+  enfadado: 'unsure: understood and sometimes used in the region, not clearly Peninsular-only',
+  enfadar: 'unsure: understood and sometimes used in the region, not clearly Peninsular-only',
+  coste: 'unsure: a standard variant of costo that does appear in formal and written Spanish in the region',
+  gasolina: 'standard in most of Latin America and used in the region too (nafta is just the preferred word)',
+  apresurar: 'a formal verb, not Peninsular-only; it is used in the region',
+  piscina: 'used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular',
+  autobús: 'used in Uruguay in formal and official speech; not Peninsular-only',
+  furgoneta: 'used in the region for the commercial vehicle; not clearly Peninsular-only',
+  calcetín: 'standard across Latin America; not unambiguously Peninsular-only',
+  tejado: 'a common word for a tiled roof in the region as well (techo is the general one)',
+  halar: 'Latin American, not Peninsular, so the "Peninsular-only" test fails',
+}
+const STD_USAGE_OVERRIDES = {
+  ...Object.fromEntries(['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${OCCURS_IN_REGION}` }])),
+  ...Object.fromEntries(['pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${ANOTHER_SENSE}` }])),
+  ...Object.fromEntries(Object.entries(DOWNGRADED_BY_PRINCIPLE).map(([w, why]) => [w, { std_usage: 'less_common', reason: `${w}: ${why}; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)` }])),
+} // { es_word: { std_usage: 'not_used' | 'less_common' | 'equally_used', reason } }
+const usagePath = path.join(HERE, 'std-usage.v1.json')
+const pass4 = fs.existsSync(usagePath) ? JSON.parse(fs.readFileSync(usagePath, 'utf8')) : null
+const staleUsage = []
+for (const w of words) {
+  const o = result.get(w)
+  const u = pass4?.usage?.[w]
+  if (!u) continue
+  if (o.status !== 'accepted' || o.rio_type === 'none' || low(o.rio_form) === low(w) || low(u.rio_form) !== low(o.rio_form)) {
+    staleUsage.push(w) // the entry changed since the answer was written: do not attach it
+    continue
+  }
+  o.std_usage = u.std_usage
+  o.std_usage_reason = u.reason
+  o.evidence.push(`std_usage ${u.std_usage} (${pass4.meta.model}): ${u.reason}`)
+}
+for (const [w, ov] of Object.entries(STD_USAGE_OVERRIDES)) {
+  const o = result.get(w)
+  if (!o || o.status !== 'accepted') throw new Error(`std_usage override for ${w}: not an accepted entry`)
+  o.std_usage = ov.std_usage
+  o.std_usage_reason = ov.reason
+  o.evidence.push(`std_usage ${ov.std_usage} by manual override (Valera): ${ov.reason}`)
+}
+// the principle: whatever is still not_used must be on the kept list, and everything on the kept list must still be not_used
+for (const w of words) {
+  const o = result.get(w)
+  if (o.std_usage === 'not_used' && !NOT_USED_KEPT[w]) {
+    o.std_usage = 'less_common'
+    o.std_usage_reason = `${w}: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)`
+    o.evidence.push(`std_usage less_common by manual rule (Valera): ${o.std_usage_reason}`)
+  }
+}
+for (const [w, why] of Object.entries(NOT_USED_KEPT)) {
+  const o = result.get(w)
+  if (!o || o.std_usage !== 'not_used') throw new Error(`${w} is on the not_used kept list but is not not_used`)
+  o.std_usage_reason = `${why} (kept by hand)`
+  o.evidence.push(`std_usage not_used kept by manual decision (Valera): ${why}`)
+}
+
 // ---------------------------------------------------------------- write
 const ordered = words.map((w) => result.get(w))
-const OUT_FIELDS = ['es_word', 'rank', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence', 'status', 'flags', 'example', 'example_review', 'evidence']
+const OUT_FIELDS = ['es_word', 'rank', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence', 'status', 'flags', 'std_usage', 'std_usage_reason', 'example', 'example_review', 'evidence']
 const overlay = ordered.map((o) => Object.fromEntries(OUT_FIELDS.map((k) => [k, o[k] ?? null])))
 fs.writeFileSync(path.join(HERE, 'overlay.v1.json'), JSON.stringify(overlay, null, 2))
-const CLIENT_FIELDS = ['es_word', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence']
+const CLIENT_FIELDS = ['es_word', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'std_usage', 'confidence']
 // an example goes to the client when it passed the automatic checks (replacements) or was confirmed by hand; the rest stay out
 const client = ordered
   .filter((o) => o.status === 'accepted' && o.rio_type !== 'none')
-  .map((o) => ({ ...Object.fromEntries(CLIENT_FIELDS.map((k) => [k, o[k]])), ...(o.example && SHIPPED_REVIEWS.includes(o.example_review) ? { example: o.example } : {}) }))
+  .map((o) => ({ ...Object.fromEntries(CLIENT_FIELDS.map((k) => [k, o[k] ?? null])), ...(o.example && SHIPPED_REVIEWS.includes(o.example_review) ? { example: o.example } : {}) }))
 fs.writeFileSync(path.join(HERE, 'overlay.v1.client.json'), JSON.stringify(client, null, 2))
 
 const tally = (list, f) => list.reduce((a, o) => ((a[f(o)] = (a[f(o)] ?? 0) + 1), a), {})
@@ -344,6 +422,23 @@ else {
     for (const f of pass2.failed) md.push(`- ${f.es_word} (${f.rio_form}): ${f.errors.join('; ')}`)
   }
   if (staleExamples.length) md.push('', `Not attached (the entry changed since the example was written): ${staleExamples.join(', ')}`)
+}
+md.push('', '## Standard-word usage (pass 4)', '')
+if (!pass4) md.push('No std-usage.v1.json: no std_usage attached.')
+else {
+  const withUsage = ordered.filter((o) => o.std_usage)
+  const groups = { not_used: 'in Spain', less_common: 'also', equally_used: 'also' }
+  md.push(`Question asked of \`${pass4.meta.model}\` (run \`${pass4.meta.run}\`), per entry whose form differs from es_word: is es_word itself used in everyday speech in that region? ${pass4.meta.generated} answered, ${pass4.meta.failed} failed, cost about $${(pass4.meta.costUsd ?? 0).toFixed(4)}. Overrides applied: ${Object.keys(STD_USAGE_OVERRIDES).length}.`, '')
+  for (const [value, label] of Object.entries(groups)) {
+    const list = withUsage.filter((o) => o.std_usage === value)
+    md.push(`### ${value} (${list.length}; the standard word is labelled "${label}")`, '')
+    for (const o of list) md.push(`- ${o.es_word} → ${o.rio_form}${o.region ? ` @${o.region}` : ''}: ${o.std_usage_reason}`)
+    md.push('')
+  }
+  if (staleUsage.length) md.push(`Not attached (the entry changed since the answer was written): ${staleUsage.join(', ')}`, '')
+  md.push('### Final not_used list (kept only where es_word is unambiguously Peninsular-only and has no other common sense)', '')
+  for (const o of withUsage.filter((x) => x.std_usage === 'not_used')) md.push(`- ${o.es_word} → ${o.rio_form}: ${o.std_usage_reason}`)
+  md.push('')
 }
 md.push('', '## Validator', '')
 if (!validatorIssues.length) md.push('No errors.')

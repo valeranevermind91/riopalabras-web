@@ -277,6 +277,94 @@ Shipped to the client: 21 (6 replacements that passed the automatic checks, 15 c
 | foco | foco | meaning_shift | confirmed | Comprá un foco nuevo en el súper porque se quemó el del pasillo. | Buy a new light bulb at the supermarket because the hallway one burned out. | Купи новую лампочку в супермаркете, потому что в коридоре перегорела. |
 | propaganda | propaganda | meaning_shift | confirmed | Vi una propaganda en la tele sobre un champú muy bueno. | I saw an advertisement on TV about a really good shampoo. | Я видел по телевизору рекламу очень хорошего шампуня. |
 
+## Standard-word usage (pass 4)
+
+Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose form differs from es_word: is es_word itself used in everyday speech in that region? 63 answered, 0 failed, cost about $0.3433. Overrides applied: 30.
+
+### not_used (8; the standard word is labelled "in Spain")
+
+- vuestro → su: the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense (kept by hand)
+- vosotros → ustedes: Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense (kept by hand)
+- ordenador → computadora: Peninsular word for a computer (computadora here); the "one who orders" sense is rare and bookish (kept by hand)
+- patata → papa: Peninsular word for potato (papa here); no other common sense (kept by hand)
+- chaval → pibe: Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)
+- gilipollas → boludo: Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)
+- guay → de más @uy: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
+- aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
+
+### less_common (51; the standard word is labelled "also")
+
+- aquí → acá: 'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech.
+- tú → vos: 'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall.
+- contigo → con vos: 'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech.
+- quizá → capaz: 'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation.
+- quizás → capaz: While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often.
+- coche → auto: 'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently.
+- coger → agarrar: coger does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- bonito → lindo: Lindo is the default adjective for beautiful or pretty. Bonito sounds a bit like a TV dub or foreign, but is occasionally used.
+- recoger → levantar @uy: While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech.
+- metro → subte @ar: metro has another everyday sense in the region (decided by hand)
+- periódico → diario: Diario is the everyday word for newspaper. Periódico is understood but sounds formal, bookish, or like a translation.
+- alcalde → intendente: Intendente is the traditional title. Alcalde sounds foreign in Argentina, though Uruguay recently introduced it for a lower municipal role.
+- tontería → boludez: Boludez or pavada are the go-to everyday terms. Tontería is understood and sometimes used to avoid swearing, but it is much less frequent.
+- apartamento → departamento @ar: apartamento does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- carretera → ruta: carretera has another everyday sense in the region (decided by hand)
+- cerdo → chancho: Chancho is the everyday word for the animal, but cerdo is still used, especially when referring to pork meat or in slightly more formal contexts.
+- escoger → elegir: escoger does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- mando → control remoto: mando has another everyday sense in the region (decided by hand)
+- cabello → pelo: Pelo is the everyday word. Cabello is understood but sounds formal, mostly restricted to shampoo commercials or literature.
+- autobús → ómnibus @uy: autobús: used in Uruguay in formal and official speech; not Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- coño → concha: coño does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- pastel → torta: pastel does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- enfadado → enojado: enfadado: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- carro → auto: carro does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- maleta → valija: 'Valija' is the absolute standard. 'Maleta' is understood and appears in some phrases, but sounds a bit foreign or literary in daily speech.
+- camarero → mozo: 'Mozo' is the everyday word. 'Camarero' is understood and seen in formal hospitality contexts, but is much rarer in normal conversation.
+- piscina → pileta @ar: piscina: used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- enfadar → enojar: enfadar: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- galleta → galletita: Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap.
+- pluma → lapicera: pluma has another everyday sense in the region (decided by hand)
+- Hacienda → estancia: Estancia is the estate; hacienda is used in daily speech but typically refers to the livestock itself or the tax authority.
+- gasolina → nafta: gasolina: standard in most of Latin America and used in the region too (nafta is just the preferred word); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- follar → coger: follar does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- apresurar → apurar: apresurar: a formal verb, not Peninsular-only; it is used in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- mantequilla → manteca: mantequilla has another everyday sense in the region (decided by hand)
+- coste → costo: coste: unsure: a standard variant of costo that does appear in formal and written Spanish in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- cojón → huevo: cojón does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
+- balón → pelota: balón has another everyday sense in the region (decided by hand)
+- maya → malla @uy: maya has another everyday sense in the region (decided by hand)
+- falda → pollera: falda has another everyday sense in the region (decided by hand)
+- portero → golero @uy: portero has another everyday sense in the region (decided by hand)
+- competición → competencia: "Competencia" is the standard everyday term, while "competición" is mostly restricted to sports journalism or formal contexts.
+- furgoneta → camioneta: furgoneta: used in the region for the commercial vehicle; not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- cubo → balde: cubo has another everyday sense in the region (decided by hand)
+- calcetín → media: calcetín: standard across Latin America; not unambiguously Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- asilo → casa de salud @uy: Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common.
+- vagabundo → linyera: Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary.
+- tejado → techo: tejado: a common word for a tiled roof in the region as well (techo is the general one); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- neumático → cubierta: Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts.
+- halar → tirar: halar: Latin American, not Peninsular, so the "Peninsular-only" test fails; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- condón → forro: condón has another everyday sense in the region (decided by hand)
+
+### equally_used (4; the standard word is labelled "also")
+
+- chico → gurí @uy: Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children.
+- cigarrillo → pucho: 'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used.
+- fila → cola: Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people.
+- cigarro → pucho @uy: "Cigarro" is the standard everyday word for cigarette, while "pucho" is a very common informal slang term; both are widely used.
+
+### Final not_used list (kept only where es_word is unambiguously Peninsular-only and has no other common sense)
+
+- vuestro → su: the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense (kept by hand)
+- vosotros → ustedes: Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense (kept by hand)
+- ordenador → computadora: Peninsular word for a computer (computadora here); the "one who orders" sense is rare and bookish (kept by hand)
+- patata → papa: Peninsular word for potato (papa here); no other common sense (kept by hand)
+- chaval → pibe: Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)
+- gilipollas → boludo: Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)
+- guay → de más: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
+- aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
+
+
 ## Validator
 
 - foco: alt_pair_mismatch: alt_form and alt_region must be set together (status now accepted, flags: validator_exception: alt_form without alt_region (country of lámpara unknown))

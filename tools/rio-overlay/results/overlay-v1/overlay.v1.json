@@ -14,6 +14,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech.",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -21,7 +23,8 @@
       "A: replacement: acá (high)",
       "B: none (high)",
       "Claude: replacement: acá (medium)",
-      "legacy: acá"
+      "legacy: acá",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech."
     ]
   },
   {
@@ -42,6 +45,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall.",
     "example": {
       "es": "Vos siempre llegás tarde a las reuniones del trabajo.",
       "en": "You always arrive late to work meetings.",
@@ -57,7 +62,8 @@
       "B: form: vos (high)",
       "Claude: form: vos (high)",
       "legacy: vos",
-      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall."
     ]
   },
   {
@@ -75,6 +81,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "equally_used",
+    "std_usage_reason": "Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children.",
     "example": {
       "es": "El gurí estaba jugando a la pelota en la rambla.",
       "en": "The kid was playing ball on the promenade.",
@@ -86,7 +94,8 @@
       "questionnaire n=8, yes=7",
       "proposal from Claude (A said none); region set to uy by rule",
       "Claude also proposed pibe (ar); not added (not asked)",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage equally_used (gemini-3.1-pro-preview): Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children."
     ]
   },
   {
@@ -104,6 +113,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -130,6 +141,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -160,6 +173,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech.",
     "example": {
       "es": "Mañana voy a la feria con vos a comprar verduras.",
       "en": "Tomorrow I'm going to the street market with you to buy vegetables.",
@@ -174,7 +189,8 @@
       "B: form: con vos (high)",
       "Claude: form: con vos (medium)",
       "legacy: con vos",
-      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech."
     ]
   },
   {
@@ -192,6 +208,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -213,6 +231,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation.",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -221,7 +241,8 @@
       "A: replacement: capaz (high)",
       "B: none (high)",
       "Claude: replacement: capaz (medium)",
-      "legacy: capaz"
+      "legacy: capaz",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation."
     ]
   },
   {
@@ -239,6 +260,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -260,6 +283,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often.",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -268,7 +293,8 @@
       "A: replacement: capaz (high)",
       "B: none (high)",
       "Claude: replacement: capaz (medium)",
-      "legacy: capaz"
+      "legacy: capaz",
+      "std_usage less_common (gemini-3.1-pro-preview): While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often."
     ]
   },
   {
@@ -289,10 +315,13 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently.",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently."
     ]
   },
   {
@@ -316,11 +345,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "coger does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «agarrar» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «agarrar» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Coger' is vulgar slang for sex in this region. It is never used in everyday speech to mean 'to grab' or 'to take'.",
+      "std_usage less_common by manual override (Valera): coger does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -338,6 +371,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -364,6 +399,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -392,11 +429,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Lindo is the default adjective for beautiful or pretty. Bonito sounds a bit like a TV dub or foreign, but is occasionally used.",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «lindo» has Ar label (rio_form, any sense)"
+      "DAMER: «lindo» has Ar label (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): Lindo is the default adjective for beautiful or pretty. Bonito sounds a bit like a TV dub or foreign, but is occasionally used."
     ]
   },
   {
@@ -414,6 +454,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -435,6 +477,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -459,6 +503,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -466,7 +512,9 @@
       "A: replacement: su (high)",
       "B: replacement: su (high)",
       "Claude: form: de ustedes (medium)",
-      "legacy: su/sus"
+      "legacy: su/sus",
+      "std_usage not_used (gemini-3.1-pro-preview): Vuestro is strictly Peninsular or archaic. Rioplatense speakers exclusively use su or de ustedes for the plural possessive.",
+      "std_usage not_used kept by manual decision (Valera): the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense"
     ]
   },
   {
@@ -487,12 +535,15 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from B (A said none); region set to uy by rule",
-      "DAMER: «levantar» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «levantar» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech."
     ]
   },
   {
@@ -513,6 +564,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -520,7 +573,9 @@
       "A: replacement: ustedes (high)",
       "B: replacement: ustedes (high)",
       "Claude: form: ustedes (high)",
-      "legacy: ustedes"
+      "legacy: ustedes",
+      "std_usage not_used (gemini-3.1-pro-preview): Vosotros is strictly Peninsular Spanish. Rioplatense speakers exclusively use ustedes for the plural you in all contexts.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense"
     ]
   },
   {
@@ -541,6 +596,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "metro has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -549,7 +606,9 @@
       "A: replacement: subte (high)",
       "B: replacement: subte (high)",
       "Claude: replacement: subte @ar (medium)",
-      "legacy: subte"
+      "legacy: subte",
+      "std_usage not_used (gemini-3.1-pro-preview): In Argentina, the local subway is exclusively called subte. Metro is only used when referring to subway systems in other countries.",
+      "std_usage less_common by manual override (Valera): metro has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -570,10 +629,13 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Diario is the everyday word for newspaper. Periódico is understood but sounds formal, bookish, or like a translation.",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage less_common (gemini-3.1-pro-preview): Diario is the everyday word for newspaper. Periódico is understood but sounds formal, bookish, or like a translation."
     ]
   },
   {
@@ -597,6 +659,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Hay que ser muy guapo para caminar solo por ese barrio.",
       "en": "You have to be very brave to walk alone in that neighborhood.",
@@ -627,6 +691,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -652,6 +718,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -680,11 +748,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Intendente is the traditional title. Alcalde sounds foreign in Argentina, though Uruguay recently introduced it for a lower municipal role.",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «intendente» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «intendente» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): Intendente is the traditional title. Alcalde sounds foreign in Argentina, though Uruguay recently introduced it for a lower municipal role."
     ]
   },
   {
@@ -705,12 +776,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Boludez or pavada are the go-to everyday terms. Tontería is understood and sometimes used to avoid swearing, but it is much less frequent.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «boludez» has Ar and Ur labels (rio_form, any sense)",
-      "A: replacement: boludez (high)"
+      "A: replacement: boludez (high)",
+      "std_usage less_common (gemini-3.1-pro-preview): Boludez or pavada are the go-to everyday terms. Tontería is understood and sometimes used to avoid swearing, but it is much less frequent."
     ]
   },
   {
@@ -731,6 +805,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "apartamento does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -739,7 +815,9 @@
       "A: replacement: apartamento @uy + departamento @ar (high)",
       "B: replacement: departamento (high)",
       "Claude: replacement: departamento @ar (high)",
-      "legacy: departamento"
+      "legacy: departamento",
+      "std_usage not_used (gemini-3.1-pro-preview): Argentines exclusively say departamento or depto. Apartamento sounds like a translation or foreign Spanish.",
+      "std_usage less_common by manual override (Valera): apartamento does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -759,6 +837,8 @@
     "flags": [
       "needs_re_enrichment"
     ],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -784,6 +864,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Me parece que vos tenés que descansar un poco más.",
       "en": "I think you need to rest a little more.",
@@ -815,10 +897,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "carretera has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Ruta is the standard everyday word. Carretera sounds bookish, foreign, or like a dubbed movie.",
+      "std_usage less_common by manual override (Valera): carretera has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -839,11 +925,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Chancho is the everyday word for the animal, but cerdo is still used, especially when referring to pork meat or in slightly more formal contexts.",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «chancho» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «chancho» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): Chancho is the everyday word for the animal, but cerdo is still used, especially when referring to pork meat or in slightly more formal contexts."
     ]
   },
   {
@@ -864,6 +953,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "escoger does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -871,7 +962,9 @@
       "A: replacement: elegir (high)",
       "B: replacement: elegir (high)",
       "Claude: none (medium)",
-      "legacy: elegir"
+      "legacy: elegir",
+      "std_usage not_used (gemini-3.1-pro-preview): Elegir is used universally. Escoger sounds very foreign or bookish, partly avoided due to the taboo nature of the verb coger.",
+      "std_usage less_common by manual override (Valera): escoger does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -889,6 +982,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -910,6 +1005,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -935,6 +1032,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -963,12 +1062,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "mando has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: control remoto (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Locals say control remoto or el control. Mando is strictly Peninsular Spanish and never used in everyday speech.",
+      "std_usage less_common by manual override (Valera): mando has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -986,6 +1089,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1007,6 +1112,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1035,6 +1142,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Pelo is the everyday word. Cabello is understood but sounds formal, mostly restricted to shampoo commercials or literature.",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1042,7 +1151,8 @@
       "A: replacement: pelo (high)",
       "B: replacement: pelo (high)",
       "Claude: none (medium)",
-      "legacy: pelo"
+      "legacy: pelo",
+      "std_usage less_common (gemini-3.1-pro-preview): Pelo is the everyday word. Cabello is understood but sounds formal, mostly restricted to shampoo commercials or literature."
     ]
   },
   {
@@ -1060,6 +1170,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "autobús: used in Uruguay in formal and official speech; not Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": {
       "es": "Tomé el ómnibus equivocado y terminé en el centro de Montevideo.",
       "en": "I took the wrong bus and ended up in downtown Montevideo.",
@@ -1070,7 +1182,9 @@
     "evidence": [
       "3-way agree",
       "DAMER: «colectivo» has Ar and Ur labels (alt_form, any sense)",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): Uruguayans say ómnibus or bondi. Autobús sounds like a dubbed TV show and is not used in natural local speech.",
+      "std_usage less_common by manual override (Valera): autobús: used in Uruguay in formal and official speech; not Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -1088,12 +1202,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "coño does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «concha» has Ar and Ur labels (rio_form, any sense)",
-      "A: replacement: concha (high)"
+      "A: replacement: concha (high)",
+      "std_usage not_used (gemini-3.1-pro-preview): Coño is strongly associated with Spain or the Caribbean. Rioplatense speakers use concha for the anatomy and as a swear word.",
+      "std_usage less_common by manual override (Valera): coño does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -1111,6 +1229,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1142,13 +1262,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "pastel does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «torta» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: torta (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Pastel' refers to specific savory dishes like pastel de papa. For sweet cakes, it sounds like a TV dub; 'torta' is the true everyday word.",
+      "std_usage less_common by manual override (Valera): pastel does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -1166,6 +1290,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1187,10 +1313,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "enfadado: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Enfadado' sounds extremely Peninsular or literary; locals exclusively say 'enojado' or 'caliente' in everyday conversation.",
+      "std_usage less_common by manual override (Valera): enfadado: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -1208,6 +1338,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "equally_used",
+    "std_usage_reason": "'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used.",
     "example": {
       "es": "Salgo un ratito al balcón a fumarme un pucho y vuelvo.",
       "en": "I'm going out to the balcony for a bit to smoke a cigarette and I'll be back.",
@@ -1220,7 +1352,8 @@
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
       "proposed by B (informal, high) and the legacy field; A and Claude said none",
       "questionnaire item 25 (cigarro → pucho): n=8, yes=8",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage equally_used (gemini-3.1-pro-preview): 'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used."
     ]
   },
   {
@@ -1241,6 +1374,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "carro does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1248,7 +1383,9 @@
       "A: none (high)",
       "B: replacement: auto (high)",
       "Claude: replacement: auto (high)",
-      "legacy: auto"
+      "legacy: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Carro' means a horse-drawn cart or shopping cart; for a car, it sounds foreign (Caribbean or Mexican). Locals say 'auto' or 'coche'.",
+      "std_usage less_common by manual override (Valera): carro does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -1269,6 +1406,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "equally_used",
+    "std_usage_reason": "Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people.",
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1277,7 +1416,8 @@
       "A: none (high)",
       "B: replacement: cola (high)",
       "Claude: replacement: cola (medium)",
-      "legacy: cola"
+      "legacy: cola",
+      "std_usage equally_used (gemini-3.1-pro-preview): Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people."
     ]
   },
   {
@@ -1301,6 +1441,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Esa mina que trabaja en la panadería es re simpática.",
       "en": "That chick who works at the bakery is really nice.",
@@ -1329,11 +1471,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Valija' is the absolute standard. 'Maleta' is understood and appears in some phrases, but sounds a bit foreign or literary in daily speech.",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «valija» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «valija» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Valija' is the absolute standard. 'Maleta' is understood and appears in some phrases, but sounds a bit foreign or literary in daily speech."
     ]
   },
   {
@@ -1351,6 +1496,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1376,6 +1523,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1397,6 +1546,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1418,6 +1569,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1445,11 +1598,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular word for a computer (computadora here); the \"one who orders\" sense is rare and bookish (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «computadora» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «computadora» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Ordenador' is strictly Peninsular Spanish and sounds completely foreign in the region; locals exclusively say 'computadora' or 'compu'.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular word for a computer (computadora here); the \"one who orders\" sense is rare and bookish"
     ]
   },
   {
@@ -1467,6 +1624,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1498,6 +1657,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Para la entrevista de trabajo, ponete una camisa blanca y un saco azul.",
       "en": "For the job interview, put on a white shirt and a blue blazer.",
@@ -1528,6 +1689,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1549,10 +1712,13 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "'Mozo' is the everyday word. 'Camarero' is understood and seen in formal hospitality contexts, but is much rarer in normal conversation.",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Mozo' is the everyday word. 'Camarero' is understood and seen in formal hospitality contexts, but is much rarer in normal conversation."
     ]
   },
   {
@@ -1570,6 +1736,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1596,6 +1764,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1624,11 +1794,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "piscina: used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «pileta» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «pileta» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): In Argentina, pileta is the absolute standard for swimming pool; piscina sounds formal, bookish, or foreign in everyday speech.",
+      "std_usage less_common by manual override (Valera): piscina: used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -1646,10 +1820,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "enfadar: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Enfadar is strongly marked as Peninsular or dubbed Spanish; Rioplatense speakers exclusively use enojar in daily conversation.",
+      "std_usage less_common by manual override (Valera): enfadar: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -1667,6 +1845,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1688,11 +1868,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
-      "A: replacement: galletita (high)"
+      "A: replacement: galletita (high)",
+      "std_usage less_common (gemini-3.1-pro-preview): Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap."
     ]
   },
   {
@@ -1710,6 +1893,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1738,6 +1923,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1764,6 +1951,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1789,6 +1978,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1817,11 +2008,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "pluma has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «lapicera» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «lapicera» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): For writing instruments, lapicera is standard; pluma means feather or specifically a fountain pen, not a regular everyday pen.",
+      "std_usage less_common by manual override (Valera): pluma has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -1842,6 +2037,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -1870,12 +2067,15 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Estancia is the estate; hacienda is used in daily speech but typically refers to the livestock itself or the tax authority.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «estancia» has Ar and Ur labels (rio_form, any sense)",
-      "A: replacement: estancia (medium)"
+      "A: replacement: estancia (medium)",
+      "std_usage less_common (gemini-3.1-pro-preview): Estancia is the estate; hacienda is used in daily speech but typically refers to the livestock itself or the tax authority."
     ]
   },
   {
@@ -1899,6 +2099,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Los domingos siempre compro la verdura y la fruta fresca en la feria.",
       "en": "On Sundays I always buy fresh vegetables and fruit at the street market.",
@@ -1930,11 +2132,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "gasolina: standard in most of Latin America and used in the region too (nafta is just the preferred word); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «nafta» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «nafta» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): Gasolina sounds like a song lyric or dubbed TV; locals exclusively say nafta when referring to car fuel.",
+      "std_usage less_common by manual override (Valera): gasolina: standard in most of Latin America and used in the region too (nafta is just the preferred word); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -1955,11 +2161,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular word for potato (papa here); no other common sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «papa» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «papa» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): Patata is strictly Peninsular Spanish; Rioplatense speakers exclusively use papa for potato.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular word for potato (papa here); no other common sense"
     ]
   },
   {
@@ -1983,12 +2193,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "follar does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «coger» has Ar and Ur labels (rio_form, any sense)",
-      "A: replacement: coger (high)"
+      "A: replacement: coger (high)",
+      "std_usage not_used (gemini-3.1-pro-preview): Follar is recognized as slang from Spain; locals use coger or other regional slang for sexual intercourse.",
+      "std_usage less_common by manual override (Valera): follar does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -2006,6 +2220,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2033,6 +2249,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto.",
       "en": "He got on the bus along 18 de Julio and forgot to pay for the ticket.",
@@ -2065,13 +2283,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "apresurar: a formal verb, not Peninsular-only; it is used in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «apurar» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: apurar (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Apresurar is formal and bookish; in everyday conversation, Rioplatense speakers almost exclusively use apurar.",
+      "std_usage less_common by manual override (Valera): apresurar: a formal verb, not Peninsular-only; it is used in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -2092,6 +2314,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2127,6 +2351,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2158,6 +2384,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Perdoná que no te escuché, estaba re colgado mirando por la ventana.",
       "en": "Sorry I didn't hear you, I was totally spaced out looking out the window.",
@@ -2186,6 +2414,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2210,6 +2440,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2238,12 +2470,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "mantequilla has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: manteca (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Mantequilla sounds like TV dubbing or foreign Spanish; locals exclusively say manteca for butter.",
+      "std_usage less_common by manual override (Valera): mantequilla has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2264,10 +2500,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "coste: unsure: a standard variant of costo that does appear in formal and written Spanish in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Coste is distinctly Peninsular Spanish; Rioplatense speakers always use costo in everyday speech.",
+      "std_usage less_common by manual override (Valera): coste: unsure: a standard variant of costo that does appear in formal and written Spanish in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -2288,12 +2528,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "cojón does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «huevo» has Ur label (rio_form, any sense)",
-      "A: replacement: huevo (high)"
+      "A: replacement: huevo (high)",
+      "std_usage not_used (gemini-3.1-pro-preview): Cojón is heavily marked as Peninsular Spanish; locals use huevo in slang and everyday speech.",
+      "std_usage less_common by manual override (Valera): cojón does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
   },
   {
@@ -2314,6 +2558,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2343,10 +2589,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "balón has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Balón sounds like sports journalism or TV dubbing; in everyday life, people play with a pelota.",
+      "std_usage less_common by manual override (Valera): balón has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2367,12 +2617,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=7",
       "DAMER: «pibe» has Ar and Ur labels (rio_form, any sense)",
-      "A: replacement: pibe (high)"
+      "A: replacement: pibe (high)",
+      "std_usage not_used (gemini-3.1-pro-preview): Chaval is exclusively Peninsular Spanish; Rioplatense speakers use pibe, chico, or gurí.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular slang for a kid (pibe / gurí here); no other sense"
     ]
   },
   {
@@ -2390,12 +2644,16 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "maya has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from Claude (A said none); region set to uy by rule",
-      "DAMER: «malla» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «malla» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): Maya refers to the Mayan people. The word for swimsuit is malla. They sound identical due to yeísmo, but maya is not used for the garment.",
+      "std_usage less_common by manual override (Valera): maya has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2416,13 +2674,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «boludo» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: boludo (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Gilipollas is strictly Peninsular Spanish slang; locals exclusively use boludo or pelotudo.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular vulgar insult (boludo / pelotudo here); no other sense"
     ]
   },
   {
@@ -2443,11 +2705,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "falda has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «pollera» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «pollera» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): \"Pollera\" is the absolute standard for a skirt; \"falda\" sounds foreign or bookish in this context, though it is used for a cut of meat.",
+      "std_usage less_common by manual override (Valera): falda has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2465,6 +2731,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2489,6 +2757,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2520,6 +2790,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2549,6 +2821,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2577,6 +2851,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2605,6 +2881,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular slang for \"cool\" (copado / bárbaro here); no other sense (kept by hand)",
     "example": {
       "es": "El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas.",
       "en": "The concert on the promenade was awesome, all my favorite bands played.",
@@ -2616,7 +2894,9 @@
       "questionnaire n=8, yes=8",
       "DAMER: «copado» has Ar and Ur labels (alt_form, any sense)",
       "A: replacement: de más @uy + copado @ar (high)",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): \"Guay\" is strictly Peninsular Spanish and completely absent from natural Uruguayan speech.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular slang for \"cool\" (copado / bárbaro here); no other sense"
     ]
   },
   {
@@ -2637,6 +2917,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "portero has another everyday sense in the region (decided by hand)",
     "example": {
       "es": "El golero de Peñarol atajó un penal decisivo en el último minuto del partido.",
       "en": "Peñarol's goalkeeper saved a decisive penalty in the last minute of the match.",
@@ -2648,7 +2930,9 @@
       "questionnaire n=8, yes=8 (item 24: golero)",
       "questionnaire item 23: «arquero» n=8, yes=8",
       "golero proposed by Claude (uy) with arquero (ar); A said arquero",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): For a goalie, \"golero\" or \"arquero\" are used; \"portero\" sounds foreign in sports, though it is the standard word for a building doorman.",
+      "std_usage less_common by manual override (Valera): portero has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2669,11 +2953,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "\"Competencia\" is the standard everyday term, while \"competición\" is mostly restricted to sports journalism or formal contexts.",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «competencia» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «competencia» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage less_common (gemini-3.1-pro-preview): \"Competencia\" is the standard everyday term, while \"competición\" is mostly restricted to sports journalism or formal contexts."
     ]
   },
   {
@@ -2691,13 +2978,16 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": "equally_used",
+    "std_usage_reason": "\"Cigarro\" is the standard everyday word for cigarette, while \"pucho\" is a very common informal slang term; both are widely used.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from legacy (A said none); region set to uy by rule",
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
-      "register informal taken from B's entry for the same form (cigarrillo → pucho)"
+      "register informal taken from B's entry for the same form (cigarrillo → pucho)",
+      "std_usage equally_used (gemini-3.1-pro-preview): \"Cigarro\" is the standard everyday word for cigarette, while \"pucho\" is a very common informal slang term; both are widely used."
     ]
   },
   {
@@ -2715,6 +3005,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2736,6 +3028,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2760,10 +3054,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "furgoneta: used in the region for the commercial vehicle; not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): \"Furgoneta\" sounds like dubbed television or Peninsular Spanish; locals exclusively say \"camioneta\" or \"furgón\" in everyday speech.",
+      "std_usage less_common by manual override (Valera): furgoneta: used in the region for the commercial vehicle; not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -2784,11 +3082,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "cubo has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "3-way agree",
-      "DAMER: «balde» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «balde» has Ar and Ur labels (rio_form, any sense)",
+      "std_usage not_used (gemini-3.1-pro-preview): For a bucket, \"balde\" is exclusively used; \"cubo\" refers to the geometric shape and sounds foreign if used for the container.",
+      "std_usage less_common by manual override (Valera): cubo has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2806,6 +3108,8 @@
     "confidence": "medium",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2837,6 +3141,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Me pedí una suprema con puré para almorzar en el bar de la esquina.",
       "en": "I ordered a breaded chicken breast with mashed potatoes for lunch at the corner bar.",
@@ -2865,6 +3171,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2890,6 +3198,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2918,6 +3228,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Si estudiás un poco más, tenés chance de salvar el examen de la facultad.",
       "en": "If you study a bit more, you have a chance of passing the university exam.",
@@ -2947,6 +3259,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -2975,13 +3289,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "calcetín: standard across Latin America; not unambiguously Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «media» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: media (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): \"Media\" or \"soquete\" are the only words used for socks; \"calcetín\" sounds entirely foreign or like a television dub.",
+      "std_usage less_common by manual override (Valera): calcetín: standard across Latin America; not unambiguously Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -3002,6 +3320,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common.",
     "example": {
       "es": "Mi abuela vive en una casa de salud cerca de la rambla.",
       "en": "My grandmother lives in a nursing home near the promenade.",
@@ -3012,7 +3332,8 @@
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: casa de salud @uy + geriátrico @ar (high)",
-      "pass-2 example (gemini-3.1-pro-preview), review: auto"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage less_common (gemini-3.1-pro-preview): Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common."
     ]
   },
   {
@@ -3033,6 +3354,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3062,12 +3385,15 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision)",
       "DAMER: «linyera» has Ar and Ur labels (rio_form, any sense)",
-      "A and B agree: replacement linyera"
+      "A and B agree: replacement linyera",
+      "std_usage less_common (gemini-3.1-pro-preview): Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary."
     ]
   },
   {
@@ -3085,6 +3411,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3109,6 +3437,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3138,10 +3468,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "tejado: a common word for a tiled roof in the region as well (techo is the general one); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Rioplatense speakers almost exclusively say techo; tejado sounds very Peninsular or bookish and is rarely used in daily speech.",
+      "std_usage less_common by manual override (Valera): tejado: a common word for a tiled roof in the region as well (techo is the general one); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -3159,13 +3493,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular verb for parking (estacionar here); no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «estacionar» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: estacionar (high)",
-      "3-way agree"
+      "3-way agree",
+      "std_usage not_used (gemini-3.1-pro-preview): Aparcar is strictly Peninsular Spanish; Rioplatense speakers exclusively use estacionar in everyday conversation.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular verb for parking (estacionar here); no other sense"
     ]
   },
   {
@@ -3186,6 +3524,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Para tu cumpleaños te voy a preparar una torta de chocolate riquísima.",
       "en": "For your birthday I am going to bake you a delicious chocolate cake.",
@@ -3220,6 +3560,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Prestame un marcador rojo para subrayar los títulos de estos apuntes.",
       "en": "Lend me a red marker to underline the titles of these notes.",
@@ -3252,6 +3594,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3285,6 +3629,8 @@
     "flags": [
       "validator_exception: alt_form without alt_region (country of lámpara unknown)"
     ],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Comprá un foco nuevo en el súper porque se quemó el del pasillo.",
       "en": "Buy a new light bulb at the supermarket because the hallway one burned out.",
@@ -3315,6 +3661,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3340,11 +3688,14 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts.",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
-      "A: replacement: cubierta (high)"
+      "A: replacement: cubierta (high)",
+      "std_usage less_common (gemini-3.1-pro-preview): Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts."
     ]
   },
   {
@@ -3362,6 +3713,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3390,6 +3743,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": {
       "es": "Vi una propaganda en la tele sobre un champú muy bueno.",
       "en": "I saw an advertisement on TV about a really good shampoo.",
@@ -3419,12 +3774,16 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": "less_common",
+    "std_usage_reason": "halar: Latin American, not Peninsular, so the \"Peninsular-only\" test fails; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=7",
       "DAMER: «tirar» has Ur label (rio_form, any sense)",
-      "A: replacement: tirar (high)"
+      "A: replacement: tirar (high)",
+      "std_usage not_used (gemini-3.1-pro-preview): Halar is completely absent from Rioplatense speech; locals exclusively use tirar for pulling objects, such as doors.",
+      "std_usage less_common by manual override (Valera): halar: Latin American, not Peninsular, so the \"Peninsular-only\" test fails; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
   },
   {
@@ -3444,13 +3803,17 @@
     "flags": [
       "register_unverified: informal chosen for slang forro, no source gives it"
     ],
+    "std_usage": "less_common",
+    "std_usage_reason": "condón has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
       "manual decision: replacement forro, both countries",
       "DAMER: «forro» has Ar and Ur labels (rio_form, any sense)",
       "legacy field: forro; A, B and Claude all proposed preservativo instead",
-      "not asked in the questionnaire"
+      "not asked in the questionnaire",
+      "std_usage not_used (gemini-3.1-pro-preview): Forro (slang) and preservativo (standard) are the local terms; condón sounds like TV dubbing and is rarely used in natural everyday speech.",
+      "std_usage less_common by manual override (Valera): condón has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -3468,6 +3831,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3493,6 +3858,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
@@ -3519,6 +3886,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
