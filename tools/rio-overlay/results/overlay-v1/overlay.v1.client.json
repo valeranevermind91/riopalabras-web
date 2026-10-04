@@ -1,0 +1,1188 @@
+[
+  {
+    "es_word": "aquí",
+    "rio_type": "replacement",
+    "rio_form": "acá",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "tú",
+    "rio_type": "form",
+    "rio_form": "vos",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "chico",
+    "rio_type": "replacement",
+    "rio_form": "gurí",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "contigo",
+    "rio_type": "form",
+    "rio_form": "con vos",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "quizá",
+    "rio_type": "replacement",
+    "rio_form": "capaz",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "quizás",
+    "rio_type": "replacement",
+    "rio_form": "capaz",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "coche",
+    "rio_type": "replacement",
+    "rio_form": "auto",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "car",
+      "ru": "машина, автомобиль"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "coger",
+    "rio_type": "replacement",
+    "rio_form": "agarrar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": {
+      "en": "Never use 'coger' to mean grab/take; it is a vulgar word for sex here.",
+      "ru": "Не используйте 'coger' (брать); здесь это грубое слово для секса."
+    },
+    "std_meaning": null,
+    "translation": {
+      "en": "to grab, to catch",
+      "ru": "брать, хватать"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "bonito",
+    "rio_type": "replacement",
+    "rio_form": "lindo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "pretty, nice, beautiful",
+      "ru": "красивый, милый"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "vuestro",
+    "rio_type": "replacement",
+    "rio_form": "su",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "your (plural)",
+      "ru": "ваш (множественное число)"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "recoger",
+    "rio_type": "replacement",
+    "rio_form": "levantar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "to pick up, to lift",
+      "ru": "поднимать, подбирать"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "vosotros",
+    "rio_type": "replacement",
+    "rio_form": "ustedes",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "you (plural)",
+      "ru": "вы (множественное число)"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "metro",
+    "rio_type": "replacement",
+    "rio_form": "subte",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "ar",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "subway",
+      "ru": "метро"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "periódico",
+    "rio_type": "replacement",
+    "rio_form": "diario",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "newspaper",
+      "ru": "газета"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "guapo",
+    "rio_type": "meaning_shift",
+    "rio_form": "guapo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": {
+      "en": "handsome, good-looking",
+      "ru": "красивый, привлекательный"
+    },
+    "translation": {
+      "en": "brave, tough",
+      "ru": "смелый, крутой"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "alcalde",
+    "rio_type": "replacement",
+    "rio_form": "intendente",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "mayor",
+      "ru": "мэр"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "tontería",
+    "rio_type": "replacement",
+    "rio_form": "boludez",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "nonsense, stupid thing",
+      "ru": "глупость, ерунда"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "apartamento",
+    "rio_type": "replacement",
+    "rio_form": "departamento",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "ar",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "apartment",
+      "ru": "квартира"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "vos",
+    "rio_type": "regional_only",
+    "rio_form": "vos",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "carretera",
+    "rio_type": "replacement",
+    "rio_form": "ruta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "highway, route",
+      "ru": "шоссе, трасса"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "cerdo",
+    "rio_type": "replacement",
+    "rio_form": "chancho",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "pig",
+      "ru": "свинья"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "escoger",
+    "rio_type": "replacement",
+    "rio_form": "elegir",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "to choose, to select",
+      "ru": "выбирать, выбрать"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "mando",
+    "rio_type": "replacement",
+    "rio_form": "control remoto",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "remote control",
+      "ru": "пульт дистанционного управления, пульт"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "cabello",
+    "rio_type": "replacement",
+    "rio_form": "pelo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "hair",
+      "ru": "волосы"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "autobús",
+    "rio_type": "replacement",
+    "rio_form": "ómnibus",
+    "alt_form": "colectivo",
+    "alt_region": "ar",
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "coño",
+    "rio_type": "replacement",
+    "rio_form": "concha",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "vulgar",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "pastel",
+    "rio_type": "replacement",
+    "rio_form": "torta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": {
+      "en": "Pastel usually means a savory pie; for a sweet cake, use torta.",
+      "ru": "Pastel — это обычно мясной пирог; сладкий торт — это torta."
+    },
+    "std_meaning": null,
+    "translation": {
+      "en": "cake",
+      "ru": "торт"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "enfadado",
+    "rio_type": "replacement",
+    "rio_form": "enojado",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "cigarrillo",
+    "rio_type": "replacement",
+    "rio_form": "pucho",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "carro",
+    "rio_type": "replacement",
+    "rio_form": "auto",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "car",
+      "ru": "автомобиль, машина"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "fila",
+    "rio_type": "replacement",
+    "rio_form": "cola",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "queue, line",
+      "ru": "очередь"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "mina",
+    "rio_type": "meaning_shift",
+    "rio_form": "mina",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": {
+      "en": "mine (geological)",
+      "ru": "шахта, рудник"
+    },
+    "translation": {
+      "en": "woman, girl, chick",
+      "ru": "девушка, женщина"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "maleta",
+    "rio_type": "replacement",
+    "rio_form": "valija",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "ordenador",
+    "rio_type": "replacement",
+    "rio_form": "computadora",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "saco",
+    "rio_type": "meaning_shift",
+    "rio_form": "saco",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "sack, large bag",
+      "ru": "мешок, большая сумка"
+    },
+    "translation": {
+      "en": "suit jacket, blazer",
+      "ru": "пиджак"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "camarero",
+    "rio_type": "replacement",
+    "rio_form": "mozo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "piscina",
+    "rio_type": "replacement",
+    "rio_form": "pileta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "ar",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "swimming pool, sink",
+      "ru": "бассейн, раковина"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "enfadar",
+    "rio_type": "replacement",
+    "rio_form": "enojar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "galleta",
+    "rio_type": "replacement",
+    "rio_form": "galletita",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "pluma",
+    "rio_type": "replacement",
+    "rio_form": "lapicera",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "pen",
+      "ru": "ручка"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "Hacienda",
+    "rio_type": "replacement",
+    "rio_form": "estancia",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "estate, ranch",
+      "ru": "поместье, ранчо"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "feria",
+    "rio_type": "meaning_shift",
+    "rio_form": "feria",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "fair, festival, holiday",
+      "ru": "ярмарка, праздник, фестиваль"
+    },
+    "translation": {
+      "en": "street market, farmers' market",
+      "ru": "уличный рынок, продуктовый рынок"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "gasolina",
+    "rio_type": "replacement",
+    "rio_form": "nafta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "gasoline, petrol",
+      "ru": "бензин"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "patata",
+    "rio_type": "replacement",
+    "rio_form": "papa",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "potato",
+      "ru": "картофель, картошка"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "follar",
+    "rio_type": "replacement",
+    "rio_form": "coger",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "vulgar",
+    "notes": {
+      "en": "\"Coger\" is the local vulgar equivalent. Never use it to mean \"to take\" here!",
+      "ru": "Местный мат. Никогда не используйте \"coger\" в значении \"брать\" в этих странах!"
+    },
+    "std_meaning": null,
+    "translation": {
+      "en": "to fuck",
+      "ru": "трахаться"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "boleto",
+    "rio_type": "meaning_shift",
+    "rio_form": "boleto",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "ticket (general)",
+      "ru": "билет (общий)"
+    },
+    "translation": {
+      "en": "bus ticket, lottery ticket",
+      "ru": "билет на автобус, лотерейный билет"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "apresurar",
+    "rio_type": "replacement",
+    "rio_form": "apurar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "to hurry, to rush",
+      "ru": "торопить, спешить"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "colgado",
+    "rio_type": "meaning_shift",
+    "rio_form": "colgado",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": {
+      "en": "hung, hanging",
+      "ru": "висящий, повешенный"
+    },
+    "translation": {
+      "en": "spaced out, distracted",
+      "ru": "рассеянный, витающий в облаках"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "mantequilla",
+    "rio_type": "replacement",
+    "rio_form": "manteca",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "butter",
+      "ru": "сливочное масло"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "coste",
+    "rio_type": "replacement",
+    "rio_form": "costo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "cost",
+      "ru": "стоимость, цена"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "cojón",
+    "rio_type": "replacement",
+    "rio_form": "huevo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "vulgar",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "testicle, ball",
+      "ru": "яичко, яйцо"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "balón",
+    "rio_type": "replacement",
+    "rio_form": "pelota",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "ball",
+      "ru": "мяч"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "chaval",
+    "rio_type": "replacement",
+    "rio_form": "pibe",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "kid, lad",
+      "ru": "парень, мальчик"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "maya",
+    "rio_type": "replacement",
+    "rio_form": "malla",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "gilipollas",
+    "rio_type": "replacement",
+    "rio_form": "boludo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "vulgar",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "idiot, jerk",
+      "ru": "придурок, идиот"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "falda",
+    "rio_type": "replacement",
+    "rio_form": "pollera",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "skirt",
+      "ru": "юбка"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "guay",
+    "rio_type": "replacement",
+    "rio_form": "de más",
+    "alt_form": "copado",
+    "alt_region": "ar",
+    "region": "uy",
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "cool, great",
+      "ru": "круто, классный"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "portero",
+    "rio_type": "replacement",
+    "rio_form": "golero",
+    "alt_form": "arquero",
+    "alt_region": "ar",
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "goalkeeper",
+      "ru": "вратарь"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "competición",
+    "rio_type": "replacement",
+    "rio_form": "competencia",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "competition",
+      "ru": "соревнование"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "cigarro",
+    "rio_type": "replacement",
+    "rio_form": "pucho",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  },
+  {
+    "es_word": "furgoneta",
+    "rio_type": "replacement",
+    "rio_form": "camioneta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "van, pickup truck",
+      "ru": "фургон, пикап"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "cubo",
+    "rio_type": "replacement",
+    "rio_form": "balde",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "bucket",
+      "ru": "ведро"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "suprema",
+    "rio_type": "meaning_shift",
+    "rio_form": "suprema",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "supreme, highest",
+      "ru": "высший, верховный"
+    },
+    "translation": {
+      "en": "breaded chicken breast",
+      "ru": "куриный шницель (из грудки)"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "chance",
+    "rio_type": "regional_only",
+    "rio_form": "chance",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "chance, opportunity",
+      "ru": "шанс, возможность"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "calcetín",
+    "rio_type": "replacement",
+    "rio_form": "media",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "sock",
+      "ru": "носок"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "asilo",
+    "rio_type": "replacement",
+    "rio_form": "casa de salud",
+    "alt_form": "geriátrico",
+    "alt_region": "ar",
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "nursing home, retirement home",
+      "ru": "дом престарелых"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "vagabundo",
+    "rio_type": "replacement",
+    "rio_form": "linyera",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "homeless person, tramp",
+      "ru": "бездомный, бродяга"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "tejado",
+    "rio_type": "replacement",
+    "rio_form": "techo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "roof, ceiling",
+      "ru": "крыша, потолок"
+    },
+    "confidence": "high"
+  },
+  {
+    "es_word": "aparcar",
+    "rio_type": "replacement",
+    "rio_form": "estacionar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "torta",
+    "rio_type": "meaning_shift",
+    "rio_form": "torta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "flatbread, slap",
+      "ru": "лепешка, пощечина"
+    },
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "marcador",
+    "rio_type": "meaning_shift",
+    "rio_form": "marcador",
+    "alt_form": null,
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "marker (pen), scoreboard",
+      "ru": "маркер (ручка), табло"
+    },
+    "translation": {
+      "en": "marker (pen)",
+      "ru": "маркер (ручка)"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "foco",
+    "rio_type": "meaning_shift",
+    "rio_form": "foco",
+    "alt_form": "lámpara",
+    "alt_region": null,
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "focus, spotlight",
+      "ru": "фокус, прожектор"
+    },
+    "translation": {
+      "en": "light bulb",
+      "ru": "лампочка"
+    },
+    "confidence": "medium"
+  },
+  {
+    "es_word": "neumático",
+    "rio_type": "replacement",
+    "rio_form": "cubierta",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "propaganda",
+    "rio_type": "meaning_shift",
+    "rio_form": "propaganda",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": {
+      "en": "political propaganda",
+      "ru": "политическая пропаганда"
+    },
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "halar",
+    "rio_type": "replacement",
+    "rio_form": "tirar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "high"
+  },
+  {
+    "es_word": "condón",
+    "rio_type": "replacement",
+    "rio_form": "forro",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "confidence": "medium"
+  }
+]
