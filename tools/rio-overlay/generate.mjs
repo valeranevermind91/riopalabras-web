@@ -11,13 +11,13 @@ import { CONTEXTS, DEFAULT_CONTEXT, buildResponseSchema, buildSystemPrompt, buil
 import { validateBatch } from './validate.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(HERE, '..', '..')
+export const ROOT = path.resolve(HERE, '..', '..')
 const DICTIONARY_PATH = path.join(ROOT, 'public', 'words_enriched.json')
-const OUT_DIR = path.join(HERE, 'out')
+export const OUT_DIR = path.join(HERE, 'out')
 
 // USD per 1M tokens, standard paid tier (thinking tokens bill as output). Checked 2026-10-02 against
 // https://ai.google.dev/gemini-api/docs/pricing. gemini-3.x Flash input/output double on 2027-01-01.
-const PRICING = {
+export const PRICING = {
   'gemini-2.5-flash': { in: 0.3, out: 2.5 },
   'gemini-2.5-flash-lite': { in: 0.1, out: 0.4 },
   'gemini-3.8-flash': { in: 0.75, out: 3.75 },
@@ -27,7 +27,7 @@ const PRICING = {
   'gemini-3.1-pro-preview': { in: 2.0, out: 12 },
 }
 
-const DEFAULT_MODEL = 'gemini-2.5-flash' // what the riopalabras-proxy /enrich endpoint uses
+export const DEFAULT_MODEL = 'gemini-2.5-flash' // what the riopalabras-proxy /enrich endpoint uses
 // Only the tests point this at a local fake server.
 const API_BASE = process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com'
 
@@ -70,14 +70,18 @@ The key is never printed or logged.`
 // ---------------------------------------------------------------- output (always redacted)
 
 let SECRET = null
+/** For other scripts built on this one: everything they print goes through the same redaction. */
+export const setSecret = (key) => {
+  SECRET = key
+}
 const KEY_SHAPE = /AIza[0-9A-Za-z_-]{20,}/g
 const redact = (value) => {
   let s = String(value)
   if (SECRET) s = s.split(SECRET).join('[redacted]')
   return s.replace(KEY_SHAPE, '[redacted]')
 }
-const log = (...parts) => console.log(redact(parts.join(' ')))
-const logErr = (...parts) => console.error(redact(parts.join(' ')))
+export const log = (...parts) => console.log(redact(parts.join(' ')))
+export const logErr = (...parts) => console.error(redact(parts.join(' ')))
 
 // ---------------------------------------------------------------- arguments
 
@@ -125,7 +129,7 @@ function parseArgs(argv) {
 
 // ---------------------------------------------------------------- key
 
-function loadApiKey() {
+export function loadApiKey() {
   const fromEnv = process.env.GEMINI_API_KEY?.trim()
   if (fromEnv) return fromEnv
 
@@ -138,7 +142,7 @@ function loadApiKey() {
   return null
 }
 
-const MISSING_KEY_HELP = `GEMINI_API_KEY is not set, so nothing was sent to Gemini.
+export const MISSING_KEY_HELP = `GEMINI_API_KEY is not set, so nothing was sent to Gemini.
 
 Set it in ONE of these ways (never paste the key into chat or commit it):
   1. Create a file named .env.local in the repo root (it is gitignored: .gitignore covers .env.* and *.local) with the single line
@@ -175,12 +179,12 @@ function selectWords(args, dictionary) {
   return { selected, notFound }
 }
 
-const chunk = (items, size) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size))
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+export const chunk = (items, size) => Array.from({ length: Math.ceil(items.length / size) }, (_, i) => items.slice(i * size, (i + 1) * size))
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // ---------------------------------------------------------------- Gemini
 
-class GeminiError extends Error {
+export class GeminiError extends Error {
   constructor(kind, message, status = null) {
     super(message)
     this.kind = kind // 'fatal' (stop everything) | 'content' (this request's output unusable) | 'retryable'
@@ -196,7 +200,8 @@ const SAFETY_OFF = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HA
 async function requestOnce(inputs, cfg, key) {
   const body = {
     systemInstruction: { parts: [{ text: cfg.systemPrompt }] },
-    contents: [{ role: 'user', parts: [{ text: buildUserPrompt(inputs, { withHint: cfg.withHint, context: cfg.context }) }] }],
+    // cfg.userText lets another script (the example generator) reuse this request machinery with its own prompt
+    contents: [{ role: 'user', parts: [{ text: cfg.userText ? cfg.userText(inputs) : buildUserPrompt(inputs, { withHint: cfg.withHint, context: cfg.context }) }] }],
     generationConfig: {
       temperature: cfg.temperature,
       maxOutputTokens: cfg.maxOutputTokens,
@@ -257,7 +262,7 @@ const MAX_TRANSPORT_RETRIES = 5
 const MAX_CONTENT_RETRIES = 2
 
 /** One request with exponential backoff for transport errors and a couple of re-asks for unusable output. */
-async function request(inputs, cfg, key, onWait) {
+export async function request(inputs, cfg, key, onWait) {
   let contentFailures = 0
   for (let attempt = 0; ; attempt++) {
     try {
@@ -293,7 +298,7 @@ const paths = (run) => ({
 /** Identifies the exact instructions a run was made with: results from different prompts must not be mixed. */
 const promptHash = (cfg) => crypto.createHash('sha256').update(cfg.systemPrompt).update(JSON.stringify(cfg.responseSchema)).update(String(cfg.withHint)).update(`context=${cfg.context}`).digest('hex').slice(0, 12)
 
-function writeJson(file, data) {
+export function writeJson(file, data) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   const tmp = `${file}.tmp`
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2))
@@ -557,7 +562,9 @@ async function main() {
   await run(args, selected, key)
 }
 
-main().catch((err) => {
-  logErr(`Error: ${err.message}`)
-  process.exit(1)
-})
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    logErr(`Error: ${err.message}`)
+    process.exit(1)
+  })
+}

@@ -139,6 +139,16 @@ const MANUAL_ACCEPT = {
   aquí: { form: 'acá' }, quizá: { form: 'capaz' }, quizás: { form: 'capaz' }, vuestro: { form: 'su' }, vosotros: { form: 'ustedes' },
   metro: { form: 'subte', region: 'ar' }, apartamento: { form: 'departamento', region: 'ar' }, escoger: { form: 'elegir' },
   cabello: { form: 'pelo' }, carro: { form: 'auto' }, fila: { form: 'cola' },
+  // tú / contigo: type changed from "form" to "replacement" by decision, so the card leads with vos / con vos.
+  // The notes are written here, by hand, as asked: they name the standard (Peninsular) form.
+  tú: {
+    form: 'vos', confidence: 'high', evidence: 'type changed from form to replacement by decision (standard Peninsular form: tú)',
+    notes: { en: 'Standard (Peninsular) form: "tú". Rioplatense speakers say "vos".', ru: 'Стандартная (испанская) форма: "tú". В Рио-де-ла-Плате говорят "vos".' },
+  },
+  contigo: {
+    form: 'con vos', confidence: 'high', evidence: 'type changed from form to replacement by decision (standard Peninsular form: contigo)',
+    notes: { en: 'Standard (Peninsular) form: "contigo". Rioplatense says "con vos".', ru: 'Стандартная (испанская) форма: "contigo". В Рио-де-ла-Плате: "con vos".' },
+  },
 }
 for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   if (handled.has(w)) throw new Error(`${w} is already handled by an earlier rule`)
@@ -148,11 +158,11 @@ for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   const source = aMatches ? a : bMatches ? b : a // register / notes come from a model entry for the same form, else A
   const fields = {
     rio_type: 'replacement', rio_form: m.form, alt_form: null, alt_region: null, region: m.region ?? null, register: source.register,
-    notes: aMatches && a.note_en ? { en: a.note_en, ru: a.note_ru } : null, std_meaning: null,
+    notes: m.notes ?? (aMatches && a.note_en ? { en: a.note_en, ru: a.note_ru } : null), std_meaning: null,
     translation: a.en_translation ? { en: a.en_translation, ru: a.ru_translation } : b.en_translation && bMatches ? { en: b.en_translation, ru: b.ru_translation } : null,
-    confidence: 'medium',
+    confidence: m.confidence ?? 'medium',
   }
-  make(w, fields, 'accepted', ['manual accept (Valera)', ...damerEvidence(fields), ...proposalEvidence(w)], [], `A${aMatches ? '' : bMatches ? ' (form and register from B)' : ' (form set by decision)'}, manual accept`)
+  make(w, fields, 'accepted', ['manual accept (Valera)', ...(m.evidence ? [m.evidence] : []), ...damerEvidence(fields), ...proposalEvidence(w)], [], `A${aMatches ? '' : bMatches ? ' (form and register from B)' : ' (form set by decision)'}, manual accept`)
   handled.add(w)
 }
 for (const w of ['hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamericano']) {
@@ -261,13 +271,39 @@ for (const w of words) {
   }
 }
 
+// ---------------------------------------------------------------- pass 2: generated examples (examples.v1.json)
+// Written by tools/rio-overlay/generate-examples.mjs. A replacement example ships to the client now (review "auto");
+// meaning_shift / regional_only / form examples stay "pending" here until they are confirmed by hand.
+// Examples confirmed by hand (Valera): the meaning_shift / regional_only entries read and approved, plus tú and contigo
+// (now replacements). A generated example is "auto" (replacement, automatic checks) or "pending" (waits for this list).
+const CONFIRMED_EXAMPLES = new Set(['foco', 'guapo', 'mina', 'saco', 'feria', 'boleto', 'colgado', 'suprema', 'chance', 'torta', 'marcador', 'propaganda', 'vos', 'tú', 'contigo'])
+const SHIPPED_REVIEWS = ['auto', 'confirmed']
+const examplesPath = path.join(HERE, 'examples.v1.json')
+const pass2 = fs.existsSync(examplesPath) ? JSON.parse(fs.readFileSync(examplesPath, 'utf8')) : null
+const staleExamples = []
+for (const w of words) {
+  const o = result.get(w)
+  const ex = pass2?.examples?.[w]
+  if (!ex) continue
+  if (o.status !== 'accepted' || o.rio_type === 'none' || ex.rio_form !== o.rio_form) {
+    staleExamples.push(w) // the entry changed since the example was written: do not attach it
+    continue
+  }
+  o.example = { es: ex.es, en: ex.en, ru: ex.ru, word_form: ex.word_form }
+  o.example_review = ex.review === 'pending' && CONFIRMED_EXAMPLES.has(w) ? 'confirmed' : ex.review
+  o.evidence.push(`pass-2 example (${pass2.meta.model}), review: ${o.example_review}${o.example_review === 'confirmed' ? ' (Valera)' : ''}`)
+}
+
 // ---------------------------------------------------------------- write
 const ordered = words.map((w) => result.get(w))
-const OUT_FIELDS = ['es_word', 'rank', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence', 'status', 'flags', 'evidence']
-const overlay = ordered.map((o) => Object.fromEntries(OUT_FIELDS.map((k) => [k, o[k]])))
+const OUT_FIELDS = ['es_word', 'rank', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence', 'status', 'flags', 'example', 'example_review', 'evidence']
+const overlay = ordered.map((o) => Object.fromEntries(OUT_FIELDS.map((k) => [k, o[k] ?? null])))
 fs.writeFileSync(path.join(HERE, 'overlay.v1.json'), JSON.stringify(overlay, null, 2))
 const CLIENT_FIELDS = ['es_word', 'rio_type', 'rio_form', 'alt_form', 'alt_region', 'region', 'register', 'notes', 'std_meaning', 'translation', 'confidence']
-const client = ordered.filter((o) => o.status === 'accepted' && o.rio_type !== 'none').map((o) => Object.fromEntries(CLIENT_FIELDS.map((k) => [k, o[k]])))
+// an example goes to the client when it passed the automatic checks (replacements) or was confirmed by hand; the rest stay out
+const client = ordered
+  .filter((o) => o.status === 'accepted' && o.rio_type !== 'none')
+  .map((o) => ({ ...Object.fromEntries(CLIENT_FIELDS.map((k) => [k, o[k]])), ...(o.example && SHIPPED_REVIEWS.includes(o.example_review) ? { example: o.example } : {}) }))
 fs.writeFileSync(path.join(HERE, 'overlay.v1.client.json'), JSON.stringify(client, null, 2))
 
 const tally = (list, f) => list.reduce((a, o) => ((a[f(o)] = (a[f(o)] ?? 0) + 1), a), {})
@@ -292,6 +328,23 @@ for (const o of ordered.filter((x) => x.status === 'pending')) {
 const weak = ordered.filter((o) => o.status === 'accepted' && o.evidence.some((e) => e.startsWith('questionnaire')) && (o.evidence.some((e) => /^proposal from/.test(e)) || (!o.evidence.some((e) => e.startsWith('DAMER')) && !o.evidence.includes('3-way agree'))))
 md.push('', '## Accepted on questionnaire evidence only (the weakest accepted entries)', '', 'Either the form came from a proposal where A said none (confidence medium, region uy by rule), or the only support is the questionnaire (no DAMER label, no 3-way agreement).', '')
 for (const o of weak) md.push(`- ${o.es_word} → ${o.rio_form}${o.region ? ` @${o.region}` : ''} (${o.confidence}): ${o.evidence.filter((e) => e.startsWith('questionnaire') || e.startsWith('proposal')).join('; ')}`)
+md.push('', '## Pass 2 examples', '')
+if (!pass2) md.push('No examples.v1.json: no pass-2 examples attached.')
+else {
+  const attached = ordered.filter((o) => o.example)
+  const auto = attached.filter((o) => o.example_review === 'auto')
+  const confirmed = attached.filter((o) => o.example_review === 'confirmed')
+  const pending = attached.filter((o) => o.example_review === 'pending')
+  md.push(`Generated by \`${pass2.meta.model}\` (run \`${pass2.meta.run}\`): ${pass2.meta.generated} of ${pass2.meta.selected} in scope, ${pass2.meta.failed} failed, cost about $${(pass2.meta.costUsd ?? 0).toFixed(4)}.`, '')
+  md.push(`Shipped to the client: ${auto.length + confirmed.length} (${auto.length} replacements that passed the automatic checks, ${confirmed.length} confirmed by hand). Still held back (pending): ${pending.length}.`, '')
+  md.push('| word | form | type | review | sentence | EN | RU |', '|---|---|---|---|---|---|---|')
+  for (const o of attached) md.push(`| ${o.es_word} | ${o.rio_form} | ${o.rio_type} | ${o.example_review} | ${o.example.es} | ${o.example.en} | ${o.example.ru} |`)
+  if (pass2.failed.length) {
+    md.push('', 'Failed (listed, never edited; the client falls back to the old behaviour for these):', '')
+    for (const f of pass2.failed) md.push(`- ${f.es_word} (${f.rio_form}): ${f.errors.join('; ')}`)
+  }
+  if (staleExamples.length) md.push('', `Not attached (the entry changed since the example was written): ${staleExamples.join(', ')}`)
+}
 md.push('', '## Validator', '')
 if (!validatorIssues.length) md.push('No errors.')
 for (const v of validatorIssues) md.push(`- ${v.w}: ${v.errors.join('; ')} (status now ${result.get(v.w).status}${v.flags.length ? ', flags: ' + v.flags.join(', ') : ''})`)

@@ -14,6 +14,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: replacement: acá (high)",
@@ -25,21 +27,37 @@
   {
     "es_word": "tú",
     "rank": 45,
-    "rio_type": "form",
+    "rio_type": "replacement",
     "rio_form": "vos",
     "alt_form": null,
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Standard (Peninsular) form: \"tú\". Rioplatense speakers say \"vos\".",
+      "ru": "Стандартная (испанская) форма: \"tú\". В Рио-де-ла-Плате говорят \"vos\"."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Vos siempre llegás tarde a las reuniones del trabajo.",
+      "en": "You always arrive late to work meetings.",
+      "ru": "Ты всегда опаздываешь на рабочие встречи.",
+      "word_form": "Vos"
+    },
+    "example_review": "confirmed",
     "evidence": [
-      "3-way agree",
-      "DAMER: «vos» has Ar and Ur labels (rio_form, any sense)"
+      "manual accept (Valera)",
+      "type changed from form to replacement by decision (standard Peninsular form: tú)",
+      "DAMER: «vos» has Ar and Ur labels (rio_form, any sense)",
+      "A: form: vos (high)",
+      "B: form: vos (high)",
+      "Claude: form: vos (high)",
+      "legacy: vos",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -57,10 +75,18 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "El gurí estaba jugando a la pelota en la rambla.",
+      "en": "The kid was playing ball on the promenade.",
+      "ru": "Мальчишка играл в мяч на набережной.",
+      "word_form": "gurí"
+    },
+    "example_review": "auto",
     "evidence": [
       "questionnaire n=8, yes=7",
       "proposal from Claude (A said none); region set to uy by rule",
-      "Claude also proposed pibe (ar); not added (not asked)"
+      "Claude also proposed pibe (ar); not added (not asked)",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -78,6 +104,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: all differ)",
       "A: replacement: nene (high)",
@@ -102,6 +130,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «chico» has Ur label (rio_form, any sense)",
@@ -115,20 +145,36 @@
   {
     "es_word": "contigo",
     "rank": 244,
-    "rio_type": "form",
+    "rio_type": "replacement",
     "rio_form": "con vos",
     "alt_form": null,
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Standard (Peninsular) form: \"contigo\". Rioplatense says \"con vos\".",
+      "ru": "Стандартная (испанская) форма: \"contigo\". В Рио-де-ла-Плате: \"con vos\"."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Mañana voy a la feria con vos a comprar verduras.",
+      "en": "Tomorrow I'm going to the street market with you to buy vegetables.",
+      "ru": "Завтра я пойду с тобой на рынок за овощами.",
+      "word_form": "con vos"
+    },
+    "example_review": "confirmed",
     "evidence": [
-      "3-way agree"
+      "manual accept (Valera)",
+      "type changed from form to replacement by decision (standard Peninsular form: contigo)",
+      "A: form: con vos (high)",
+      "B: form: con vos (high)",
+      "Claude: form: con vos (medium)",
+      "legacy: con vos",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -146,6 +192,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -165,6 +213,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "DAMER: «capaz» has Ar label (rio_form, any sense)",
@@ -189,6 +239,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -208,6 +260,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "DAMER: «capaz» has Ar label (rio_form, any sense)",
@@ -235,6 +289,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -260,6 +316,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «agarrar» has Ar and Ur labels (rio_form, any sense)"
@@ -280,6 +338,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -304,6 +364,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: none (high)",
@@ -330,6 +392,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «lindo» has Ar label (rio_form, any sense)"
@@ -350,6 +414,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -369,6 +435,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -391,6 +459,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: replacement: su (high)",
@@ -417,6 +487,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from B (A said none); region set to uy by rule",
@@ -441,6 +513,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: replacement: ustedes (high)",
@@ -467,6 +541,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "DAMER: «subte» has Ar and Ur labels (rio_form, any sense)",
@@ -494,6 +570,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -519,11 +597,19 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Hay que ser muy guapo para caminar solo por ese barrio.",
+      "en": "You have to be very brave to walk alone in that neighborhood.",
+      "ru": "Нужно быть очень смелым, чтобы гулять одному по этому району.",
+      "word_form": "guapo"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=6",
       "DAMER: «guapo» has Ar and Ur labels (rio_form, any sense)",
       "A: meaning_shift: guapo (high)",
-      "3-way agree"
+      "3-way agree",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -541,6 +627,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: replacement: lindo (high)",
@@ -564,6 +652,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: none (high)",
@@ -590,6 +680,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «intendente» has Ar and Ur labels (rio_form, any sense)"
@@ -613,6 +705,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «boludez» has Ar and Ur labels (rio_form, any sense)",
@@ -637,6 +731,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "DAMER: «departamento» has Ar and Ur labels (rio_form, any sense)",
@@ -663,6 +759,8 @@
     "flags": [
       "needs_re_enrichment"
     ],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual decision: none (junk entry)",
       "A: none (high)",
@@ -686,9 +784,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Me parece que vos tenés que descansar un poco más.",
+      "en": "I think you need to rest a little more.",
+      "ru": "Мне кажется, тебе нужно немного больше отдыхать.",
+      "word_form": "vos"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "3-way agree",
-      "DAMER: «vos» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «vos» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -709,6 +815,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -731,6 +839,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «chancho» has Ar and Ur labels (rio_form, any sense)"
@@ -754,6 +864,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: replacement: elegir (high)",
@@ -777,6 +889,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -796,6 +910,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: none (high)",
@@ -819,6 +935,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: none (high)",
@@ -845,6 +963,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: control remoto (high)",
@@ -866,6 +986,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -885,6 +1007,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual reject (Valera): not a dialect difference",
       "rejected proposal context, A: none (high)",
@@ -911,6 +1035,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: replacement: pelo (high)",
@@ -934,9 +1060,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Tomé el ómnibus equivocado y terminé en el centro de Montevideo.",
+      "en": "I took the wrong bus and ended up in downtown Montevideo.",
+      "ru": "Я сел не на тот автобус и оказался в центре Монтевидео.",
+      "word_form": "ómnibus"
+    },
+    "example_review": "auto",
     "evidence": [
       "3-way agree",
-      "DAMER: «colectivo» has Ar and Ur labels (alt_form, any sense)"
+      "DAMER: «colectivo» has Ar and Ur labels (alt_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -954,6 +1088,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «concha» has Ar and Ur labels (rio_form, any sense)",
@@ -975,6 +1111,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=5 (REMOVE), rejected by decision",
       "rejected proposal context, A: none (high)",
@@ -1004,6 +1142,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «torta» has Ar and Ur labels (rio_form, any sense)",
@@ -1026,6 +1166,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1045,6 +1187,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1064,11 +1208,19 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Salgo un ratito al balcón a fumarme un pucho y vuelvo.",
+      "en": "I'm going out to the balcony for a bit to smoke a cigarette and I'll be back.",
+      "ru": "Я выйду на минутку на балкон выкурить сигарету и вернусь.",
+      "word_form": "pucho"
+    },
+    "example_review": "auto",
     "evidence": [
       "manual decision: replacement pucho, both countries",
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
       "proposed by B (informal, high) and the legacy field; A and Claude said none",
-      "questionnaire item 25 (cigarro → pucho): n=8, yes=8"
+      "questionnaire item 25 (cigarro → pucho): n=8, yes=8",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -1089,6 +1241,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "A: none (high)",
@@ -1115,6 +1269,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual accept (Valera)",
       "DAMER: «cola» has Ar and Ur labels (rio_form, any sense)",
@@ -1145,9 +1301,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Esa mina que trabaja en la panadería es re simpática.",
+      "en": "That chick who works at the bakery is really nice.",
+      "ru": "Та девушка, что работает в пекарне, очень милая.",
+      "word_form": "mina"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "3-way agree",
-      "DAMER: «mina» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «mina» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -1165,6 +1329,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «valija» has Ar and Ur labels (rio_form, any sense)"
@@ -1185,6 +1351,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: replacement: rápido (high)",
@@ -1208,6 +1376,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1227,6 +1397,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1246,6 +1418,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «intendencia» has Ar and Ur labels (rio_form, any sense)",
@@ -1271,6 +1445,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «computadora» has Ar and Ur labels (rio_form, any sense)"
@@ -1291,6 +1467,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -1320,11 +1498,19 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Para la entrevista de trabajo, ponete una camisa blanca y un saco azul.",
+      "en": "For the job interview, put on a white shirt and a blue blazer.",
+      "ru": "На собеседование надень белую рубашку и синий пиджак.",
+      "word_form": "saco"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «saco» has Ar and Ur labels (rio_form, any sense)",
       "A: meaning_shift: saco (high)",
-      "3-way agree"
+      "3-way agree",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -1342,6 +1528,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1361,6 +1549,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1380,6 +1570,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «placard» has Ar and Ur labels (rio_form, any sense)",
@@ -1404,6 +1596,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: replacement: pedazo (high)",
@@ -1430,6 +1624,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «pileta» has Ar and Ur labels (rio_form, any sense)"
@@ -1450,6 +1646,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1469,6 +1667,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1488,6 +1688,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: galletita (high)"
@@ -1508,6 +1710,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -1534,6 +1738,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "DAMER: «sillón» has Ur label (rio_form, any sense)",
@@ -1558,6 +1764,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -1581,6 +1789,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -1607,6 +1817,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «lapicera» has Ar and Ur labels (rio_form, any sense)"
@@ -1630,6 +1842,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: replacement: auto (high)",
@@ -1656,6 +1870,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «estancia» has Ar and Ur labels (rio_form, any sense)",
@@ -1683,9 +1899,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Los domingos siempre compro la verdura y la fruta fresca en la feria.",
+      "en": "On Sundays I always buy fresh vegetables and fruit at the street market.",
+      "ru": "По воскресеньям я всегда покупаю свежие овощи и фрукты на рынке.",
+      "word_form": "feria"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
-      "A: meaning_shift: feria (high)"
+      "A: meaning_shift: feria (high)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -1706,6 +1930,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «nafta» has Ar and Ur labels (rio_form, any sense)"
@@ -1729,6 +1955,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «papa» has Ar and Ur labels (rio_form, any sense)"
@@ -1755,6 +1983,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «coger» has Ar and Ur labels (rio_form, any sense)",
@@ -1776,6 +2006,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1801,10 +2033,18 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto.",
+      "en": "He got on the bus along 18 de Julio and forgot to pay for the ticket.",
+      "ru": "Он сел в автобус на 18 Июля и забыл купить билет.",
+      "word_form": "boleto"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from B (A said none); region set to uy by rule",
-      "DAMER: «boleto» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «boleto» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -1825,6 +2065,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «apurar» has Ar and Ur labels (rio_form, any sense)",
@@ -1850,6 +2092,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «anteojos» has Ar and Ur labels (alt_form, any sense)",
@@ -1883,6 +2127,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: meaning_shift: tarta (high)",
@@ -1912,9 +2158,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Perdoná que no te escuché, estaba re colgado mirando por la ventana.",
+      "en": "Sorry I didn't hear you, I was totally spaced out looking out the window.",
+      "ru": "Извини, что не расслышал, я совсем завис, глядя в окно.",
+      "word_form": "colgado"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "3-way agree",
-      "DAMER: «colgado» has Ar label (rio_form, any sense)"
+      "DAMER: «colgado» has Ar label (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -1932,6 +2186,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -1954,6 +2210,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: replacement: jean (high)",
@@ -1980,6 +2238,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: manteca (high)",
@@ -2004,6 +2264,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2026,6 +2288,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «huevo» has Ur label (rio_form, any sense)",
@@ -2050,6 +2314,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «recibir» has Ar and Ur labels (rio_form, any sense)",
@@ -2077,6 +2343,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2099,6 +2367,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=7",
       "DAMER: «pibe» has Ar and Ur labels (rio_form, any sense)",
@@ -2120,6 +2390,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from Claude (A said none); region set to uy by rule",
@@ -2144,6 +2416,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «boludo» has Ar and Ur labels (rio_form, any sense)",
@@ -2169,6 +2443,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «pollera» has Ar and Ur labels (rio_form, any sense)"
@@ -2189,6 +2465,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2211,6 +2489,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: replacement: felicitaciones (high)",
@@ -2240,6 +2520,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: all differ)",
       "DAMER: «fibra» has Ar and Ur labels (rio_form, any sense)",
@@ -2267,6 +2549,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: regional_only: gil (high)",
@@ -2293,6 +2577,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: replacement: pastilla (high)",
@@ -2319,10 +2605,18 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas.",
+      "en": "The concert on the promenade was awesome, all my favorite bands played.",
+      "ru": "Концерт на набережной был просто супер, играли все мои любимые группы.",
+      "word_form": "de más"
+    },
+    "example_review": "auto",
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «copado» has Ar and Ur labels (alt_form, any sense)",
-      "A: replacement: de más @uy + copado @ar (high)"
+      "A: replacement: de más @uy + copado @ar (high)",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -2343,10 +2637,18 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "El golero de Peñarol atajó un penal decisivo en el último minuto del partido.",
+      "en": "Peñarol's goalkeeper saved a decisive penalty in the last minute of the match.",
+      "ru": "Вратарь Пеньяроля отбил решающий пенальти на последней минуте матча.",
+      "word_form": "golero"
+    },
+    "example_review": "auto",
     "evidence": [
       "questionnaire n=8, yes=8 (item 24: golero)",
       "questionnaire item 23: «arquero» n=8, yes=8",
-      "golero proposed by Claude (uy) with arquero (ar); A said arquero"
+      "golero proposed by Claude (uy) with arquero (ar); A said arquero",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -2367,6 +2669,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «competencia» has Ar and Ur labels (rio_form, any sense)"
@@ -2387,6 +2691,8 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from legacy (A said none); region set to uy by rule",
@@ -2409,6 +2715,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2428,6 +2736,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2450,6 +2760,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2472,6 +2784,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree",
       "DAMER: «balde» has Ar and Ur labels (rio_form, any sense)"
@@ -2492,6 +2806,8 @@
     "confidence": "medium",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (medium)",
@@ -2521,9 +2837,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Me pedí una suprema con puré para almorzar en el bar de la esquina.",
+      "en": "I ordered a breaded chicken breast with mashed potatoes for lunch at the corner bar.",
+      "ru": "Я заказал куриную отбивную с пюре на обед в баре на углу.",
+      "word_form": "suprema"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "3-way agree",
-      "DAMER: «suprema» has Ar label (rio_form, any sense)"
+      "DAMER: «suprema» has Ar label (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -2541,6 +2865,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: none (high)",
@@ -2564,6 +2890,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=0 (REMOVE), rejected by decision",
       "rejected proposal context, A: meaning_shift: polla (high)",
@@ -2590,10 +2918,18 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Si estudiás un poco más, tenés chance de salvar el examen de la facultad.",
+      "en": "If you study a bit more, you have a chance of passing the university exam.",
+      "ru": "Если ты еще немного поучишься, у тебя есть шанс сдать экзамен в университете.",
+      "word_form": "chance"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from B (A said none); region set to uy by rule",
-      "DAMER: «chance» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «chance» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -2611,6 +2947,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=0 (REMOVE), rejected by decision",
       "rejected proposal context, A: none (high)",
@@ -2637,6 +2975,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «media» has Ar and Ur labels (rio_form, any sense)",
@@ -2662,9 +3002,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Mi abuela vive en una casa de salud cerca de la rambla.",
+      "en": "My grandmother lives in a nursing home near the promenade.",
+      "ru": "Моя бабушка живет в доме престарелых недалеко от набережной.",
+      "word_form": "casa de salud"
+    },
+    "example_review": "auto",
     "evidence": [
       "questionnaire n=8, yes=8",
-      "A: replacement: casa de salud @uy + geriátrico @ar (high)"
+      "A: replacement: casa de salud @uy + geriátrico @ar (high)",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto"
     ]
   },
   {
@@ -2685,6 +3033,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "DAMER: «colectivo» has Ar and Ur labels (alt_form, any sense)",
@@ -2712,6 +3062,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision)",
       "DAMER: «linyera» has Ar and Ur labels (rio_form, any sense)",
@@ -2733,6 +3085,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2755,6 +3109,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «básquetbol» has Ar and Ur labels (rio_form, any sense)",
@@ -2782,6 +3138,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]
@@ -2801,6 +3159,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "DAMER: «estacionar» has Ar and Ur labels (rio_form, any sense)",
@@ -2826,9 +3186,17 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Para tu cumpleaños te voy a preparar una torta de chocolate riquísima.",
+      "en": "For your birthday I am going to bake you a delicious chocolate cake.",
+      "ru": "На твой день рождения я испеку тебе очень вкусный шоколадный торт.",
+      "word_form": "torta"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "3-way agree",
-      "DAMER: «torta» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «torta» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -2852,10 +3220,18 @@
     "confidence": "medium",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Prestame un marcador rojo para subrayar los títulos de estos apuntes.",
+      "en": "Lend me a red marker to underline the titles of these notes.",
+      "ru": "Одолжи мне красный маркер, чтобы подчеркнуть заголовки в этих конспектах.",
+      "word_form": "marcador"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "proposal from B (A said none); region set to uy by rule",
-      "DAMER: «marcador» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «marcador» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -2876,6 +3252,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "A: meaning_shift: lentes (high)",
@@ -2907,11 +3285,19 @@
     "flags": [
       "validator_exception: alt_form without alt_region (country of lámpara unknown)"
     ],
+    "example": {
+      "es": "Comprá un foco nuevo en el súper porque se quemó el del pasillo.",
+      "en": "Buy a new light bulb at the supermarket because the hallway one burned out.",
+      "ru": "Купи новую лампочку в супермаркете, потому что в коридоре перегорела.",
+      "word_form": "foco"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision)",
       "proposal from B (A said none): meaning_shift foco = light bulb",
       "alt_form lámpara added by decision (respondent: \"Digo lámpara\"); Claude proposed lamparita",
-      "DAMER: «foco» has Ar and Ur labels (rio_form, any sense)"
+      "DAMER: «foco» has Ar and Ur labels (rio_form, any sense)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -2929,6 +3315,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: all differ)",
       "A: replacement: nene (high)",
@@ -2952,6 +3340,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: cubierta (high)"
@@ -2972,6 +3362,8 @@
     "confidence": "high",
     "status": "rejected",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=2 (REMOVE), rejected by decision",
       "rejected proposal context, A: meaning_shift: picado (high)",
@@ -2998,10 +3390,18 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": {
+      "es": "Vi una propaganda en la tele sobre un champú muy bueno.",
+      "en": "I saw an advertisement on TV about a really good shampoo.",
+      "ru": "Я видел по телевизору рекламу очень хорошего шампуня.",
+      "word_form": "propaganda"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: meaning_shift: propaganda (high)",
-      "3-way agree"
+      "3-way agree",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
   {
@@ -3019,6 +3419,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=7",
       "DAMER: «tirar» has Ur label (rio_form, any sense)",
@@ -3042,6 +3444,8 @@
     "flags": [
       "register_unverified: informal chosen for slang forro, no source gives it"
     ],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "manual decision: replacement forro, both countries",
       "DAMER: «forro» has Ar and Ur labels (rio_form, any sense)",
@@ -3064,6 +3468,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
       "A: none (high)",
@@ -3087,6 +3493,8 @@
     "confidence": "high",
     "status": "pending",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
       "DAMER: «gaseosa» has Ar label (rio_form, any sense)",
@@ -3111,6 +3519,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
+    "example": null,
+    "example_review": null,
     "evidence": [
       "3-way agree"
     ]

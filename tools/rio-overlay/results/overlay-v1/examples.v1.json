@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "model": "gemini-3.1-pro-preview",
+    "run": "p2-examples",
+    "promptHash": "7ef69eb124fd",
+    "generatedAt": "2026-10-04T02:38:57.831Z",
+    "selected": 21,
+    "generated": 21,
+    "failed": 0,
+    "usage": {
+      "requests": 3,
+      "prompt": 3230,
+      "output": 1998,
+      "thoughts": 7407
+    },
+    "costUsd": 0.11932
+  },
+  "examples": {
+    "tú": {
+      "es": "Vos siempre llegás tarde a las reuniones del trabajo.",
+      "en": "You always arrive late to work meetings.",
+      "ru": "Ты всегда опаздываешь на рабочие встречи.",
+      "word_form": "Vos",
+      "rio_form": "vos",
+      "type": "form",
+      "review": "pending",
+      "warnings": []
+    },
+    "chico": {
+      "es": "El gurí estaba jugando a la pelota en la rambla.",
+      "en": "The kid was playing ball on the promenade.",
+      "ru": "Мальчишка играл в мяч на набережной.",
+      "word_form": "gurí",
+      "rio_form": "gurí",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "contigo": {
+      "es": "Mañana voy a la feria con vos a comprar verduras.",
+      "en": "Tomorrow I'm going to the street market with you to buy vegetables.",
+      "ru": "Завтра я пойду с тобой на рынок за овощами.",
+      "word_form": "con vos",
+      "rio_form": "con vos",
+      "type": "form",
+      "review": "pending",
+      "warnings": []
+    },
+    "guapo": {
+      "es": "Hay que ser muy guapo para caminar solo por ese barrio.",
+      "en": "You have to be very brave to walk alone in that neighborhood.",
+      "ru": "Нужно быть очень смелым, чтобы гулять одному по этому району.",
+      "word_form": "guapo",
+      "rio_form": "guapo",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "vos": {
+      "es": "Me parece que vos tenés que descansar un poco más.",
+      "en": "I think you need to rest a little more.",
+      "ru": "Мне кажется, тебе нужно немного больше отдыхать.",
+      "word_form": "vos",
+      "rio_form": "vos",
+      "type": "regional_only",
+      "review": "pending",
+      "warnings": []
+    },
+    "autobús": {
+      "es": "Tomé el ómnibus equivocado y terminé en el centro de Montevideo.",
+      "en": "I took the wrong bus and ended up in downtown Montevideo.",
+      "ru": "Я сел не на тот автобус и оказался в центре Монтевидео.",
+      "word_form": "ómnibus",
+      "rio_form": "ómnibus",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "cigarrillo": {
+      "es": "Salgo un ratito al balcón a fumarme un pucho y vuelvo.",
+      "en": "I'm going out to the balcony for a bit to smoke a cigarette and I'll be back.",
+      "ru": "Я выйду на минутку на балкон выкурить сигарету и вернусь.",
+      "word_form": "pucho",
+      "rio_form": "pucho",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "mina": {
+      "es": "Esa mina que trabaja en la panadería es re simpática.",
+      "en": "That chick who works at the bakery is really nice.",
+      "ru": "Та девушка, что работает в пекарне, очень милая.",
+      "word_form": "mina",
+      "rio_form": "mina",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "saco": {
+      "es": "Para la entrevista de trabajo, ponete una camisa blanca y un saco azul.",
+      "en": "For the job interview, put on a white shirt and a blue blazer.",
+      "ru": "На собеседование надень белую рубашку и синий пиджак.",
+      "word_form": "saco",
+      "rio_form": "saco",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "feria": {
+      "es": "Los domingos siempre compro la verdura y la fruta fresca en la feria.",
+      "en": "On Sundays I always buy fresh vegetables and fruit at the street market.",
+      "ru": "По воскресеньям я всегда покупаю свежие овощи и фрукты на рынке.",
+      "word_form": "feria",
+      "rio_form": "feria",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "boleto": {
+      "es": "Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto.",
+      "en": "He got on the bus along 18 de Julio and forgot to pay for the ticket.",
+      "ru": "Он сел в автобус на 18 Июля и забыл купить билет.",
+      "word_form": "boleto",
+      "rio_form": "boleto",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "colgado": {
+      "es": "Perdoná que no te escuché, estaba re colgado mirando por la ventana.",
+      "en": "Sorry I didn't hear you, I was totally spaced out looking out the window.",
+      "ru": "Извини, что не расслышал, я совсем завис, глядя в окно.",
+      "word_form": "colgado",
+      "rio_form": "colgado",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "guay": {
+      "es": "El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas.",
+      "en": "The concert on the promenade was awesome, all my favorite bands played.",
+      "ru": "Концерт на набережной был просто супер, играли все мои любимые группы.",
+      "word_form": "de más",
+      "rio_form": "de más",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "portero": {
+      "es": "El golero de Peñarol atajó un penal decisivo en el último minuto del partido.",
+      "en": "Peñarol's goalkeeper saved a decisive penalty in the last minute of the match.",
+      "ru": "Вратарь Пеньяроля отбил решающий пенальти на последней минуте матча.",
+      "word_form": "golero",
+      "rio_form": "golero",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "suprema": {
+      "es": "Me pedí una suprema con puré para almorzar en el bar de la esquina.",
+      "en": "I ordered a breaded chicken breast with mashed potatoes for lunch at the corner bar.",
+      "ru": "Я заказал куриную отбивную с пюре на обед в баре на углу.",
+      "word_form": "suprema",
+      "rio_form": "suprema",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "chance": {
+      "es": "Si estudiás un poco más, tenés chance de salvar el examen de la facultad.",
+      "en": "If you study a bit more, you have a chance of passing the university exam.",
+      "ru": "Если ты еще немного поучишься, у тебя есть шанс сдать экзамен в университете.",
+      "word_form": "chance",
+      "rio_form": "chance",
+      "type": "regional_only",
+      "review": "pending",
+      "warnings": []
+    },
+    "asilo": {
+      "es": "Mi abuela vive en una casa de salud cerca de la rambla.",
+      "en": "My grandmother lives in a nursing home near the promenade.",
+      "ru": "Моя бабушка живет в доме престарелых недалеко от набережной.",
+      "word_form": "casa de salud",
+      "rio_form": "casa de salud",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "torta": {
+      "es": "Para tu cumpleaños te voy a preparar una torta de chocolate riquísima.",
+      "en": "For your birthday I am going to bake you a delicious chocolate cake.",
+      "ru": "На твой день рождения я испеку тебе очень вкусный шоколадный торт.",
+      "word_form": "torta",
+      "rio_form": "torta",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "marcador": {
+      "es": "Prestame un marcador rojo para subrayar los títulos de estos apuntes.",
+      "en": "Lend me a red marker to underline the titles of these notes.",
+      "ru": "Одолжи мне красный маркер, чтобы подчеркнуть заголовки в этих конспектах.",
+      "word_form": "marcador",
+      "rio_form": "marcador",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "foco": {
+      "es": "Comprá un foco nuevo en el súper porque se quemó el del pasillo.",
+      "en": "Buy a new light bulb at the supermarket because the hallway one burned out.",
+      "ru": "Купи новую лампочку в супермаркете, потому что в коридоре перегорела.",
+      "word_form": "foco",
+      "rio_form": "foco",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    },
+    "propaganda": {
+      "es": "Vi una propaganda en la tele sobre un champú muy bueno.",
+      "en": "I saw an advertisement on TV about a really good shampoo.",
+      "ru": "Я видел по телевизору рекламу очень хорошего шампуня.",
+      "word_form": "propaganda",
+      "rio_form": "propaganda",
+      "type": "meaning_shift",
+      "review": "pending",
+      "warnings": []
+    }
+  },
+  "failed": []
+}
