@@ -90,6 +90,8 @@ export const strings = {
       stdUsageHint: { equally_used: 'also common', less_common: null, not_used: 'rarely used here' } as Record<string, string | null>,
       note: 'Note',
       standardMeaning: 'Standard meaning',
+      // how the headword sounds; neutral shows nothing
+      register: { informal: 'informal', vulgar: 'vulgar', offensive: 'offensive', pejorative: 'pejorative' } as Record<string, string | undefined>,
       tag: { uy: 'UY', ar: 'AR' },
       tagTitle: { uy: 'Used in Uruguay', ar: 'Used in Argentina' },
     },
@@ -101,6 +103,7 @@ export const strings = {
       stdUsageHint: { equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' } as Record<string, string | null>,
       note: 'Заметка',
       standardMeaning: 'Обычное значение',
+      register: { informal: 'разговорное', vulgar: 'вульгарное', offensive: 'оскорбительное', pejorative: 'пренебрежительное' } as Record<string, string | undefined>,
       tag: { uy: 'UY', ar: 'AR' },
       tagTitle: { uy: 'Используется в Уругвае', ar: 'Используется в Аргентине' },
     },

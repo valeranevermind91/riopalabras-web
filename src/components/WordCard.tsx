@@ -1,11 +1,12 @@
 import { effectiveExample, headword } from '../data/headword'
 import { posLabel, showPosBadge } from '../data/pos'
-import { headwordRegion, relationFor, translationsFor } from '../data/relation'
+import { headwordRegion, headwordRegister, relationFor, translationsFor } from '../data/relation'
 import type { Lang } from '../data/rio'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { HighlightedSentence } from './HighlightedSentence'
 import { RegionTag } from './RegionTag'
+import { RegisterLabel } from './RegisterLabel'
 import { RelationBlock } from './RelationBlock'
 
 export function TranslationRow({ label, text }: { label: string; text: string }) {
@@ -44,6 +45,7 @@ export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
         {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio[lang].pill}</span>}
         <RegionTag region={headwordRegion(word)} lang={lang} />
+        <RegisterLabel register={headwordRegister(word)} lang={lang} />
       </div>
 
       <RelationBlock relation={relationFor(word)} lang={lang} />

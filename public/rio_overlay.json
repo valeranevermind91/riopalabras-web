@@ -504,7 +504,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Cigarro\" or \"cigarrillo\" is the more usual everyday word; \"pucho\" is the colloquial one.",
+      "ru": "\"Cigarro\" или \"cigarrillo\" — более обычное слово в повседневной речи; \"pucho\" — разговорное."
+    },
     "std_meaning": null,
     "translation": null,
     "std_usage": "equally_used",
@@ -1076,7 +1079,10 @@
     "alt_region": null,
     "region": "uy",
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Cigarro\" or \"cigarrillo\" is the more usual everyday word; \"pucho\" is the colloquial one.",
+      "ru": "\"Cigarro\" или \"cigarrillo\" — более обычное слово в повседневной речи; \"pucho\" — разговорное."
+    },
     "std_meaning": null,
     "translation": null,
     "std_usage": "equally_used",
@@ -1212,8 +1218,11 @@
     "alt_form": null,
     "alt_region": null,
     "region": null,
-    "register": "informal",
-    "notes": null,
+    "register": "pejorative",
+    "notes": {
+      "en": "Dismissive word. The neutral phrase is \"persona en situación de calle\".",
+      "ru": "Пренебрежительное слово. Нейтральное выражение: \"persona en situación de calle\"."
+    },
     "std_meaning": null,
     "translation": {
       "en": "homeless person, tramp",

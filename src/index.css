@@ -381,6 +381,13 @@ dd {
   vertical-align: middle;
 }
 
+.wc-register {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--tg-hint-color);
+  align-self: center;
+}
+
 .rb-meta {
   margin: 0 0 8px;
 }

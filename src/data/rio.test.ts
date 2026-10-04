@@ -509,7 +509,7 @@ describe('overlay examples (pass 2)', () => {
     expect(w.exampleSentence).not.toMatch(/pucho/i)
     expect(headword(w)).toEqual({ text: 'cigarrillo', form: 'standard', secondary: null })
     expect(headwordDecision(w)).toMatchObject({ switched: false, reason: 'no-example-has-form', exampleSource: 'dictionary' })
-    expect(relationFor(w)).toEqual({ type: 'replacement', rioForm: 'pucho', region: null })
+    expect(relationFor(w)).toEqual({ type: 'replacement', rioForm: 'pucho', region: null, note: base.rio!.notes }) // the hand-written note (cigarro / cigarrillo is the usual word) still shows
     expect(highlighted(w)).toBe('cigarrillo') // never a headword that is not in its sentence
     expect(translationsFor(w)).toEqual({ en: w.enTranslation, ru: w.ruTranslation })
   })

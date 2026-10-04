@@ -1,10 +1,11 @@
 import type { KeyboardEvent } from 'react'
 import { headword } from '../data/headword'
-import { headwordRegion, relationFor, translationsFor } from '../data/relation'
+import { headwordRegion, headwordRegister, relationFor, translationsFor } from '../data/relation'
 import type { Lang } from '../data/rio'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { RegionTag } from './RegionTag'
+import { RegisterLabel } from './RegisterLabel'
 import { RelationBlock } from './RelationBlock'
 import { ExampleBlock, TranslationRow } from './WordCard'
 
@@ -24,6 +25,7 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
   const head = headword(word)
   const translations = translationsFor(word)
   const region = headwordRegion(word)
+  const register = headwordRegister(word)
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (revealed || (e.key !== 'Enter' && e.key !== ' ')) return
@@ -46,15 +48,17 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
             <h2 className="wc-headword rf-headword">{head.text}</h2>
             {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio[lang].pill}</span>}
             <RegionTag region={region} lang={lang} />
+            <RegisterLabel register={register} lang={lang} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
 
         <div className="flip-face flip-back word-card" aria-hidden={!revealed} inert={!revealed}>
           <h2 className="wc-headword rb-headword">{head.text}</h2>
-          {region && (
+          {(region || register) && (
             <div className="wc-meta rb-meta">
               <RegionTag region={region} lang={lang} />
+              <RegisterLabel register={register} lang={lang} />
             </div>
           )}
           <RelationBlock relation={relationFor(word)} lang={lang} />

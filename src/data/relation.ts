@@ -58,6 +58,18 @@ export function headwordRegion(word: HeadwordSource): RioRegion | null {
 }
 
 /**
+ * The register to label the headword with (informal, vulgar, offensive, pejorative), or null for neutral / unknown.
+ * The overlay's register describes rio_form, so it is shown only when the card's headword is that form
+ * (a replacement whose headword stayed the standard word carries no register: the form is only a note there).
+ */
+export function headwordRegister(word: HeadwordSource): string | null {
+  const rio = word.rio
+  if (!rio || rio.register === 'neutral') return null
+  if (rio.type === 'replacement' && headword(word).form !== 'rioplatense') return null
+  return rio.register
+}
+
+/**
  * The translations to show. The overlay's override describes the Rioplatense headword (or, for
  * meaning_shift / regional_only, the Rioplatense meaning), so a replacement whose headword stayed
  * the standard word keeps the dictionary translation: "coger" must not show "to grab" alone.
