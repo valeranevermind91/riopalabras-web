@@ -4,11 +4,13 @@ import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEv
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, type AuthState } from './lib/auth'
+import { useDebugAccess } from './lib/useDebugAccess'
 import { getSupabase } from './lib/supabase'
 import { applyTelegramTheme, getWebApp, nativeBackButton } from './lib/telegram'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
 import { LearnScreen } from './screens/Learn'
+import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
 
 type Screen = 'home' | 'learn' | 'review' | 'debug'
@@ -32,6 +34,7 @@ function App() {
     : { status: 'error', message: clientError ?? 'Supabase client unavailable' }
 
   const data = useUserData(auth, client)
+  const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
 
   const [screen, setScreen] = useState<Screen>('home')
   const leaveGuard = useRef<LeaveGuard | null>(null)
@@ -120,6 +123,7 @@ function App() {
   const inPageBack = native ? undefined : () => void go('home')
 
   if (screen === 'debug') {
+    if (!debugAllowed) return <NotAvailable />
     return (
       <DebugScreen
         telegram={telegram}
@@ -167,7 +171,7 @@ function App() {
       data={data}
       onLearn={() => setScreen('learn')}
       onReview={() => setScreen('review')}
-      onDebug={() => setScreen('debug')}
+      onDebug={debugAllowed ? () => setScreen('debug') : undefined}
       queue={queue}
       metrics={metrics}
     />

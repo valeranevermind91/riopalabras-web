@@ -15,7 +15,8 @@ interface HomeScreenProps {
   data: DataState
   onLearn: () => void
   onReview: () => void
-  onDebug: () => void
+  /** Absent when the user may not open Debug: the link is then not rendered at all. */
+  onDebug?: () => void
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
 }
@@ -89,9 +90,11 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue, metr
         </section>
       )}
 
-      <button type="button" className="debug-link" onClick={onDebug}>
-        {strings.home.debugLink}
-      </button>
+      {onDebug && (
+        <button type="button" className="debug-link" onClick={onDebug}>
+          {strings.home.debugLink}
+        </button>
+      )}
     </main>
   )
 }
