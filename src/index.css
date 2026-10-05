@@ -718,3 +718,31 @@ dd {
 .load-log li {
   margin-bottom: 6px;
 }
+
+/* ---- Debug: testing tools ---- */
+
+.testing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.testing-count {
+  width: 4em;
+  padding: 4px 6px;
+  border: 1px solid var(--tg-hint-color);
+  border-radius: 8px;
+  background: var(--tg-bg-color);
+  color: var(--tg-text-color);
+  font: inherit;
+}
+
+.testing-report {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tg-hint-color) 14%, transparent);
+  overflow-wrap: anywhere;
+}

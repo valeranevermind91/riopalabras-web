@@ -26,7 +26,7 @@ const KEY2 = '2026-10-05'
 
 function memoryStore(initial: DailyMetricsRow | null = null) {
   let row = initial
-  const store: MetricsStore = { load: () => row, save: (r) => void (row = r) }
+  const store: MetricsStore = { load: () => row, save: (r) => void (row = r), clear: () => void (row = null) }
   return { store, get: () => row }
 }
 
@@ -80,7 +80,7 @@ describe('pure helpers', () => {
 describe('local store', () => {
   const storage = () => {
     const data = new Map<string, string>()
-    return { data, getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) }
+    return { data, getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k) }
   }
 
   it('survives a reload: a new store on the same storage sees the saved row, per user', () => {
@@ -101,6 +101,9 @@ describe('local store', () => {
       },
       setItem: () => {
         throw new Error('quota')
+      },
+      removeItem: () => {
+        throw new Error('blocked')
       },
     })
     expect(() => broken.save({ ...emptyRow(KEY1), reviewsDone: 2 })).not.toThrow()
@@ -226,6 +229,9 @@ describe('a metrics failure never blocks or degrades learning', () => {
         throw new Error('storage gone')
       },
       save: () => {
+        throw new Error('storage gone')
+      },
+      clear: () => {
         throw new Error('storage gone')
       },
     }

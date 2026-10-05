@@ -72,10 +72,12 @@ export function parseStoredRow(raw: unknown): DailyMetricsRow | null {
 export interface MetricsStore {
   load: () => DailyMetricsRow | null
   save: (row: DailyMetricsRow) => void
+  /** Forgets the stored row (testing tool: start the day from zero). */
+  clear: () => void
 }
 
 /** localStorage-backed, one key per user holding the latest day's row; falls back to memory when storage is unavailable. */
-export function createLocalMetricsStore(userId: string, storage: Pick<Storage, 'getItem' | 'setItem'> | null = safeLocalStorage()): MetricsStore {
+export function createLocalMetricsStore(userId: string, storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null = safeLocalStorage()): MetricsStore {
   const key = `riopalabras.dailyMetrics.v1.${userId}`
   let memory: DailyMetricsRow | null = null
   return {
@@ -87,6 +89,14 @@ export function createLocalMetricsStore(userId: string, storage: Pick<Storage, '
         // unreadable storage or corrupt JSON: fall through to the in-memory copy
       }
       return memory
+    },
+    clear() {
+      memory = null
+      try {
+        storage?.removeItem(key)
+      } catch {
+        // nothing more can be done: the in-memory copy is already gone
+      }
     },
     save(row) {
       memory = row
@@ -124,6 +134,12 @@ export interface MetricsRecorder {
   captureStartOfDaySnapshotIfNeeded: (snapshot: StartOfDaySnapshot, now?: Date) => void
   /** Today's accumulated row as recorded on this device, or null if nothing was recorded today. */
   today: (now?: Date) => DailyMetricsRow | null
+  /**
+   * Testing tool: forgets today's local row and queues a zeroed row for the same date (an upsert
+   * that overwrites the server's copy), so the day can be re-tested from nothing. Returns the
+   * zeroed row, or null if it could not be done. The start-of-day snapshot is retaken the next time Home shows.
+   */
+  resetToday: (now?: Date) => DailyMetricsRow | null
 }
 
 /**
@@ -172,6 +188,17 @@ export function createMetricsRecorder(deps: MetricsRecorderDeps): MetricsRecorde
         return
       }
       update(now, (row) => ({ ...row, dueAtStart: snapshot.reviewDue, learnPool: snapshot.learnPool, dailyLimit: snapshot.dailyLimit }))
+    },
+
+    resetToday(now = new Date()) {
+      try {
+        const zeroed = emptyRow(localDateKey(now))
+        deps.store.clear()
+        deps.enqueue(zeroed)
+        return zeroed
+      } catch {
+        return null
+      }
     },
 
     today(now = new Date()) {

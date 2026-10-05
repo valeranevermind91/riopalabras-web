@@ -2,6 +2,7 @@ import { DataSection } from '../DataSection'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { LoadLogSection } from '../components/LoadLogSection'
 import { MetricsSection } from '../components/MetricsSection'
+import { TestingSection } from '../components/TestingSection'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordPreview } from '../components/WordPreview'
 import { langFromSettings } from '../data/rio'
@@ -24,7 +25,7 @@ interface DebugScreenProps {
   data: DataState
   onBack?: () => void
   queue: WriteQueue | null
-  metrics: Pick<MetricsRecorder, 'today'> | null
+  metrics: Pick<MetricsRecorder, 'today' | 'resetToday'> | null
   client: SupabaseClient | null
   userId: string | null
 }
@@ -66,6 +67,8 @@ export function DebugScreen({ telegram, auth, data, onBack, queue, metrics, clie
       <DataSection state={data} />
 
       <MetricsSection queue={queue} metrics={metrics} client={client} userId={userId} />
+
+      <TestingSection signedIn={auth.status === 'signed-in'} data={data.status === 'ready' ? data.data : null} queue={queue} metrics={metrics} />
 
       <LoadLogSection degraded={data.status === 'ready' ? data.data.degraded : []} />
 
