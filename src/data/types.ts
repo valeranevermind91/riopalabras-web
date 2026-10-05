@@ -1,3 +1,4 @@
+import type { ThemeChoice } from '../lib/theme'
 import type { RioExample, RioInfo } from './rio'
 
 export interface Word {
@@ -39,6 +40,8 @@ export interface UserSettings {
   readonly newWordsLearnedTodayDate: string | null
   readonly showRuTranslation: boolean
   readonly showEnTranslation: boolean
+  /** The synced theme choice (system / light / dark); null until the user has picked one on any device. */
+  readonly themeChoice: ThemeChoice | null
   readonly learnPicks: readonly string[]
   readonly pendingWordDeletes: readonly string[]
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

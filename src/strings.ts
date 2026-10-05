@@ -39,6 +39,11 @@ export const strings = {
     unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
   },
 
+  theme: {
+    names: { system: 'System', light: 'Light', dark: 'Dark' } as Record<string, string>,
+    toggle: (current: string, next: string) => `Theme: ${current}. Tap to switch to ${next}.`,
+  },
+
   learn: {
     title: 'Learn',
     wordNofM: (n: number, m: number) => `Word ${n} of ${m}`,

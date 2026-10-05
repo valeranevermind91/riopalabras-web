@@ -1,14 +1,76 @@
-:root {
+/*
+ * Themes. The page carries data-theme="light|dark" (and data-theme-source="telegram|palette", see
+ * src/lib/theme.ts). Each palette below is designed for its scheme, not an inversion of the other,
+ * and checked for contrast by src/lib/palette.test.ts.
+ *
+ * Inside Telegram, with the client's own scheme showing, Telegram's themeParams are set inline as
+ * --tg-* variables and override the five colours below, so the app matches the client's chrome. The
+ * semantic colours (ok, bad, mark, notice, ratings…) are never Telegram's: they come from here.
+ */
+:root,
+:root[data-theme='light'] {
   --tg-bg-color: #ffffff;
-  --tg-text-color: #222222;
-  --tg-hint-color: #999999;
-  --tg-link-color: #2678b6;
-  --tg-button-color: #50a8eb;
+  --tg-text-color: #1c1e21;
+  --tg-hint-color: #5b6671;
+  --tg-link-color: #1b66b0;
+  --tg-button-color: #1f6fb5;
   --tg-button-text-color: #ffffff;
-  --tg-secondary-bg-color: #f0f0f0;
+  --tg-secondary-bg-color: #f1f3f5;
 
+  --ok: #1b6b2c;
+  --bad: #b3261e;
+  --warn: #8a4b00;
+  --ok-bg: #dff2e2;
+  --bad-bg: #fbe0dd;
+  --mark-bg: #ffe38f;
+  --mark-fg: #1c1e21;
+  --select-bg: #d6e8f9;
+  --notice-bg: #e6e9ed;
+  --badge-mock-bg: #f4c542;
+  --badge-mock-fg: #1c1e21;
+  --badge-live-bg: #2e7d32;
+  --badge-live-fg: #ffffff;
+
+  /* the four rating buttons: white text on each is >= 4.5:1; the label, not the colour, carries the meaning */
+  --rate-again: #c62828;
+  --rate-hard: #b45309;
+  --rate-good: #2e7d32;
+  --rate-easy: #1565c0;
+  --rate-text: #ffffff;
+}
+
+:root[data-theme='dark'] {
+  --tg-bg-color: #17212b;
+  --tg-text-color: #eef1f4;
+  --tg-hint-color: #9aaab8;
+  --tg-link-color: #6cb6f5;
+  --tg-button-color: #2f78c4;
+  --tg-button-text-color: #ffffff;
+  --tg-secondary-bg-color: #202c39;
+
+  --ok: #7fd88e;
+  --bad: #ff948b;
+  --warn: #f0b35b;
+  --ok-bg: #1f4a2c;
+  --bad-bg: #5a2622;
+  --mark-bg: #6a5a1c;
+  --mark-fg: #f4f4f4;
+  --select-bg: #27496d;
+  --notice-bg: #2a3846;
+  --badge-mock-bg: #f4c542;
+  --badge-mock-fg: #1c1e21;
+  --badge-live-bg: #2e7d32;
+  --badge-live-fg: #ffffff;
+
+  --rate-again: #c62828;
+  --rate-hard: #b45309;
+  --rate-good: #2e7d32;
+  --rate-easy: #1565c0;
+  --rate-text: #ffffff;
+}
+
+:root {
   font: 16px/1.45 system-ui, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light dark;
 }
 
 body {
@@ -44,13 +106,13 @@ h2 {
 }
 
 .badge-mock {
-  background: #f4c542;
-  color: #222;
+  background: var(--badge-mock-bg);
+  color: var(--badge-mock-fg);
 }
 
 .badge-live {
-  background: #4caf50;
-  color: #fff;
+  background: var(--badge-live-bg);
+  color: var(--badge-live-fg);
 }
 
 .card {
@@ -82,7 +144,7 @@ dd {
 }
 
 .error {
-  color: #d33;
+  color: var(--bad);
 }
 
 /* ---- Navigation, buttons, stats ---- */
@@ -178,6 +240,28 @@ dd {
 .home-actions {
   display: grid;
   gap: 12px;
+}
+
+.screen-header-actions {
+  margin-left: auto;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tg-secondary-bg-color);
+  color: var(--tg-text-color);
+  cursor: pointer;
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--tg-text-color);
+  outline-offset: 2px;
 }
 
 .debug-link {
@@ -430,9 +514,8 @@ dd {
 .wc-sentence mark {
   padding: 0 2px;
   border-radius: 3px;
-  background: rgba(80, 168, 235, 0.3);
-  background: color-mix(in srgb, var(--tg-button-color) 32%, transparent);
-  color: inherit;
+  background: var(--mark-bg);
+  color: var(--mark-fg);
 }
 
 .wc-translation {
@@ -547,7 +630,7 @@ dd {
   border: 0;
   border-radius: 12px;
   padding: 12px 4px;
-  color: #fff;
+  color: var(--rate-text);
   font: inherit;
   cursor: pointer;
 }
@@ -563,19 +646,19 @@ dd {
 }
 
 .rate-again {
-  background: #c62828;
+  background: var(--rate-again);
 }
 
 .rate-hard {
-  background: #b45309;
+  background: var(--rate-hard);
 }
 
 .rate-good {
-  background: #2e7d32;
+  background: var(--rate-good);
 }
 
 .rate-easy {
-  background: #1565c0;
+  background: var(--rate-easy);
 }
 
 .rate-btn:focus-visible,
@@ -592,9 +675,9 @@ dd {
   gap: 12px;
   margin-bottom: 12px;
   padding: 10px 12px;
-  border: 1px solid rgba(198, 40, 40, 0.5);
+  border: 1px solid var(--bad);
   border-radius: 12px;
-  background: rgba(198, 40, 40, 0.12);
+  background: var(--bad-bg);
   color: var(--tg-text-color);
   font-size: 14px;
   font-weight: 600;
@@ -699,7 +782,7 @@ dd {
   margin: 0 0 16px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--tg-hint-color) 14%, transparent);
+  background: var(--notice-bg);
   color: var(--tg-text-color);
   font-size: 14px;
 }
@@ -743,7 +826,7 @@ dd {
   margin: 12px 0 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--tg-hint-color) 14%, transparent);
+  background: var(--notice-bg);
   overflow-wrap: anywhere;
 }
 
@@ -789,17 +872,17 @@ dd {
 
 .match-tile.is-selected {
   border-color: var(--tg-button-color);
-  background: color-mix(in srgb, var(--tg-button-color) 22%, var(--tg-secondary-bg-color));
+  background: var(--select-bg);
 }
 
 .match-tile.is-wrong {
-  border-color: #c62828;
-  background: rgba(198, 40, 40, 0.18);
+  border-color: var(--bad);
+  background: var(--bad-bg);
 }
 
 .match-tile.is-matched {
   border-color: transparent;
-  background: color-mix(in srgb, #2e7d32 28%, var(--tg-secondary-bg-color));
+  background: var(--ok-bg);
   cursor: default;
 }
 
@@ -835,7 +918,7 @@ dd {
 .cz-hint {
   height: 24px;
   margin: 12px 0 0;
-  color: var(--tg-button-color);
+  color: var(--tg-link-color);
   font-weight: 800;
   letter-spacing: 2px;
 }
@@ -848,11 +931,11 @@ dd {
 }
 
 .cz-ok {
-  color: #2e7d32;
+  color: var(--ok);
 }
 
 .cz-bad {
-  color: #c62828;
+  color: var(--bad);
 }
 
 .cz-neutral {
@@ -913,11 +996,11 @@ dd {
 }
 
 .cz-result-correct .cz-result-outcome {
-  color: #2e7d32;
+  color: var(--ok);
 }
 
 .cz-result-wrong .cz-result-outcome {
-  color: #c62828;
+  color: var(--bad);
 }
 
 .cz-result-gaveUp .cz-result-outcome {

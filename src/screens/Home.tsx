@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { ThemeToggle } from '../components/ThemeToggle'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats } from '../data/stats'
@@ -9,6 +10,7 @@ import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
+import type { ThemeChoice } from '../lib/theme'
 import { strings } from '../strings'
 
 interface HomeScreenProps {
@@ -22,9 +24,11 @@ interface HomeScreenProps {
   onDebug?: () => void
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
+  /** The theme toggle in the header; absent where there is nothing to toggle. */
+  theme?: { choice: ThemeChoice; onCycle: () => void }
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onDebug, queue, metrics }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onDebug, queue, metrics, theme }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, new Date()) : null),
@@ -50,7 +54,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
   return (
     <main className="screen">
-      <ScreenHeader title={strings.appTitle} />
+      <ScreenHeader title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} onCycle={theme.onCycle} />} />
 
       {stats ? (
         <>

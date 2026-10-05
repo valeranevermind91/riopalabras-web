@@ -47,6 +47,9 @@ export interface TelegramWebApp {
   BackButton?: WebAppBackButton
   HapticFeedback?: WebAppHapticFeedback
   showConfirm?: (message: string, callback: (confirmed: boolean) => void) => void
+  // Chrome colours (Bot API 6.1+): a hex colour or 'bg_color' / 'secondary_bg_color'.
+  setHeaderColor?: (color: string) => void
+  setBackgroundColor?: (color: string) => void
   // Closing confirmation (Bot API 6.2+) and events ('activated' arrives with 8.0); absent in the dev mock.
   enableClosingConfirmation?: () => void
   disableClosingConfirmation?: () => void
@@ -108,19 +111,6 @@ export function getWebApp(): WebAppContext {
   }
 
   return { webApp: real ?? MOCK_WEB_APP, isMock: !real }
-}
-
-export function applyTelegramTheme(webApp: TelegramWebApp) {
-  const root = document.documentElement
-  const { themeParams, colorScheme } = webApp
-
-  root.dataset.colorScheme = colorScheme
-
-  for (const [key, value] of Object.entries(themeParams)) {
-    if (value) {
-      root.style.setProperty(`--tg-${key.replace(/_/g, '-')}`, value)
-    }
-  }
 }
 
 /** Telegram's own back button (Bot API 6.1+), or null where it doesn't exist — callers then render an in-page one. */

@@ -1,3 +1,4 @@
+import { THEME_SETTING_KEY, parseThemeChoice } from '../lib/theme'
 import type { UserSettings } from './types'
 
 function num(value: unknown, fallback: number): number {
@@ -26,6 +27,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     newWordsLearnedTodayDate: str(raw.new_words_learned_today_date),
     showRuTranslation: bool(raw.show_ru_translation, true),
     showEnTranslation: bool(raw.show_en_translation, false),
+    themeChoice: parseThemeChoice(raw[THEME_SETTING_KEY]),
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
     raw,

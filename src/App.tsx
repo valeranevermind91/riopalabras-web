@@ -6,7 +6,9 @@ import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, type AuthState } from './lib/auth'
 import { useDebugAccess } from './lib/useDebugAccess'
 import { getSupabase } from './lib/supabase'
-import { applyTelegramTheme, getWebApp, nativeBackButton } from './lib/telegram'
+import { getWebApp, nativeBackButton } from './lib/telegram'
+import { themePatch, type ThemeChoice } from './lib/theme'
+import { useTheme } from './lib/useTheme'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
 import { ClozeScreen } from './screens/Cloze'
@@ -79,6 +81,21 @@ function App() {
     void metrics?.seedToday()
   }, [metrics])
 
+  // Theme: the synced choice (saved through the same settings path as the streak), localStorage until settings load.
+  const applySettings = readyData?.applySettings
+  const persistTheme = useMemo(
+    () =>
+      queue && applySettings
+        ? (choice: ThemeChoice) => {
+            const patch = themePatch(choice)
+            applySettings(patch)
+            queue.enqueueSettings(patch)
+          }
+        : null,
+    [queue, applySettings],
+  )
+  const theme = useTheme(readyData?.settings ?? null, persistTheme)
+
   // Queue resilience: closing confirmation while anything is unsaved, slow background retries once stuck.
   useEffect(() => {
     if (!queue) return
@@ -102,7 +119,6 @@ function App() {
     const { webApp } = getWebApp()
     webApp.ready()
     webApp.expand()
-    applyTelegramTheme(webApp)
   }, [])
 
   useEffect(() => {
@@ -195,6 +211,7 @@ function App() {
       onMatching={() => setScreen('matching')}
       onCloze={() => setScreen('cloze')}
       onDebug={debugAllowed ? () => setScreen('debug') : undefined}
+      theme={{ choice: theme.choice, onCycle: theme.cycle }}
       queue={queue}
       metrics={metrics}
     />
