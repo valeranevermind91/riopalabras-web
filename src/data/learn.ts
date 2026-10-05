@@ -1,10 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { learnedState } from '../sm2/sm2'
 import { newWordsPatch, streakPatch } from './daily'
 import { headword } from './headword'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
-import { upsertProgress, writeSettings } from './writes'
+import type { QueueStatus, QueueTicket, WriteQueue } from './writeQueue'
 
 export const LEARN_BATCH_SIZE = 10
 
@@ -56,54 +55,53 @@ export function learnSettingsPatch(settings: UserSettings, batch: LearnBatch, no
 }
 
 export interface FinishDeps {
-  client: SupabaseClient
-  userId: string
+  queue: Pick<WriteQueue, 'enqueueBatch'>
   /** Always the latest settings (read at call time, not captured). */
   getSettings: () => UserSettings
+  /** Optimistic: mirror the new state into the in-memory words / settings right away, as Review does. */
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   applySettings: (patch: SettingsPatch) => void
-  /** Called once, after both writes succeeded and were applied (so today's counters are current). Must not throw. */
+  /** Called once, after the batch is applied and queued (so today's counters are current). Must not throw. */
   onFinished?: () => void
 }
 
 /**
- * Finishing a batch is two writes: progress for every word, then settings (streak + today's
- * counter). Returns a function that runs the steps in order and is safe to call again after a
- * failure: a retry resumes at the step that failed (progress is never rewritten once saved, and
- * the counter is computed from the batch snapshot, so nothing is double-counted). While a run is in
- * flight, further calls get the same promise, and once it has fully succeeded further calls do
- * nothing — a double-tap can't submit twice.
+ * Finishing a batch hands the write queue everything at once: progress for every word and ONE
+ * settings patch (streak + today's new-word counter), computed here, once, from the settings as
+ * they are now and the batch snapshot. The patch holds absolute values, so a retry — even after a
+ * request that did succeed on the server — writes the same numbers again and never counts the
+ * batch twice. The queue sends progress before settings and stops at a failing progress write, so
+ * the counter cannot land ahead of the words; what the screen waits for is the returned ticket.
+ *
+ * Returns a function safe against double taps: the first call queues the batch, later calls just
+ * return the same ticket.
  */
-export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => Promise<void> {
-  let progressSaved = false
-  let done = false
-  let inFlight: Promise<void> | null = null
-
-  const run = async () => {
-    const now = new Date()
-
-    if (!progressSaved) {
-      const updates = learnProgressUpdates(batch, now)
-      await upsertProgress(deps.client, deps.userId, updates, now)
-      deps.applyProgress(updates)
-      progressSaved = true
-    }
-
-    const settings = deps.getSettings()
-    const patch = learnSettingsPatch(settings, batch, now)
-    if (Object.keys(patch).length > 0) {
-      await writeSettings(deps.client, deps.userId, settings, patch, now)
-      deps.applySettings(patch)
-    }
-    done = true
-    deps.onFinished?.()
-  }
+export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => QueueTicket {
+  let ticket: QueueTicket | null = null
 
   return () => {
-    if (done) return Promise.resolve()
-    inFlight ??= run().finally(() => {
-      inFlight = null
-    })
-    return inFlight
+    if (ticket) return ticket
+    const now = new Date()
+    const updates = learnProgressUpdates(batch, now)
+    const patch = learnSettingsPatch(deps.getSettings(), batch, now) // before applySettings: it is computed from the pre-batch counter
+
+    deps.applyProgress(updates)
+    if (Object.keys(patch).length > 0) deps.applySettings(patch)
+    ticket = deps.queue.enqueueBatch(updates, patch)
+    deps.onFinished?.()
+    return ticket
   }
+}
+
+export type LearnPhase = 'reading' | 'saving' | 'error' | 'done'
+
+/**
+ * What the Learn screen shows after "Finish batch", derived from the queue instead of its own
+ * state: still sending → saving; the queue gave up (automatic retries ran out) and this batch is
+ * not saved → error (Retry); batch saved → done. Before the batch is finished it is just reading.
+ */
+export function learnPhase(ticket: QueueTicket | null, status: Pick<QueueStatus, 'failed'>): LearnPhase {
+  if (!ticket) return 'reading'
+  if (ticket.saved()) return 'done'
+  return status.failed ? 'error' : 'saving'
 }

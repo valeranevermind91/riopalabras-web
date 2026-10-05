@@ -342,3 +342,18 @@ describe('a failed flush never loses an item and never applies one twice', () =>
   })
 })
 
+describe('an item queued from inside the notification that announces the drain finishing', () => {
+  it('is not left waiting: the queue picks it up', async () => {
+    const h = harness()
+    let added = false
+    h.queue.subscribe(() => {
+      if (!added && h.progressCalls.length > 0 && !h.queue.getStatus().unsaved) {
+        added = true
+        h.queue.enqueueProgress(makeUpdate('late'))
+      }
+    })
+    h.queue.enqueueProgress(makeUpdate('first'))
+    await vi.waitFor(() => expect(words(h.progressCalls)).toEqual(['first', 'late']))
+    await idle(h.queue)
+  })
+})

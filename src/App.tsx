@@ -134,17 +134,15 @@ function App() {
     )
   }
 
-  if (screen === 'learn' && readyData && auth.status === 'signed-in' && client) {
+  if (screen === 'learn' && readyData && queue) {
     return (
       <LearnScreen
         data={readyData}
-        client={client}
-        userId={auth.userId}
+        queue={queue}
         metrics={metrics}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}
-        registerLeaveGuard={registerLeaveGuard}
       />
     )
   }

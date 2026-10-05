@@ -39,7 +39,6 @@ export const strings = {
     next: 'Next',
     finishBatch: 'Finish batch',
     saveFailed: (message: string) => `Couldn't save your progress: ${message}`,
-    leaveUnsaved: "This batch hasn't been fully saved yet. Leave anyway?",
     learnNextBatch: 'Learn next batch',
     reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,

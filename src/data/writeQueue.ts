@@ -34,11 +34,25 @@ export interface QueueStatus {
   metricsError: string | null
 }
 
+/** What enqueueBatch hands back: asks whether everything that batch queued has reached the server. */
+export interface QueueTicket {
+  /** True once every word of the batch (or a newer state of it) and the batch's settings patch are saved. */
+  saved: () => boolean
+}
+
 export interface WriteQueue {
   /** Records a word's latest state; an earlier unsent state for the same word is replaced. */
   enqueueProgress: (update: ProgressUpdate) => void
   /** Merges keys into the pending settings patch. */
   enqueueSettings: (patch: SettingsPatch) => void
+  /**
+   * A finished Learn batch: its words and its settings patch (streak, new-word counter) queued
+   * together, in one step, so the drain never sees one without the other. Progress is always sent
+   * before settings and a failing progress write stops the drain, so the counter can never reach
+   * the server ahead of the words. The patch must hold absolute values, never increments: a retry
+   * after a request that actually succeeded then writes the same value again instead of counting twice.
+   */
+  enqueueBatch: (updates: readonly ProgressUpdate[], patch: SettingsPatch) => QueueTicket
   /**
    * Records a day's metrics row (the latest row for a date replaces an earlier unsent one). Lowest
    * priority: it is sent only when progress and settings are empty, and its failures are invisible
@@ -89,6 +103,14 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const progress = new Map<string, ProgressUpdate>()
   let settings: SettingsPatch | null = null
   const metrics = new Map<string, DailyMetricsRow>()
+  // Batch tickets: the update objects still unsent, and the settings version the batch needs saved.
+  interface TicketState {
+    updates: Set<ProgressUpdate>
+    settingsVersion: number | null
+  }
+  const tickets = new Set<TicketState>()
+  let settingsVersion = 0 // bumped by every enqueued patch
+  let settingsSavedVersion = 0 // highest version a successful settings request covered
 
   let draining: Promise<void> | null = null
   let sending = false
@@ -125,6 +147,22 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
   const hasPending = () => progress.size > 0 || settings !== null
 
+  // A newer state for a word replaces the unsent one; a batch waiting on the old state now waits for the newer one.
+  const putProgress = (update: ProgressUpdate) => {
+    const key = wordKey(update.esWord)
+    const old = progress.get(key)
+    if (old && old !== update) {
+      for (const ticket of tickets) {
+        if (ticket.updates.delete(old)) ticket.updates.add(update)
+      }
+    }
+    progress.set(key, update)
+  }
+  const putSettings = (patch: SettingsPatch) => {
+    settings = { ...settings, ...patch }
+    return ++settingsVersion
+  }
+
   // All progress first (including anything queued while earlier chunks were in flight), then settings.
   async function sendOnce() {
     while (progress.size > 0) {
@@ -134,14 +172,18 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       for (const sent of chunk) {
         const key = wordKey(sent.esWord)
         if (progress.get(key) === sent) progress.delete(key)
+        for (const ticket of tickets) ticket.updates.delete(sent)
       }
+      for (const ticket of tickets) if (ticket.updates.size === 0) tickets.delete(ticket) // fully sent: only its settings part (a version number) is left to check
       notify()
     }
 
     if (settings) {
       const sent = settings
+      const sentVersion = settingsVersion // every patch merged into `sent` has a version <= this
       await sender.sendSettings(sent)
       if (settings === sent) settings = null
+      settingsSavedVersion = Math.max(settingsSavedVersion, sentVersion)
       notify()
     }
   }
@@ -224,10 +266,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   }
 
   function kick() {
-    if (draining || failed) return
+    if (draining || failed || !hasPending()) return
     draining = drain().finally(() => {
       draining = null
       hurried = false
+      // Something was queued in the instant between the drain's last look and this cleanup: don't leave it waiting.
+      if (hasPending() && !failed) kick()
     })
   }
 
@@ -265,15 +309,31 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
   return {
     enqueueProgress(update) {
-      progress.set(wordKey(update.esWord), update)
+      putProgress(update)
       notify()
       kick()
     },
 
     enqueueSettings(patch) {
-      settings = { ...settings, ...patch }
+      putSettings(patch)
       notify()
       kick()
+    },
+
+    enqueueBatch(updates, patch) {
+      const state: TicketState = { updates: new Set(), settingsVersion: null }
+      tickets.add(state) // registered first, so a word that appears twice in the batch hands its ticket to the newer state
+      for (const update of updates) {
+        putProgress(update)
+        state.updates.add(update)
+      }
+      if (Object.keys(patch).length > 0) state.settingsVersion = putSettings(patch)
+      if (state.updates.size === 0) tickets.delete(state)
+      notify()
+      kick() // once, after both parts are queued
+      return {
+        saved: () => state.updates.size === 0 && (state.settingsVersion === null || settingsSavedVersion >= state.settingsVersion),
+      }
     },
 
     enqueueMetrics(row) {

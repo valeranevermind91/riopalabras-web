@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
-import { createBatchFinisher, type FinishDeps, type LearnBatch } from './learn'
+import { createBatchFinisher, type LearnBatch } from './learn'
 import {
   createLocalMetricsStore,
   createMetricsRecorder,
@@ -161,28 +161,27 @@ describe('a Learn session writes the day\'s metrics row', () => {
     vi.useRealTimers()
   })
 
-  it('marks the day active and mirrors the new-word counter once the batch is saved (and only then)', async () => {
+  it('marks the day active and mirrors the new-word counter when the batch is queued (once), and pushes the row after the batch lands', async () => {
     const a = app({ settingsRaw: { streak_count: 3, streak_last_activity_date: '2026-10-03', new_words_learned_today_count: 2, new_words_learned_today_date: KEY1 } })
     const batch: LearnBatch = { words: ['uno', 'dos', 'tres'].map((w, i) => makeWord(w, { rank: i + 1 })), newCount: 3 }
     a.setWords(batch.words)
-    const deps: FinishDeps = {
-      client: a.client,
-      userId: 'user-1',
+    const finish = createBatchFinisher(batch, {
+      queue: a.queue,
       getSettings: a.getSettings,
       applyProgress: (updates) => a.setWords(applyProgressUpdates(a.getWords(), updates)),
       applySettings: a.applySettings,
       onFinished: () => a.recorder.markActiveToday(),
-    }
+    })
 
-    a.failures.user_settings = 1 // the first attempt fails after progress was saved
-    const finish = createBatchFinisher(batch, deps)
-    await expect(finish()).rejects.toThrow('user_settings')
-    expect(a.recorder.today(DAY1)).toBeNull() // nothing recorded for a batch that did not finish
-
-    await finish()
-    await finish() // a double tap after success records nothing more
-    await a.drained()
+    expect(a.recorder.today(DAY1)).toBeNull() // nothing before the batch is finished
+    finish()
+    finish() // a double tap records nothing more
     expect(a.recorder.today(DAY1)).toMatchObject({ date: KEY1, newWords: 5, reviewsDone: 0, active: true }) // 2 earlier + 3 new
+    await a.drained()
+
+    const tables = a.calls.map((c) => c.table)
+    expect(tables.slice(0, 2)).toEqual(['user_progress', 'user_settings'])
+    expect(tables.at(-1)).toBe('user_daily_metrics') // lowest priority: after the batch
     expect(a.metricsCalls().at(-1)?.rows).toEqual([
       { user_id: 'user-1', date: KEY1, new_words: 5, reviews_done: 0, reviews_lapsed: 0, due_at_start: null, learn_pool: null, daily_limit: null, active: true },
     ])

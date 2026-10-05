@@ -5,6 +5,7 @@ import { parseDictionary } from './dictionary'
 import { headword } from './headword'
 import {
   createBatchFinisher,
+  learnPhase,
   learnProgressUpdates,
   learnSettingsPatch,
   selectLearnBatch,
@@ -13,6 +14,7 @@ import {
 } from './learn'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
 import { parseSettings } from './settings'
+import { createSupabaseWriteQueue } from './writeQueue'
 import { getLearnPool } from './stats'
 import type { Word } from './types'
 
@@ -179,7 +181,7 @@ describe('what Finish writes', () => {
   })
 })
 
-describe('createBatchFinisher', () => {
+describe('createBatchFinisher (the batch goes through the write queue)', () => {
   const batch: LearnBatch = { words: [synthetic('Hacienda', 1), synthetic('casa', 2), synthetic('perro', 3)], newCount: 3 }
 
   beforeEach(() => {
@@ -190,15 +192,16 @@ describe('createBatchFinisher', () => {
     vi.useRealTimers()
   })
 
-  function harness(initialRaw: Record<string, unknown> = {}) {
+  function harness(initialRaw: Record<string, unknown> = {}, forBatch: LearnBatch = batch) {
     const fake = fakeSupabase()
-    let words: readonly Word[] = batch.words
+    let words: readonly Word[] = forBatch.words
     let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01', learn_picks: ['ser'], ...initialRaw })
     const applied: string[] = []
+    const getSettings = () => settings
+    const queue = createSupabaseWriteQueue(fake.client, 'user-1', getSettings, { retryDelaysMs: [], sleep: () => Promise.resolve() })
     const deps: FinishDeps = {
-      client: fake.client,
-      userId: 'user-1',
-      getSettings: () => settings,
+      queue,
+      getSettings,
       applyProgress: (updates) => {
         words = applyProgressUpdates(words, updates)
         applied.push('progress')
@@ -208,21 +211,31 @@ describe('createBatchFinisher', () => {
         applied.push('settings')
       },
     }
-    return { ...fake, deps, applied, getWords: () => words, getSettings: () => settings, finish: createBatchFinisher(batch, deps) }
+    return {
+      ...fake,
+      queue,
+      deps,
+      applied,
+      getWords: () => words,
+      getSettings,
+      finish: createBatchFinisher(forBatch, deps),
+      settled: () => vi.waitFor(() => expect(queue.getStatus().unsaved).toBe(false)),
+    }
   }
 
-  it('writes progress first, then settings, and mirrors each into the store after it succeeds', async () => {
+  const rowsOf = (call: { rows: unknown }) => call.rows as { es_word: string; repetitions: number; interval_days: number; ease_factor: number; next_review: string }[]
+
+  it('queues progress then settings, and the SM-2 rows and settings blob are exactly what the old direct path wrote', async () => {
     const h = harness()
-    await h.finish()
+    const ticket = h.finish()
+    expect(ticket.saved()).toBe(false)
+    await h.settled()
+    expect(ticket.saved()).toBe(true)
 
     expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_settings'])
-    expect(h.applied).toEqual(['progress', 'settings'])
-
-    const progressRows = h.calls[0].rows as { es_word: string; repetitions: number; interval_days: number; ease_factor: number; next_review: string }[]
-    expect(progressRows.map((r) => r.es_word)).toEqual(['Hacienda', 'casa', 'perro'])
-    expect(progressRows.every((r) => r.repetitions === 1 && r.interval_days === 0 && r.ease_factor === 2.5)).toBe(true)
-    expect(progressRows.every((r) => r.next_review === '2026-10-03T03:00:00.000Z')).toBe(true)
-
+    expect(rowsOf(h.calls[0]).map((r) => r.es_word)).toEqual(['Hacienda', 'casa', 'perro']) // learn order untouched, original casing
+    expect(rowsOf(h.calls[0]).every((r) => r.repetitions === 1 && r.interval_days === 0 && r.ease_factor === 2.5)).toBe(true)
+    expect(rowsOf(h.calls[0]).every((r) => r.next_review === '2026-10-03T03:00:00.000Z')).toBe(true)
     expect(h.calls[1].rows).toMatchObject({
       user_id: 'user-1',
       settings: {
@@ -233,71 +246,95 @@ describe('createBatchFinisher', () => {
         learn_picks: ['ser'], // unknown-to-this-screen keys survive
       },
     })
+  })
+
+  it('mirrors the batch into the store at once (optimistic, like Review): both parts, before any request completes', () => {
+    const h = harness()
+    h.finish()
+    expect(h.applied).toEqual(['progress', 'settings'])
     expect(h.getWords().every((w) => w.repetitions === 1)).toBe(true)
     expect(h.getSettings().streakCount).toBe(4)
+    expect(h.getSettings().newWordsLearnedTodayCount).toBe(3)
   })
 
-  it('a failed progress write applies nothing, and a retry writes everything', async () => {
-    const h = harness()
-    h.failures.user_progress = 1
-    await expect(h.finish()).rejects.toThrow('user_progress: boom from user_progress')
-    expect(h.applied).toEqual([])
-    expect(h.getWords().every((w) => w.repetitions === 0)).toBe(true)
-
-    await h.finish()
-    expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_progress', 'user_settings'])
-    expect(h.applied).toEqual(['progress', 'settings'])
-  })
-
-  it('a failed settings write keeps the saved progress; the retry resumes at settings and counts the batch once', async () => {
+  it('computes the settings patch from the counter as it was BEFORE the batch (never from the optimistic value)', async () => {
     const h = harness({ new_words_learned_today_count: 4, new_words_learned_today_date: '2026-10-02' })
-    h.failures.user_settings = 1
-    await expect(h.finish()).rejects.toThrow('user_settings: boom from user_settings')
-    expect(h.applied).toEqual(['progress'])
-    expect(h.getSettings().newWordsLearnedTodayCount).toBe(4) // store untouched by the failed write
-
-    await h.finish()
-    // progress was NOT rewritten on retry
-    expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_settings', 'user_settings'])
-    expect(h.applied).toEqual(['progress', 'settings'])
-    // counter = 4 stored + 3 in this batch, even though the store's words already read as learned
-    expect((h.calls[2].rows as { settings: Record<string, unknown> }).settings.new_words_learned_today_count).toBe(7)
+    h.finish()
+    await h.settled()
+    expect((h.calls[1].rows as { settings: Record<string, unknown> }).settings.new_words_learned_today_count).toBe(7)
     expect(h.getSettings().newWordsLearnedTodayCount).toBe(7)
   })
 
-  it('a retry after an ambiguous settings failure writes the same absolute value (idempotent)', async () => {
+  it('a failed progress write sends no settings; the words stay queued; a retry writes everything in order', async () => {
     const h = harness()
-    h.failures.user_settings = 1
-    await expect(h.finish()).rejects.toThrow()
-    await h.finish()
-    const first = (h.calls[1].rows as { settings: unknown }).settings
-    const second = (h.calls[2].rows as { settings: unknown }).settings
-    expect(second).toEqual(first)
+    h.failures.user_progress = 1
+    const ticket = h.finish()
+    await vi.waitFor(() => expect(h.queue.getStatus().failed).toBe(true))
+    expect(h.calls.map((c) => c.table)).toEqual(['user_progress']) // the counter did not go out behind the words
+    expect(ticket.saved()).toBe(false)
+    expect(h.queue.getStatus()).toMatchObject({ pendingRatings: 3, pendingSettings: true })
+
+    expect(await h.queue.retry()).toBe(true)
+    expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_progress', 'user_settings'])
+    expect(ticket.saved()).toBe(true)
   })
 
-  it('double-submit: concurrent calls share one run, so each table is written once', async () => {
+  it('a failed settings write keeps the saved progress; the retry sends only settings, with the same absolute counter', async () => {
+    const h = harness({ new_words_learned_today_count: 4, new_words_learned_today_date: '2026-10-02' })
+    h.failures.user_settings = 1
+    const ticket = h.finish()
+    await vi.waitFor(() => expect(h.queue.getStatus().failed).toBe(true))
+    expect(ticket.saved()).toBe(false) // not saved until BOTH parts are
+    expect(h.queue.getStatus()).toMatchObject({ pendingRatings: 0, pendingSettings: true })
+
+    await h.queue.retry()
+    expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_settings', 'user_settings']) // progress was NOT rewritten
+    const first = (h.calls[1].rows as { settings: Record<string, unknown> }).settings
+    const second = (h.calls[2].rows as { settings: Record<string, unknown> }).settings
+    expect(second).toEqual(first)
+    expect(second.new_words_learned_today_count).toBe(7) // 4 stored + 3 in this batch, once
+    expect(ticket.saved()).toBe(true)
+  })
+
+  it('double-tap: the same ticket comes back and each table is written once', async () => {
     const h = harness()
     const a = h.finish()
     const b = h.finish()
     expect(b).toBe(a)
-    await Promise.all([a, b])
+    await h.settled()
     expect(h.calls.map((c) => c.table)).toEqual(['user_progress', 'user_settings'])
+    expect(h.getSettings().newWordsLearnedTodayCount).toBe(3)
   })
 
   it('after a full success, further calls do nothing (cannot double-count)', async () => {
     const h = harness()
-    await h.finish()
-    await h.finish()
-    await h.finish()
+    h.finish()
+    await h.settled()
+    h.finish()
+    h.finish()
+    await h.queue.flush()
     expect(h.calls).toHaveLength(2)
     expect(h.getSettings().newWordsLearnedTodayCount).toBe(3)
+    expect(h.applied).toEqual(['progress', 'settings'])
   })
 
-  it('skips the settings write when there is nothing to change', async () => {
+  it('an empty batch with nothing to change queues nothing and is saved at once', async () => {
     const empty: LearnBatch = { words: [], newCount: 0 }
-    const h = harness({ streak_last_activity_date: '2026-10-02' })
-    const finish = createBatchFinisher(empty, h.deps)
-    await finish()
+    const h = harness({ streak_last_activity_date: '2026-10-02' }, empty)
+    const ticket = h.finish()
+    expect(ticket.saved()).toBe(true)
+    await h.queue.flush()
     expect(h.calls).toHaveLength(0)
+  })
+})
+
+describe('learnPhase', () => {
+  const ticket = (saved: boolean) => ({ saved: () => saved })
+  it('follows the queue: reading until the batch is queued, saving while it is sent, error once the queue gave up, done when saved', () => {
+    expect(learnPhase(null, { failed: false })).toBe('reading')
+    expect(learnPhase(ticket(false), { failed: false })).toBe('saving')
+    expect(learnPhase(ticket(false), { failed: true })).toBe('error')
+    expect(learnPhase(ticket(true), { failed: false })).toBe('done')
+    expect(learnPhase(ticket(true), { failed: true })).toBe('done') // a later item failing is not this batch's problem
   })
 })

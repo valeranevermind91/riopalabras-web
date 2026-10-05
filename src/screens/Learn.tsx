@@ -1,37 +1,32 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordCard } from '../components/WordCard'
 import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
-import { createBatchFinisher, selectLearnBatch } from '../data/learn'
+import { createBatchFinisher, learnPhase, selectLearnBatch } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
-import { confirmDialog, haptic } from '../lib/telegram'
+import { useQueueStatus } from '../data/useQueueStatus'
+import type { QueueTicket, WriteQueue } from '../data/writeQueue'
+import { haptic } from '../lib/telegram'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
 
-type Phase = 'reading' | 'saving' | 'error' | 'done'
-type LeaveGuard = () => boolean | Promise<boolean>
-
 interface LearnScreenProps {
   data: UserData
-  client: SupabaseClient
-  userId: string
+  queue: WriteQueue
   metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
   onHome: () => void
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
-  registerLeaveGuard: (guard: LeaveGuard | null) => void
 }
 
-export function LearnScreen({ data, client, userId, metrics, onHome, onReview, onBack, registerLeaveGuard }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: LearnScreenProps) {
   const buildSession = (source: UserData) => {
     const batch = selectLearnBatch(source.words, source.settings, new Date())
     const finish = createBatchFinisher(batch, {
-      client,
-      userId,
+      queue,
       getSettings: source.getSettings,
       applyProgress: source.applyProgress,
       applySettings: source.applySettings,
@@ -43,21 +38,23 @@ export function LearnScreen({ data, client, userId, metrics, onHome, onReview, o
   const [session, setSession] = useState(() => buildSession(data))
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
-  const [phase, setPhase] = useState<Phase>(() => (session.batch.words.length > 0 ? 'reading' : 'done'))
-  const [error, setError] = useState<string | null>(null)
+  // The batch's place in the write queue, once "Finish batch" was pressed. The screen follows the queue: saving → error (Retry) → done.
+  const [ticket, setTicket] = useState<QueueTicket | null>(null)
+  const status = useQueueStatus(queue)
 
   const words = session.batch.words
   const lastIndex = words.length - 1
+  const phase = words.length === 0 ? 'done' : learnPhase(ticket, status)
+  const error = phase === 'error' ? (status.error ?? '') : null
   const reading = phase === 'reading'
 
+  const lastPhase = useRef(phase)
   useEffect(() => {
-    registerLeaveGuard(() => {
-      if (phase === 'saving') return false
-      if (phase === 'error') return confirmDialog(strings.learn.leaveUnsaved)
-      return true
-    })
-    return () => registerLeaveGuard(null)
-  }, [phase, registerLeaveGuard])
+    if (lastPhase.current === phase) return
+    lastPhase.current = phase
+    if (phase === 'done') haptic('success')
+    else if (phase === 'error') haptic('error')
+  }, [phase])
 
   const go = (delta: 1 | -1) => {
     const next = index + delta
@@ -88,29 +85,19 @@ export function LearnScreen({ data, client, userId, metrics, onHome, onReview, o
     enabled: reading,
   })
 
-  const finish = async () => {
+  // Hands the batch to the queue (a double tap just returns the same ticket); nothing here awaits the network.
+  const finish = () => {
     haptic('tap')
-    setPhase('saving')
-    setError(null)
-    try {
-      await session.finish()
-      haptic('success')
-      setPhase('done')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      setPhase('error')
-      haptic('error')
-    }
+    setTicket(session.finish())
   }
 
   const startNextBatch = () => {
     haptic('tap')
     const next = buildSession(data)
     setSession(next)
+    setTicket(null)
     setIndex(0)
     setDirection('next')
-    setError(null)
-    setPhase(next.batch.words.length > 0 ? 'reading' : 'done')
   }
 
   if (phase === 'done') {
@@ -154,12 +141,12 @@ export function LearnScreen({ data, client, userId, metrics, onHome, onReview, o
 
       {onLastCard && (
         <div className="learn-finish">
-          {error && (
+          {error !== null && (
             <p className="error" role="alert">
               {strings.learn.saveFailed(error)}
             </p>
           )}
-          <button type="button" className="btn btn-primary" disabled={phase === 'saving'} onClick={finish}>
+          <button type="button" className="btn btn-primary" disabled={phase === 'saving'} onClick={phase === 'error' ? () => void queue.retry() : finish}>
             {phase === 'saving' ? strings.common.saving : phase === 'error' ? strings.common.retry : strings.learn.finishBatch}
           </button>
         </div>
