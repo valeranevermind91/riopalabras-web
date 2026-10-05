@@ -25,7 +25,7 @@ interface DebugScreenProps {
   data: DataState
   onBack?: () => void
   queue: WriteQueue | null
-  metrics: Pick<MetricsRecorder, 'today' | 'resetToday'> | null
+  metrics: Pick<MetricsRecorder, 'today' | 'resetToday' | 'seedStatus'> | null
   client: SupabaseClient | null
   userId: string | null
 }

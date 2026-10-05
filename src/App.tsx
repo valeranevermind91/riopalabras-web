@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createLocalMetricsStore, createMetricsRecorder } from './data/metrics'
+import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
 import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
@@ -61,10 +61,21 @@ function App() {
   const metrics = useMemo(
     () =>
       queue && userId && getSettings
-        ? createMetricsRecorder({ store: createLocalMetricsStore(userId), enqueue: queue.enqueueMetrics, getSettings })
+        ? createMetricsRecorder({
+            store: createLocalMetricsStore(userId),
+            enqueue: queue.enqueueMetrics,
+            getSettings,
+            // Seeding only: merges another device's counts into this one's before anything is pushed.
+            fetchServerRow: async (date) => (client ? parseServerRow(await fetchServerMetricsRow(client, userId, date)) : null),
+          })
         : null,
-    [queue, userId, getSettings],
+    [queue, userId, getSettings, client],
   )
+
+  // On open: read today's server row once and merge it into the local row (a failed read changes nothing).
+  useEffect(() => {
+    void metrics?.seedToday()
+  }, [metrics])
 
   // Queue resilience: closing confirmation while anything is unsaved, slow background retries once stuck.
   useEffect(() => {

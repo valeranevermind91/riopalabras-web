@@ -7,7 +7,7 @@ import type { WriteQueue } from '../data/writeQueue'
 
 interface MetricsSectionProps {
   queue: WriteQueue | null
-  metrics: Pick<MetricsRecorder, 'today'> | null
+  metrics: (Pick<MetricsRecorder, 'today'> & Partial<Pick<MetricsRecorder, 'seedStatus'>>) | null
   client: SupabaseClient | null
   userId: string | null
 }
@@ -30,8 +30,10 @@ function WithQueue(props: MetricsSectionProps & { queue: WriteQueue }) {
 
 function MetricsBody({ queue, metrics, client, userId }: MetricsSectionProps) {
   const [check, setCheck] = useState<ServerCheck>({ state: 'idle' })
+  const [, refresh] = useState(0) // the seed status changes outside the queue: this re-reads it on demand
   const row = metrics?.today() ?? null
   const status = queue?.getStatus()
+  const seed = metrics?.seedStatus?.()
   const date = localDateKey()
 
   const checkServer = async () => {
@@ -59,12 +61,46 @@ function MetricsBody({ queue, metrics, client, userId }: MetricsSectionProps) {
       ) : (
         <p>Nothing recorded on this device today.</p>
       )}
-      {status && (
+      {seed && (
         <p>
-          Queue: {status.pendingMetrics} metrics row(s) waiting
-          {status.metricsError ? `, last error: ${status.metricsError}` : ''}
+          Server seed: {seed.state}
+          {seed.detail ? ` (${seed.detail})` : ''}
         </p>
       )}
+      {status && (
+        <dl data-testid="metrics-lane">
+          <div>
+            <dt>Metrics lane</dt>
+            <dd>{status.metricsRunning ? 'running' : status.metricsGaveUp ? 'gave up (idle until the next change or retry)' : 'idle'}</dd>
+          </div>
+          <div>
+            <dt>Rows waiting</dt>
+            <dd>
+              {status.pendingMetrics}
+              {status.metricsWaitingForProgress ? ' (waiting for progress/settings to be sent first)' : ''}
+            </dd>
+          </div>
+          <div>
+            <dt>Send attempts</dt>
+            <dd>{status.metricsAttempts}</dd>
+          </div>
+          <div>
+            <dt>Last attempt</dt>
+            <dd>{status.metricsLastAttemptAt ?? 'never'}</dd>
+          </div>
+          <div>
+            <dt>Last success</dt>
+            <dd>{status.metricsLastSuccessAt ?? 'never'}</dd>
+          </div>
+          <div>
+            <dt>Last error</dt>
+            <dd>{status.metricsError ?? 'none'}</dd>
+          </div>
+        </dl>
+      )}
+      <button type="button" className="btn-small wp-off" onClick={() => refresh((n) => n + 1)}>
+        Refresh
+      </button>{' '}
       <button type="button" className="btn-small wp-off" disabled={!client || !userId || check.state === 'loading'} onClick={() => void checkServer()}>
         Check server copy
       </button>

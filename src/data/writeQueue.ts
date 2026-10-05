@@ -32,6 +32,17 @@ export interface QueueStatus {
   pendingMetrics: number
   /** The last metrics send failed (the lane keeps retrying on its own slower schedule). Never affects `failed` or `unsaved`. */
   metricsError: string | null
+  /** The metrics lane is running right now (sending, or sleeping before a retry). */
+  metricsRunning: boolean
+  /** Metrics send attempts so far in this session, successful or not. */
+  metricsAttempts: number
+  /** ISO time of the last metrics send attempt / the last one that succeeded; null if none yet. */
+  metricsLastAttemptAt: string | null
+  metricsLastSuccessAt: string | null
+  /** The lane used up its retries and is idle until the next enqueue or retry(). */
+  metricsGaveUp: boolean
+  /** Metrics rows are waiting only because progress or settings are still unsent (the lane goes last, by design). */
+  metricsWaitingForProgress: boolean
 }
 
 /** What enqueueBatch hands back: asks whether everything that batch queued has reached the server. */
@@ -119,6 +130,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let metricsRun: Promise<void> | null = null
   let metricsFailures = 0
   let metricsError: string | null = null
+  let metricsAttempts = 0
+  let metricsLastAttemptAt: string | null = null
+  let metricsLastSuccessAt: string | null = null
+  let metricsGaveUp = false
   let lastError: string | null = null
   let consecutiveFailures = 0
   let wakeBackoff: (() => void) | null = null
@@ -126,6 +141,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let hurried = false
 
   const listeners = new Set<() => void>()
+
+  const hasPending = () => progress.size > 0 || settings !== null
 
   const computeStatus = (): QueueStatus => ({
     pendingRatings: progress.size,
@@ -137,6 +154,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     stuck,
     pendingMetrics: metrics.size,
     metricsError,
+    metricsRunning: metricsRun !== null,
+    metricsAttempts,
+    metricsLastAttemptAt,
+    metricsLastSuccessAt,
+    metricsGaveUp,
+    metricsWaitingForProgress: metrics.size > 0 && hasPending(),
   })
   let status = computeStatus()
 
@@ -145,7 +168,6 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     for (const listener of listeners) listener()
   }
 
-  const hasPending = () => progress.size > 0 || settings !== null
 
   // A newer state for a word replaces the unsent one; a batch waiting on the old state now waits for the newer one.
   const putProgress = (update: ProgressUpdate) => {
@@ -236,20 +258,27 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   // ---- metrics lane: lowest priority, best effort, invisible to everything else ----
   async function runMetrics() {
     const send = sender.sendMetrics
+    metricsGaveUp = false
     // Yields to progress and settings: if they show up (or are stuck failing), the lane stops and is re-kicked after the next drain.
     while (send && metrics.size > 0 && !hasPending()) {
       const rows = [...metrics.values()]
+      metricsAttempts++
+      metricsLastAttemptAt = new Date().toISOString()
       try {
         await send(rows)
         // Only forget what was sent: a newer row for the same date stays queued.
         for (const sent of rows) if (metrics.get(sent.date) === sent) metrics.delete(sent.date)
         metricsFailures = 0
         metricsError = null
+        metricsLastSuccessAt = new Date().toISOString()
         notify()
       } catch (err) {
         metricsError = messageOf(err)
         notify()
-        if (metricsFailures >= metricsDelays.length) return
+        if (metricsFailures >= metricsDelays.length) {
+          metricsGaveUp = true
+          return
+        }
         await sleep(metricsDelays[metricsFailures++])
       }
     }
@@ -262,7 +291,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       .finally(() => {
         metricsRun = null
         notify()
+        // A row that arrived (or a drain that ended) while this run was winding down must not be left waiting.
+        if (!metricsGaveUp) kickMetrics()
       })
+    notify()
   }
 
   function kick() {
@@ -294,7 +326,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       return settled()
     }
     if (!hasPending()) {
-      if (!metricsRun) metricsFailures = 0
+      if (!metricsRun) {
+        metricsFailures = 0
+        metricsGaveUp = false
+      }
       kickMetrics()
       return Promise.resolve(true)
     }
@@ -338,7 +373,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
     enqueueMetrics(row) {
       metrics.set(row.date, row)
-      if (!metricsRun) metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
+      if (!metricsRun) {
+        metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
+        metricsGaveUp = false
+      }
       notify()
       kickMetrics()
     },

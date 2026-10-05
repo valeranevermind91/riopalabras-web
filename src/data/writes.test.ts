@@ -116,8 +116,8 @@ describe('writeSettings', () => {
 describe('user_daily_metrics', () => {
   const row = { ...emptyRow('2026-10-04'), newWords: 3, reviewsDone: 12, reviewsLapsed: 2, dueAtStart: 15, learnPool: 4000, dailyLimit: 10, active: true }
 
-  it('writes exactly the columns the Flutter app pushed (and no updated_at)', () => {
-    expect(toMetricsRow('user-1', row)).toEqual({
+  it('writes the columns the Flutter app pushed, plus updated_at (so the server can say when the row was last written)', () => {
+    expect(toMetricsRow('user-1', row, '2026-10-04T15:00:00.000Z')).toEqual({
       user_id: 'user-1',
       date: '2026-10-04',
       new_words: 3,
@@ -127,16 +127,18 @@ describe('user_daily_metrics', () => {
       learn_pool: 4000,
       daily_limit: 10,
       active: true,
+      updated_at: '2026-10-04T15:00:00.000Z',
     })
-    expect(Object.keys(toMetricsRow('u', emptyRow('2026-10-04')))).toHaveLength(9)
-    expect(toMetricsRow('u', emptyRow('2026-10-04'))).toMatchObject({ due_at_start: null, learn_pool: null, daily_limit: null, active: false })
+    expect(Object.keys(toMetricsRow('u', emptyRow('2026-10-04'), 'x'))).toHaveLength(10)
+    expect(toMetricsRow('u', emptyRow('2026-10-04'), 'x')).toMatchObject({ due_at_start: null, learn_pool: null, daily_limit: null, active: false })
   })
 
   it('upserts with the composite key, and sends nothing for an empty list', async () => {
     const { client, calls } = fakeSupabase()
-    await upsertDailyMetrics(client, 'user-1', [row])
+    await upsertDailyMetrics(client, 'user-1', [row], new Date('2026-10-04T15:00:00.000Z'))
     await upsertDailyMetrics(client, 'user-1', [])
     expect(calls).toHaveLength(1)
+    expect((calls[0].rows as { updated_at: string }[])[0].updated_at).toBe('2026-10-04T15:00:00.000Z')
     expect(calls[0].table).toBe('user_daily_metrics')
     expect(calls[0].options).toEqual({ onConflict: 'user_id,date' })
   })

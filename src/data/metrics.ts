@@ -64,6 +64,55 @@ export function parseStoredRow(raw: unknown): DailyMetricsRow | null {
   }
 }
 
+const isEmptyRow = (r: DailyMetricsRow) =>
+  r.newWords === 0 && r.reviewsDone === 0 && r.reviewsLapsed === 0 && !r.active && r.dueAtStart === null && r.learnPool === null && r.dailyLimit === null
+
+const sameRow = (a: DailyMetricsRow, b: DailyMetricsRow) =>
+  a.date === b.date &&
+  a.newWords === b.newWords &&
+  a.reviewsDone === b.reviewsDone &&
+  a.reviewsLapsed === b.reviewsLapsed &&
+  a.active === b.active &&
+  a.dueAtStart === b.dueAtStart &&
+  a.learnPool === b.learnPool &&
+  a.dailyLimit === b.dailyLimit
+
+/** A user_daily_metrics record as the server returns it (snake_case) → a row; null when it is not usable. */
+export function parseServerRow(raw: Record<string, unknown> | null): DailyMetricsRow | null {
+  if (!raw) return null
+  return parseStoredRow({
+    date: raw.date,
+    newWords: raw.new_words,
+    reviewsDone: raw.reviews_done,
+    reviewsLapsed: raw.reviews_lapsed,
+    dueAtStart: raw.due_at_start,
+    learnPool: raw.learn_pool,
+    dailyLimit: raw.daily_limit,
+    active: raw.active,
+  })
+}
+
+/**
+ * Two devices (or a device and its own earlier session) each hold part of a day. Counters only
+ * move forward (the larger value wins), `active` is OR-ed, and a start-of-day snapshot already set
+ * on the server is kept: the first snapshot of the day is the true one. Null when neither has a row.
+ */
+export function mergeRows(local: DailyMetricsRow | null, server: DailyMetricsRow | null): DailyMetricsRow | null {
+  if (!local && !server) return null
+  const a = local ?? server!
+  const b = server ?? local!
+  return {
+    date: a.date,
+    newWords: Math.max(a.newWords, b.newWords),
+    reviewsDone: Math.max(a.reviewsDone, b.reviewsDone),
+    reviewsLapsed: Math.max(a.reviewsLapsed, b.reviewsLapsed),
+    dueAtStart: server?.dueAtStart ?? local?.dueAtStart ?? null,
+    learnPool: server?.learnPool ?? local?.learnPool ?? null,
+    dailyLimit: server?.dailyLimit ?? local?.dailyLimit ?? null,
+    active: a.active || b.active,
+  }
+}
+
 /**
  * Where the day's accumulated row lives between sessions (the web stand-in for Flutter's Hive box).
  * The Mini App reloads from scratch on every open and the server is never read back, so without
@@ -123,6 +172,20 @@ export interface MetricsRecorderDeps {
   enqueue: (row: DailyMetricsRow) => void
   /** Latest settings (for today's new-word counter). */
   getSettings: () => UserSettings
+  /**
+   * Reads one day's row from the server. Used only to seed the local row (see seedToday), never for
+   * app logic. Without it there is no seeding and every push is the local row alone.
+   */
+  fetchServerRow?: (date: string) => Promise<DailyMetricsRow | null>
+  /** How long a seeding read may take before the local row is used as it is. */
+  seedTimeoutMs?: number
+}
+
+export type SeedState = 'idle' | 'reading' | 'merged' | 'failed' | 'skipped'
+
+export interface SeedStatus {
+  state: SeedState
+  detail: string | null
 }
 
 export interface MetricsRecorder {
@@ -140,6 +203,14 @@ export interface MetricsRecorder {
    * zeroed row, or null if it could not be done. The start-of-day snapshot is retaken the next time Home shows.
    */
   resetToday: (now?: Date) => DailyMetricsRow | null
+  /**
+   * Reads today's server row once and merges it into the local row (see mergeRows), then pushes the
+   * merged row if the server was missing something. Until it settles, changes are kept locally and
+   * not pushed, so a device with an empty row can never overwrite another device's counts. If the
+   * read fails or times out, the local row carries on as before. Once per date; later calls share the first.
+   */
+  seedToday: (now?: Date) => Promise<void>
+  seedStatus: (now?: Date) => SeedStatus
 }
 
 /**
@@ -148,12 +219,76 @@ export interface MetricsRecorder {
  * Learn batch.
  */
 export function createMetricsRecorder(deps: MetricsRecorderDeps): MetricsRecorder {
+  const timeoutMs = deps.seedTimeoutMs ?? 8000
+  interface Seed {
+    state: SeedState
+    detail: string | null
+    promise: Promise<void>
+    cancelled: boolean
+  }
+  const seeds = new Map<string, Seed>()
+
+  const readServer = async (date: string): Promise<DailyMetricsRow | null> => {
+    const read = deps.fetchServerRow!(date)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`no answer after ${timeoutMs} ms`)), timeoutMs)
+    })
+    try {
+      return await Promise.race([read, timeout])
+    } finally {
+      clearTimeout(timer)
+      read.catch(() => {}) // a late failure after the timeout is not an unhandled rejection
+    }
+  }
+
+  const startSeed = (date: string): Seed | null => {
+    if (!deps.fetchServerRow) return null
+    const existing = seeds.get(date)
+    if (existing) return existing
+
+    const seed: Seed = { state: 'reading', detail: null, promise: Promise.resolve(), cancelled: false }
+    seeds.set(date, seed)
+    seed.promise = (async () => {
+      let server: DailyMetricsRow | null = null
+      let failure: string | null = null
+      try {
+        server = await readServer(date)
+      } catch (err) {
+        failure = err instanceof Error ? err.message : String(err)
+      }
+      if (seed.cancelled) return
+      try {
+        const stored = deps.store.load()
+        const local = stored && stored.date === date ? stored : null
+        if (failure !== null) {
+          // Carry on with the local row, as before seeding existed: push what was held back.
+          seed.state = 'failed'
+          seed.detail = failure
+          if (local) deps.enqueue(local)
+          return
+        }
+        const merged = mergeRows(local, server)
+        if (merged) deps.store.save(merged)
+        seed.state = 'merged'
+        seed.detail = server ? 'server row merged into the local row' : 'no server row yet'
+        // Push only when the server is missing something and there is something to say.
+        if (merged && !isEmptyRow(merged) && !(server && sameRow(merged, server))) deps.enqueue(merged)
+      } catch (err) {
+        seed.state = 'failed'
+        seed.detail = err instanceof Error ? err.message : String(err)
+      }
+    })()
+    return seed
+  }
+
   const update = (now: Date, change: (row: DailyMetricsRow) => DailyMetricsRow) => {
     try {
       const todayKey = localDateKey(now)
+      const seed = startSeed(todayKey) // the first change of a day on this device also seeds, if opening the app did not already
       const next = change(rowForToday(todayKey, deps.store.load()))
       deps.store.save(next)
-      deps.enqueue(next)
+      if (seed?.state !== 'reading') deps.enqueue(next) // while the server row is being read, the merge pushes
     } catch {
       // never let metrics interfere with learning
     }
@@ -192,13 +327,32 @@ export function createMetricsRecorder(deps: MetricsRecorderDeps): MetricsRecorde
 
     resetToday(now = new Date()) {
       try {
-        const zeroed = emptyRow(localDateKey(now))
+        const key = localDateKey(now)
+        const zeroed = emptyRow(key)
+        // The reset is the truth for today: never merge the server's old counts back in.
+        const seed = seeds.get(key)
+        if (seed) {
+          seed.cancelled = true
+          seed.state = 'skipped'
+          seed.detail = 'reset by hand'
+        } else {
+          seeds.set(key, { state: 'skipped', detail: 'reset by hand', promise: Promise.resolve(), cancelled: true })
+        }
         deps.store.clear()
         deps.enqueue(zeroed)
         return zeroed
       } catch {
         return null
       }
+    },
+
+    seedToday(now = new Date()) {
+      return startSeed(localDateKey(now))?.promise ?? Promise.resolve()
+    },
+
+    seedStatus(now = new Date()) {
+      const seed = seeds.get(localDateKey(now))
+      return seed ? { state: seed.state, detail: seed.detail } : { state: 'idle', detail: null }
     },
 
     today(now = new Date()) {

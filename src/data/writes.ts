@@ -53,8 +53,12 @@ export async function writeSettings(
   return merged
 }
 
-/** One user_daily_metrics row, with exactly the columns the Flutter app pushed (no updated_at: the table fills it). */
-export function toMetricsRow(userId: string, row: DailyMetricsRow) {
+/**
+ * One user_daily_metrics row: the columns the Flutter app pushed, plus updated_at. Flutter never
+ * sent updated_at, so on an update the column kept its insert-time value and could not tell anyone
+ * when the row was last written; the web client sets it on every push.
+ */
+export function toMetricsRow(userId: string, row: DailyMetricsRow, nowIso: string) {
   return {
     user_id: userId,
     date: row.date,
@@ -65,17 +69,24 @@ export function toMetricsRow(userId: string, row: DailyMetricsRow) {
     learn_pool: row.learnPool,
     daily_limit: row.dailyLimit,
     active: row.active,
+    updated_at: nowIso,
   }
 }
 
-/** Upserts daily metrics rows (push-only: nothing in the app ever reads this table back). Throws on any failure. */
-export async function upsertDailyMetrics(client: SupabaseClient, userId: string, rows: readonly DailyMetricsRow[]): Promise<void> {
+/** Upserts daily metrics rows (push-only: nothing in the app ever reads this table back for its own logic). Throws on any failure. */
+export async function upsertDailyMetrics(
+  client: SupabaseClient,
+  userId: string,
+  rows: readonly DailyMetricsRow[],
+  now: Date = new Date(),
+): Promise<void> {
   if (rows.length === 0) return
 
+  const nowIso = now.toISOString()
   const { error } = await client
     .from('user_daily_metrics')
     .upsert(
-      rows.map((r) => toMetricsRow(userId, r)),
+      rows.map((r) => toMetricsRow(userId, r, nowIso)),
       { onConflict: 'user_id,date' },
     )
   if (error) throw new Error(`user_daily_metrics: ${error.message}`)

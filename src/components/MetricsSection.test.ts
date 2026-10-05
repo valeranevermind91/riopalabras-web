@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { emptyRow } from '../data/metrics'
 import { createWriteQueue } from '../data/writeQueue'
 import { MetricsSection } from './MetricsSection'
@@ -22,7 +22,22 @@ describe('Debug: today\'s metrics section', () => {
     queue.enqueueMetrics(emptyRow('2026-10-04'))
     const html = render({ queue, metrics: { today: () => null } })
     expect(html).toContain('Nothing recorded on this device today.')
-    expect(html).toContain('1 metrics row(s) waiting')
+    expect(html).toContain('<dt>Rows waiting</dt><dd>1</dd>')
+    expect(html).toContain('<dt>Last error</dt><dd>none</dd>')
     expect(html).toContain('Check server copy')
+  })
+
+  it('shows the metrics lane state: a failure with its error, attempts and that it gave up, and the seeding result', async () => {
+    const queue = createWriteQueue(
+      { sendProgress: async () => {}, sendSettings: async () => {}, sendMetrics: async () => { throw new Error('user_daily_metrics: boom') } },
+      { retryDelaysMs: [], metricsRetryDelaysMs: [], sleep: () => Promise.resolve() },
+    )
+    queue.enqueueMetrics(emptyRow('2026-10-04'))
+    await vi.waitFor(() => expect(queue.getStatus().metricsGaveUp).toBe(true))
+    const html = render({ queue, metrics: { today: () => null, seedStatus: () => ({ state: 'failed', detail: 'permission denied' }) } })
+    expect(html).toContain('<dt>Metrics lane</dt><dd>gave up (idle until the next change or retry)</dd>')
+    expect(html).toContain('<dt>Send attempts</dt><dd>1</dd>')
+    expect(html).toContain('<dt>Last error</dt><dd>user_daily_metrics: boom</dd>')
+    expect(html).toContain('Server seed: failed (permission denied)')
   })
 })
