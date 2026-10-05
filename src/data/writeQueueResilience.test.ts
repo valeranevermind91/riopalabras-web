@@ -1,19 +1,23 @@
 import { describe, expect, it, vi } from 'vitest'
 import { makeUpdate } from '../testing/makeWord'
+import { emptyRow, type DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch } from './types'
 import { createWriteQueue, type WriteQueue } from './writeQueue'
+
+const row = (date: string, over: Partial<DailyMetricsRow> = {}): DailyMetricsRow => ({ ...emptyRow(date), ...over })
 
 /** A queue whose requests fail on demand and whose waits are controlled by the test. */
 function harness(options: Parameters<typeof createWriteQueue>[1] = {}) {
   const progressCalls: ProgressUpdate[][] = []
   const settingsCalls: SettingsPatch[] = []
+  const metricsCalls: DailyMetricsRow[][] = []
   const order: string[] = []
-  const failures = { progress: 0, settings: 0 }
+  const failures = { progress: 0, settings: 0, metrics: 0 }
   let gate: Promise<void> | null = null
   const sleeps: { ms: number; wake: () => void }[] = []
   let manualSleep = false
 
-  async function request(kind: 'progress' | 'settings', record: () => void) {
+  async function request(kind: 'progress' | 'settings' | 'metrics', record: () => void) {
     record()
     if (gate) await gate
     await Promise.resolve()
@@ -27,9 +31,11 @@ function harness(options: Parameters<typeof createWriteQueue>[1] = {}) {
     {
       sendProgress: (updates) => request('progress', () => (progressCalls.push([...updates]), order.push('progress'))),
       sendSettings: (patch) => request('settings', () => (settingsCalls.push(patch), order.push('settings'))),
+      sendMetrics: (rows) => request('metrics', () => (metricsCalls.push([...rows]), order.push('metrics'))),
     },
     {
       retryDelaysMs: [10, 20, 30],
+      metricsRetryDelaysMs: [5, 5],
       sleep: (ms) =>
         manualSleep
           ? new Promise<void>((resolve) => sleeps.push({ ms, wake: resolve }))
@@ -42,6 +48,7 @@ function harness(options: Parameters<typeof createWriteQueue>[1] = {}) {
     queue,
     progressCalls,
     settingsCalls,
+    metricsCalls,
     order,
     failures,
     sleeps,
@@ -60,8 +67,107 @@ function harness(options: Parameters<typeof createWriteQueue>[1] = {}) {
 }
 
 const idle = (q: WriteQueue) => vi.waitFor(() => expect(q.getStatus().unsaved).toBe(false))
+const metricsDrained = (q: WriteQueue) => vi.waitFor(() => expect(q.getStatus().pendingMetrics).toBe(0))
 const stuck = (q: WriteQueue) => vi.waitFor(() => expect(q.getStatus().stuck).toBe(true))
 const words = (calls: ProgressUpdate[][]) => calls.flat().map((u) => u.esWord)
+
+describe('metrics lane', () => {
+  it('is sent after progress and settings, never before', async () => {
+    const h = harness()
+    h.queue.enqueueProgress(makeUpdate('a'))
+    h.queue.enqueueSettings({ streak_count: 2 })
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 1 })) // queued while progress is still in flight
+    await metricsDrained(h.queue)
+    expect(h.order.filter((o) => o !== 'metrics')).toEqual(['progress', 'settings'])
+    expect(h.order.at(-1)).toBe('metrics')
+  })
+
+  it('keeps only the latest row per date, and sends different dates together', async () => {
+    const h = harness()
+    const release = h.hold()
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 1 })) // in flight, held open
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 2 }))
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 3 }))
+    h.queue.enqueueMetrics(row('2026-10-05', { reviewsDone: 9 }))
+    release()
+    await metricsDrained(h.queue)
+    expect(h.metricsCalls[0].map((r) => r.reviewsDone)).toEqual([1])
+    const last = h.metricsCalls.flat().filter((r) => r.date === '2026-10-04').at(-1)
+    expect(last?.reviewsDone).toBe(3) // the newer row that arrived in flight was not lost
+    expect(h.metricsCalls.flat().find((r) => r.date === '2026-10-05')?.reviewsDone).toBe(9)
+  })
+
+  it('a hundred ratings produce one metrics request, not a hundred', async () => {
+    const h = harness()
+    for (let i = 1; i <= 100; i++) {
+      h.queue.enqueueProgress(makeUpdate(`w${i}`))
+      h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: i }))
+    }
+    await metricsDrained(h.queue)
+    expect(h.metricsCalls.flat().at(-1)?.reviewsDone).toBe(100)
+    expect(h.metricsCalls.length).toBeLessThanOrEqual(2)
+  })
+
+  it('a failing metrics send never shows as failed, unsaved or stuck, and never blocks flush()', async () => {
+    const h = harness()
+    h.failures.metrics = 99
+    h.queue.enqueueProgress(makeUpdate('a'))
+    h.queue.enqueueMetrics(row('2026-10-04'))
+    await h.queue.flush() // resolves although metrics keep failing
+    await vi.waitFor(() => expect(h.queue.getStatus().metricsError).toBe('metrics failed'))
+    expect(h.queue.getStatus()).toMatchObject({ failed: false, stuck: false, unsaved: false, pendingRatings: 0, pendingMetrics: 1 })
+    expect(words(h.progressCalls)).toEqual(['a'])
+  })
+
+  it('retries on its own schedule, gives up quietly, and starts again on the next enqueue', async () => {
+    const h = harness()
+    h.failures.metrics = 3 // the first attempt and both retries
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 1 }))
+    await vi.waitFor(() => expect(h.metricsCalls).toHaveLength(3))
+    await vi.waitFor(() => expect(h.queue.getStatus().metricsError).not.toBeNull())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(h.metricsCalls).toHaveLength(3) // gave up: no storm
+
+    h.queue.enqueueMetrics(row('2026-10-04', { reviewsDone: 2 }))
+    await metricsDrained(h.queue)
+    expect(h.metricsCalls.at(-1)?.[0].reviewsDone).toBe(2)
+    expect(h.queue.getStatus().metricsError).toBeNull()
+  })
+
+  it('retry() restarts a lane that gave up', async () => {
+    const h = harness()
+    h.failures.metrics = 3
+    h.queue.enqueueMetrics(row('2026-10-04'))
+    await vi.waitFor(() => expect(h.metricsCalls).toHaveLength(3))
+    await vi.waitFor(() => expect(h.queue.getStatus().metricsError).not.toBeNull())
+    await h.queue.retry()
+    await metricsDrained(h.queue)
+  })
+
+  it('yields to progress: nothing is sent while progress is stuck failing, and progress is not delayed by metrics', async () => {
+    const h = harness()
+    h.failures.progress = 99
+    h.queue.enqueueProgress(makeUpdate('a'))
+    h.queue.enqueueMetrics(row('2026-10-04'))
+    await stuck(h.queue)
+    expect(h.metricsCalls).toHaveLength(0)
+    expect(h.queue.getStatus().pendingMetrics).toBe(1)
+
+    h.failures.progress = 0
+    expect(await h.queue.retry()).toBe(true)
+    await metricsDrained(h.queue) // metrics follow once progress is in
+    expect(h.order.indexOf('metrics')).toBeGreaterThan(h.order.lastIndexOf('progress'))
+  })
+
+  it('without a metrics sender the lane is simply off', async () => {
+    const q = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
+    q.enqueueMetrics(row('2026-10-04'))
+    expect(q.getStatus().pendingMetrics).toBe(1)
+    q.enqueueProgress(makeUpdate('a'))
+    await idle(q)
+    expect(q.getStatus()).toMatchObject({ unsaved: false, failed: false })
+  })
+})
 
 describe('stuck: the state behind the Home banner', () => {
   it('is false while automatic retries are still running and true once they have run out', async () => {

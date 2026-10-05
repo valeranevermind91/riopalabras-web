@@ -5,6 +5,7 @@ import { WordCard } from '../components/WordCard'
 import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
 import { createBatchFinisher, selectLearnBatch } from '../data/learn'
+import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import { confirmDialog, haptic } from '../lib/telegram'
 import { useSwipe } from '../lib/useSwipe'
@@ -17,6 +18,7 @@ interface LearnScreenProps {
   data: UserData
   client: SupabaseClient
   userId: string
+  metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
   onHome: () => void
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
@@ -24,7 +26,7 @@ interface LearnScreenProps {
   registerLeaveGuard: (guard: LeaveGuard | null) => void
 }
 
-export function LearnScreen({ data, client, userId, onHome, onReview, onBack, registerLeaveGuard }: LearnScreenProps) {
+export function LearnScreen({ data, client, userId, metrics, onHome, onReview, onBack, registerLeaveGuard }: LearnScreenProps) {
   const buildSession = (source: UserData) => {
     const batch = selectLearnBatch(source.words, source.settings, new Date())
     const finish = createBatchFinisher(batch, {
@@ -33,6 +35,7 @@ export function LearnScreen({ data, client, userId, onHome, onReview, onBack, re
       getSettings: source.getSettings,
       applyProgress: source.applyProgress,
       applySettings: source.applySettings,
+      onFinished: () => metrics?.markActiveToday(),
     })
     return { batch, finish }
   }

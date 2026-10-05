@@ -1,11 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import { wordKey } from './words'
-import { upsertProgress, writeSettings } from './writes'
+import { upsertDailyMetrics, upsertProgress, writeSettings } from './writes'
 
 export interface QueueSender {
   sendProgress: (updates: readonly ProgressUpdate[]) => Promise<void>
   sendSettings: (patch: SettingsPatch) => Promise<void>
+  /** Optional: the best-effort metrics lane is simply off without it. */
+  sendMetrics?: (rows: readonly DailyMetricsRow[]) => Promise<void>
 }
 
 export interface QueueStatus {
@@ -17,7 +20,7 @@ export interface QueueStatus {
   /** Automatic retries are exhausted: the UI shows a banner and waits for retry(). */
   failed: boolean
   error: string | null
-  /** Anything not yet durably saved (pending, in flight, or failed). */
+  /** Anything not yet durably saved (pending, in flight, or failed). Metrics never count: they are best-effort. */
   unsaved: boolean
   /**
    * Automatic retries ran out and nothing has been saved since. Unlike `failed` it stays true
@@ -25,6 +28,10 @@ export interface QueueStatus {
    * the queue has drained.
    */
   stuck: boolean
+  /** Daily-metrics rows (one per date) waiting in the best-effort lane. */
+  pendingMetrics: number
+  /** The last metrics send failed (the lane keeps retrying on its own slower schedule). Never affects `failed` or `unsaved`. */
+  metricsError: string | null
 }
 
 export interface WriteQueue {
@@ -32,6 +39,12 @@ export interface WriteQueue {
   enqueueProgress: (update: ProgressUpdate) => void
   /** Merges keys into the pending settings patch. */
   enqueueSettings: (patch: SettingsPatch) => void
+  /**
+   * Records a day's metrics row (the latest row for a date replaces an earlier unsent one). Lowest
+   * priority: it is sent only when progress and settings are empty, and its failures are invisible
+   * to everything else (no `failed`, no `unsaved`, never blocks flush()).
+   */
+  enqueueMetrics: (row: DailyMetricsRow) => void
   /** Sends everything now, without sleeping between attempts. Resolves once saved, rejects if it still fails. */
   flush: () => Promise<void>
   /**
@@ -49,11 +62,14 @@ export interface WriteQueueOptions {
   retryDelaysMs?: readonly number[]
   /** Max words per upsert request. */
   chunkSize?: number
+  /** Waits between attempts of the metrics lane; once exhausted it idles until the next enqueue or retry(). */
+  metricsRetryDelaysMs?: readonly number[]
   sleep?: (ms: number) => Promise<void>
 }
 
 const DEFAULT_RETRY_DELAYS_MS = [1000, 3000, 8000]
 const DEFAULT_CHUNK_SIZE = 100
+const DEFAULT_METRICS_RETRY_DELAYS_MS = [5000, 30_000, 120_000]
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -67,15 +83,20 @@ function messageOf(err: unknown): string {
 export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions = {}): WriteQueue {
   const delays = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS
   const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE
+  const metricsDelays = options.metricsRetryDelaysMs ?? DEFAULT_METRICS_RETRY_DELAYS_MS
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
 
   const progress = new Map<string, ProgressUpdate>()
   let settings: SettingsPatch | null = null
+  const metrics = new Map<string, DailyMetricsRow>()
 
   let draining: Promise<void> | null = null
   let sending = false
   let failed = false
   let stuck = false
+  let metricsRun: Promise<void> | null = null
+  let metricsFailures = 0
+  let metricsError: string | null = null
   let lastError: string | null = null
   let consecutiveFailures = 0
   let wakeBackoff: (() => void) | null = null
@@ -92,6 +113,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     error: lastError,
     unsaved: progress.size > 0 || settings !== null || sending,
     stuck,
+    pendingMetrics: metrics.size,
+    metricsError,
   })
   let status = computeStatus()
 
@@ -165,6 +188,39 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     }
     stuck = false
     notify()
+    kickMetrics()
+  }
+
+  // ---- metrics lane: lowest priority, best effort, invisible to everything else ----
+  async function runMetrics() {
+    const send = sender.sendMetrics
+    // Yields to progress and settings: if they show up (or are stuck failing), the lane stops and is re-kicked after the next drain.
+    while (send && metrics.size > 0 && !hasPending()) {
+      const rows = [...metrics.values()]
+      try {
+        await send(rows)
+        // Only forget what was sent: a newer row for the same date stays queued.
+        for (const sent of rows) if (metrics.get(sent.date) === sent) metrics.delete(sent.date)
+        metricsFailures = 0
+        metricsError = null
+        notify()
+      } catch (err) {
+        metricsError = messageOf(err)
+        notify()
+        if (metricsFailures >= metricsDelays.length) return
+        await sleep(metricsDelays[metricsFailures++])
+      }
+    }
+  }
+
+  function kickMetrics() {
+    if (metricsRun || !sender.sendMetrics || metrics.size === 0 || hasPending()) return
+    metricsRun = runMetrics()
+      .catch(() => {}) // runMetrics handles its own failures; this is only a safety net
+      .finally(() => {
+        metricsRun = null
+        notify()
+      })
   }
 
   function kick() {
@@ -193,7 +249,11 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       hurry()
       return settled()
     }
-    if (!hasPending()) return Promise.resolve(true)
+    if (!hasPending()) {
+      if (!metricsRun) metricsFailures = 0
+      kickMetrics()
+      return Promise.resolve(true)
+    }
     // The drain that gave up is only just finishing: let it end, then make the single attempt.
     if (draining) return draining.then(() => retry())
     restart()
@@ -214,6 +274,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       settings = { ...settings, ...patch }
       notify()
       kick()
+    },
+
+    enqueueMetrics(row) {
+      metrics.set(row.date, row)
+      if (!metricsRun) metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
+      notify()
+      kickMetrics()
     },
 
     async flush() {
@@ -252,6 +319,7 @@ export function createSupabaseWriteQueue(
       sendSettings: async (patch) => {
         await writeSettings(client, userId, getSettings(), patch)
       },
+      sendMetrics: (rows) => upsertDailyMetrics(client, userId, rows),
     },
     options,
   )

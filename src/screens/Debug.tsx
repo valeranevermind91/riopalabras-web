@@ -1,8 +1,12 @@
 import { DataSection } from '../DataSection'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { LoadLogSection } from '../components/LoadLogSection'
+import { MetricsSection } from '../components/MetricsSection'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordPreview } from '../components/WordPreview'
 import { langFromSettings } from '../data/rio'
+import type { MetricsRecorder } from '../data/metrics'
+import type { WriteQueue } from '../data/writeQueue'
 import type { DataState } from '../data/useUserData'
 import type { AuthState } from '../lib/auth'
 import type { TelegramUser } from '../lib/telegram'
@@ -19,9 +23,13 @@ interface DebugScreenProps {
   auth: AuthState
   data: DataState
   onBack?: () => void
+  queue: WriteQueue | null
+  metrics: Pick<MetricsRecorder, 'today'> | null
+  client: SupabaseClient | null
+  userId: string | null
 }
 
-export function DebugScreen({ telegram, auth, data, onBack }: DebugScreenProps) {
+export function DebugScreen({ telegram, auth, data, onBack, queue, metrics, client, userId }: DebugScreenProps) {
   return (
     <main className="screen">
       <ScreenHeader title={strings.debug.title} onBack={onBack} />
@@ -56,6 +64,8 @@ export function DebugScreen({ telegram, auth, data, onBack }: DebugScreenProps) 
       </section>
 
       <DataSection state={data} />
+
+      <MetricsSection queue={queue} metrics={metrics} client={client} userId={userId} />
 
       <LoadLogSection degraded={data.status === 'ready' ? data.data.degraded : []} />
 

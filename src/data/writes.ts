@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 
 export function toProgressRow(userId: string, update: ProgressUpdate, nowIso: string) {
@@ -50,4 +51,32 @@ export async function writeSettings(
     .upsert({ user_id: userId, settings: merged, updated_at: now.toISOString() }, { onConflict: 'user_id' })
   if (error) throw new Error(`user_settings: ${error.message}`)
   return merged
+}
+
+/** One user_daily_metrics row, with exactly the columns the Flutter app pushed (no updated_at: the table fills it). */
+export function toMetricsRow(userId: string, row: DailyMetricsRow) {
+  return {
+    user_id: userId,
+    date: row.date,
+    new_words: row.newWords,
+    reviews_done: row.reviewsDone,
+    reviews_lapsed: row.reviewsLapsed,
+    due_at_start: row.dueAtStart,
+    learn_pool: row.learnPool,
+    daily_limit: row.dailyLimit,
+    active: row.active,
+  }
+}
+
+/** Upserts daily metrics rows (push-only: nothing in the app ever reads this table back). Throws on any failure. */
+export async function upsertDailyMetrics(client: SupabaseClient, userId: string, rows: readonly DailyMetricsRow[]): Promise<void> {
+  if (rows.length === 0) return
+
+  const { error } = await client
+    .from('user_daily_metrics')
+    .upsert(
+      rows.map((r) => toMetricsRow(userId, r)),
+      { onConflict: 'user_id,date' },
+    )
+  if (error) throw new Error(`user_daily_metrics: ${error.message}`)
 }

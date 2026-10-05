@@ -103,7 +103,11 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
     )
   }, [])
 
+  // Declared first: applySettings updates it eagerly (see below).
+  const latestSettings = useRef<UserSettings | null>(null)
   const applySettings = useCallback((patch: SettingsPatch) => {
+    // Eager, so a read right after the write (getSettings) already sees it, not only after the next render.
+    if (latestSettings.current) latestSettings.current = applySettingsPatch(latestSettings.current, patch)
     setBase((prev) =>
       prev.status === 'ready'
         ? { status: 'ready', loaded: { ...prev.loaded, settings: applySettingsPatch(prev.loaded.settings, patch) } }
@@ -144,7 +148,6 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
   }, [client, userId, degradedKey])
   const retryDegraded = useCallback(() => retrier.current?.retryNow(), [])
 
-  const latestSettings = useRef<UserSettings | null>(null)
   const loadedSettings = loaded?.settings ?? null
   useEffect(() => {
     latestSettings.current = loadedSettings

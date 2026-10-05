@@ -1,6 +1,7 @@
 import { applyReview, type Quality } from '../sm2/sm2'
 import { localDateKey } from './dates'
 import { streakPatch } from './daily'
+import type { MetricsRecorder } from './metrics'
 import { isReviewDue } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 
@@ -43,6 +44,8 @@ export interface RaterDeps {
     enqueueProgress: (update: ProgressUpdate) => void
     enqueueSettings: (patch: SettingsPatch) => void
   }
+  /** Optional: today's metrics row. Recording never throws, so it can't stand in the way of a rating. */
+  metrics?: Pick<MetricsRecorder, 'recordReviewRating'>
 }
 
 /**
@@ -67,6 +70,9 @@ export function createRater(deps: RaterDeps) {
         deps.queue.enqueueSettings(patch)
       }
     }
+
+    // After the streak: the metrics row mirrors today's counters, which the streak write doesn't touch.
+    deps.metrics?.recordReviewRating(quality, now)
 
     return update
   }

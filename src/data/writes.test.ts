@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { parseSettings } from './settings'
-import { toProgressRow, upsertProgress, writeSettings } from './writes'
+import { emptyRow } from './metrics'
+import { toMetricsRow, toProgressRow, upsertDailyMetrics, upsertProgress, writeSettings } from './writes'
 
 const NOW = new Date('2026-10-02T15:00:00.000Z')
 const DUE = new Date(2026, 9, 3) // tomorrow, local midnight (Montevideo) = 2026-10-03T03:00:00.000Z
@@ -109,5 +110,40 @@ describe('writeSettings', () => {
     await expect(writeSettings(client, 'user-1', current, { streak_count: 1 }, NOW)).rejects.toThrow(
       'user_settings: boom from user_settings',
     )
+  })
+})
+
+describe('user_daily_metrics', () => {
+  const row = { ...emptyRow('2026-10-04'), newWords: 3, reviewsDone: 12, reviewsLapsed: 2, dueAtStart: 15, learnPool: 4000, dailyLimit: 10, active: true }
+
+  it('writes exactly the columns the Flutter app pushed (and no updated_at)', () => {
+    expect(toMetricsRow('user-1', row)).toEqual({
+      user_id: 'user-1',
+      date: '2026-10-04',
+      new_words: 3,
+      reviews_done: 12,
+      reviews_lapsed: 2,
+      due_at_start: 15,
+      learn_pool: 4000,
+      daily_limit: 10,
+      active: true,
+    })
+    expect(Object.keys(toMetricsRow('u', emptyRow('2026-10-04')))).toHaveLength(9)
+    expect(toMetricsRow('u', emptyRow('2026-10-04'))).toMatchObject({ due_at_start: null, learn_pool: null, daily_limit: null, active: false })
+  })
+
+  it('upserts with the composite key, and sends nothing for an empty list', async () => {
+    const { client, calls } = fakeSupabase()
+    await upsertDailyMetrics(client, 'user-1', [row])
+    await upsertDailyMetrics(client, 'user-1', [])
+    expect(calls).toHaveLength(1)
+    expect(calls[0].table).toBe('user_daily_metrics')
+    expect(calls[0].options).toEqual({ onConflict: 'user_id,date' })
+  })
+
+  it('throws (never swallows) when Supabase reports an error', async () => {
+    const { client, failures } = fakeSupabase()
+    failures.user_daily_metrics = 1
+    await expect(upsertDailyMetrics(client, 'user-1', [row])).rejects.toThrow('user_daily_metrics: boom from user_daily_metrics')
   })
 })

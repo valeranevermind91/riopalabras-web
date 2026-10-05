@@ -4,6 +4,7 @@ import { ReviewCard } from '../components/ReviewCard'
 import { langFromSettings } from '../data/rio'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { buildReviewSession, createRater } from '../data/review'
+import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueStatus, WriteQueue } from '../data/writeQueue'
@@ -15,6 +16,7 @@ type LeaveGuard = () => boolean | Promise<boolean>
 interface ReviewScreenProps {
   data: UserData
   queue: WriteQueue
+  metrics: Pick<MetricsRecorder, 'recordReviewRating'> | null
   onHome: () => void
   onLearn: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
@@ -22,7 +24,7 @@ interface ReviewScreenProps {
   registerLeaveGuard: (guard: LeaveGuard | null) => void
 }
 
-export function ReviewScreen({ data, queue, onHome, onLearn, onBack, registerLeaveGuard }: ReviewScreenProps) {
+export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, registerLeaveGuard }: ReviewScreenProps) {
   const [session, setSession] = useState(() => buildReviewSession(data.words, new Date()))
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -36,6 +38,7 @@ export function ReviewScreen({ data, queue, onHome, onLearn, onBack, registerLea
       applySettings: data.applySettings,
       getSettings: data.getSettings,
       queue,
+      ...(metrics ? { metrics } : {}),
     }),
   )
 

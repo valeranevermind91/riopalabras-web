@@ -62,6 +62,8 @@ export interface FinishDeps {
   getSettings: () => UserSettings
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   applySettings: (patch: SettingsPatch) => void
+  /** Called once, after both writes succeeded and were applied (so today's counters are current). Must not throw. */
+  onFinished?: () => void
 }
 
 /**
@@ -94,6 +96,7 @@ export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => 
       deps.applySettings(patch)
     }
     done = true
+    deps.onFinished?.()
   }
 
   return () => {

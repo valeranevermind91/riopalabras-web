@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createLocalMetricsStore, createMetricsRecorder } from './data/metrics'
 import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
@@ -51,6 +52,15 @@ function App() {
   const queue = useMemo(
     () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings) : null),
     [client, userId, getSettings],
+  )
+
+  // Today's metrics row: accumulated on this device, pushed through the queue's lowest-priority lane.
+  const metrics = useMemo(
+    () =>
+      queue && userId && getSettings
+        ? createMetricsRecorder({ store: createLocalMetricsStore(userId), enqueue: queue.enqueueMetrics, getSettings })
+        : null,
+    [queue, userId, getSettings],
   )
 
   // Queue resilience: closing confirmation while anything is unsaved, slow background retries once stuck.
@@ -110,7 +120,18 @@ function App() {
   const inPageBack = native ? undefined : () => void go('home')
 
   if (screen === 'debug') {
-    return <DebugScreen telegram={telegram} auth={auth} data={data} onBack={inPageBack} />
+    return (
+      <DebugScreen
+        telegram={telegram}
+        auth={auth}
+        data={data}
+        onBack={inPageBack}
+        queue={queue}
+        metrics={metrics}
+        client={client}
+        userId={userId}
+      />
+    )
   }
 
   if (screen === 'learn' && readyData && auth.status === 'signed-in' && client) {
@@ -119,6 +140,7 @@ function App() {
         data={readyData}
         client={client}
         userId={auth.userId}
+        metrics={metrics}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}
@@ -132,6 +154,7 @@ function App() {
       <ReviewScreen
         data={readyData}
         queue={queue}
+        metrics={metrics}
         onHome={() => void go('home')}
         onLearn={() => void go('learn')}
         onBack={inPageBack}
@@ -148,6 +171,7 @@ function App() {
       onReview={() => setScreen('review')}
       onDebug={() => setScreen('debug')}
       queue={queue}
+      metrics={metrics}
     />
   )
 }

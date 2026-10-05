@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
+import type { MetricsRecorder } from '../data/metrics'
 import { computeStats } from '../data/stats'
 import type { DataState, UserData } from '../data/useUserData'
 import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
@@ -16,14 +17,22 @@ interface HomeScreenProps {
   onReview: () => void
   onDebug: () => void
   queue: WriteQueue | null
+  metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue, metrics }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, new Date()) : null),
     [data],
   )
+
+  // The start-of-day snapshot (due / pool / limit), captured the first time Home shows each day; a no-op after that.
+  useEffect(() => {
+    if (stats && metrics) {
+      metrics.captureStartOfDaySnapshotIfNeeded({ reviewDue: stats.reviewDue, learnPool: stats.learnPool, dailyLimit: stats.dailyLimit })
+    }
+  }, [stats, metrics])
 
   return (
     <main className="screen">

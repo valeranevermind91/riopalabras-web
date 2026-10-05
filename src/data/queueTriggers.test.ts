@@ -61,7 +61,7 @@ describe('Home banner states (showUnsavedNotice)', () => {
 })
 
 describe('closing confirmation follows the queue', () => {
-  it('turns on while anything is unsaved (even stuck) and off once it drained', async () => {
+  it('turns on while anything is unsaved (even stuck) and off once it drained; metrics never turn it on', async () => {
     const h = queueHarness()
     const calls: boolean[] = []
     const unbind = bindClosingConfirmation(h.queue, (on) => calls.push(on))
@@ -84,6 +84,9 @@ describe('closing confirmation follows the queue', () => {
     h.state.down = false
     await h.queue.retry()
     expect(calls).toEqual([true, false, true, false])
+
+    h.queue.enqueueMetrics({ date: '2026-10-04', newWords: 0, reviewsDone: 1, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: true })
+    expect(calls).toEqual([true, false, true, false]) // no sender for metrics here, and metrics are not "unsaved" anyway
     unbind()
   })
 
