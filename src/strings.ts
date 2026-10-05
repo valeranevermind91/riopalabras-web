@@ -28,6 +28,7 @@ export const strings = {
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
+    unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
   },
 
   learn: {

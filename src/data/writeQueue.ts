@@ -19,6 +19,12 @@ export interface QueueStatus {
   error: string | null
   /** Anything not yet durably saved (pending, in flight, or failed). */
   unsaved: boolean
+  /**
+   * Automatic retries ran out and nothing has been saved since. Unlike `failed` it stays true
+   * during a later single retry attempt, so a banner keyed on it does not flicker; it clears once
+   * the queue has drained.
+   */
+  stuck: boolean
 }
 
 export interface WriteQueue {
@@ -28,8 +34,12 @@ export interface WriteQueue {
   enqueueSettings: (patch: SettingsPatch) => void
   /** Sends everything now, without sleeping between attempts. Resolves once saved, rejects if it still fails. */
   flush: () => Promise<void>
-  /** User-initiated retry after a persistent failure: a single attempt. Safe to call repeatedly: it never doubles a request. */
-  retry: () => void
+  /**
+   * Retry after a persistent failure (the Retry button, coming back online, the app being shown
+   * again): a single attempt, or — if automatic retries are still sleeping — wakes them now. Safe
+   * to call repeatedly: it never doubles a request. Resolves true once nothing is left unsent.
+   */
+  retry: () => Promise<boolean>
   getStatus: () => QueueStatus
   subscribe: (listener: () => void) => () => void
 }
@@ -65,6 +75,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let draining: Promise<void> | null = null
   let sending = false
   let failed = false
+  let stuck = false
   let lastError: string | null = null
   let consecutiveFailures = 0
   let wakeBackoff: (() => void) | null = null
@@ -80,6 +91,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     failed,
     error: lastError,
     unsaved: progress.size > 0 || settings !== null || sending,
+    stuck,
   })
   let status = computeStatus()
 
@@ -141,6 +153,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         sending = false
         if (consecutiveFailures >= delays.length) {
           failed = true
+          stuck = true
           notify()
           return
         }
@@ -150,6 +163,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         sending = false
       }
     }
+    stuck = false
     notify()
   }
 
@@ -166,6 +180,27 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     consecutiveFailures = 0
     lastError = null
     notify()
+  }
+
+  const settled = async () => {
+    while (draining) await draining
+    return !hasPending()
+  }
+
+  function retry(): Promise<boolean> {
+    // Automatic retries are still sleeping: wake them now.
+    if (draining && !failed) {
+      hurry()
+      return settled()
+    }
+    if (!hasPending()) return Promise.resolve(true)
+    // The drain that gave up is only just finishing: let it end, then make the single attempt.
+    if (draining) return draining.then(() => retry())
+    restart()
+    // One attempt only: if the server is still down the banner comes straight back (no hidden retry storm).
+    consecutiveFailures = delays.length
+    kick()
+    return settled()
   }
 
   return {
@@ -191,17 +226,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       if (hasPending()) throw new Error(lastError ?? 'Could not save')
     },
 
-    retry() {
-      if (draining) {
-        hurry()
-        return
-      }
-      if (!hasPending()) return
-      restart()
-      // One attempt only: if the server is still down the banner comes straight back (no hidden retry storm).
-      consecutiveFailures = delays.length
-      kick()
-    },
+    retry,
 
     getStatus: () => status,
 

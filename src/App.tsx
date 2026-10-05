@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, type AuthState } from './lib/auth'
@@ -51,6 +52,25 @@ function App() {
     () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings) : null),
     [client, userId, getSettings],
   )
+
+  // Queue resilience: closing confirmation while anything is unsaved, slow background retries once stuck.
+  useEffect(() => {
+    if (!queue) return
+    const unbindClosing = bindClosingConfirmation(queue)
+    const unbindStuck = bindStuckRetry(queue)
+    return () => {
+      unbindClosing()
+      unbindStuck()
+    }
+  }, [queue])
+
+  // Back online / app shown again: send queued writes and retry the degraded user data now, not at the next backoff step.
+  const retryDegraded = readyData?.retryDegraded
+  const retryNow = useRef<() => void>(() => {})
+  useEffect(() => {
+    retryNow.current = () => retryEverything({ queue, retryDegraded })
+  })
+  useEffect(() => bindReconnectTriggers(() => retryNow.current()), [])
 
   useEffect(() => {
     const { webApp } = getWebApp()
@@ -127,6 +147,7 @@ function App() {
       onLearn={() => setScreen('learn')}
       onReview={() => setScreen('review')}
       onDebug={() => setScreen('debug')}
+      queue={queue}
     />
   )
 }

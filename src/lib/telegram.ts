@@ -47,6 +47,11 @@ export interface TelegramWebApp {
   BackButton?: WebAppBackButton
   HapticFeedback?: WebAppHapticFeedback
   showConfirm?: (message: string, callback: (confirmed: boolean) => void) => void
+  // Closing confirmation (Bot API 6.2+) and events ('activated' arrives with 8.0); absent in the dev mock.
+  enableClosingConfirmation?: () => void
+  disableClosingConfirmation?: () => void
+  onEvent?: (eventType: string, callback: () => void) => void
+  offEvent?: (eventType: string, callback: () => void) => void
 }
 
 declare global {
@@ -147,4 +152,35 @@ export function confirmDialog(message: string): Promise<boolean> {
     return new Promise((resolve) => showConfirm.call(webApp, message, resolve))
   }
   return Promise.resolve(window.confirm(message))
+}
+
+/**
+ * Turns Telegram's "are you sure you want to close?" prompt on or off (Bot API 6.2+). A no-op
+ * outside Telegram, in clients without it, and if the call itself throws.
+ */
+export function setClosingConfirmation(enabled: boolean, webApp: TelegramWebApp = getWebApp().webApp): void {
+  const call = enabled ? webApp.enableClosingConfirmation : webApp.disableClosingConfirmation
+  if (!call || !webApp.isVersionAtLeast?.('6.2')) return
+  try {
+    call.call(webApp)
+  } catch {
+    // the prompt is a safety net, never a reason to break the app
+  }
+}
+
+/** Calls `callback` when Telegram re-activates the Mini App (Bot API 8.0+). Returns the unsubscribe; a no-op where the event doesn't exist. */
+export function onTelegramActivated(callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
+  if (!webApp.onEvent || !webApp.isVersionAtLeast?.('8.0')) return () => {}
+  try {
+    webApp.onEvent('activated', callback)
+  } catch {
+    return () => {}
+  }
+  return () => {
+    try {
+      webApp.offEvent?.('activated', callback)
+    } catch {
+      // already gone
+    }
+  }
 }

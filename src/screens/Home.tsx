@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
+import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { computeStats } from '../data/stats'
 import type { DataState, UserData } from '../data/useUserData'
+import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
+import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
@@ -12,9 +15,10 @@ interface HomeScreenProps {
   onLearn: () => void
   onReview: () => void
   onDebug: () => void
+  queue: WriteQueue | null
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, new Date()) : null),
@@ -38,6 +42,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScree
             </div>
           </div>
 
+          {queue && <UnsavedNotice queue={queue} />}
           {data.status === 'ready' && data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
           <div className="home-actions">
@@ -82,17 +87,25 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug }: HomeScree
   )
 }
 
-/** A small, non-blocking notice: favorites / hidden words didn't load yet and are being retried. */
+/** Favorites / hidden words didn't load yet and are being retried in the background. */
 function DegradedNotice({ data }: { data: UserData }) {
   const names = data.degraded.map((table) => strings.home.degradedTables[table] ?? table)
   return (
-    <p className="notice" role="status">
+    <Notice actionLabel={strings.home.retryNow} onAction={data.retryDegraded}>
       {strings.home.degraded(names)}
-      {data.degraded.includes('user_hidden_words') && ` ${strings.home.degradedHiddenWarning}`}{' '}
-      <button type="button" className="btn-small wp-off" onClick={data.retryDegraded}>
-        {strings.home.retryNow}
-      </button>
-    </p>
+      {data.degraded.includes('user_hidden_words') && ` ${strings.home.degradedHiddenWarning}`}
+    </Notice>
+  )
+}
+
+/** Progress is stuck in the write queue (its retries ran out). Shown until the queue drains, then it goes away by itself. */
+function UnsavedNotice({ queue }: { queue: WriteQueue }) {
+  const status = useQueueStatus(queue)
+  if (!showUnsavedNotice(status)) return null
+  return (
+    <Notice actionLabel={strings.home.retryNow} onAction={() => void queue.retry()}>
+      {strings.home.unsavedProgress}
+    </Notice>
   )
 }
 
