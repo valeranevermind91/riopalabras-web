@@ -113,7 +113,7 @@ describe('resolveDebugAccess (the lookup plus the decision)', () => {
 })
 
 describe('what the UI shows', () => {
-  const props = { auth: { status: 'no-telegram' as const }, data: { status: 'loading' as const }, onLearn: () => {}, onReview: () => {}, queue: null, metrics: null }
+  const props = { auth: { status: 'no-telegram' as const }, data: { status: 'loading' as const }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null }
 
   it('the Home screen renders the Debug link only when it is given a way to open it', () => {
     expect(renderToStaticMarkup(createElement(HomeScreen, { ...props, onDebug: () => {} }))).toContain('class="debug-link"')

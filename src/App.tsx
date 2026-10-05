@@ -9,11 +9,13 @@ import { getSupabase } from './lib/supabase'
 import { applyTelegramTheme, getWebApp, nativeBackButton } from './lib/telegram'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
+import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
+import { MatchingScreen } from './screens/Matching'
 import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
 
-type Screen = 'home' | 'learn' | 'review' | 'debug'
+type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'debug'
 type LeaveGuard = () => boolean | Promise<boolean>
 
 function readTelegramInfo(): TelegramInfo {
@@ -176,12 +178,22 @@ function App() {
     )
   }
 
+  if (screen === 'matching' && readyData && queue) {
+    return <MatchingScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
+  }
+
+  if (screen === 'cloze' && readyData && queue) {
+    return <ClozeScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
+  }
+
   return (
     <HomeScreen
       auth={auth}
       data={data}
       onLearn={() => setScreen('learn')}
       onReview={() => setScreen('review')}
+      onMatching={() => setScreen('matching')}
+      onCloze={() => setScreen('cloze')}
       onDebug={debugAllowed ? () => setScreen('debug') : undefined}
       queue={queue}
       metrics={metrics}

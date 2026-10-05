@@ -2,6 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
+import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
+import { langFromSettings } from '../data/rio'
 import { computeStats } from '../data/stats'
 import type { DataState, UserData } from '../data/useUserData'
 import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
@@ -15,18 +17,30 @@ interface HomeScreenProps {
   data: DataState
   onLearn: () => void
   onReview: () => void
+  onMatching: () => void
+  onCloze: () => void
   /** Absent when the user may not open Debug: the link is then not rendered at all. */
   onDebug?: () => void
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue, metrics }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onDebug, queue, metrics }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, new Date()) : null),
     [data],
   )
+
+  // How many words each practice exercise can use, recomputed with the stats each time Home is shown.
+  const practice = useMemo(() => {
+    if (data.status !== 'ready') return null
+    return {
+      matching: matchingEligibleCount(data.data.words),
+      cloze: clozeEligibleCount(data.data.words),
+      t: strings.practice[langFromSettings(data.data.settings)],
+    }
+  }, [data])
 
   // The start-of-day snapshot (due / pool / limit), captured the first time Home shows each day; a no-op after that.
   useEffect(() => {
@@ -83,6 +97,33 @@ export function HomeScreen({ auth, data, onLearn, onReview, onDebug, queue, metr
               {stats.reviewDue > 0 ? strings.home.reviewWithCount(stats.reviewDue) : strings.home.reviewNothingDue}
             </button>
           </div>
+
+          {practice && (
+            <div className="home-actions home-practice">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={practice.matching < PRACTICE_MIN_WORDS}
+                onClick={() => {
+                  haptic('tap')
+                  onMatching()
+                }}
+              >
+                {practice.matching >= PRACTICE_MIN_WORDS ? practice.t.matchingButton : practice.t.needWords}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={practice.cloze < PRACTICE_MIN_WORDS}
+                onClick={() => {
+                  haptic('tap')
+                  onCloze()
+                }}
+              >
+                {practice.cloze >= PRACTICE_MIN_WORDS ? practice.t.clozeButton : practice.t.needWords}
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <section className="card">

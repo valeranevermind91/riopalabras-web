@@ -746,3 +746,180 @@ dd {
   background: color-mix(in srgb, var(--tg-hint-color) 14%, transparent);
   overflow-wrap: anywhere;
 }
+
+/* ---- Practice: Matching and Cloze ---- */
+
+.home-practice {
+  margin-top: 12px;
+}
+
+.match-hint {
+  margin: 0 0 12px;
+  color: var(--tg-hint-color);
+  font-size: 14px;
+  text-align: center;
+}
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.match-col {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.match-tile {
+  box-sizing: border-box;
+  min-height: 64px;
+  padding: 12px 8px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--tg-secondary-bg-color);
+  color: var(--tg-text-color);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.match-tile.is-selected {
+  border-color: var(--tg-button-color);
+  background: color-mix(in srgb, var(--tg-button-color) 22%, var(--tg-secondary-bg-color));
+}
+
+.match-tile.is-wrong {
+  border-color: #c62828;
+  background: rgba(198, 40, 40, 0.18);
+}
+
+.match-tile.is-matched {
+  border-color: transparent;
+  background: color-mix(in srgb, #2e7d32 28%, var(--tg-secondary-bg-color));
+  cursor: default;
+}
+
+.cz-screen .bar {
+  margin-bottom: 12px;
+}
+
+.cz-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--tg-secondary-bg-color);
+}
+
+.cz-sentence {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.cz-cue {
+  margin: 8px 0 0;
+  color: var(--tg-hint-color);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Fixed-height slots: showing a hint or the feedback never moves the input below. */
+.cz-hint {
+  height: 24px;
+  margin: 12px 0 0;
+  color: var(--tg-button-color);
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.cz-feedback {
+  min-height: 28px;
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cz-ok {
+  color: #2e7d32;
+}
+
+.cz-bad {
+  color: #c62828;
+}
+
+.cz-neutral {
+  color: var(--tg-hint-color);
+}
+
+.cz-dock {
+  display: grid;
+  gap: 12px;
+}
+
+.cz-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--tg-hint-color);
+  border-radius: 12px;
+  background: var(--tg-bg-color);
+  color: var(--tg-text-color);
+  font: inherit;
+  font-size: 16px;
+}
+
+.cz-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cz-results {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.cz-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--tg-hint-color) 30%, transparent);
+}
+
+.cz-result-word {
+  font-weight: 700;
+}
+
+.cz-result-gloss {
+  color: var(--tg-hint-color);
+}
+
+.cz-result-outcome {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cz-result-correct .cz-result-outcome {
+  color: #2e7d32;
+}
+
+.cz-result-wrong .cz-result-outcome {
+  color: #c62828;
+}
+
+.cz-result-gaveUp .cz-result-outcome {
+  color: var(--tg-hint-color);
+}
