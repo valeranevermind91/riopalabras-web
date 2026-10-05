@@ -46,9 +46,9 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
         <div className="flip-face flip-front word-card" aria-hidden={revealed}>
           <div className="rf-center">
             <h2 className="wc-headword rf-headword">{head.text}</h2>
-            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio[lang].pill}</span>}
-            <RegionTag region={region} lang={lang} />
-            <RegisterLabel register={register} lang={lang} />
+            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+            <RegionTag region={region} />
+            <RegisterLabel register={register} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
@@ -57,8 +57,8 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
           <h2 className="wc-headword rb-headword">{head.text}</h2>
           {(region || register) && (
             <div className="wc-meta rb-meta">
-              <RegionTag region={region} lang={lang} />
-              <RegisterLabel register={register} lang={lang} />
+              <RegionTag region={region} />
+              <RegisterLabel register={register} />
             </div>
           )}
           <RelationBlock relation={relationFor(word)} lang={lang} />

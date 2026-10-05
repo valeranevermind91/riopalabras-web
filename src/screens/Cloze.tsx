@@ -32,8 +32,8 @@ interface ClozeScreenProps {
 }
 
 export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScreenProps) {
-  const lang = langFromSettings(data.settings)
-  const t = strings.practice[lang]
+  const lang = langFromSettings(data.settings) // word content only (the nudge and the summary glosses); the chrome is English
+  const t = strings.practice.en
   const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(data.words))
   const [progress, setProgress] = useState<ClozeProgress>(startCloze)
   const { index, results, done } = progress

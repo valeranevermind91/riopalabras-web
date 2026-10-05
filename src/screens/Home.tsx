@@ -3,7 +3,6 @@ import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
-import { langFromSettings } from '../data/rio'
 import { computeStats } from '../data/stats'
 import type { DataState, UserData } from '../data/useUserData'
 import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
@@ -38,7 +37,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     return {
       matching: matchingEligibleCount(data.data.words),
       cloze: clozeEligibleCount(data.data.words),
-      t: strings.practice[langFromSettings(data.data.settings)],
+      t: strings.practice.en, // chrome: English
     }
   }, [data])
 

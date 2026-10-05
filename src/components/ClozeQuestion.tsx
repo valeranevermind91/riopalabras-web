@@ -10,6 +10,7 @@ import {
   type ClozeKind,
   type ClozeOutcome,
 } from '../data/practice'
+import { clozeFeedback } from '../data/clozeFeedback'
 import type { Lang } from '../data/rio'
 import type { UserSettings } from '../data/types'
 import { strings } from '../strings'
@@ -17,6 +18,7 @@ import { strings } from '../strings'
 interface ClozeQuestionProps {
   item: ClozeItem
   settings: Pick<UserSettings, 'showRuTranslation' | 'showEnTranslation'>
+  /** Language of word content (the "in this sentence" nudge). */
   lang: Lang
   /** Fires once, when Continue is pressed after the question was answered or given up. */
   onAnswered: (outcome: ClozeOutcome) => void
@@ -26,7 +28,7 @@ type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 
 /** One fill-in-the-blank question. Every element stays mounted in the same place, so nothing shifts when a hint or the feedback appears. */
 export function ClozeQuestion({ item, settings, lang, onAnswered }: ClozeQuestionProps) {
-  const t = strings.practice[lang]
+  const t = strings.practice.en // chrome: English
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
   const [answer, setAnswer] = useState<Answer | null>(null)
@@ -48,21 +50,7 @@ export function ClozeQuestion({ item, settings, lang, onAnswered }: ClozeQuestio
     onAnswered(answer.outcome)
   }
 
-  const feedback = (a: Answer): { text: string; tone: 'ok' | 'bad' | 'neutral' } => {
-    switch (a.kind) {
-      case 'exact':
-        return { text: t.correct, tone: 'ok' }
-      case 'accent':
-        return { text: `${t.correct} ${t.accentNudge(target)}`, tone: 'ok' }
-      case 'headword':
-        return { text: `${t.correct} ${t.inSentence(target)}`, tone: 'ok' }
-      case 'gaveUp':
-        return { text: t.gaveUp(target), tone: 'neutral' }
-      default:
-        return { text: t.wrong(target), tone: 'bad' }
-    }
-  }
-  const fb = answer ? feedback(answer) : null
+  const fb = answer ? clozeFeedback(answer.kind, target, lang) : null
 
   return (
     <section className="cz-card">

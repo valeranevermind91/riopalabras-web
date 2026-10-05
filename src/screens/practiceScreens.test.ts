@@ -44,24 +44,26 @@ const home = (list: Word[], raw: Record<string, unknown> = {}) =>
   )
 
 describe('Home: the two practice buttons', () => {
-  it('are disabled with "Need 5+ words" (EN) / "Нужно 5+ слов" (RU) below 5 eligible words', () => {
+  it('are disabled with "Need 5+ words" below 5 eligible words, in English whatever the translation language', () => {
     const en = home(words(4), { show_ru_translation: false, show_en_translation: true })
     expect(en.match(/Need 5\+ words/g)).toHaveLength(2)
     expect(en).not.toContain('Practice Matching')
-    const ru = home(words(4)) // Russian is the default
-    expect(ru.match(/Нужно 5\+ слов/g)).toHaveLength(2)
+    const ru = home(words(4)) // Russian translations are the default: the buttons are still English
+    expect(ru.match(/Need 5\+ words/g)).toHaveLength(2)
+    expect(ru).not.toMatch(/[А-Яа-яЁё]/)
     const needs = en.split('<button').filter((b) => b.includes('Need 5+ words'))
     expect(needs.every((b) => b.includes('disabled'))).toBe(true)
   })
 
-  it('are enabled and named once 5 words qualify, in the user\'s language', () => {
+  it('are enabled and named once 5 words qualify, in English with either translation language', () => {
     const en = home(words(6), { show_ru_translation: false, show_en_translation: true })
     expect(en).toContain('Practice Matching')
     expect(en).toContain('Practice Cloze')
     expect(en).not.toContain('Need 5+ words')
-    const ru = home(words(6))
-    expect(ru).toContain('Практика: пары')
-    expect(ru).toContain('Практика: пропуски')
+    const ru = home(words(6)) // default settings: Russian translations
+    expect(ru).toContain('Practice Matching')
+    expect(ru).toContain('Practice Cloze')
+    expect(ru).not.toMatch(/[А-Яа-яЁё]/) // no Russian chrome anywhere on Home
   })
 
   it('count words independently: Matching needs 5 words with different glosses, Cloze needs 5 with a blank', () => {
@@ -91,13 +93,15 @@ describe('Matching screen', () => {
     expect(html.match(/class="match-tile"/g)).toHaveLength(10)
     expect(html.match(/palabra\d/g)!.length).toBe(5)
     expect(html).not.toContain('другое') // first gloss only, never the full translation
-    expect(html).toContain('Сопоставление')
-    expect(html).toContain('Выбери слово, затем его перевод.')
+    expect(html).toMatch(/слово[а-к]{2}/) // the gloss itself is word content: Russian
+    expect(html).toContain('<h1>Matching</h1>') // chrome: English, although the translations are Russian
+    expect(html).toContain('Tap a word, then its translation.')
+    expect(html).not.toContain('Сопоставление')
   })
 
-  it('speaks English when the Russian translation is switched off', () => {
+  it('the chrome is the same with the Russian translation switched off', () => {
     const html = render(words(8), { show_ru_translation: false, show_en_translation: true })
-    expect(html).toContain('Matching')
+    expect(html).toContain('<h1>Matching</h1>')
     expect(html).toContain('Tap a word, then its translation.')
   })
 
@@ -143,9 +147,12 @@ describe('Cloze screen and question', () => {
     expect(both).toContain('(EN:')
   })
 
-  it('is in Russian by default, with the controls named in Russian', () => {
+  it('the controls are English even when the translations are Russian (the default); only the cue is Russian', () => {
     const html = render(words(12))
-    for (const label of ['Подсказка', 'Показать', 'Проверить']) expect(html).toContain(label)
+    for (const label of ['Hint', 'Reveal', 'Check']) expect(html).toContain(label)
+    for (const label of ['Подсказка', 'Показать', 'Проверить', 'Твой ответ']) expect(html).not.toContain(label)
+    expect(html).toContain('<h1>Cloze</h1>')
+    expect(html).toMatch(/\(RU: слово/) // word content follows the translation setting
   })
 
   it('with fewer than 5 usable words it says so and offers the way home', () => {

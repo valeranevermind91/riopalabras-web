@@ -6,7 +6,7 @@ import { RegionTag } from './RegionTag'
 export function RelationBlock({ relation, lang }: { relation: Relation; lang: Lang }) {
   if (!relation) return null
 
-  const t = strings.rio[lang]
+  const t = strings.rio.en // labels are UI chrome: English; the note and standard-meaning TEXT below follow the translation setting
   const note = pickLocalized(relation.note ?? null, lang)
   // how common the standard word is: a soft hint after it, never a claim about where it is used
   const hint = relation.standardUsage ? (t.stdUsageHint[relation.standardUsage] ?? null) : null
@@ -24,12 +24,12 @@ export function RelationBlock({ relation, lang }: { relation: Relation; lang: La
       )}
       {relation.rioForm && (
         <p>
-          {t.rioplatense}: <span>{relation.rioForm}</span> <RegionTag region={relation.region} lang={lang} />
+          {t.rioplatense}: <span>{relation.rioForm}</span> <RegionTag region={relation.region} />
         </p>
       )}
       {relation.altForm && (
         <p>
-          {t.also}: <span>{relation.altForm}</span> <RegionTag region={relation.altRegion} lang={lang} />
+          {t.also}: <span>{relation.altForm}</span> <RegionTag region={relation.altRegion} />
         </p>
       )}
       {stdMeaning && (

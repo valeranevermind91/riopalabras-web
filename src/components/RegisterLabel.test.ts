@@ -24,7 +24,8 @@ describe('register label next to the headword', () => {
     expect(w.rio).toMatchObject({ form: 'linyera', register: 'pejorative' })
     expect(headwordRegister(w)).toBe('pejorative')
     expect(card('vagabundo', 'en')).toContain('<span class="wc-register">pejorative</span>')
-    expect(card('vagabundo', 'ru')).toContain('<span class="wc-register">пренебрежительное</span>')
+    expect(card('vagabundo', 'ru')).toContain('<span class="wc-register">pejorative</span>') // chrome: English whatever the translation language
+    expect(card('vagabundo', 'ru')).not.toContain('пренебрежительное')
     expect(relation('vagabundo', 'en')).toMatch(/Dismissive word\. The neutral phrase is &quot;persona en situación de calle&quot;\./)
     expect(relation('vagabundo', 'ru')).toMatch(/Пренебрежительное слово\. Нейтральное выражение: &quot;persona en situación de calle&quot;\./)
   })
@@ -33,7 +34,7 @@ describe('register label next to the headword', () => {
     const w = word('cigarrillo')
     expect(w.rio).toMatchObject({ form: 'pucho', register: 'informal' })
     expect(card('cigarrillo', 'en')).toContain('<span class="wc-register">informal</span>')
-    expect(card('cigarrillo', 'ru')).toContain('<span class="wc-register">разговорное</span>')
+    expect(card('cigarrillo', 'ru')).toContain('<span class="wc-register">informal</span>')
     expect(relation('cigarrillo', 'en')).toMatch(/&quot;Cigarro&quot; or &quot;cigarrillo&quot; is the more usual everyday word; &quot;pucho&quot; is the colloquial one\./)
     expect(relation('cigarrillo', 'ru')).toMatch(/более обычное слово в повседневной речи; &quot;pucho&quot; — разговорное/)
   })
@@ -48,17 +49,17 @@ describe('register label next to the headword', () => {
 
   it('shows on the review card too: on the front next to the headword and on the back', () => {
     expect(review('vagabundo', 'en', false)).toContain('wc-register">pejorative<')
-    expect(review('vagabundo', 'ru', true)).toContain('wc-register">пренебрежительное<')
+    expect(review('vagabundo', 'ru', true)).toContain('wc-register">pejorative<')
   })
 
-  it('every register value used by the overlay has a label in both languages, and neutral shows nothing', () => {
+  it('every register value used by the overlay has an English label (the Russian ones are kept for later), and neutral shows nothing', () => {
     const used = new Set<string>(rawOverlay.map((e: { register: string }) => e.register))
     for (const r of used) {
       if (r === 'neutral') continue
       for (const lang of ['en', 'ru'] as const) expect(strings.rio[lang].register[r], `${r} ${lang}`).toBeTruthy()
     }
-    expect(renderToStaticMarkup(createElement(RegisterLabel, { register: 'neutral', lang: 'en' }))).toBe('')
-    expect(renderToStaticMarkup(createElement(RegisterLabel, { register: null, lang: 'ru' }))).toBe('')
+    expect(renderToStaticMarkup(createElement(RegisterLabel, { register: 'neutral' }))).toBe('')
+    expect(renderToStaticMarkup(createElement(RegisterLabel, { register: null }))).toBe('')
     expect(headwordRegister(word('guapo'))).toBe(word('guapo').rio!.register === 'neutral' ? null : word('guapo').rio!.register)
   })
 

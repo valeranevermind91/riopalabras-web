@@ -1,4 +1,12 @@
-// Every user-facing string lives here (English for now) so localization is a one-file change.
+// Every user-facing string lives here so localization is a one-file change.
+//
+// Two kinds of text, kept apart on purpose:
+//  - UI chrome (buttons, headings, labels, status text, summaries, confirmations): ALWAYS English for now.
+//    Groups that exist in both languages (`practice`, `rio`) keep their Russian half for the day a real
+//    UI-language setting arrives; until then only the `en` half is read, via `strings.practice.en` / `strings.rio.en`.
+//  - Word content, which follows the translation setting (see langFromSettings): `wordContent` below (the Cloze
+//    "in this sentence" nudge), plus data that comes from the dictionary or overlay (translations, overlay notes, the Cloze cue).
+//    The register labels (informal, vulgar, …) are chrome, like "standard" and "also": they live in `rio`.
 
 export const strings = {
   appTitle: 'Riopalabras',
@@ -74,7 +82,7 @@ export const strings = {
         : "Your progress isn't fully saved yet. Leave anyway?",
   },
 
-  // Matching and Cloze. English and Russian: the screen follows the translation setting (see langFromSettings).
+  // Matching and Cloze chrome. English is used everywhere today; the Russian half waits for a UI-language setting.
   practice: {
     en: {
       matchingButton: 'Practice Matching',
@@ -94,7 +102,6 @@ export const strings = {
       continue: 'Continue',
       correct: 'Correct!',
       accentNudge: (form: string) => `Mind the accent: ${form}`,
-      inSentence: (form: string) => `in this sentence: ${form}`,
       wrong: (form: string) => `Not quite — the word was: ${form}`,
       gaveUp: (form: string) => `The word was: ${form}`,
       sessionComplete: 'Session complete',
@@ -122,7 +129,6 @@ export const strings = {
       continue: 'Дальше',
       correct: 'Верно!',
       accentNudge: (form: string) => `Не забудь про ударение: ${form}`,
-      inSentence: (form: string) => `в этом предложении: ${form}`,
       wrong: (form: string) => `Не совсем — нужное слово: ${form}`,
       gaveUp: (form: string) => `Слово: ${form}`,
       sessionComplete: 'Сессия завершена',
@@ -139,7 +145,19 @@ export const strings = {
     ru: 'RU',
   },
 
-  // Labels for the Rioplatense overlay, in the language the user reads (see langFromSettings).
+  // Word-related text that follows the translation setting (see langFromSettings), not the UI language. Only the Cloze nudge for now.
+  wordContent: {
+    en: {
+      // Cloze nudge when the headword was typed instead of the form in the sentence
+      inSentence: (form: string) => `in this sentence: ${form}`,
+    },
+    ru: {
+      inSentence: (form: string) => `в этом предложении: ${form}`,
+    },
+  },
+
+  // Chrome for the Rioplatense overlay (pill, relation labels, hints, tooltips). English is used everywhere today;
+  // the Russian half waits for a UI-language setting. The overlay's notes and standard-meaning TEXT are word content.
   rio: {
     en: {
       pill: 'Rioplatense',

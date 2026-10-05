@@ -44,6 +44,7 @@ import { parseSettings } from './settings'
 import type { Word } from './types'
 import { createSupabaseWriteQueue } from './writeQueue'
 import { strings } from '../strings'
+import { clozeFeedback } from './clozeFeedback'
 
 const dictionary = parseDictionary(
   JSON.parse(readFileSync('public/words_enriched.json', 'utf8')),
@@ -354,8 +355,8 @@ describe('Cloze: checking answers', () => {
   it('the dictionary headword is accepted for an inflected target, with the "in this sentence" nudge', () => {
     const v = checkClozeAnswer({ typed: 'tener', target: 'tenés', headword: 'tener' })
     expect(v).toEqual({ outcome: 'correct', kind: 'headword' })
-    expect(strings.practice.en.inSentence('tenés')).toBe('in this sentence: tenés')
-    expect(strings.practice.ru.inSentence('tenés')).toBe('в этом предложении: tenés')
+    expect(strings.wordContent.en.inSentence('tenés')).toBe('in this sentence: tenés')
+    expect(strings.wordContent.ru.inSentence('tenés')).toBe('в этом предложении: tenés')
     expect(checkClozeAnswer({ typed: 'TENER ', target: 'tenés', headword: 'tener' }).kind).toBe('headword')
     expect(checkClozeAnswer({ typed: 'tenés', target: 'tenés', headword: 'tener' }).kind).toBe('exact') // the sentence form still wins
     expect(checkClozeAnswer({ typed: 'tenes', target: 'tenés', headword: 'tener' }).kind).toBe('accent')
@@ -379,7 +380,18 @@ describe('Cloze: checking answers', () => {
     expect(check('   ').outcome).toBe('wrong')
   })
 
-  it('the accent nudge and the other messages exist in both languages', () => {
+  it('the feedback wording is English chrome in both languages; only the "in this sentence" nudge follows the translation setting', () => {
+    for (const lang of ['en', 'ru'] as const) {
+      expect(clozeFeedback('exact', 'tenés', lang)).toEqual({ text: 'Correct!', tone: 'ok' })
+      expect(clozeFeedback('accent', 'está', lang).text).toBe('Correct! Mind the accent: está')
+      expect(clozeFeedback('wrong', 'tenés', lang)).toEqual({ text: 'Not quite — the word was: tenés', tone: 'bad' })
+      expect(clozeFeedback('gaveUp', 'tenés', lang)).toEqual({ text: 'The word was: tenés', tone: 'neutral' })
+    }
+    expect(clozeFeedback('headword', 'tenés', 'en').text).toBe('Correct! in this sentence: tenés')
+    expect(clozeFeedback('headword', 'tenés', 'ru').text).toBe('Correct! в этом предложении: tenés')
+  })
+
+  it('the Russian chrome strings are kept for a future UI-language setting', () => {
     for (const lang of ['en', 'ru'] as const) {
       const t = strings.practice[lang]
       expect(t.accentNudge('está')).toContain('está')
