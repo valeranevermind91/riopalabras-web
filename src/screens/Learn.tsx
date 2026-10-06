@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
@@ -12,7 +12,7 @@ import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
-import type { ExitPlan } from '../lib/swipe'
+import { arrivalOf, type Arrival, type ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
 
@@ -53,10 +53,14 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     else if (phase === 'error') haptic('error')
   }, [phase])
 
-  const go = (delta: 1 | -1) => {
+  // How the card in front arrives after a swipe: from where the leaving card would be one strip-length away (see arrivalOf).
+  const [arrival, setArrival] = useState<Arrival | null>(null)
+
+  const go = (delta: 1 | -1, plan?: ExitPlan) => {
     const next = index + delta
     if (!reading || next < 0 || next > lastIndex) return
     setDirection(delta > 0 ? 'next' : 'prev')
+    setArrival(plan ? arrivalOf(plan) : null)
     setIndex(next)
     haptic('select')
   }
@@ -82,7 +86,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     const next = index + delta
     if (!reading || next < 0 || next > lastIndex) return
     setLeaving({ id: ++leaveCount.current, index, plan })
-    go(delta)
+    go(delta, plan)
   }
 
   const swipe = useSwipe({
@@ -130,6 +134,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     setTicket(null)
     setIndex(0)
     setDirection('next')
+    setArrival(null)
   }
 
   if (phase === 'done') {
@@ -158,7 +163,11 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
       <div className="swipe-area" {...swipe.handlers}>
         <div className="swipe-stage">
           <div className="swipe-layer" style={swipe.layerStyle}>
-            <div key={`${index}:${words[index].esWord}`} className={`card-enter card-enter-${direction}`}>
+            <div
+              key={`${index}:${words[index].esWord}`}
+              className={arrival ? 'card-enter card-arrive' : `card-enter card-enter-${direction}`}
+              style={arrival ? ({ '--arrive-from': `${arrival.from}px`, '--arrive-ms': `${arrival.duration}ms` } as CSSProperties) : undefined}
+            >
               <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
             </div>
           </div>

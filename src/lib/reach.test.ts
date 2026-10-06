@@ -91,7 +91,7 @@ describe('reach: the markup', () => {
 
 describe('motion: transform and opacity only, with a cross-fade for reduced motion', () => {
   it('the swiping layer and the arriving card animate transform and opacity only (no layout properties)', () => {
-    for (const name of ['card-enter-next', 'card-enter-prev', 'card-fade']) {
+    for (const name of ['card-enter-next', 'card-enter-prev', 'card-arrive', 'card-fade']) {
       const start = css.indexOf(`@keyframes ${name}`)
       const body = css.slice(start, css.indexOf('\n}\n', start))
       expect(body, name).toMatch(/opacity|transform/)
@@ -109,7 +109,7 @@ describe('motion: transform and opacity only, with a cross-fade for reduced moti
 
   it('under prefers-reduced-motion the arriving card fades instead of travelling', () => {
     const block = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
-    expect(block).toMatch(/\.card-enter-next,\s*\.card-enter-prev \{\s*animation: card-fade/)
+    expect(block).toMatch(/\.card-enter-next,\s*\.card-enter-prev,\s*\.card-arrive \{\s*animation: card-fade/)
   })
 
   it('the hook asks for reduced motion at release and the leaving card then cross-fades (planExit mode "fade")', () => {
@@ -119,6 +119,7 @@ describe('motion: transform and opacity only, with a cross-fade for reduced moti
 
   it('below the threshold the card springs back on a transform transition; while dragging there is none', () => {
     const hook = readFileSync('src/lib/useSwipe.ts', 'utf8')
-    expect(hook).toMatch(/dragging \? 'none' : 'transform 240ms/)
+    expect(hook).toMatch(/dragging \|\| !spring \? 'none' : 'transform 240ms/)
+    expect(hook).toMatch(/reset\(decision === 'cancel'\)/) // a committed swipe snaps, so the next card does not inherit the drag offset
   })
 })

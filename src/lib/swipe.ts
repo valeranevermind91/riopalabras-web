@@ -82,6 +82,23 @@ export function planExit({ dx, velocity, width, reducedMotion }: { dx: number; v
   return { mode: 'translate', from: dx, to, duration }
 }
 
+export interface Arrival {
+  /** Where the arriving card starts (px from centre); it travels to 0. */
+  from: number
+  duration: number
+}
+
+/**
+ * The card that arrives after a committed swipe is the next one on the same strip as the card leaving: one
+ * screen (plus the gutter) behind it, on the side the old card is heading for, so it enters from the opposite
+ * edge, and with the same duration and easing the two never drift apart. Swipe left (the old card leaves to the
+ * left): it starts to the right; swipe right: to the left. Null under reduced motion: no travel, only the fade.
+ */
+export function arrivalOf(plan: ExitPlan): Arrival | null {
+  if (plan.mode !== 'translate') return null
+  return { from: plan.from - plan.to, duration: plan.duration }
+}
+
 /** The drag offset for a finger movement: free, or resisted when there is no card that way. */
 export function dragOffset(dx: number, canNext: boolean, canPrevious: boolean): number {
   const blocked = (dx < 0 && !canNext) || (dx > 0 && !canPrevious)

@@ -61,6 +61,45 @@ describe.skipIf(!CHROME)('swiping Learn with real touch input', () => {
     })
   }
 
+  interface Frame {
+    t: number
+    ghost: number | null
+    card: number
+  }
+
+  /**
+   * Records, every animation frame, the left edge of the card that is leaving (if any) and of the one in front.
+   * Start it before the finger lifts; read it back with `frames`.
+   */
+  const startRecording = (page: Page) =>
+    page.evaluate(() => {
+      const w = window as never as { __frames: unknown[]; __rec: boolean }
+      w.__frames = []
+      w.__rec = true
+      const t0 = performance.now()
+      const tick = () => {
+        const ghost = document.querySelector('.swipe-ghost .word-card')
+        const card = document.querySelector('.swipe-layer .word-card')
+        if (card) w.__frames.push({ t: performance.now() - t0, ghost: ghost ? ghost.getBoundingClientRect().left : null, card: card.getBoundingClientRect().left })
+        if (w.__rec) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+  const frames = (page: Page) => page.evaluate(() => ((window as never as { __frames: Frame[] }).__frames))
+
+  /** A swipe of `dx` with the frames recorded around the release; returns the frames and the width of the swipe area. */
+  async function swipeRecorded(page: Page, dx: number) {
+    const from = await cardCentre(page)
+    const area = await page.$eval('.swipe-area', (e) => e.clientWidth)
+    const rest = await page.$eval('.swipe-layer .word-card', (e) => e.getBoundingClientRect().left)
+    await startRecording(page)
+    await drag(page, from, dx, 0)
+    await page.evaluate(() => ((window as never as { __rec: boolean }).__rec = false))
+    // Positions as offsets from where a card rests, so 0 means "in its place".
+    const offsets = (await frames(page)).map((f) => ({ ...f, card: f.card - rest, ghost: f.ghost === null ? null : f.ghost - rest }))
+    return { frames: offsets, area }
+  }
+
   const variants: [string, string][] = [
     ['a short card', ''],
     ['a long card that scrolls inside itself', 'long=1'],
@@ -115,6 +154,47 @@ describe.skipIf(!CHROME)('swiping Learn with real touch input', () => {
       const page = await open(options)
       const before = await headword(page)
       await drag(page, await cardCentre(page), -70, 0, 4, 8)
+      expect(await headword(page)).not.toBe(before)
+      await page.close()
+    }, 30_000)
+  })
+
+  describe('the arriving card comes from the edge the old one left by, as one strip', () => {
+    // Swipe left: the old card goes off the left edge, the new one slides in from the right. Swipe right: the mirror.
+    it.each([
+      ['left (next card)', -160, 1],
+      ['right (previous card)', 160, -1],
+    ] as const)('a swipe to the %s', async (_label, dx, side) => {
+      const page = await open('wrap=1')
+      if (dx > 0) await drag(page, await cardCentre(page), -160, 0) // be on card 2 so there is a previous one
+      const { frames: all, area } = await swipeRecorded(page, dx)
+      const together = all.filter((f) => f.ghost !== null)
+      expect(together.length, JSON.stringify(all.slice(0, 8))).toBeGreaterThanOrEqual(4)
+
+      // From the very first frame the new card is on the far side (never on the side the old card leaves by)…
+      const first = together[0]
+      expect(Math.sign(first.card), JSON.stringify(first)).toBe(side)
+      expect(Math.abs(first.card)).toBeGreaterThan(area * 0.5)
+      // …it travels towards the middle, never away from it, and arrives at rest…
+      for (let i = 1; i < together.length; i++) expect(Math.abs(together[i].card)).toBeLessThanOrEqual(Math.abs(together[i - 1].card) + 1)
+      expect(Math.abs(all[all.length - 1].card)).toBeLessThan(2)
+      // …and it stays one strip with the old card: a constant gap of one screen (plus the gutter), on the right side.
+      for (const f of together) expect((f.card - (f.ghost as number)) * side, JSON.stringify(f)).toBeGreaterThan(area - 12)
+      const gaps = together.map((f) => (f.card - (f.ghost as number)) * side)
+      expect(Math.max(...gaps) - Math.min(...gaps), JSON.stringify(gaps)).toBeLessThan(14)
+      await page.close()
+    }, 30_000)
+    it('with reduced motion nothing travels: the old card fades in place and the new one fades in, both at rest', async () => {
+      const page = await open('wrap=1')
+      await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
+      const before = await headword(page)
+      const { frames: all } = await swipeRecorded(page, -160)
+      const together = all.filter((f) => f.ghost !== null)
+      expect(together.length, JSON.stringify(all.slice(0, 8))).toBeGreaterThanOrEqual(2)
+      for (const f of together) {
+        expect(Math.abs(f.card), JSON.stringify(f)).toBeLessThan(2) // the new card is in its place from the first frame
+        expect(Math.abs(f.ghost as number), JSON.stringify(f)).toBeLessThan(2) // and the old one never moves
+      }
       expect(await headword(page)).not.toBe(before)
       await page.close()
     }, 30_000)

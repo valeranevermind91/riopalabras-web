@@ -17,7 +17,7 @@ const prefersReducedMotion = () => typeof window !== 'undefined' && (window.matc
  * Horizontal swipe on pointer events only (touch, pen and mouse); vertical scrolling is left to the browser.
  * `layerStyle` goes on the card layer that follows the finger (transform only). When a release commits, the
  * hook hands the caller an ExitPlan (start offset, destination, duration from the release velocity) and resets
- * its own layer at once: the caller keeps the released card on screen as a leaving copy and animates it away
+ * its own layer at once (snapping, not springing): the caller keeps the released card on screen as a leaving copy and animates it away
  * while the next card arrives. Below the threshold the layer springs back.
  */
 export function useSwipe({ onNext, onPrevious, canNext, canPrevious, enabled }: SwipeOptions) {
@@ -25,11 +25,14 @@ export function useSwipe({ onNext, onPrevious, canNext, canPrevious, enabled }: 
   const samples = useRef<Sample[]>([])
   const [offset, setOffset] = useState(0)
   const [dragging, setDragging] = useState(false)
+  const [spring, setSpring] = useState(true)
 
-  const reset = () => {
+  /** Back to rest. A cancelled drag springs back; a committed one snaps, because the card that comes next must not inherit the drag offset. */
+  const reset = (springBack: boolean) => {
     origin.current = null
     samples.current = []
     setDragging(false)
+    setSpring(springBack)
     setOffset(0)
   }
 
@@ -64,7 +67,7 @@ export function useSwipe({ onNext, onPrevious, canNext, canPrevious, enabled }: 
     const dy = e.clientY - start.y
     const velocity = velocityOf(samples.current)
     const decision = decideRelease({ dx, dy, velocity, canNext, canPrevious })
-    reset()
+    reset(decision === 'cancel')
     if (decision === 'cancel') return
     // The leaving copy starts exactly where the finger let go of the card.
     const plan = planExit({ dx: dragOffset(dx, canNext, canPrevious), velocity, width: start.width, reducedMotion: prefersReducedMotion() })
@@ -75,8 +78,8 @@ export function useSwipe({ onNext, onPrevious, canNext, canPrevious, enabled }: 
   const layerStyle: CSSProperties = {
     transform: offset ? `translateX(${offset}px)` : undefined,
     // following the finger: no transition; letting go below the threshold: spring back
-    transition: dragging ? 'none' : 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+    transition: dragging || !spring ? 'none' : 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
   }
 
-  return { handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: reset }, layerStyle }
+  return { handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: () => reset(true) }, layerStyle }
 }

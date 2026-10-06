@@ -735,6 +735,16 @@ mark {
   }
 }
 
+/* After a swipe: the card arrives on the same strip as the one leaving (Learn sets --arrive-from and --arrive-ms from the exit plan). */
+@keyframes card-arrive {
+  from {
+    transform: translateX(var(--arrive-from));
+  }
+  to {
+    transform: none;
+  }
+}
+
 @keyframes card-fade {
   from {
     opacity: 0;
@@ -752,10 +762,16 @@ mark {
   animation: card-enter-prev 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* The same duration and easing as the leaving card (SwipeGhost), so the two stay a fixed distance apart. */
+.card-arrive {
+  animation: card-arrive var(--arrive-ms) cubic-bezier(0.3, 0.55, 0.5, 1);
+}
+
 /* Reduced motion: no travel, a cross-fade instead (the leaving card fades out, see SwipeGhost). */
 @media (prefers-reduced-motion: reduce) {
   .card-enter-next,
-  .card-enter-prev {
+  .card-enter-prev,
+  .card-arrive {
     animation: card-fade 160ms ease-out;
   }
   .bar-fill,

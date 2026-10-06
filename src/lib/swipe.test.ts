@@ -11,6 +11,7 @@ import {
   decideRelease,
   dragOffset,
   planExit,
+  arrivalOf,
   velocityOf,
 } from './swipe'
 
@@ -127,5 +128,43 @@ describe('the drag follows the finger, with resistance where there is no card', 
     expect(dragOffset(100, false, true)).toBe(100)
     expect(dragOffset(-100, false, true)).toBe(-100 * RESISTANCE)
     expect(dragOffset(100, true, false)).toBe(100 * RESISTANCE)
+  })
+})
+
+describe('the arriving card shares a strip with the leaving one', () => {
+  const exit = (dx: number, over: Partial<Parameters<typeof planExit>[0]> = {}) => planExit({ dx, velocity: dx < 0 ? -1 : 1, width: 360, reducedMotion: false, ...over })
+
+  it('swipe left: the old card leaves to the left, so the new one starts to the right of it, one screen plus gutter away', () => {
+    const plan = exit(-80)
+    const arrival = arrivalOf(plan)!
+    expect(plan.to).toBeLessThan(0)
+    expect(arrival.from).toBe(-80 + 408)
+    expect(arrival.from).toBeGreaterThan(0)
+  })
+
+  it('swipe right: the mirror — the new card starts to the left', () => {
+    const plan = exit(90)
+    const arrival = arrivalOf(plan)!
+    expect(plan.to).toBeGreaterThan(0)
+    expect(arrival.from).toBe(90 - 408)
+    expect(arrival.from).toBeLessThan(0)
+  })
+
+  it('the gap to the leaving card is the same at every moment: they only differ by the strip length', () => {
+    for (const dx of [-200, -61, 75, 240]) {
+      const plan = exit(dx)
+      const arrival = arrivalOf(plan)!
+      for (const progress of [0, 0.25, 0.5, 1]) {
+        const leaving = plan.from + (plan.to - plan.from) * progress
+        const arriving = arrival.from * (1 - progress)
+        expect(Math.abs(arriving - leaving)).toBeCloseTo(360 + 48, 6)
+        expect(Math.sign(arriving - leaving)).toBe(-Math.sign(plan.to))
+      }
+      expect(arrival.duration).toBe(plan.duration)
+    }
+  })
+
+  it('reduced motion: no travel at all, just the fade', () => {
+    expect(arrivalOf(exit(-80, { reducedMotion: true }))).toBeNull()
   })
 })
