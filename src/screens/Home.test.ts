@@ -3,9 +3,10 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from '../data/dictionary'
-import { highlightTarget } from '../data/headword'
+import { headword, highlightTarget } from '../data/headword'
+import { lastDays } from '../data/metrics'
 import { parseFallbackExamples, parseRioOverlay } from '../data/rio'
-import { hashString, pickWordOfTheDay, wordOfTheDayPool } from '../data/wordOfDay'
+import { hashString, pickWordOfTheDay, wordOfTheDay, wordOfTheDayPool } from '../data/wordOfDay'
 import { createWriteQueue } from '../data/writeQueue'
 import { parseSettings } from '../data/settings'
 import type { Word } from '../data/types'
@@ -89,45 +90,100 @@ describe('Home structure', () => {
   })
 })
 
-describe('the status row', () => {
-  it('shows the streak and today\'s new words against the daily limit', () => {
-    const html = render({}, undefined, { streak_count: 4, streak_last_activity_date: TODAY, new_words_learned_today_count: 3, new_words_learned_today_date: TODAY, daily_new_word_limit: 12 })
-    expect(html).toMatch(/<span>4-day streak<\/span>/)
-    expect(html).toContain('<span>Today 3 / 12</span>')
+describe('the status row: the week of dots and the streak they show', () => {
+  const dotsOf = (html: string) => [...html.matchAll(/<span class="streak-day[^"]*" data-date="([\d-]+)"><span class="(streak-dot[^"]*)"><\/span><span class="streak-letter">(\w)<\/span><\/span>/g)].map((m) => ({ date: m[1], cls: m[2], letter: m[3] }))
+
+  it('seven dots, six days ago on the left and today on the right, each with a one-letter weekday label (week starts Monday)', () => {
+    const dots = dotsOf(render({ activity: new Set<string>() }))
+    expect(dots.map((d) => d.date)).toEqual(['2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05'])
+    // 5 October 2026 is a Monday: the week reads Tue Wed Thu Fri Sat Sun Mon
+    expect(dots.map((d) => d.letter).join('')).toBe('TWTFSSM')
   })
 
-  it('counts nothing learned today when the stored counter is from another day, and a lapsed streak as 0', () => {
-    const html = render({}, undefined, { streak_count: 4, streak_last_activity_date: '2026-09-20', new_words_learned_today_count: 9, new_words_learned_today_date: '2026-10-04' })
-    expect(html).toContain('<span>0-day streak</span>')
-    expect(html).toContain('<span>Today 0 / 10</span>')
+  it('active days are filled, the rest are not, and today is ringed even when inactive', () => {
+    const dots = dotsOf(render({ activity: new Set(['2026-10-04', '2026-10-02', '2026-10-01']) }))
+    expect(dots.filter((d) => d.cls.includes('is-active')).map((d) => d.date)).toEqual(['2026-10-01', '2026-10-02', '2026-10-04'])
+    expect(dots.filter((d) => d.cls.includes('is-today')).map((d) => d.date)).toEqual(['2026-10-05'])
+    expect(dots[6].cls).toBe('streak-dot is-today') // today inactive: ringed, not filled
+    const active = dotsOf(render({ activity: new Set(['2026-10-05']) }))[6]
+    expect(active.cls).toBe('streak-dot is-active is-today') // today active: filled and ringed
   })
 
-  it('seven dots for the last seven days, active ones teal, from the server read', () => {
-    const activity = new Set(['2026-10-05', '2026-10-03', '2026-09-30'])
-    const html = render({ activity })
-    expect(html.match(/class="streak-dot[ "]/g)).toHaveLength(7)
-    expect(html.match(/streak-dot is-active/g)).toHaveLength(3)
-    expect(html).toContain('aria-label="Active on 3 of the last 7 days"')
-    // today is the last dot
-    expect(html.lastIndexOf('streak-dot is-active')).toBeGreaterThan(html.lastIndexOf('class="streak-dot"') - 1)
-    // days outside the week are ignored
-    expect(render({ activity: new Set(['2026-09-01']) }).match(/streak-dot is-active/g)).toBeNull()
+  it('days outside the week are ignored, and today\'s dot is lit by this device\'s own row before the server has it', () => {
+    expect(dotsOf(render({ activity: new Set(['2026-09-01']) })).some((d) => d.cls.includes('is-active'))).toBe(false)
+    const local = render({ activity: new Set<string>(), metrics: { captureStartOfDaySnapshotIfNeeded: () => {}, today: () => ({ active: true }) } })
+    expect(dotsOf(local).filter((d) => d.cls.includes('is-active')).map((d) => d.date)).toEqual(['2026-10-05'])
+    expect(local).toContain('<span>1-day streak</span>')
   })
 
-  it("today's dot is lit by this device's own row even before the server has it", () => {
-    const html = render({ activity: new Set<string>(), metrics: { captureStartOfDaySnapshotIfNeeded: () => {}, today: () => ({ active: true }) } })
-    expect(html.match(/streak-dot is-active/g)).toHaveLength(1)
-    const idle = render({ activity: new Set<string>(), metrics: { captureStartOfDaySnapshotIfNeeded: () => {}, today: () => null } })
-    expect(idle.match(/streak-dot is-active/g)).toBeNull()
+  it('the streak number is read off the dots: consecutive active days ending today', () => {
+    expect(render({ activity: new Set(['2026-10-05', '2026-10-04', '2026-10-03']) })).toContain('<span>3-day streak</span>')
+    expect(render({ activity: new Set(['2026-10-05']) })).toContain('<span>1-day streak</span>')
   })
 
-  it('without the server read (failed, or not yet back) there are no dots, and nothing else changes', () => {
-    const html = render({ activity: null })
-    expect(html).not.toContain('streak-dot')
-    expect(html).not.toContain('streak-dots')
-    expect(html).toContain('-day streak')
-    expect(html).toContain('Today ')
-    expect(html.match(/class="tile /g)).toHaveLength(4)
+  it('…or ending yesterday, while today has no activity yet', () => {
+    expect(render({ activity: new Set(['2026-10-04', '2026-10-03']) })).toContain('<span>2-day streak</span>')
+  })
+
+  it('a gap ends the streak; an old run does not count; no recent activity is 0', () => {
+    expect(render({ activity: new Set(['2026-10-05', '2026-10-03', '2026-10-02']) })).toContain('<span>1-day streak</span>')
+    expect(render({ activity: new Set(['2026-10-02', '2026-10-01', '2026-09-30']) })).toContain('<span>0-day streak</span>')
+    expect(render({ activity: new Set<string>() })).toContain('<span>0-day streak</span>')
+  })
+
+  it('the stored streak count in the settings no longer drives the number: the dots do', () => {
+    const html = render({ activity: new Set(['2026-10-05', '2026-10-04']) }, undefined, { streak_count: 30, streak_last_activity_date: TODAY })
+    expect(html).toContain('<span>2-day streak</span>')
+    expect(html).not.toContain('30-day')
+  })
+
+  const lastNDays = (n: number) => lastDays(NOW, 30).slice(30 - n)
+
+  it('a streak longer than the week shows its true number, while only seven dots are drawn', () => {
+    const html = render({ activity: new Set(lastNDays(12)) })
+    expect(dotsOf(html)).toHaveLength(7)
+    expect(dotsOf(html).every((d) => d.cls.includes('is-active'))).toBe(true)
+    expect(html).toContain('<span>12-day streak</span>')
+    expect(render({ activity: new Set(lastNDays(7)) })).toContain('<span>7-day streak</span>') // exactly a week: no "+", the day before is empty
+    expect(render({ activity: new Set(lastNDays(8)) })).toContain('<span>8-day streak</span>')
+    expect(render({ activity: new Set(lastNDays(29)) })).toContain('<span>29-day streak</span>')
+  })
+
+  it('a long streak that ends yesterday (today still open) counts too', () => {
+    const days = lastDays(NOW, 30)
+    expect(render({ activity: new Set(days.slice(30 - 21, 29)) })).toContain('<span>20-day streak</span>')
+  })
+
+  it('only a run that reaches the 30-day edge reads "30+"', () => {
+    expect(render({ activity: new Set(lastNDays(30)) })).toContain('<span>30+ day streak</span>')
+    expect(render({ activity: new Set(lastNDays(29)) })).not.toContain('+ day streak')
+    expect(render({ activity: new Set(lastNDays(12)) })).not.toContain('+ day streak')
+  })
+
+  it('a gap in the last month ends the run, however long the older streak was', () => {
+    const days = lastDays(NOW, 30)
+    const withGap = days.filter((d) => d !== days[30 - 10]) // nine days ago is missing
+    expect(render({ activity: new Set(withGap) })).toContain('<span>9-day streak</span>')
+  })
+
+  it('without the dots\' data (still loading, or the read failed) there is no row, no dots and no number', () => {
+    for (const activity of [null, undefined]) {
+      const html = render({ activity })
+      expect(html).not.toContain('home-status')
+      expect(html).not.toContain('streak')
+    }
+    expect(render({ activity: null }).match(/class="tile /g)).toHaveLength(4)
+  })
+
+  it('the "Today N / M" text is gone', () => {
+    const html = render({ activity: new Set(['2026-10-05']) }, undefined, { new_words_learned_today_count: 3, new_words_learned_today_date: TODAY, daily_new_word_limit: 12 })
+    expect(html).not.toContain('Today')
+    expect(html).not.toContain('3 / 12')
+    expect(readFileSync('src/strings.ts', 'utf8')).not.toMatch(/Today \$\{/)
+  })
+
+  it('the dots label for screen readers counts the active days', () => {
+    expect(render({ activity: new Set(['2026-10-05', '2026-10-03']) })).toContain('aria-label="Active on 2 of the last 7 days"')
   })
 })
 
@@ -297,7 +353,7 @@ describe('the word of the day card', () => {
     expect(picks.size).toBeGreaterThan(5)
   })
 
-  it('does not depend on the user\'s progress, the order of the words, or what else is in the dictionary', () => {
+  it('does not depend on what the user has learned, the order of the words, or what else is in the dictionary', () => {
     const base = pickWordOfTheDay(real, NOW)?.esWord
     expect(base).toBeTruthy()
     const learnedEverything = real.map((w) => ({ ...w, repetitions: 3, nextReview: past }))
@@ -306,6 +362,87 @@ describe('the word of the day card', () => {
     expect(pickWordOfTheDay([...real].reverse(), NOW)?.esWord).toBe(base)
     expect(pickWordOfTheDay(real.filter((w) => w.rio?.example), NOW)?.esWord).toBe(base)
     expect(headwordOf(render({}, real))).toBeTruthy()
+  })
+
+  describe('a word marked as known is never the word of the day', () => {
+    const pool = wordOfTheDayPool(real)
+    const todays = pickWordOfTheDay(real, NOW)!
+    const at = pool.findIndex((w) => w.esWord === todays.esWord)
+    const hide = (...names: string[]) => real.map((w) => (names.includes(w.esWord) ? { ...w, isHidden: true } : w))
+
+    it('with nothing known, the pick is the date\'s own place in the list', () => {
+      expect(at).toBeGreaterThanOrEqual(0)
+      expect(todays.isHidden).toBe(false)
+    })
+
+    it('if the day\'s pick is known, the next candidate in the list takes over', () => {
+      const next = pool[(at + 1) % pool.length]
+      expect(pickWordOfTheDay(hide(todays.esWord), NOW)?.esWord).toBe(next.esWord)
+      expect(pickWordOfTheDay(hide(todays.esWord), NOW)?.esWord).not.toBe(todays.esWord)
+    })
+
+    it('and keeps falling through while the following candidates are known too, wrapping at the end of the list', () => {
+      const run = [0, 1, 2].map((k) => pool[(at + k) % pool.length].esWord)
+      expect(pickWordOfTheDay(hide(...run), NOW)?.esWord).toBe(pool[(at + 3) % pool.length].esWord)
+      // from the last candidate on, the search wraps to the first
+      const lastDay = pool.length - 1
+      const wrapped = hide(pool[lastDay].esWord)
+      let found: Date | null = null
+      for (let d = 0; d < 400 && !found; d++) {
+        const date = new Date(2027, 0, 1 + d, 12)
+        if (hashString(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`) % pool.length === lastDay) found = date
+      }
+      expect(found).not.toBeNull()
+      expect(pickWordOfTheDay(wrapped, found!)?.esWord).toBe(pool[0].esWord)
+    })
+
+    it('is deterministic: the same known words on the same day always give the same fallback', () => {
+      const known = hide(todays.esWord, pool[(at + 1) % pool.length].esWord)
+      expect(pickWordOfTheDay(known, NOW)?.esWord).toBe(pickWordOfTheDay([...known].reverse(), NOW)?.esWord)
+      expect(pickWordOfTheDay(known, NOW)?.esWord).toBe(pickWordOfTheDay(known, new Date(2026, 9, 5, 23, 0))?.esWord)
+    })
+
+    it('known words that are not the pick change nothing, and un-knowing the pick brings it back', () => {
+      const others = pool.filter((w) => w.esWord !== todays.esWord).slice(0, 5).map((w) => w.esWord)
+      expect(pickWordOfTheDay(hide(...others), NOW)?.esWord).toBe(todays.esWord)
+      expect(pickWordOfTheDay(real, NOW)?.esWord).toBe(todays.esWord) // after undo nothing is hidden again
+    })
+
+    it('every other day is unaffected too: hiding one word only moves the days that would have picked it', () => {
+      let moved = 0
+      for (let d = 0; d < 60; d++) {
+        const date = new Date(2026, 9, 1 + d, 12)
+        const before = pickWordOfTheDay(real, date)!
+        const after = pickWordOfTheDay(hide(todays.esWord), date)!
+        if (before.esWord === todays.esWord) {
+          moved++
+          expect(after.esWord).not.toBe(todays.esWord)
+        } else {
+          expect(after.esWord).toBe(before.esWord)
+        }
+      }
+      expect(moved).toBeGreaterThanOrEqual(1) // the day under test itself
+    })
+
+    it('with every candidate known there is no word of the day (the card is simply not shown)', () => {
+      const everyone = real.map((w) => (w.rio?.example ? { ...w, isHidden: true } : w))
+      expect(pickWordOfTheDay(everyone, NOW)).toBeNull()
+      expect(wordOfTheDay(everyone, parseSettings({}), NOW)).toBeNull()
+      expect(render({}, everyone)).not.toContain('class="wotd"')
+    })
+
+    it('the card on Home shows the fallback when the pick is known, never the known word', () => {
+      const html = render({}, hide(todays.esWord))
+      const shown = html.match(/class="wotd-word">(.*?)</)![1]
+      expect(shown).not.toBe(headword(todays).text)
+      const fallback = pool[(at + 1) % pool.length]
+      expect(shown).toBe(headword(fallback).text)
+    })
+
+    it('it is still not affected by learning: only the known (hidden) flag matters', () => {
+      const learned = real.map((w) => ({ ...w, repetitions: 4, nextReview: past }))
+      expect(pickWordOfTheDay(learned, NOW)?.esWord).toBe(todays.esWord)
+    })
   })
 
   it('the pick comes only from overlay words with an example whose target can be highlighted', () => {

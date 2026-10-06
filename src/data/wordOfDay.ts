@@ -24,10 +24,21 @@ export function wordOfTheDayPool(words: readonly Word[]): Word[] {
     .sort((a, b) => (a.esWord.toLowerCase() < b.esWord.toLowerCase() ? -1 : a.esWord.toLowerCase() > b.esWord.toLowerCase() ? 1 : 0))
 }
 
-/** The word for a local date; null only when no overlay word has a usable example. */
+/**
+ * The word for a local date. The date picks a place in the fixed candidate list; a word the user has marked as
+ * known (hidden) is never shown, so if the pick is one the search moves on to the next candidate, wrapping at the
+ * end of the list. That keeps the day's word the same as ever unless it is a known one, and the same hidden words
+ * always lead to the same fallback. Null when no candidate is left (none have an example, or all are known).
+ */
 export function pickWordOfTheDay(words: readonly Word[], now: Date): Word | null {
   const pool = wordOfTheDayPool(words)
-  return pool.length === 0 ? null : pool[hashString(localDateKey(now)) % pool.length]
+  if (pool.length === 0) return null
+  const start = hashString(localDateKey(now)) % pool.length
+  for (let step = 0; step < pool.length; step++) {
+    const word = pool[(start + step) % pool.length]
+    if (!word.isHidden) return word
+  }
+  return null
 }
 
 export interface WordOfTheDay {

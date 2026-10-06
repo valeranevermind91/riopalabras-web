@@ -2,11 +2,10 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { learnedToday } from '../data/daily'
-import { localDateKey } from '../data/dates'
-import { lastDays, type MetricsRecorder } from '../data/metrics'
+import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats, type Stats } from '../data/stats'
+import { DOT_COUNT, STREAK_WINDOW, activityDots, streakFromDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
 import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
@@ -32,7 +31,7 @@ interface HomeScreenProps {
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> & Partial<Pick<MetricsRecorder, 'today'>> | null
   /** The theme toggle in the header; absent where there is nothing to toggle. */
   theme?: { choice: ThemeChoice; scheme: Scheme; onCycle: () => void }
-  /** Dates with activity in the last 7 days, read from the server; null hides the dots. */
+  /** Dates with activity in the last 30 days, read from the server; null hides the dots and the streak. */
   activity?: ReadonlySet<string> | null
   /** "Now", injectable so the word of the day and the dots are testable. */
   now?: Date
@@ -64,7 +63,6 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
   const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze }) : []
   const now = nowProp ?? new Date()
-  const todayKey = localDateKey(now)
 
   return (
     <main className="screen home">
@@ -72,7 +70,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
       {stats && data.status === 'ready' ? (
         <>
-          <StatusRow stats={stats} data={data.data} activity={activity} todayActive={metrics?.today?.(now)?.active === true} todayKey={todayKey} now={now} />
+          <StatusRow activity={activity} todayActive={metrics?.today?.(now)?.active === true} now={now} />
 
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
@@ -119,23 +117,32 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   )
 }
 
-/** Seven dots (the last week, today last) and the streak on the left; today's progress against the daily limit on the right. */
-function StatusRow({ stats, data, activity, todayActive, todayKey, now }: { stats: Stats; data: UserData; activity: ReadonlySet<string> | null; todayActive: boolean; todayKey: string; now: Date }) {
-  const days = lastDays(now)
-  const active = activity ? days.filter((d) => activity.has(d) || (d === todayKey && todayActive)) : []
+/**
+ * The week of dots, six days ago to today, each with its weekday letter, and the streak that ends at them.
+ * The streak number is read off the same rows (consecutive active days ending today or yesterday, looking back
+ * up to 30 days), so the dots and the number always agree. Without the dots' data (not loaded, or the read failed) there is nothing to agree with:
+ * the whole row is left out, and no number is shown.
+ */
+function StatusRow({ activity, todayActive, now }: { activity: ReadonlySet<string> | null; todayActive: boolean; now: Date }) {
+  if (!activity) return null
+  // The streak is read off the whole window (30 days); only the last seven are drawn.
+  const days = activityDots(now, activity, todayActive, STREAK_WINDOW)
+  const dots = days.slice(-DOT_COUNT)
+  const streak = streakFromDots(days)
+  const activeDays = dots.filter((d) => d.active).length
   return (
     <div className="home-status">
       <div className="streak">
-        {activity && (
-          <span className="streak-dots" role="img" aria-label={strings.home.streakDots(active.length)}>
-            {days.map((d) => (
-              <span key={d} className={active.includes(d) ? 'streak-dot is-active' : 'streak-dot'} />
-            ))}
-          </span>
-        )}
-        <span>{strings.home.streak(stats.streak)}</span>
+        <span className="streak-dots" role="img" aria-label={strings.home.streakDots(activeDays)}>
+          {dots.map((d) => (
+            <span key={d.date} className={d.today ? 'streak-day is-today' : 'streak-day'} data-date={d.date}>
+              <span className={`streak-dot${d.active ? ' is-active' : ''}${d.today ? ' is-today' : ''}`} />
+              <span className="streak-letter">{d.letter}</span>
+            </span>
+          ))}
+        </span>
+        <span>{strings.home.streak(streak.count, streak.atLeast)}</span>
       </div>
-      <span>{strings.home.today(learnedToday(data.settings, now), data.settings.dailyNewWordLimit)}</span>
     </div>
   )
 }

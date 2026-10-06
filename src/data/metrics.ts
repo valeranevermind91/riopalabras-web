@@ -379,11 +379,12 @@ export function lastDays(now: Date, count = 7): string[] {
 }
 
 /**
- * Home's activity dots: which of the last 7 days had activity, read once from the server (read-only,
- * display only; nothing else depends on it). Rejects on any failure: the caller just hides the dots.
+ * Home's activity: which of the last 30 days had activity, read once from the server in one query (read-only,
+ * display only; nothing else depends on it). The week of dots is the last seven of them and the streak number is
+ * read off all thirty. Rejects on any failure: the caller just hides the dots and the number.
  */
-export async function fetchRecentActivity(client: SupabaseClient, userId: string, now: Date = new Date()): Promise<ReadonlySet<string>> {
-  const days = lastDays(now)
+export async function fetchRecentActivity(client: SupabaseClient, userId: string, now: Date = new Date(), count = 30): Promise<ReadonlySet<string>> {
+  const days = lastDays(now, count)
   const { data, error } = await client.from('user_daily_metrics').select('date, active').eq('user_id', userId).gte('date', days[0]).lte('date', days[days.length - 1])
   if (error) throw new Error(`user_daily_metrics: ${error.message}`)
   return new Set((data ?? []).filter((r: { date: unknown; active: unknown }) => r.active === true && typeof r.date === 'string').map((r: { date: string }) => r.date))

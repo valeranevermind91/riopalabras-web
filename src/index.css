@@ -324,23 +324,47 @@ dd {
 .streak {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .streak-dots {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+}
+
+.streak-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 }
 
 .streak-dot {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid transparent;
   border-radius: 50%;
   background: var(--border);
 }
 
 .streak-dot.is-active {
   background: var(--teal);
+}
+
+/* Today is always ringed, so it can be found even on a day without activity. */
+.streak-dot.is-today {
+  border-color: var(--teal);
+}
+
+.streak-letter {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.streak-day.is-today .streak-letter {
+  color: var(--text-2);
 }
 
 .notice {

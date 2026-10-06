@@ -25,11 +25,12 @@ describe('the activity dots data', () => {
     return { client: { from: () => builder } as never, calls }
   }
 
-  it('reads the active days of the last week (read-only, one query)', async () => {
+  it('reads the active days of the last 30 days (read-only, one query)', async () => {
     const c = clientReturning({ data: [{ date: '2026-10-05', active: true }, { date: '2026-10-04', active: false }, { date: '2026-10-02', active: true }], error: null })
     const days = await fetchRecentActivity(c.client, 'user-1', new Date(2026, 9, 5, 12))
     expect([...days].sort()).toEqual(['2026-10-02', '2026-10-05'])
-    expect(c.calls).toEqual([['select', 'date, active'], ['eq', 'user_id', 'user-1'], ['gte', 'date', '2026-09-29'], ['lte', 'date', '2026-10-05']])
+    expect(c.calls.filter(([k]) => k === 'select')).toHaveLength(1) // one query, not one per day
+    expect(c.calls).toEqual([['select', 'date, active'], ['eq', 'user_id', 'user-1'], ['gte', 'date', '2026-09-06'], ['lte', 'date', '2026-10-05']]) // 30 days: 6 September to today
   })
 
   it('rejects on a server error, so the caller can hide the dots', async () => {

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { fetchRecentActivity } from '../data/metrics'
 
 /**
- * The days (local dates) with activity in the last week, read once when the user is signed in. Null
+ * The days (local dates) with activity in the last 30, read once when the user is signed in. Null
  * until it arrives and for good if the read fails: Home then simply shows no dots, and nothing else is affected.
  */
 export function useRecentActivity(client: SupabaseClient | null, userId: string | null): ReadonlySet<string> | null {
