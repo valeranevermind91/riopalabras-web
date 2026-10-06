@@ -7,7 +7,7 @@ import { strings } from '../strings'
 import { HighlightedSentence } from './HighlightedSentence'
 import { RegionTag } from './RegionTag'
 import { RegisterLabel } from './RegisterLabel'
-import { RelationBlock } from './RelationBlock'
+import { RelationLines, RelationNote } from './RelationBlock'
 
 export function TranslationRow({ label, text }: { label: string; text: string }) {
   return (
@@ -32,28 +32,35 @@ export function ExampleBlock({ word }: { word: Word }) {
   )
 }
 
-/** A word's full card. Shared by Learn now; Review and the Words tab reuse it. */
+/** A word's full card: pills, headword, the standard-word line, then the example, the translations and the note. Shared by Learn, the Review answer, the word of the day and the Debug preview. */
 export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
   const head = headword(word)
   const translations = translationsFor(word)
+  const relation = relationFor(word)
 
   return (
     <article className="word-card">
-      <h2 className="wc-headword">{head.text}</h2>
-
       <div className="wc-meta">
-        {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
         <RegionTag region={headwordRegion(word)} />
+        {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         <RegisterLabel register={headwordRegister(word)} />
       </div>
 
-      <RelationBlock relation={relationFor(word)} lang={lang} />
+      <h2 className="wc-headword">{head.text}</h2>
 
-      <TranslationRow label={strings.card.en} text={translations.en} />
-      <TranslationRow label={strings.card.ru} text={translations.ru} />
+      <RelationLines relation={relation} lang={lang} />
+
+      <hr className="wc-divider" />
 
       <ExampleBlock word={word} />
+
+      <div className="wc-translations">
+        <TranslationRow label={strings.card.en} text={translations.en} />
+        <TranslationRow label={strings.card.ru} text={translations.ru} />
+      </div>
+
+      <RelationNote relation={relation} lang={lang} />
     </article>
   )
 }

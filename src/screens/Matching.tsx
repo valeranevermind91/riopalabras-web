@@ -82,7 +82,7 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
 
   if (!round) {
     return (
-      <main className="screen">
+      <main className="screen practice">
         {header}
         <section className="post-batch">
           <h2>{t.matchingInsufficient}</h2>
@@ -99,7 +99,7 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
   if (isMatchingComplete(round)) {
     const canContinue = matchingEligibleCount(data.words) >= PRACTICE_MIN_WORDS
     return (
-      <main className="screen">
+      <main className="screen practice">
         {header}
         <section className="post-batch">
           <h2>{t.groupComplete}</h2>
@@ -120,9 +120,10 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
 
   const tileClass = (side: MatchSide, id: string) => {
     const selected = (side === 'left' ? round.selectedLeft : round.selectedRight) === id
-    if (round.matched.has(id)) return 'match-tile is-matched'
-    if (selected) return round.wrong ? 'match-tile is-wrong' : 'match-tile is-selected'
-    return 'match-tile'
+    const base = side === 'left' ? 'match-tile is-es' : 'match-tile'
+    if (round.matched.has(id)) return `${base} is-matched`
+    if (selected) return `${base} ${round.wrong ? 'is-wrong' : 'is-selected'}`
+    return base
   }
 
   const column = (side: MatchSide) => (
@@ -143,7 +144,7 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
   )
 
   return (
-    <main className="screen">
+    <main className="screen practice">
       {header}
       <p className="match-hint">{t.matchingHint}</p>
       <div className="match-grid">

@@ -90,7 +90,8 @@ describe('Matching screen', () => {
 
   it('shows two columns of five: the Spanish headwords and the first Russian glosses', () => {
     const html = render(words(8))
-    expect(html.match(/class="match-tile"/g)).toHaveLength(10)
+    expect(html.match(/class="match-tile[ "]/g)).toHaveLength(10)
+    expect(html.match(/match-tile is-es/g)).toHaveLength(5) // the Spanish column uses the display face
     expect(html.match(/palabra\d/g)!.length).toBe(5)
     expect(html).not.toContain('другое') // first gloss only, never the full translation
     expect(html).toMatch(/слово[а-к]{2}/) // the gloss itself is word content: Russian
@@ -121,8 +122,9 @@ describe('Cloze screen and question', () => {
     const html = render(words(12), { show_ru_translation: false, show_en_translation: true })
     expect(html).toContain('role="progressbar"')
     expect(html).toContain('aria-valuemax="10"') // ten questions from twelve words
-    expect(html).toContain('_____')
-    expect(html).toMatch(/\(EN: word\d+, other\)/)
+    expect(html).toContain('aria-label="Esta es la _____ del día."') // the plain-text blank, for screen readers
+    expect(html).toMatch(/<span class="cz-cue-pill">EN<\/span> word\d+, other/)
+    expect(html.match(/class="cz-blank"/g)).toHaveLength(1) // one blank: a fixed-width rule
     for (const label of ['Hint', 'Reveal', 'Check']) expect(html).toContain(label)
     expect(html).not.toContain('Continue') // there is only Check until an answer exists
   })
@@ -132,7 +134,7 @@ describe('Cloze screen and question', () => {
     for (const item of items) {
       const html = renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings({}), lang: 'en', onAnswered: () => {} }))
       expect(html).not.toContain(item.target.target)
-      expect(html).toContain('_____')
+      expect(html).toContain('class="cz-blank"')
       expect(html).not.toMatch(/<mark/)
     }
   })
@@ -140,11 +142,11 @@ describe('Cloze screen and question', () => {
   it('the cue follows the translation settings (RU, EN, both)', () => {
     const item = clozePool(words(6))[0]
     const cue = (raw: Record<string, unknown>) => renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings(raw), lang: 'ru', onAnswered: () => {} }))
-    expect(cue({ show_ru_translation: true, show_en_translation: false })).toMatch(/\(RU: слово/)
-    expect(cue({ show_ru_translation: true, show_en_translation: false })).not.toContain('(EN:')
+    expect(cue({ show_ru_translation: true, show_en_translation: false })).toMatch(/cz-cue-pill">RU<\/span> слово/)
+    expect(cue({ show_ru_translation: true, show_en_translation: false })).not.toContain('>EN<')
     const both = cue({ show_ru_translation: true, show_en_translation: true })
-    expect(both).toContain('(RU:')
-    expect(both).toContain('(EN:')
+    expect(both).toContain('>RU</span>')
+    expect(both).toContain('>EN</span>')
   })
 
   it('the controls are English even when the translations are Russian (the default); only the cue is Russian', () => {
@@ -152,7 +154,7 @@ describe('Cloze screen and question', () => {
     for (const label of ['Hint', 'Reveal', 'Check']) expect(html).toContain(label)
     for (const label of ['Подсказка', 'Показать', 'Проверить', 'Твой ответ']) expect(html).not.toContain(label)
     expect(html).toContain('<h1>Cloze</h1>')
-    expect(html).toMatch(/\(RU: слово/) // word content follows the translation setting
+    expect(html).toMatch(/cz-cue-pill">RU<\/span> слово/) // word content follows the translation setting
   })
 
   it('with fewer than 5 usable words it says so and offers the way home', () => {

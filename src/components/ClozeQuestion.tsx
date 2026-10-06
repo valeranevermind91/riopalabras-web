@@ -55,16 +55,29 @@ export function ClozeQuestion({ item, settings, lang, onAnswered }: ClozeQuestio
   return (
     <section className="cz-card">
       <div className="cz-top">
-        <p className="cz-sentence">
-          {answer
-            ? splitSentence(sentence, spans).map((part, i) => (part.target ? <mark key={i}>{part.text}</mark> : part.text))
-            : blankSentence(sentence, spans, CLOZE_BLANK)}
+        {/* The blank is a fixed-width rule: it never reflects the length of the answer. aria-label carries the plain-text blank for screen readers. */}
+        <p className="cz-sentence" aria-label={answer ? undefined : blankSentence(sentence, spans, CLOZE_BLANK)}>
+          {splitSentence(sentence, spans).map((part, i) =>
+            part.target ? (
+              answer ? (
+                <mark key={i}>{part.text}</mark>
+              ) : (
+                <span key={i} className="cz-blank" aria-hidden="true" />
+              )
+            ) : (
+              part.text
+            ),
+          )}
         </p>
-        {cue.map((line) => (
-          <p key={line.label} className="cz-cue">
-            ({line.label}: {line.text})
+        {cue.length > 0 && (
+          <p className="cz-cue">
+            {cue.map((line) => (
+              <span key={line.label} className="cz-cue-line">
+                <span className="cz-cue-pill">{line.label}</span> {line.text}{' '}
+              </span>
+            ))}
           </p>
-        ))}
+        )}
         <p className="cz-hint">{hintShown && !answer ? buildHint(target) : ''}</p>
         <p className={`cz-feedback cz-${fb?.tone ?? 'none'}`} role="status">
           {fb?.text ?? ''}

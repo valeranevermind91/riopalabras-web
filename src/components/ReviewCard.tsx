@@ -6,7 +6,7 @@ import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { RegionTag } from './RegionTag'
 import { RegisterLabel } from './RegisterLabel'
-import { RelationBlock } from './RelationBlock'
+import { RelationLines, RelationNote } from './RelationBlock'
 import { ExampleBlock, TranslationRow } from './WordCard'
 
 interface ReviewCardProps {
@@ -26,6 +26,7 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
   const translations = translationsFor(word)
   const region = headwordRegion(word)
   const register = headwordRegister(word)
+  const relation = relationFor(word)
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (revealed || (e.key !== 'Enter' && e.key !== ' ')) return
@@ -45,26 +46,31 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
       <div className="flip-inner">
         <div className="flip-face flip-front word-card" aria-hidden={revealed}>
           <div className="rf-center">
+            <div className="wc-meta">
+              {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+              <RegionTag region={region} />
+              <RegisterLabel register={register} />
+            </div>
             <h2 className="wc-headword rf-headword">{head.text}</h2>
-            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
-            <RegionTag region={region} />
-            <RegisterLabel register={register} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
 
         <div className="flip-face flip-back word-card" aria-hidden={!revealed} inert={!revealed}>
-          <h2 className="wc-headword rb-headword">{head.text}</h2>
-          {(region || register) && (
-            <div className="wc-meta rb-meta">
-              <RegionTag region={region} />
-              <RegisterLabel register={register} />
-            </div>
-          )}
-          <RelationBlock relation={relationFor(word)} lang={lang} />
-          <TranslationRow label={strings.card.en} text={translations.en} />
-          <TranslationRow label={strings.card.ru} text={translations.ru} />
+          <div className="wc-meta">
+            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+            <RegionTag region={region} />
+            <RegisterLabel register={register} />
+          </div>
+          <h2 className="wc-headword">{head.text}</h2>
+          <RelationLines relation={relation} lang={lang} />
+          <hr className="wc-divider" />
           <ExampleBlock word={word} />
+          <div className="wc-translations">
+            <TranslationRow label={strings.card.en} text={translations.en} />
+            <TranslationRow label={strings.card.ru} text={translations.ru} />
+          </div>
+          <RelationNote relation={relation} lang={lang} />
         </div>
       </div>
     </div>

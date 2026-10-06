@@ -149,16 +149,19 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
 
   return (
     <main className="screen">
-      {header}
-
-      {status.failed && <UnsavedBanner status={status} queue={queue} />}
-
-      <div className="learn-progress">
-        <span>{strings.review.cardNofM(index + 1, session.length)}</span>
-        <div className="bar" role="progressbar" aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
+      <header className="review-head">
+        {onBack && (
+          <button type="button" className="back-link" onClick={onBack}>
+            ‹ {strings.common.back}
+          </button>
+        )}
+        <div className="bar" role="progressbar" aria-label={strings.review.title} aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
           <div className="bar-fill" style={{ width: `${progress}%` }} />
         </div>
-      </div>
+        <span className="review-count">{strings.review.progress(index + 1, session.length)}</span>
+      </header>
+
+      {status.failed && <UnsavedBanner status={status} queue={queue} />}
 
       <div className="review-slot">
         <ReviewCard key={index} word={word} lang={langFromSettings(data.settings)} revealed={revealed} onReveal={reveal} />

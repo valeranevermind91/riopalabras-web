@@ -58,7 +58,7 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
 
   if (!session) {
     return (
-      <main className="screen">
+      <main className="screen practice">
         {header}
         <section className="post-batch">
           <h2>{t.clozeInsufficient}</h2>
@@ -75,7 +75,7 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
   if (done) {
     const canContinue = clozeEligibleCount(data.words) >= PRACTICE_MIN_WORDS
     return (
-      <main className="screen">
+      <main className="screen practice">
         {header}
         <section className="post-batch">
           <h2>{t.sessionComplete}</h2>
@@ -108,7 +108,7 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
   }
 
   return (
-    <main className="screen cz-screen">
+    <main className="screen practice cz-screen">
       {header}
       <div className="bar" role="progressbar" aria-label={t.progressLabel} aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
         <div className="bar-fill" style={{ width: `${((index + 1) / session.length) * 100}%` }} />
