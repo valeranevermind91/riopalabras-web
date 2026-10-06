@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MetricsRecorder } from '../data/metrics'
-import { DEFAULT_MAKE_DUE, MAX_MAKE_DUE, makeWordsDue, parseMakeDueCount, resetTodayMetrics } from '../data/testTools'
+import { DEFAULT_MAKE_DUE, MAX_MAKE_DUE, makeWordsDue, parseMakeDueCount, resetTodayMetrics, resetTodayNewWords } from '../data/testTools'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { confirmDialog } from '../lib/telegram'
@@ -32,6 +32,13 @@ export function TestingSection({ signedIn, data, queue, metrics }: TestingSectio
     const ok = await confirmDialog("TESTING: clear today's metrics row on this device and overwrite the server's row with zeros?")
     if (!ok) return
     setReport(resetTodayMetrics({ signedIn, metrics }).message)
+  }
+
+  const resetNewWords = async () => {
+    if (!signedIn || !data || !queue) return
+    const ok = await confirmDialog("TESTING: set today's new-word count back to 0, so Learn is available again? Your streak, your limit and your progress stay as they are.")
+    if (!ok) return
+    setReport(resetTodayNewWords({ signedIn, getSettings: data.getSettings, applySettings: data.applySettings, queue }).message)
   }
 
   const canMakeDue = signedIn && data !== null && queue !== null && n !== null
@@ -66,6 +73,13 @@ export function TestingSection({ signedIn, data, queue, metrics }: TestingSectio
       <div className="testing-row">
         <span>Reset today's metrics row</span>
         <button type="button" className="btn-small wp-off" disabled={!signedIn || metrics === null} onClick={() => void resetMetrics()}>
+          Reset
+        </button>
+      </div>
+
+      <div className="testing-row">
+        <span>Reset today's new words</span>
+        <button type="button" className="btn-small wp-off" disabled={!signedIn || data === null || queue === null} onClick={() => void resetNewWords()}>
           Reset
         </button>
       </div>

@@ -5,10 +5,12 @@ import { TestingSection } from '../components/TestingSection'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { createLocalMetricsStore, createMetricsRecorder, emptyRow, type MetricsStore } from './metrics'
-import { applyProgressUpdates } from './mutations'
+import { selectLearnBatch } from './learn'
+import { applyProgressUpdates, applySettingsPatch } from './mutations'
+import { computeRemainingToday } from './stats'
 import { rateWord } from './review'
 import { parseSettings } from './settings'
-import { DEFAULT_MAKE_DUE, MAX_MAKE_DUE, dueNowUpdates, makeWordsDue, parseMakeDueCount, resetTodayMetrics, selectWordsToMakeDue } from './testTools'
+import { DEFAULT_MAKE_DUE, MAX_MAKE_DUE, dueNowUpdates, makeWordsDue, parseMakeDueCount, resetTodayMetrics, resetTodayNewWords, selectWordsToMakeDue } from './testTools'
 import type { Word } from './types'
 import { createSupabaseWriteQueue } from './writeQueue'
 
@@ -203,7 +205,7 @@ describe('TestingSection', () => {
   const render = (props: Partial<Parameters<typeof TestingSection>[0]>) =>
     renderToStaticMarkup(createElement(TestingSection, { signedIn: false, data: null, queue: null, metrics: null, ...props }))
   const queue = { enqueueProgress: () => {} } as never
-  const data = { words: pool, applyProgress: () => {} } as never
+  const data = { words: pool, applyProgress: () => {}, applySettings: () => {}, getSettings: () => parseSettings({}) } as never
   const metrics = { resetToday: () => null }
 
   it('is clearly marked as a testing tool', () => {
@@ -211,13 +213,13 @@ describe('TestingSection', () => {
     expect(render({})).toContain('<h2>Testing</h2>')
   })
 
-  it('has both buttons disabled and says to sign in when signed out', () => {
+  it('has every button disabled and says to sign in when signed out', () => {
     const html = render({ signedIn: false, data, queue, metrics })
     expect(html).toContain('Sign in to use them.')
-    expect(html.match(/disabled=""/g)?.length).toBe(2)
+    expect(html.match(/disabled=""/g)?.length).toBe(3)
   })
 
-  it('enables both when signed in with data, the queue and the recorder', () => {
+  it('enables them all when signed in with data, the queue and the recorder', () => {
     const html = render({ signedIn: true, data, queue, metrics })
     expect(html).not.toContain('Sign in to use them.')
     expect(html).not.toContain('disabled=""')
@@ -225,7 +227,85 @@ describe('TestingSection', () => {
   })
 
   it('stays disabled while the data or the queue are not ready, even when signed in', () => {
-    expect(render({ signedIn: true, data: null, queue, metrics }).match(/disabled=""/g)?.length).toBe(1) // Make due only
-    expect(render({ signedIn: true, data, queue: null, metrics: null }).match(/disabled=""/g)?.length).toBe(2)
+    expect(render({ signedIn: true, data: null, queue, metrics }).match(/disabled=""/g)?.length).toBe(2) // Make due and the new-words reset need the data
+    expect(render({ signedIn: true, data, queue: null, metrics: null }).match(/disabled=""/g)?.length).toBe(3)
+  })
+})
+
+describe("reset today's new words", () => {
+  const NOW_LOCAL = new Date(2026, 9, 5, 12, 0)
+  const TODAY = '2026-10-05'
+
+  function session(raw: Record<string, unknown>) {
+    const fake = fakeSupabase()
+    let settings = parseSettings(raw)
+    const getSettings = () => settings
+    const queue = createSupabaseWriteQueue(fake.client, 'user-1', getSettings, { retryDelaysMs: [], sleep: () => Promise.resolve() })
+    const applySettings = (p: Record<string, unknown>) => (settings = applySettingsPatch(settings, p))
+    return { fake, queue, getSettings, applySettings, deps: { signedIn: true, getSettings, applySettings, queue, now: NOW_LOCAL } }
+  }
+  const atLimit = { daily_new_word_limit: 10, new_words_learned_today_count: 10, new_words_learned_today_date: TODAY, streak_count: 6, streak_last_activity_date: TODAY, learn_picks: ['x'] }
+  const fresh = Array.from({ length: 40 }, (_, i) => makeWord(`nueva${i}`, { rank: i + 1 }))
+
+  it('clears the count, and says what it did', () => {
+    const s = session(atLimit)
+    const report = resetTodayNewWords(s.deps)
+    expect(report).toEqual({ cleared: 10, message: "Today's new-word count reset from 10 to 0 (limit 10): Learn is available again." })
+    expect(s.getSettings().newWordsLearnedTodayCount).toBe(0)
+    expect(s.getSettings().newWordsLearnedTodayDate).toBe(TODAY)
+  })
+
+  it('Learn is available again: a day that was at the limit has a batch afterwards', () => {
+    const s = session(atLimit)
+    expect(computeRemainingToday(s.getSettings(), NOW_LOCAL)).toBe(0)
+    expect(selectLearnBatch(fresh, s.getSettings(), NOW_LOCAL).words).toHaveLength(0)
+    resetTodayNewWords(s.deps)
+    expect(computeRemainingToday(s.getSettings(), NOW_LOCAL)).toBe(10)
+    expect(selectLearnBatch(fresh, s.getSettings(), NOW_LOCAL).words).toHaveLength(10)
+  })
+
+  it('is written through the normal path: one settings write on the queue, with the whole blob and nothing else changed', async () => {
+    const s = session(atLimit)
+    resetTodayNewWords(s.deps)
+    await s.queue.flush()
+    const writes = s.fake.calls.filter((c) => c.table === 'user_settings')
+    expect(writes).toHaveLength(1)
+    expect(writes[0].rows).toMatchObject({ user_id: 'user-1', settings: { new_words_learned_today_count: 0, new_words_learned_today_date: TODAY, streak_count: 6, streak_last_activity_date: TODAY, daily_new_word_limit: 10, learn_picks: ['x'] } })
+    expect(s.fake.calls.filter((c) => c.table !== 'user_settings')).toHaveLength(0) // no progress, hidden or metrics write
+  })
+
+  it('does not touch the streak, the limit or any progress', () => {
+    const s = session(atLimit)
+    resetTodayNewWords(s.deps)
+    expect(s.getSettings()).toMatchObject({ streakCount: 6, streakLastActivityDate: TODAY, dailyNewWordLimit: 10 })
+  })
+
+  it('a count from another day counts as 0 already: nothing to reset, nothing written', async () => {
+    const s = session({ ...atLimit, new_words_learned_today_date: '2026-10-04' })
+    const report = resetTodayNewWords(s.deps)
+    expect(report).toEqual({ cleared: 0, message: "Today's new-word count is already 0 (limit 10): nothing was changed." })
+    await s.queue.flush()
+    expect(s.fake.calls).toHaveLength(0)
+  })
+
+  it('a partial count is cleared too', () => {
+    const s = session({ ...atLimit, new_words_learned_today_count: 4 })
+    expect(resetTodayNewWords(s.deps).cleared).toBe(4)
+    expect(s.getSettings().newWordsLearnedTodayCount).toBe(0)
+  })
+
+  it('does nothing unless signed in', async () => {
+    const s = session(atLimit)
+    const report = resetTodayNewWords({ ...s.deps, signedIn: false })
+    expect(report).toEqual({ cleared: 0, message: 'Not signed in: nothing was changed.' })
+    expect(s.getSettings().newWordsLearnedTodayCount).toBe(10)
+    await s.queue.flush()
+    expect(s.fake.calls).toHaveLength(0)
+  })
+
+  it('can be repeated: the second time there is nothing left to clear', () => {
+    const s = session(atLimit)
+    resetTodayNewWords(s.deps)
+    expect(resetTodayNewWords(s.deps).cleared).toBe(0)
   })
 })

@@ -1,7 +1,8 @@
+import { learnedToday } from './daily'
 import { localDateKey } from './dates'
 import type { MetricsRecorder } from './metrics'
 import { isReviewDue } from './stats'
-import type { ProgressUpdate, Word } from './types'
+import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import { hasTranslations, isReviewablePos } from './words'
 
 // Testing tools for the Debug screen. Nothing here is used by the learning flow.
@@ -81,4 +82,38 @@ export function resetTodayMetrics(deps: { signedIn: boolean; metrics: Pick<Metri
   return row
     ? { ok: true, message: `Today's metrics row (${localDateKey(now)}) cleared on this device and a zeroed row queued for the server.` }
     : { ok: false, message: 'Could not reset the metrics row.' }
+}
+
+export interface ResetNewWordsDeps {
+  signedIn: boolean
+  /** The latest settings, read now. */
+  getSettings: () => UserSettings
+  /** Optimistic: mirror the patch into the in-memory settings, so Home and Learn see it at once. */
+  applySettings: (patch: SettingsPatch) => void
+  queue: { enqueueSettings: (patch: SettingsPatch) => void }
+  now?: Date
+}
+
+export interface ResetNewWordsReport {
+  /** The count that was cleared (0 when there was nothing to clear). */
+  cleared: number
+  message: string
+}
+
+/**
+ * Sets today's new-word count back to 0 so the daily limit no longer blocks Learn. It is the same settings
+ * write Learn itself makes (new_words_learned_today_count and _date), through the normal write queue; the
+ * streak, the limit and every other setting are left alone. Does nothing unless signed in.
+ */
+export function resetTodayNewWords(deps: ResetNewWordsDeps): ResetNewWordsReport {
+  if (!deps.signedIn) return { cleared: 0, message: 'Not signed in: nothing was changed.' }
+  const now = deps.now ?? new Date()
+  const settings = deps.getSettings()
+  const learned = learnedToday(settings, now)
+  if (learned === 0) return { cleared: 0, message: `Today's new-word count is already 0 (limit ${settings.dailyNewWordLimit}): nothing was changed.` }
+
+  const patch: SettingsPatch = { new_words_learned_today_count: 0, new_words_learned_today_date: localDateKey(now) }
+  deps.applySettings(patch)
+  deps.queue.enqueueSettings(patch)
+  return { cleared: learned, message: `Today's new-word count reset from ${learned} to 0 (limit ${settings.dailyNewWordLimit}): Learn is available again.` }
 }
