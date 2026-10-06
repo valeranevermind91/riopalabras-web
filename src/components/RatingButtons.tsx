@@ -9,10 +9,10 @@ const RATINGS = [
   { quality: 4, label: strings.review.easy, tone: 'easy' },
 ] as const
 
-/** The four SM-2 ratings, each previewing the interval it would schedule. The label carries the meaning; colour only reinforces it. */
-export function RatingButtons({ word, onRate }: { word: Word; onRate: (quality: number) => void }) {
+/** The four SM-2 ratings (`hidden` keeps their place on screen, so the card above does not move when they appear), each previewing the interval it would schedule. The label carries the meaning; colour only reinforces it. */
+export function RatingButtons({ word, onRate, hidden = false }: { word: Word; onRate: (quality: number) => void; hidden?: boolean }) {
   return (
-    <div className="rating">
+    <div className={hidden ? 'rating is-hidden' : 'rating'} aria-hidden={hidden || undefined} inert={hidden || undefined}>
       <p className="rating-prompt">{strings.review.howWell}</p>
       <div className="rate-row">
         {RATINGS.map(({ quality, label, tone }) => (

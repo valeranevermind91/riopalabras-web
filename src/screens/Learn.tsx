@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
@@ -9,6 +10,7 @@ import type { UserData } from '../data/useUserData'
 import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
+import type { ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
 
@@ -77,9 +79,20 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // A committed swipe: the card that was let go keeps travelling (SwipeGhost) while the next one arrives.
+  const [leaving, setLeaving] = useState<{ id: number; index: number; plan: ExitPlan } | null>(null)
+  const leaveCount = useRef(0)
+  const clearLeaving = useCallback(() => setLeaving(null), [])
+  const commit = (delta: 1 | -1, plan: ExitPlan) => {
+    const next = index + delta
+    if (!reading || next < 0 || next > lastIndex) return
+    setLeaving({ id: ++leaveCount.current, index, plan })
+    go(delta)
+  }
+
   const swipe = useSwipe({
-    onNext: () => go(1),
-    onPrevious: () => go(-1),
+    onNext: (plan) => commit(1, plan),
+    onPrevious: (plan) => commit(-1, plan),
     canNext: index < lastIndex,
     canPrevious: index > 0,
     enabled: reading,
@@ -113,7 +126,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
   const progress = ((index + 1) / words.length) * 100
 
   return (
-    <main className="screen">
+    <main className="screen fill">
       <ScreenHeader title={strings.learn.title} onBack={onBack} />
 
       <div className="learn-progress">
@@ -123,9 +136,18 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
         </div>
       </div>
 
-      <div className="swipe-area" style={swipe.style} {...swipe.handlers}>
-        <div key={index} className={`card-enter card-enter-${direction}`}>
-          <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
+      <div className="swipe-area" {...swipe.handlers}>
+        <div className="swipe-stage">
+          <div className="swipe-layer" style={swipe.layerStyle}>
+            <div key={index} className={`card-enter card-enter-${direction}`}>
+              <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
+            </div>
+          </div>
+          {leaving && (
+            <SwipeGhost key={leaving.id} plan={leaving.plan} onDone={clearLeaving}>
+              <WordCard word={words[leaving.index]} lang={langFromSettings(data.settings)} />
+            </SwipeGhost>
+          )}
         </div>
       </div>
 

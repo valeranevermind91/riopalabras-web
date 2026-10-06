@@ -148,7 +148,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
   const progress = ((index + 1) / session.length) * 100
 
   return (
-    <main className="screen">
+    <main className="screen fill">
       <header className="review-head">
         {onBack && (
           <button type="button" className="back-link" onClick={onBack}>
@@ -167,7 +167,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
         <ReviewCard key={index} word={word} lang={langFromSettings(data.settings)} revealed={revealed} onReveal={reveal} />
       </div>
 
-      {revealed && <RatingButtons word={word} onRate={onRate} />}
+      <RatingButtons word={word} onRate={onRate} hidden={!revealed} />
     </main>
   )
 }

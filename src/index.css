@@ -253,6 +253,22 @@ dd {
   cursor: pointer;
 }
 
+/*
+ * Reach: Review and Learn fill the screen. The card stretches down to the controls, the controls sit at
+ * the bottom with only the page padding below them, and a card whose content is too tall scrolls inside itself.
+ */
+.fill {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding-bottom: calc(var(--page-pad) + env(safe-area-inset-bottom, 0px));
+}
+
+.fill > * {
+  flex: none;
+}
+
 /* ---- Progress bars ---- */
 
 .bar {
@@ -544,9 +560,43 @@ mark {
 }
 
 .swipe-area {
-  margin: var(--block-gap) 0;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0 0 var(--block-gap);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+/* One grid cell holds the card in front and, for a moment, the card that was just swiped away. */
+.swipe-stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+}
+
+.swipe-layer,
+.swipe-ghost {
+  grid-area: 1 / 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.swipe-layer > .card-enter {
+  height: 100%;
+}
+
+.swipe-ghost {
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.swipe-layer .word-card,
+.swipe-ghost .word-card {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .learn-nav {
@@ -591,7 +641,7 @@ mark {
 @keyframes card-enter-next {
   from {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translateX(36px);
   }
   to {
     opacity: 1;
@@ -602,7 +652,7 @@ mark {
 @keyframes card-enter-prev {
   from {
     opacity: 0;
-    transform: translateX(-28px);
+    transform: translateX(-36px);
   }
   to {
     opacity: 1;
@@ -610,20 +660,29 @@ mark {
   }
 }
 
+@keyframes card-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .card-enter-next {
-  animation: card-enter-next 200ms ease-out;
+  animation: card-enter-next 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .card-enter-prev {
-  animation: card-enter-prev 200ms ease-out;
+  animation: card-enter-prev 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* Reduced motion: no travel, a cross-fade instead (the leaving card fades out, see SwipeGhost). */
 @media (prefers-reduced-motion: reduce) {
   .card-enter-next,
   .card-enter-prev {
-    animation: none;
+    animation: card-fade 160ms ease-out;
   }
-  .swipe-area,
   .bar-fill,
   .flip-inner {
     transition: none !important;
@@ -802,10 +861,15 @@ mark {
 }
 
 .review-slot {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
   margin: 0 0 var(--block-gap);
 }
 
 .flip {
+  flex: 1;
+  min-height: 0;
   perspective: 1200px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -823,6 +887,8 @@ mark {
 
 .flip-inner {
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
   transform-style: preserve-3d;
   transition: transform 450ms ease-in-out;
 }
@@ -834,7 +900,9 @@ mark {
 /* Both faces share one grid cell, so the card is as tall as the taller (back) face. */
 .flip-face {
   grid-area: 1 / 1;
-  min-height: 320px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -860,6 +928,10 @@ mark {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.rating.is-hidden {
+  visibility: hidden;
 }
 
 .rating-prompt {
