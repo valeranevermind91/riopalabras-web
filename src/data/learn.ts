@@ -1,6 +1,6 @@
 import { learnedState } from '../sm2/sm2'
 import { newWordsPatch, streakPatch } from './daily'
-import { pickBatch, type BatchPick } from './learnPick'
+import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import type { QueueStatus, QueueTicket, WriteQueue } from './writeQueue'
@@ -37,6 +37,33 @@ const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.wo
 export function selectLearnBatch(words: readonly Word[], settings: UserSettings, now: Date): LearnBatch {
   const limit = Math.min(LEARN_BATCH_SIZE, computeRemainingToday(settings, now))
   return withCount(pickBatch(limit > 0 ? getLearnPool(words) : [], limit, now))
+}
+
+export interface KnownDeps {
+  queue: Pick<WriteQueue, 'enqueueHidden'>
+  /** Optimistic: mirror the hide / un-hide into the in-memory words at once. */
+  applyHidden: (esWords: readonly string[], hidden: boolean) => void
+}
+
+/**
+ * "Already know it": the word at `index` is hidden for good (it leaves Learn, Review and the practice
+ * exercises) through the write queue, and the next candidate takes its place. The batch keeps its size.
+ */
+export function markKnown(batch: LearnBatch, index: number, deps: KnownDeps): LearnBatch {
+  const word = batch.words[index]
+  if (!word) return batch
+  deps.applyHidden([word.esWord], true)
+  deps.queue.enqueueHidden(word.esWord, true)
+  return withCount(replaceKnown(batch, index))
+}
+
+/** Undo for the last "already know it": the word is shown again (and un-hidden). */
+export function undoKnown(batch: LearnBatch, deps: KnownDeps): LearnBatch {
+  const last = batch.known[batch.known.length - 1]
+  if (!last) return batch
+  deps.applyHidden([last.word.esWord], false)
+  deps.queue.enqueueHidden(last.word.esWord, false)
+  return withCount(restoreKnown(batch))
 }
 
 export function learnProgressUpdates(batch: LearnBatch, now: Date): ProgressUpdate[] {

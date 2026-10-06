@@ -41,3 +41,16 @@ export function applyFlagLists(words: readonly Word[], lists: { favorites?: read
     }),
   )
 }
+
+/** Pure: sets (or clears) the hidden flag of the given words (matched by wordKey); the same list back if nothing changes. */
+export function applyHiddenFlag(words: readonly Word[], esWords: readonly string[], hidden: boolean): readonly Word[] {
+  const keys = new Set(esWords.map(wordKey))
+  if (keys.size === 0) return words
+  let changed = false
+  const next = words.map((word) => {
+    if (!keys.has(wordKey(word.esWord)) || word.isHidden === hidden) return word
+    changed = true
+    return Object.freeze({ ...word, isHidden: hidden })
+  })
+  return changed ? Object.freeze(next) : words
+}

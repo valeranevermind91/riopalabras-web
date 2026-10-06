@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
+import { headword } from '../data/headword'
 import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
-import { createBatchFinisher, learnPhase, selectLearnBatch } from '../data/learn'
+import { createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import { useQueueStatus } from '../data/useQueueStatus'
@@ -25,26 +26,18 @@ interface LearnScreenProps {
 }
 
 export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: LearnScreenProps) {
-  const buildSession = (source: UserData) => {
-    const batch = selectLearnBatch(source.words, source.settings, new Date())
-    const finish = createBatchFinisher(batch, {
-      queue,
-      getSettings: source.getSettings,
-      applyProgress: source.applyProgress,
-      applySettings: source.applySettings,
-      onFinished: () => metrics?.markActiveToday(),
-    })
-    return { batch, finish }
-  }
+  const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
+  // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
+  const finisher = useRef<(() => QueueTicket) | null>(null)
+  const knownDeps = { queue, applyHidden: data.applyHidden }
 
-  const [session, setSession] = useState(() => buildSession(data))
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
   // The batch's place in the write queue, once "Finish batch" was pressed. The screen follows the queue: saving → error (Retry) → done.
   const [ticket, setTicket] = useState<QueueTicket | null>(null)
   const status = useQueueStatus(queue)
 
-  const words = session.batch.words
+  const words = batch.words
   const lastIndex = words.length - 1
   const phase = words.length === 0 ? 'done' : learnPhase(ticket, status)
   const error = phase === 'error' ? (status.error ?? '') : null
@@ -101,13 +94,37 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
   // Hands the batch to the queue (a double tap just returns the same ticket); nothing here awaits the network.
   const finish = () => {
     haptic('tap')
-    setTicket(session.finish())
+    finisher.current ??= createBatchFinisher(batch, {
+      queue,
+      getSettings: data.getSettings,
+      applyProgress: data.applyProgress,
+      applySettings: data.applySettings,
+      onFinished: () => metrics?.markActiveToday(),
+    })
+    setTicket(finisher.current())
+  }
+
+  // "Already know it": hidden for good (Learn, Review, practice) through the write queue; the next candidate takes its place.
+  const know = () => {
+    if (!reading || !words[index]) return
+    haptic('select')
+    const next = markKnown(batch, index, knownDeps)
+    setBatch(next)
+    setIndex(Math.max(0, Math.min(index, next.words.length - 1)))
+  }
+
+  const undo = () => {
+    const last = batch.known[batch.known.length - 1]
+    if (!reading || !last) return
+    haptic('tap')
+    setBatch(undoKnown(batch, knownDeps))
+    setIndex(Math.min(last.index, batch.words.length))
   }
 
   const startNextBatch = () => {
     haptic('tap')
-    const next = buildSession(data)
-    setSession(next)
+    setBatch(selectLearnBatch(data.words, data.settings, new Date()))
+    finisher.current = null
     setTicket(null)
     setIndex(0)
     setDirection('next')
@@ -139,7 +156,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
       <div className="swipe-area" {...swipe.handlers}>
         <div className="swipe-stage">
           <div className="swipe-layer" style={swipe.layerStyle}>
-            <div key={index} className={`card-enter card-enter-${direction}`}>
+            <div key={`${index}:${words[index].esWord}`} className={`card-enter card-enter-${direction}`}>
               <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
             </div>
           </div>
@@ -150,6 +167,23 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
           )}
         </div>
       </div>
+
+      {reading && batch.known.length > 0 && (
+        <div className="learn-undo" role="status">
+          <span>{strings.learn.markedKnown(headword(batch.known[batch.known.length - 1].word).text)}</span>
+          <button type="button" className="link-btn" onClick={undo}>
+            {strings.learn.undo}
+          </button>
+        </div>
+      )}
+
+      {reading && (
+        <div className="learn-known">
+          <button type="button" className="known-btn" onClick={know}>
+            {strings.learn.alreadyKnow}
+          </button>
+        </div>
+      )}
 
       <div className="learn-nav">
         <button type="button" className="btn btn-icon" aria-label={strings.learn.previous} disabled={!reading || index === 0} onClick={() => go(-1)}>

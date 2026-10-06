@@ -2,11 +2,20 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import { wordKey } from './words'
-import { upsertDailyMetrics, upsertProgress, writeSettings } from './writes'
+import { upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
+
+/** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
+export interface HiddenOp {
+  /** The word in its dictionary casing (the casing the rows are written with). */
+  esWord: string
+  hidden: boolean
+}
 
 export interface QueueSender {
   sendProgress: (updates: readonly ProgressUpdate[]) => Promise<void>
   sendSettings: (patch: SettingsPatch) => Promise<void>
+  /** Optional: without it hidden-word changes are not queued at all. Receives the latest state per word. */
+  sendHidden?: (ops: readonly HiddenOp[]) => Promise<void>
   /** Optional: the best-effort metrics lane is simply off without it. */
   sendMetrics?: (rows: readonly DailyMetricsRow[]) => Promise<void>
 }
@@ -15,6 +24,8 @@ export interface QueueStatus {
   /** Words whose latest state hasn't reached the server yet. */
   pendingRatings: number
   pendingSettings: boolean
+  /** Hidden-word changes (user_hidden_words) not yet sent. */
+  pendingHidden: number
   /** A request is in flight right now. */
   sending: boolean
   /** Automatic retries are exhausted: the UI shows a banner and waits for retry(). */
@@ -56,6 +67,11 @@ export interface WriteQueue {
   enqueueProgress: (update: ProgressUpdate) => void
   /** Merges keys into the pending settings patch. */
   enqueueSettings: (patch: SettingsPatch) => void
+  /**
+   * Hides or un-hides a word (user_hidden_words). The latest state per word wins, so "mark as known"
+   * followed by "undo" before anything is sent leaves one idempotent removal, never a stuck row.
+   */
+  enqueueHidden: (esWord: string, hidden: boolean) => void
   /**
    * A finished Learn batch: its words and its settings patch (streak, new-word counter) queued
    * together, in one step, so the drain never sees one without the other. Progress is always sent
@@ -114,6 +130,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const progress = new Map<string, ProgressUpdate>()
   let settings: SettingsPatch | null = null
   const metrics = new Map<string, DailyMetricsRow>()
+  const hiddenOps = new Map<string, HiddenOp>()
   // Batch tickets: the update objects still unsent, and the settings version the batch needs saved.
   interface TicketState {
     updates: Set<ProgressUpdate>
@@ -142,15 +159,16 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
   const listeners = new Set<() => void>()
 
-  const hasPending = () => progress.size > 0 || settings !== null
+  const hasPending = () => progress.size > 0 || hiddenOps.size > 0 || settings !== null
 
   const computeStatus = (): QueueStatus => ({
     pendingRatings: progress.size,
     pendingSettings: settings !== null,
+    pendingHidden: hiddenOps.size,
     sending,
     failed,
     error: lastError,
-    unsaved: progress.size > 0 || settings !== null || sending,
+    unsaved: progress.size > 0 || hiddenOps.size > 0 || settings !== null || sending,
     stuck,
     pendingMetrics: metrics.size,
     metricsError,
@@ -197,6 +215,14 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         for (const ticket of tickets) ticket.updates.delete(sent)
       }
       for (const ticket of tickets) if (ticket.updates.size === 0) tickets.delete(ticket) // fully sent: only its settings part (a version number) is left to check
+      notify()
+    }
+
+    if (hiddenOps.size > 0) {
+      const ops = [...hiddenOps.values()]
+      await sender.sendHidden?.(ops)
+      // Only forget what was sent: a newer state for the same word stays queued.
+      for (const sent of ops) if (hiddenOps.get(wordKey(sent.esWord)) === sent) hiddenOps.delete(wordKey(sent.esWord))
       notify()
     }
 
@@ -355,6 +381,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       kick()
     },
 
+    enqueueHidden(esWord, hidden) {
+      if (!sender.sendHidden) return
+      hiddenOps.set(wordKey(esWord), { esWord, hidden })
+      notify()
+      kick()
+    },
+
     enqueueBatch(updates, patch) {
       const state: TicketState = { updates: new Set(), settingsVersion: null }
       tickets.add(state) // registered first, so a word that appears twice in the batch hands its ticket to the newer state
@@ -417,6 +450,7 @@ export function createSupabaseWriteQueue(
       sendSettings: async (patch) => {
         await writeSettings(client, userId, getSettings(), patch)
       },
+      sendHidden: (ops) => writeHiddenWords(client, userId, ops),
       sendMetrics: (rows) => upsertDailyMetrics(client, userId, rows),
     },
     options,

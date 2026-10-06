@@ -60,6 +60,10 @@ export const strings = {
     title: 'Learn',
     wordNofM: (n: number, m: number) => `Word ${n} of ${m}`,
     swipeHint: 'Swipe or use the arrows',
+    // "Already know it": a secondary action, set apart from the main ones
+    alreadyKnow: 'I already know this word',
+    markedKnown: (word: string) => `“${word}” marked as known`,
+    undo: 'Undo',
     previous: 'Previous',
     next: 'Next',
     finishBatch: 'Finish batch',

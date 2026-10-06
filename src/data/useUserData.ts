@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthState } from '../lib/auth'
 import { loadDictionary } from './dictionary'
-import { applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFlagLists, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { loadOverlay, recoverTables, type NonCriticalTable } from './overlay'
 import { createBackgroundRetrier, type Retrier } from './recovery'
 import { parseSettings } from './settings'
@@ -23,6 +23,8 @@ export interface UserData {
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   /** Mirror a successful settings write into the in-memory settings (unknown keys kept). */
   applySettings: (patch: SettingsPatch) => void
+  /** Mirror a hide / un-hide ("already know it") into the in-memory words, at once. */
+  applyHidden: (esWords: readonly string[], hidden: boolean) => void
   /** Non-critical tables (favorites, hidden words) that failed at launch and are still being retried in the background. */
   degraded: readonly NonCriticalTable[]
   /** Retry the degraded tables now instead of waiting for the next background attempt. */
@@ -105,6 +107,12 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
 
   // Declared first: applySettings updates it eagerly (see below).
   const latestSettings = useRef<UserSettings | null>(null)
+  const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => {
+    setBase((prev) =>
+      prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: applyHiddenFlag(prev.loaded.words, esWords, hidden) } } : prev,
+    )
+  }, [])
+
   const applySettings = useCallback((patch: SettingsPatch) => {
     // Eager, so a read right after the write (getSettings) already sees it, not only after the next render.
     if (latestSettings.current) latestSettings.current = applySettingsPatch(latestSettings.current, patch)
@@ -170,9 +178,10 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
         getSettings,
         applyProgress,
         applySettings,
+        applyHidden,
         degraded: loaded.degraded,
         retryDegraded,
       },
     }
-  }, [base, loaded, getSettings, applyProgress, applySettings, retryDegraded])
+  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, retryDegraded])
 }

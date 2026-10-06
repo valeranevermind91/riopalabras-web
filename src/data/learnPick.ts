@@ -120,3 +120,69 @@ export function pickBatch(pool: readonly Word[], size: number, now: Date): Batch
   const order = picks.map((word, stratum) => ({ word: word!, stratum })).sort((a, b) => rankHash(dayKey, a.word) - rankHash(dayKey, b.word))
   return { words: order.map((o) => o.word), strata: order.map((o) => o.stratum), window, windowStrata, reserve, known: [], dayKey, size: n }
 }
+
+/**
+ * "Already know it": takes the word at `index` out of the batch and puts the next candidate in its place,
+ * so the batch keeps its size. The candidate is the best unused one from the same stratum, then from the
+ * nearest strata, then from the rest of the window, and only then from beyond it. If removing the word left
+ * the batch without a Rioplatense word, a Rioplatense candidate is preferred (widening the search past the
+ * window if needed). With no candidate left the batch gets shorter.
+ */
+export function replaceKnown(batch: BatchPick, index: number): BatchPick {
+  const word = batch.words[index]
+  if (!word) return batch
+  const stratum = batch.strata[index]
+
+  const taken = new Set([...batch.words, ...batch.known.map((k) => k.word)].map((w) => w.esWord.toLowerCase()))
+  const used = new Set(batch.words.filter((_, i) => i !== index).map(keyOf))
+  const free = (w: Word) => !taken.has(w.esWord.toLowerCase()) && !used.has(keyOf(w))
+
+  const needRio = !batch.words.some((w, i) => i !== index && isRioplatense(w))
+  const fromWindow = (rioOnly: boolean): { w: Word; s: number } | null => {
+    let best: { w: Word; s: number; distance: number } | null = null
+    for (let i = 0; i < batch.window.length; i++) {
+      const w = batch.window[i]
+      if (!free(w) || (rioOnly && !isRioplatense(w))) continue
+      const s = batch.windowStrata[i]
+      const distance = Math.abs(s - stratum)
+      if (best === null || distance < best.distance || (distance === best.distance && rankHash(batch.dayKey, w) < rankHash(batch.dayKey, best.w))) best = { w, s, distance }
+    }
+    return best === null ? null : { w: best.w, s: best.s }
+  }
+  const fromReserve = (rioOnly: boolean): Word | null => batch.reserve.find((w) => free(w) && (!rioOnly || isRioplatense(w))) ?? null
+
+  let chosen: { w: Word; s: number } | null = null
+  if (needRio) chosen = fromWindow(true) ?? (() => { const r = fromReserve(true); return r ? { w: r, s: stratum } : null })()
+  chosen ??= fromWindow(false) ?? (() => { const r = fromReserve(false); return r ? { w: r, s: stratum } : null })()
+
+  const record: KnownRecord = { word, index, stratum, replacement: chosen?.w ?? null }
+  const words = [...batch.words]
+  const strata = [...batch.strata]
+  if (chosen) {
+    words[index] = chosen.w
+    strata[index] = chosen.s
+  } else {
+    words.splice(index, 1)
+    strata.splice(index, 1)
+  }
+  return { ...batch, words, strata, known: [...batch.known, record] }
+}
+
+/** Undo for the most recent "already know it": the word returns to its place and its replacement goes back to the candidates. */
+export function restoreKnown(batch: BatchPick): BatchPick {
+  const last = batch.known[batch.known.length - 1]
+  if (!last) return batch
+  const words = [...batch.words]
+  const strata = [...batch.strata]
+  if (last.replacement) {
+    const at = words.findIndex((w) => w.esWord.toLowerCase() === last.replacement!.esWord.toLowerCase())
+    const position = at >= 0 ? at : Math.min(last.index, words.length - 1)
+    words[position] = last.word
+    strata[position] = last.stratum
+  } else {
+    const position = Math.min(last.index, words.length)
+    words.splice(position, 0, last.word)
+    strata.splice(position, 0, last.stratum)
+  }
+  return { ...batch, words, strata, known: batch.known.slice(0, -1) }
+}

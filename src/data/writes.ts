@@ -91,3 +91,22 @@ export async function upsertDailyMetrics(
     )
   if (error) throw new Error(`user_daily_metrics: ${error.message}`)
 }
+
+/**
+ * Writes hidden-word changes to user_hidden_words the way the Flutter app did: additions are one upsert
+ * on (user_id, es_word) (created_at is left to the database default), removals one delete by es_word.
+ * Both are safe to repeat. Throws on any failure.
+ */
+export async function writeHiddenWords(client: SupabaseClient, userId: string, ops: readonly { esWord: string; hidden: boolean }[]): Promise<void> {
+  const added = ops.filter((o) => o.hidden).map((o) => ({ user_id: userId, es_word: o.esWord }))
+  const removed = ops.filter((o) => !o.hidden).map((o) => o.esWord)
+
+  if (added.length > 0) {
+    const { error } = await client.from('user_hidden_words').upsert(added, { onConflict: 'user_id,es_word' })
+    if (error) throw new Error(`user_hidden_words: ${error.message}`)
+  }
+  if (removed.length > 0) {
+    const { error } = await client.from('user_hidden_words').delete().eq('user_id', userId).in('es_word', removed)
+    if (error) throw new Error(`user_hidden_words: ${error.message}`)
+  }
+}
