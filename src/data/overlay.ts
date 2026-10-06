@@ -67,6 +67,20 @@ export async function fetchSettings(client: SupabaseClient, userId: string): Pro
   return blob && typeof blob === 'object' && !Array.isArray(blob) ? (blob as Record<string, unknown>) : null
 }
 
+/** The settings row as it is now, with when it was last written; for deciding what a restored entry may still overwrite. */
+export async function fetchSettingsRow(client: SupabaseClient, userId: string): Promise<{ blob: Record<string, unknown>; updatedAt: number | null }> {
+  const { data, error, status } = await client
+    .from('user_settings')
+    .select('settings, updated_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw new TableLoadError('user_settings', error.message, status ?? null, error.code || null)
+
+  const blob = data?.settings
+  const stamp = typeof data?.updated_at === 'string' ? Date.parse(data.updated_at) : NaN
+  return { blob: blob && typeof blob === 'object' && !Array.isArray(blob) ? (blob as Record<string, unknown>) : {}, updatedAt: Number.isFinite(stamp) ? stamp : null }
+}
+
 const WORD_COLUMNS =
   'es_word, es_rioplatense, en_translation, ru_translation, example_sentence, example_translation_en, example_translation_ru, is_rioplatense_variant, pos'
 

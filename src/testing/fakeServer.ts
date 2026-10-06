@@ -32,7 +32,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   const log: { url: string; method: string; role: string; status: number }[] = []
   let nextUser = 1
   // Things a test can break on purpose.
-  const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null }
+  const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null }
 
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -90,8 +90,12 @@ export function createFakeServer(options: FakeServerOptions = {}) {
     const role = String(claims.role)
     const rows = tables.get(table) ?? []
     if (request.method === 'GET') {
+      if (broken.failReadsOf === table) return json({ message: 'could not read this table' }, 400) // not a 5xx: supabase-js retries those on its own
       // RLS: a row is visible only to the user who owns it; anon sees nothing, and gets no error for it.
-      const visible = role === 'authenticated' ? rows.filter((r) => r.user_id === claims.sub) : []
+      let visible = role === 'authenticated' ? rows.filter((r) => r.user_id === claims.sub) : []
+      for (const [column, filter] of url.searchParams) {
+        if (filter.startsWith('eq.')) visible = visible.filter((r) => String(r[column]) === filter.slice(3))
+      }
       return json(visible)
     }
     if (broken.hangWrites && request.method !== 'GET') return new Promise<Response>(() => {})

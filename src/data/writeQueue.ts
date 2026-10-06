@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
-import { fetchSettings } from './overlay'
+import { fetchSettings, fetchSettingsRow } from './overlay'
+import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
+import { reconcileSettingsPatch } from './restoreRules'
 import { parseSettings } from './settings'
 import { createQueueStore, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
 import { wordKey } from './words'
@@ -16,11 +18,16 @@ export interface HiddenOp {
 
 export interface QueueSender {
   sendProgress: (updates: readonly ProgressUpdate[]) => Promise<void>
-  sendSettings: (patch: SettingsPatch) => Promise<void>
+  /**
+   * `restored` is given only when some of the patch's keys came back from storage after a restart (they are old, and
+   * the sender may need to check them against the server, see restoreRules.ts); `queuedAt` is when each key was queued.
+   */
+  sendSettings: (patch: SettingsPatch, restored?: { keys: ReadonlySet<string>; queuedAt: Readonly<Record<string, number>> }) => Promise<void>
   /** Optional: without it hidden-word changes are not queued at all. Receives the latest state per word. */
   sendHidden?: (ops: readonly HiddenOp[]) => Promise<void>
   /** Optional: the best-effort metrics lane is simply off without it. */
-  sendMetrics?: (rows: readonly DailyMetricsRow[]) => Promise<void>
+  /** `restoredDates` is given only when some rows came back from storage after a restart (see restoreRules.ts / metrics merge). */
+  sendMetrics?: (rows: readonly DailyMetricsRow[], restoredDates?: ReadonlySet<string>) => Promise<void>
   /**
    * Optional: gets a usable session back (refresh, or sign in again). Called once when the server refuses a write
    * for who is asking (401/403, row-level security); true means "try the same write again now".
@@ -198,6 +205,9 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   // When each pending state was queued (the objects themselves are the keys), for the staleness rule on restore.
   const queuedAt = new WeakMap<object, number>()
   let settingsQueuedAt: Record<string, number> = {}
+  // Entries that came back from storage and have not been sent yet: the sender checks these against the server first.
+  const restoredSettingsKeys = new Set<string>()
+  const restoredMetricsDates = new Set<string>()
   // The queue's contents on disk follow its contents: `version` moves whenever they change, and every notify() saves a new version.
   let version = 0
   let savedVersion = 0
@@ -301,7 +311,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   }
   const putSettings = (patch: SettingsPatch, at: number = nowMs()) => {
     settings = { ...settings, ...patch }
-    for (const key of Object.keys(patch)) settingsQueuedAt[key] = at
+    for (const key of Object.keys(patch)) {
+      settingsQueuedAt[key] = at
+      restoredSettingsKeys.delete(key) // a value queued in this run is the user's latest word, not a replay
+    }
     version++
     return ++settingsVersion
   }
@@ -340,10 +353,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     if (settings) {
       const sent = settings
       const sentVersion = settingsVersion // every patch merged into `sent` has a version <= this
-      await within(sender.sendSettings(sent))
+      const restored = restoredSettingsKeys.size > 0 ? { keys: new Set(restoredSettingsKeys), queuedAt: { ...settingsQueuedAt } } : undefined
+      await within(restored ? sender.sendSettings(sent, restored) : sender.sendSettings(sent))
       if (settings === sent) {
         settings = null
         settingsQueuedAt = {}
+        restoredSettingsKeys.clear()
         version++
       }
       settingsSavedVersion = Math.max(settingsSavedVersion, sentVersion)
@@ -429,11 +444,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       metricsAttempts++
       metricsLastAttemptAt = new Date().toISOString()
       try {
-        await within(send(rows))
+        const restoredDates = new Set(rows.filter((r) => restoredMetricsDates.has(r.date)).map((r) => r.date))
+        await within(restoredDates.size > 0 ? send(rows, restoredDates) : send(rows))
         // Only forget what was sent: a newer row for the same date stays queued.
         for (const sent of rows) {
           if (metrics.get(sent.date) === sent) {
             metrics.delete(sent.date)
+            restoredMetricsDates.delete(sent.date)
             version++
           }
         }
@@ -568,6 +585,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     enqueueMetrics(row) {
       queuedAt.set(row, nowMs())
       version++
+      restoredMetricsDates.delete(row.date)
       metrics.set(row.date, row)
       if (!metricsRun) {
         metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
@@ -626,6 +644,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
           if (settings && key in settings) continue
           settings = { ...settings, [key]: patch[key] }
           settingsQueuedAt[key] = at[key]
+          restoredSettingsKeys.add(key)
           restored++
         }
       }
@@ -633,6 +652,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         if (metrics.has(value.date)) continue
         queuedAt.set(value, at)
         metrics.set(value.date, value)
+        restoredMetricsDates.add(value.date)
         restored++
       }
 
@@ -706,10 +726,28 @@ export function createSupabaseWriteQueue(
       sendProgress: (updates) => signedIn(() => upsertProgress(client, userId, updates)),
       // Whole-blob write merged from the loaded settings; before they are loaded (writes restored at launch go out first)
       // the base is the server's own copy, so keys this client does not own are still kept.
-      sendSettings: (patch) =>
-        signedIn(async () => void (await writeSettings(client, userId, getSettings() ?? parseSettings(await fetchSettings(client, userId)), patch))),
+      sendSettings: (patch, restored) =>
+        signedIn(async () => {
+          if (!restored) {
+            await writeSettings(client, userId, getSettings() ?? parseSettings(await fetchSettings(client, userId)), patch)
+            return
+          }
+          // Some keys are a replay from an earlier run: check them against what the server holds now (restoreRules.ts).
+          const server = await fetchSettingsRow(client, userId)
+          const { write } = reconcileSettingsPatch(patch, restored.keys, restored.queuedAt, server)
+          if (Object.keys(write).length > 0) await writeSettings(client, userId, getSettings() ?? parseSettings(server.blob), write)
+        }),
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
-      sendMetrics: (rows) => signedIn(() => upsertDailyMetrics(client, userId, rows)),
+      sendMetrics: (rows, restoredDates) =>
+        signedIn(async () => {
+          // A row from an earlier run may be behind what another device pushed for that day: merge, never overwrite.
+          // (If the server cannot be read, nothing is sent and the row stays queued.)
+          const merged = await Promise.all(
+            rows.map(async (row) => (restoredDates?.has(row.date) ? (mergeRows(row, parseServerRow(await fetchServerMetricsRow(client, userId, row.date))) ?? row) : row)),
+          )
+          await upsertDailyMetrics(client, userId, merged)
+        }),
+      recoverAuth,
     },
     queueOptions,
   )
