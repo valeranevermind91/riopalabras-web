@@ -55,7 +55,7 @@ async function fetchAll<T>(
   }
 }
 
-async function fetchSettings(client: SupabaseClient, userId: string): Promise<Record<string, unknown> | null> {
+export async function fetchSettings(client: SupabaseClient, userId: string): Promise<Record<string, unknown> | null> {
   const { data, error, status } = await client
     .from('user_settings')
     .select('settings')

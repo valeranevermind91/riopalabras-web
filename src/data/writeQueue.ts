@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
+import { fetchSettings } from './overlay'
+import { parseSettings } from './settings'
+import { createQueueStore, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
 import { wordKey } from './words'
 import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
 
@@ -65,6 +68,25 @@ export interface QueueStatus {
    * Clears when a write is accepted again.
    */
   authRejected: boolean
+  /** Entries read back from storage when the app opened (writes a killed webview had not sent). */
+  restoredEntries: number
+  /** Entries left out on restore because they were older than the staleness limit (7 days), and entries that could not be read. */
+  droppedStale: number
+  droppedUnreadable: number
+}
+
+/** What restore() found in storage. */
+export interface RestoreReport {
+  restored: number
+  droppedStale: number
+  droppedUnreadable: number
+}
+
+/** What is still waiting to be sent, for mirroring into the UI's in-memory state before the server has it. */
+export interface PendingWrites {
+  progress: ProgressUpdate[]
+  hidden: HiddenOpEntry[]
+  settings: SettingsPatch | null
 }
 
 /** What enqueueBatch hands back: asks whether everything that batch queued has reached the server. */
@@ -107,6 +129,16 @@ export interface WriteQueue {
   retry: () => Promise<boolean>
   getStatus: () => QueueStatus
   subscribe: (listener: () => void) => () => void
+  /**
+   * Reads back what an earlier run of the app had queued and not sent (see queueStore.ts), drops what is older than
+   * the staleness limit, merges the rest in (anything already queued in this run wins) and starts sending it. Once
+   * per queue; later calls return zeros. Safe without storage.
+   */
+  restore: () => RestoreReport
+  /** Writes the pending contents to storage now (they are also written on every change). For pagehide / visibilitychange. */
+  persistNow: () => void
+  /** A copy of everything still waiting to be sent. */
+  pending: () => PendingWrites
 }
 
 export interface WriteQueueOptions {
@@ -119,6 +151,10 @@ export interface WriteQueueOptions {
   sleep?: (ms: number) => Promise<void>
   /** A request that has not answered after this long counts as failed (the retries and the banner follow), instead of "saving" forever. */
   sendTimeoutMs?: number
+  /** Where the pending contents are kept so they survive the app being killed. Without it the queue is memory-only. */
+  store?: QueueStore
+  /** The clock used to stamp entries (epoch ms). */
+  now?: () => number
 }
 
 const DEFAULT_SEND_TIMEOUT_MS = 20_000
@@ -141,6 +177,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const metricsDelays = options.metricsRetryDelaysMs ?? DEFAULT_METRICS_RETRY_DELAYS_MS
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
   const sendTimeoutMs = options.sendTimeoutMs ?? DEFAULT_SEND_TIMEOUT_MS
+  const nowMs = options.now ?? Date.now
+  const store = options.store
 
   // Nothing waits for a request forever: a request that stays silent is a failure like any other. (The late
   // answer, if it ever comes, is harmless: every write here is an idempotent upsert or delete.)
@@ -157,6 +195,16 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let settings: SettingsPatch | null = null
   const metrics = new Map<string, DailyMetricsRow>()
   const hiddenOps = new Map<string, HiddenOp>()
+  // When each pending state was queued (the objects themselves are the keys), for the staleness rule on restore.
+  const queuedAt = new WeakMap<object, number>()
+  let settingsQueuedAt: Record<string, number> = {}
+  // The queue's contents on disk follow its contents: `version` moves whenever they change, and every notify() saves a new version.
+  let version = 0
+  let savedVersion = 0
+  let restoredEntries = 0
+  let droppedStale = 0
+  let droppedUnreadable = 0
+  let restoreDone = false
   // Batch tickets: the update objects still unsent, and the settings version the batch needs saved.
   interface TicketState {
     updates: Set<ProgressUpdate>
@@ -210,17 +258,38 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     metricsGaveUp,
     metricsWaitingForProgress: metrics.size > 0 && hasPending(),
     authRejected: rejected || metricsRejected,
+    restoredEntries,
+    droppedStale,
+    droppedUnreadable,
   })
   let status = computeStatus()
 
+  const snapshot = (): QueueSnapshot => {
+    const stamped = <T extends object>(value: T) => ({ value, at: queuedAt.get(value) ?? nowMs() })
+    return {
+      progress: [...progress.values()].map(stamped),
+      hidden: [...hiddenOps.values()].map(stamped),
+      settings: settings ? { patch: settings, at: { ...settingsQueuedAt } } : null,
+      metrics: [...metrics.values()].map(stamped),
+    }
+  }
+  const persist = () => {
+    if (!store) return
+    savedVersion = version
+    store.save(snapshot())
+  }
+
   const notify = () => {
     status = computeStatus()
+    if (version !== savedVersion) persist()
     for (const listener of listeners) listener()
   }
 
 
   // A newer state for a word replaces the unsent one; a batch waiting on the old state now waits for the newer one.
-  const putProgress = (update: ProgressUpdate) => {
+  const putProgress = (update: ProgressUpdate, at: number = nowMs()) => {
+    queuedAt.set(update, at)
+    version++
     const key = wordKey(update.esWord)
     const old = progress.get(key)
     if (old && old !== update) {
@@ -230,8 +299,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     }
     progress.set(key, update)
   }
-  const putSettings = (patch: SettingsPatch) => {
+  const putSettings = (patch: SettingsPatch, at: number = nowMs()) => {
     settings = { ...settings, ...patch }
+    for (const key of Object.keys(patch)) settingsQueuedAt[key] = at
+    version++
     return ++settingsVersion
   }
 
@@ -243,7 +314,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       // Only forget what was actually sent: a newer state for the same word stays queued.
       for (const sent of chunk) {
         const key = wordKey(sent.esWord)
-        if (progress.get(key) === sent) progress.delete(key)
+        if (progress.get(key) === sent) {
+          progress.delete(key)
+          version++
+        }
         for (const ticket of tickets) ticket.updates.delete(sent)
       }
       for (const ticket of tickets) if (ticket.updates.size === 0) tickets.delete(ticket) // fully sent: only its settings part (a version number) is left to check
@@ -254,7 +328,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       const ops = [...hiddenOps.values()]
       if (sender.sendHidden) await within(sender.sendHidden(ops))
       // Only forget what was sent: a newer state for the same word stays queued.
-      for (const sent of ops) if (hiddenOps.get(wordKey(sent.esWord)) === sent) hiddenOps.delete(wordKey(sent.esWord))
+      for (const sent of ops) {
+        if (hiddenOps.get(wordKey(sent.esWord)) === sent) {
+          hiddenOps.delete(wordKey(sent.esWord))
+          version++
+        }
+      }
       notify()
     }
 
@@ -262,7 +341,11 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       const sent = settings
       const sentVersion = settingsVersion // every patch merged into `sent` has a version <= this
       await within(sender.sendSettings(sent))
-      if (settings === sent) settings = null
+      if (settings === sent) {
+        settings = null
+        settingsQueuedAt = {}
+        version++
+      }
       settingsSavedVersion = Math.max(settingsSavedVersion, sentVersion)
       notify()
     }
@@ -348,7 +431,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       try {
         await within(send(rows))
         // Only forget what was sent: a newer row for the same date stays queued.
-        for (const sent of rows) if (metrics.get(sent.date) === sent) metrics.delete(sent.date)
+        for (const sent of rows) {
+          if (metrics.get(sent.date) === sent) {
+            metrics.delete(sent.date)
+            version++
+          }
+        }
         metricsFailures = 0
         metricsError = null
         metricsRejected = false
@@ -453,7 +541,10 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
     enqueueHidden(esWord, hidden) {
       if (!sender.sendHidden) return
-      hiddenOps.set(wordKey(esWord), { esWord, hidden })
+      const op = { esWord, hidden }
+      queuedAt.set(op, nowMs())
+      version++
+      hiddenOps.set(wordKey(esWord), op)
       notify()
       kick()
     },
@@ -475,6 +566,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     },
 
     enqueueMetrics(row) {
+      queuedAt.set(row, nowMs())
+      version++
       metrics.set(row.date, row)
       if (!metricsRun) {
         metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
@@ -505,6 +598,61 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         listeners.delete(listener)
       }
     },
+
+    restore() {
+      const none: RestoreReport = { restored: 0, droppedStale: 0, droppedUnreadable: 0 }
+      if (restoreDone || !store) return none
+      restoreDone = true
+      const result = store.load()
+      if (!result) return none
+
+      let restored = 0
+      // Anything queued in this run is newer than what was on disk: it wins, key by key.
+      for (const { value, at } of result.snapshot.progress) {
+        if (progress.has(wordKey(value.esWord))) continue
+        putProgress(value, at)
+        restored++
+      }
+      for (const { value, at } of result.snapshot.hidden) {
+        if (hiddenOps.has(wordKey(value.esWord))) continue
+        const op = { esWord: value.esWord, hidden: value.hidden }
+        queuedAt.set(op, at)
+        hiddenOps.set(wordKey(op.esWord), op)
+        restored++
+      }
+      if (result.snapshot.settings) {
+        const { patch, at } = result.snapshot.settings
+        for (const key of Object.keys(patch)) {
+          if (settings && key in settings) continue
+          settings = { ...settings, [key]: patch[key] }
+          settingsQueuedAt[key] = at[key]
+          restored++
+        }
+      }
+      for (const { value, at } of result.snapshot.metrics) {
+        if (metrics.has(value.date)) continue
+        queuedAt.set(value, at)
+        metrics.set(value.date, value)
+        restored++
+      }
+
+      restoredEntries = restored
+      droppedStale = result.droppedStale
+      droppedUnreadable = result.droppedUnreadable
+      version++ // the stored copy is rewritten without what was dropped
+      notify()
+      kick()
+      kickMetrics()
+      return { restored, droppedStale, droppedUnreadable }
+    },
+
+    persistNow: persist,
+
+    pending: () => ({
+      progress: [...progress.values()],
+      hidden: [...hiddenOps.values()].map(({ esWord, hidden }) => ({ esWord, hidden })),
+      settings: settings ? { ...settings } : null,
+    }),
   }
 }
 
@@ -537,10 +685,12 @@ async function holdsSessionFor(client: SupabaseClient, userId: string): Promise<
 export function createSupabaseWriteQueue(
   client: SupabaseClient,
   userId: string,
-  getSettings: () => UserSettings,
+  getSettings: () => UserSettings | null,
   options: SupabaseQueueOptions = {},
 ): WriteQueue {
-  const { recoverSession, ...queueOptions } = options
+  const { recoverSession, ...rest } = options
+  // Persisted per signed-in user, so one account's unsent writes are never picked up by another.
+  const queueOptions: WriteQueueOptions = { store: createQueueStore(userId), ...rest }
   const recoverAuth = async () => {
     if (!recoverSession) return false
     return (await recoverSession()) && (await holdsSessionFor(client, userId))
@@ -554,10 +704,12 @@ export function createSupabaseWriteQueue(
   return createWriteQueue(
     {
       sendProgress: (updates) => signedIn(() => upsertProgress(client, userId, updates)),
-      sendSettings: (patch) => signedIn(async () => void (await writeSettings(client, userId, getSettings(), patch))),
+      // Whole-blob write merged from the loaded settings; before they are loaded (writes restored at launch go out first)
+      // the base is the server's own copy, so keys this client does not own are still kept.
+      sendSettings: (patch) =>
+        signedIn(async () => void (await writeSettings(client, userId, getSettings() ?? parseSettings(await fetchSettings(client, userId)), patch))),
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
       sendMetrics: (rows) => signedIn(() => upsertDailyMetrics(client, userId, rows)),
-      recoverAuth,
     },
     queueOptions,
   )

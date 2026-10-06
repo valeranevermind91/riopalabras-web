@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
-import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
+import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
+import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
 import type { Word } from './data/types'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
@@ -40,8 +41,53 @@ function App() {
     ? asyncAuth
     : { status: 'error', message: clientError ?? 'Supabase client unavailable' }
 
-  const data = useUserData(auth, client)
+  // One write queue for the whole session, so ratings still being sent survive leaving Review. It exists as soon as the
+  // user is known (not when their state has loaded): what a killed webview left behind is sent before that state is read.
+  const userId = auth.status === 'signed-in' ? auth.userId : null
+  // A lost or refused session is replaced by signing in again through the proxy (never by a different user's session).
+  const recoverSession = useCallback(async () => {
+    if (!client || !userId) return false
+    const result = await ensureSession(client, telegram.initData, telegram.user?.id ?? null, { force: true })
+    return result.status === 'signed-in' && result.userId === userId
+  }, [client, userId, telegram])
+  // The loaded settings, once there are any; until then writes that need them read the server's own copy.
+  const [settingsSource] = useState(createSettingsSource)
+  const readSettings = settingsSource.read
+  const queue = useMemo(
+    () => (client && userId ? createSupabaseWriteQueue(client, userId, readSettings, { recoverSession }) : null),
+    [client, userId, readSettings, recoverSession],
+  )
+
+  // Restore the queue saved by an earlier run and send it, and only then let the user's state load.
+  const [restoredFor, setRestoredFor] = useState<string | null>(null)
+  useEffect(() => {
+    if (!queue || !userId) return
+    let cancelled = false
+    void restoreAndFlush(queue).finally(() => {
+      if (!cancelled) setRestoredFor(userId)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [queue, userId])
+  const holdLoad = userId !== null && restoredFor !== userId
+
+  const data = useUserData(auth, client, holdLoad)
   const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
+  const readyData = data.status === 'ready' ? data.data : null
+  const getSettings = readyData?.getSettings ?? null
+  useEffect(() => {
+    settingsSource.use(readyData?.getSettings ?? null)
+  })
+
+  // Writes still unsent after the restore are the user's latest state: show them over the copy the server returned,
+  // before the first paint of the loaded data.
+  const mirroredFor = useRef<string | null>(null)
+  useLayoutEffect(() => {
+    if (!queue || !readyData || !userId || mirroredFor.current === userId) return
+    mirroredFor.current = userId
+    mirrorPending(queue.pending(), readyData)
+  }, [queue, readyData, userId])
 
   const [screen, setScreen] = useState<Screen>('home')
   const [openWord, setOpenWord] = useState<Word | null>(null)
@@ -55,21 +101,6 @@ function App() {
     if (leaveGuard.current && !(await leaveGuard.current())) return
     setScreen(to)
   }, [])
-
-  // One write queue for the whole session, so ratings still being sent survive leaving Review.
-  const readyData = data.status === 'ready' ? data.data : null
-  const getSettings = readyData?.getSettings ?? null
-  const userId = auth.status === 'signed-in' ? auth.userId : null
-  // A lost or refused session is replaced by signing in again through the proxy (never by a different user's session).
-  const recoverSession = useCallback(async () => {
-    if (!client || !userId) return false
-    const result = await ensureSession(client, telegram.initData, telegram.user?.id ?? null, { force: true })
-    return result.status === 'signed-in' && result.userId === userId
-  }, [client, userId, telegram])
-  const queue = useMemo(
-    () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings, { recoverSession }) : null),
-    [client, userId, getSettings, recoverSession],
-  )
 
   // supabase-js drops its session when the auth server stops recognising it, and from then on sends the anon key:
   // sign in again at once and let the queue send what waited.
@@ -121,9 +152,11 @@ function App() {
     if (!queue) return
     const unbindClosing = bindClosingConfirmation(queue)
     const unbindStuck = bindStuckRetry(queue)
+    const unbindPersist = bindPersistOnHide(queue)
     return () => {
       unbindClosing()
       unbindStuck()
+      unbindPersist()
     }
   }, [queue])
 

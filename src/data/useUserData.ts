@@ -54,7 +54,11 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
-export function useUserData(auth: AuthState, client: SupabaseClient | null): DataState {
+/**
+ * `holdLoad`: true while the user's state must not be read yet (the app is still sending writes a killed webview left
+ * behind: the server has to have them before we read them back). The sign-in itself is not held.
+ */
+export function useUserData(auth: AuthState, client: SupabaseClient | null, holdLoad = false): DataState {
   const [base, setBase] = useState<Base>({ status: 'loading' })
   const userId = auth.status === 'signed-in' ? auth.userId : null
   const authPending = auth.status === 'loading'
@@ -64,7 +68,7 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
 
     // Starts the download immediately (shared promise), so it runs alongside sign-in rather than after it.
     const dictionary = loadDictionary()
-    if (authPending) return
+    if (authPending || holdLoad) return
 
     const settle = (next: Base) => {
       if (!cancelled) setBase(next)
@@ -95,7 +99,7 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null): Dat
     return () => {
       cancelled = true
     }
-  }, [authPending, userId, client])
+  }, [authPending, holdLoad, userId, client])
 
   const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
     setBase((prev) =>

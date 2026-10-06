@@ -24,6 +24,29 @@ export function bindClosingConfirmation(queue: WriteQueue, set: (enabled: boolea
   }
 }
 
+/**
+ * Saves the queue's pending contents when the page is hidden or going away. The queue already saves on every change;
+ * this is the safety net for the moment iOS kills the webview, which often gives no unload event at all (pagehide
+ * and visibilitychange to hidden are what it does give). Returns the unbind.
+ */
+export function bindPersistOnHide(
+  queue: Pick<WriteQueue, 'persistNow'>,
+  sources: { window?: Pick<Window, 'addEventListener' | 'removeEventListener'>; document?: Pick<Document, 'addEventListener' | 'removeEventListener' | 'visibilityState'> } = {},
+): () => void {
+  const win = sources.window ?? window
+  const doc = sources.document ?? document
+  const onPageHide = () => queue.persistNow()
+  const onVisibility = () => {
+    if (doc.visibilityState === 'hidden') queue.persistNow()
+  }
+  win.addEventListener('pagehide', onPageHide)
+  doc.addEventListener('visibilitychange', onVisibility)
+  return () => {
+    win.removeEventListener('pagehide', onPageHide)
+    doc.removeEventListener('visibilitychange', onVisibility)
+  }
+}
+
 export interface ReconnectSources {
   /** Defaults to window: 'online'. */
   online?: Pick<Window, 'addEventListener' | 'removeEventListener'>

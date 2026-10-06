@@ -98,6 +98,22 @@ function MetricsBody({ queue, metrics, client, userId }: MetricsSectionProps) {
           </div>
         </dl>
       )}
+      {status && (
+        <dl data-testid="queue-restore">
+          <div>
+            <dt>Restored on open</dt>
+            <dd>{status.restoredEntries}</dd>
+          </div>
+          <div>
+            <dt>Dropped (older than 7 days)</dt>
+            <dd>{status.droppedStale}</dd>
+          </div>
+          <div>
+            <dt>Dropped (unreadable)</dt>
+            <dd>{status.droppedUnreadable}</dd>
+          </div>
+        </dl>
+      )}
       <button type="button" className="btn-small wp-off" onClick={() => refresh((n) => n + 1)}>
         Refresh
       </button>{' '}
