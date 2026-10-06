@@ -24,6 +24,7 @@ function fakeServer() {
   const violations: string[] = []
 
   const client = {
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'user-1' } } }, error: null }) },
     from: (table: string) => ({
       upsert: async (rows: unknown) => {
         requests.push(table)

@@ -57,9 +57,10 @@ function telegramMetadata(session: { user: { user_metadata?: Record<string, unkn
   }
 }
 
-async function run(client: SupabaseClient, initData: string, telegramUserId: number | null): Promise<AuthResult> {
+async function run(client: SupabaseClient, initData: string, telegramUserId: number | null, force: boolean): Promise<AuthResult> {
   // getSession() transparently refreshes an expired access token via the stored refresh_token.
-  const { data: existing } = await client.auth.getSession()
+  // `force` (recovery after the session was lost or refused) skips the stored one and signs in again through the proxy.
+  const { data: existing } = force ? { data: { session: null } } : await client.auth.getSession()
   if (existing.session) {
     const meta = telegramMetadata(existing.session)
     // A stored session for a different Telegram account must not be reused.
@@ -96,22 +97,40 @@ async function run(client: SupabaseClient, initData: string, telegramUserId: num
 }
 
 // Shared across callers so React StrictMode's double-invoked effect can't fire two /auth/telegram requests.
-let inFlight: Promise<AuthResult> | null = null
+const inFlight: { normal: Promise<AuthResult> | null; forced: Promise<AuthResult> | null } = { normal: null, forced: null }
 
+/**
+ * Signs in (or finds the stored session). `force: true` is for recovery: the session this device held was lost or
+ * refused, so it signs in again through the proxy instead of trusting what is stored.
+ */
 export function ensureSession(
   client: SupabaseClient,
   initData: string,
   telegramUserId: number | null,
+  options: { force?: boolean } = {},
 ): Promise<AuthResult> {
-  if (!inFlight) {
-    inFlight = run(client, initData, telegramUserId)
+  const slot = options.force ? 'forced' : 'normal'
+  if (!inFlight[slot]) {
+    inFlight[slot] = run(client, initData, telegramUserId, slot === 'forced')
       .catch((err): AuthResult => ({
         status: 'error',
         message: err instanceof Error ? err.message : String(err),
       }))
       .finally(() => {
-        inFlight = null
+        inFlight[slot] = null
       })
   }
-  return inFlight
+  return inFlight[slot]
+}
+
+/**
+ * Calls `onLost` when supabase-js drops the session it holds (the auth server said it no longer knows it, or a refresh was
+ * refused). The callback runs on the next tick, never inside supabase-js's own callback, where touching the client deadlocks.
+ * Returns the unsubscribe.
+ */
+export function watchSessionLost(client: SupabaseClient, onLost: () => void): () => void {
+  const { data } = client.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') setTimeout(onLost, 0)
+  })
+  return () => data.subscription.unsubscribe()
 }

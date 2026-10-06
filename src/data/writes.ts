@@ -2,6 +2,25 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 
+/** A failed write, with what the server said, so the queue can tell "try again" from "this request will never be accepted". */
+export class WriteError extends Error {
+  readonly table: string
+  readonly status: number | null
+  readonly code: string | null
+
+  constructor(table: string, message: string, status: number | null = null, code: string | null = null) {
+    super(`${table}: ${message}`)
+    this.name = 'WriteError'
+    this.table = table
+    this.status = status
+    this.code = code
+  }
+}
+
+const fail = (table: string, error: { message: string; code?: string }, status: number | null): never => {
+  throw new WriteError(table, error.message, status, error.code || null)
+}
+
 export function toProgressRow(userId: string, update: ProgressUpdate, nowIso: string) {
   return {
     user_id: userId,
@@ -25,13 +44,13 @@ export async function upsertProgress(
   if (updates.length === 0) return
 
   const nowIso = now.toISOString()
-  const { error } = await client
+  const { error, status } = await client
     .from('user_progress')
     .upsert(
       updates.map((u) => toProgressRow(userId, u, nowIso)),
       { onConflict: 'user_id,es_word' },
     )
-  if (error) throw new Error(`user_progress: ${error.message}`)
+  if (error) fail('user_progress', error, status)
 }
 
 /**
@@ -46,10 +65,10 @@ export async function writeSettings(
   now: Date = new Date(),
 ): Promise<Record<string, unknown>> {
   const merged = { ...current.raw, ...patch }
-  const { error } = await client
+  const { error, status } = await client
     .from('user_settings')
     .upsert({ user_id: userId, settings: merged, updated_at: now.toISOString() }, { onConflict: 'user_id' })
-  if (error) throw new Error(`user_settings: ${error.message}`)
+  if (error) fail('user_settings', error, status)
   return merged
 }
 
@@ -83,13 +102,13 @@ export async function upsertDailyMetrics(
   if (rows.length === 0) return
 
   const nowIso = now.toISOString()
-  const { error } = await client
+  const { error, status } = await client
     .from('user_daily_metrics')
     .upsert(
       rows.map((r) => toMetricsRow(userId, r, nowIso)),
       { onConflict: 'user_id,date' },
     )
-  if (error) throw new Error(`user_daily_metrics: ${error.message}`)
+  if (error) fail('user_daily_metrics', error, status)
 }
 
 /**
@@ -102,11 +121,11 @@ export async function writeHiddenWords(client: SupabaseClient, userId: string, o
   const removed = ops.filter((o) => !o.hidden).map((o) => o.esWord)
 
   if (added.length > 0) {
-    const { error } = await client.from('user_hidden_words').upsert(added, { onConflict: 'user_id,es_word' })
-    if (error) throw new Error(`user_hidden_words: ${error.message}`)
+    const { error, status } = await client.from('user_hidden_words').upsert(added, { onConflict: 'user_id,es_word' })
+    if (error) fail('user_hidden_words', error, status)
   }
   if (removed.length > 0) {
-    const { error } = await client.from('user_hidden_words').delete().eq('user_id', userId).in('es_word', removed)
-    if (error) throw new Error(`user_hidden_words: ${error.message}`)
+    const { error, status } = await client.from('user_hidden_words').delete().eq('user_id', userId).in('es_word', removed)
+    if (error) fail('user_hidden_words', error, status)
   }
 }

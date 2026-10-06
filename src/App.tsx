@@ -4,7 +4,7 @@ import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEv
 import type { Word } from './data/types'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
-import { ensureSession, type AuthState } from './lib/auth'
+import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
 import { useDebugAccess } from './lib/useDebugAccess'
 import { getSupabase } from './lib/supabase'
 import { getWebApp, nativeBackButton } from './lib/telegram'
@@ -60,10 +60,25 @@ function App() {
   const readyData = data.status === 'ready' ? data.data : null
   const getSettings = readyData?.getSettings ?? null
   const userId = auth.status === 'signed-in' ? auth.userId : null
+  // A lost or refused session is replaced by signing in again through the proxy (never by a different user's session).
+  const recoverSession = useCallback(async () => {
+    if (!client || !userId) return false
+    const result = await ensureSession(client, telegram.initData, telegram.user?.id ?? null, { force: true })
+    return result.status === 'signed-in' && result.userId === userId
+  }, [client, userId, telegram])
   const queue = useMemo(
-    () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings) : null),
-    [client, userId, getSettings],
+    () => (client && userId && getSettings ? createSupabaseWriteQueue(client, userId, getSettings, { recoverSession }) : null),
+    [client, userId, getSettings, recoverSession],
   )
+
+  // supabase-js drops its session when the auth server stops recognising it, and from then on sends the anon key:
+  // sign in again at once and let the queue send what waited.
+  useEffect(() => {
+    if (!client || !userId) return
+    return watchSessionLost(client, () => {
+      void recoverSession().then((ok) => ok && queue?.retry())
+    })
+  }, [client, userId, recoverSession, queue])
 
   // Today's metrics row: accumulated on this device, pushed through the queue's lowest-priority lane.
   const metrics = useMemo(

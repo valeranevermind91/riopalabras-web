@@ -428,7 +428,7 @@ describe('the Learn screen', () => {
   }
   const settings = parseSettings({})
   const data = { words: pool(300), settings, getSettings: () => settings, applyProgress: () => {}, applySettings: () => {}, applyHidden: () => {} } as never
-  const queue = createSupabaseWriteQueue(fakeSupabase().client, 'u', () => settings)
+  const queue = createSupabaseWriteQueue(fakeSupabase('u').client, 'u', () => settings)
 
   it('offers "I already know this word" as a quiet secondary action, apart from the arrows and Finish', () => {
     const html = renderToStaticMarkup(createElement(LearnScreen, { data, queue, metrics: null, onHome: () => {}, onReview: () => {} }))

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import { wordKey } from './words'
-import { upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
+import { WriteError, upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
 
 /** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
 export interface HiddenOp {
@@ -437,22 +437,59 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   }
 }
 
-/** The app's queue: progress goes through upsertProgress, settings through the merge-the-whole-blob write. */
+export interface SupabaseQueueOptions extends WriteQueueOptions {
+  /**
+   * Gets a usable session back for this user (refresh, or sign in again); true when it did. Without it a missing
+   * session is simply reported as "not signed in".
+   */
+  recoverSession?: () => Promise<boolean>
+}
+
+/** True when the client holds a session for exactly this user (the token it will put on the next request). */
+async function holdsSessionFor(client: SupabaseClient, userId: string): Promise<boolean> {
+  try {
+    const { data } = await client.auth.getSession()
+    return data.session?.user?.id === userId
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The app's queue: progress goes through upsertProgress, settings through the merge-the-whole-blob write.
+ *
+ * Every send first checks that the client really holds this user's session. supabase-js does not: with no session it
+ * quietly sends the public anon key instead, and the database then refuses the write (or, for a read, answers with an
+ * empty list), so an app that only remembers "signed in" looks fine while nothing is ever saved. Here a missing session
+ * is recovered once, and if that fails the write is not sent at all.
+ */
 export function createSupabaseWriteQueue(
   client: SupabaseClient,
   userId: string,
   getSettings: () => UserSettings,
-  options?: WriteQueueOptions,
+  options: SupabaseQueueOptions = {},
 ): WriteQueue {
+  const { recoverSession, ...queueOptions } = options
+  const recovered = async () => {
+    try {
+      return !!recoverSession && (await recoverSession()) && (await holdsSessionFor(client, userId))
+    } catch {
+      return false
+    }
+  }
+  const signedIn = async <T>(send: () => Promise<T>): Promise<T> => {
+    if (!(await holdsSessionFor(client, userId)) && !(await recovered())) {
+      throw new WriteError('session', "You're not signed in on this device", 401, 'NO_SESSION')
+    }
+    return send()
+  }
   return createWriteQueue(
     {
-      sendProgress: (updates) => upsertProgress(client, userId, updates),
-      sendSettings: async (patch) => {
-        await writeSettings(client, userId, getSettings(), patch)
-      },
-      sendHidden: (ops) => writeHiddenWords(client, userId, ops),
-      sendMetrics: (rows) => upsertDailyMetrics(client, userId, rows),
+      sendProgress: (updates) => signedIn(() => upsertProgress(client, userId, updates)),
+      sendSettings: (patch) => signedIn(async () => void (await writeSettings(client, userId, getSettings(), patch))),
+      sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
+      sendMetrics: (rows) => signedIn(() => upsertDailyMetrics(client, userId, rows)),
     },
-    options,
+    queueOptions,
   )
 }
