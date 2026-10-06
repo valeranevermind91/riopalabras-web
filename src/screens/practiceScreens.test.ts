@@ -57,30 +57,30 @@ describe('Home: the two practice buttons', () => {
 
   it('are enabled and named once 5 words qualify, in English with either translation language', () => {
     const en = home(words(6), { show_ru_translation: false, show_en_translation: true })
-    expect(en).toContain('Practice Matching')
-    expect(en).toContain('Practice Cloze')
+    expect(en).toContain('tile-label">Matching<')
+    expect(en).toContain('tile-label">Cloze<')
     expect(en).not.toContain('Need 5+ words')
     const ru = home(words(6)) // default settings: Russian translations
-    expect(ru).toContain('Practice Matching')
-    expect(ru).toContain('Practice Cloze')
+    expect(ru).toContain('tile-label">Matching<')
+    expect(ru).toContain('tile-label">Cloze<')
     expect(ru).not.toMatch(/[А-Яа-яЁё]/) // no Russian chrome anywhere on Home
   })
 
   it('count words independently: Matching needs 5 words with different glosses, Cloze needs 5 with a blank', () => {
+    const tileOf = (html: string, id: string) => html.match(new RegExp(`<button[^>]*data-tile="${id}"[^>]*>`))![0]
     const sameGloss = words(6).map((w) => ({ ...w, ruTranslation: 'одно и то же' }))
     const html = home(sameGloss, { show_ru_translation: false, show_en_translation: true })
-    expect(html).toContain('Need 5+ words') // Matching: all six collide
-    expect(html).toContain('Practice Cloze') // Cloze still has six usable blanks
+    expect(tileOf(html, 'matching')).toContain('disabled') // Matching: all six collide
+    expect(tileOf(html, 'cloze')).not.toContain('disabled') // Cloze still has six usable blanks
     const noBlank = words(6).map((w) => ({ ...w, exampleSentence: 'Una frase sin la palabra buscada.' }))
     const html2 = home(noBlank, { show_ru_translation: false, show_en_translation: true })
-    expect(html2).toContain('Practice Matching')
-    expect(html2).toContain('Need 5+ words')
+    expect(tileOf(html2, 'matching')).not.toContain('disabled')
+    expect(tileOf(html2, 'cloze')).toContain('disabled')
   })
 
-  it('sit below Review and Learn', () => {
+  it('sit below Learn and Review, in the grid order', () => {
     const html = home(words(6), { show_ru_translation: false, show_en_translation: true })
-    expect(html.indexOf('Review')).toBeLessThan(html.indexOf('Practice Matching'))
-    expect(html.indexOf('Practice Matching')).toBeLessThan(html.indexOf('Practice Cloze'))
+    expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'matching', 'cloze'])
   })
 })
 

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { strings } from '../strings'
 
-/** Title row. `onBack` is passed only where Telegram's native BackButton isn't available; `actions` sit at the right edge. */
-export function ScreenHeader({ title, onBack, actions }: { title: string; onBack?: () => void; actions?: ReactNode }) {
+/** Title row. `onBack` is passed only where Telegram's native BackButton isn't available; `actions` sit at the right edge; `brand` sets the title in the display face (the app name). */
+export function ScreenHeader({ title, onBack, actions, brand }: { title: string; onBack?: () => void; actions?: ReactNode; brand?: boolean }) {
   return (
     <header className="screen-header">
       {onBack && (
@@ -10,7 +10,7 @@ export function ScreenHeader({ title, onBack, actions }: { title: string; onBack
           ‹ {strings.common.back}
         </button>
       )}
-      <h1>{title}</h1>
+      <h1 className={brand ? 'brand home-title' : undefined}>{title}</h1>
       {actions && <div className="screen-header-actions">{actions}</div>}
     </header>
   )

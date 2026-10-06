@@ -36,6 +36,19 @@ export const strings = {
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
+    streak: (n: number) => `${n}-day streak`,
+    streakDots: (active: number) => `Active on ${active} of the last 7 days`,
+    today: (learned: number, limit: number) => `Today ${learned} / ${limit}`,
+    wotdPill: 'palabra del día',
+    wotdTitle: 'Word of the day',
+    seeCard: 'See the card →',
+    // action tiles: the English label, the Spanish word under it, and why a tile is disabled
+    tiles: {
+      learn: { label: 'Learn', es: 'aprender' },
+      review: { label: 'Review', es: 'repasar' },
+      matching: { label: 'Matching', es: 'parejas' },
+      cloze: { label: 'Cloze', es: 'completar' },
+    },
     unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
   },
 
@@ -63,6 +76,7 @@ export const strings = {
 
   review: {
     title: 'Review',
+    progress: (n: number, m: number) => `${n} / ${m}`,
     cardNofM: (n: number, m: number) => `Card ${n} of ${m}`,
     tapToReveal: 'Tap to reveal',
     howWell: 'How well did you know it?',

@@ -2,11 +2,15 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ThemeToggle } from '../components/ThemeToggle'
-import type { MetricsRecorder } from '../data/metrics'
+import { learnedToday } from '../data/daily'
+import { localDateKey } from '../data/dates'
+import { lastDays, type MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats, type Stats } from '../data/stats'
+import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
 import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
+import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
@@ -20,30 +24,36 @@ interface HomeScreenProps {
   onReview: () => void
   onMatching: () => void
   onCloze: () => void
+  /** Opens a word's full card (the word of the day's "See the card"). */
+  onOpenWord?: (word: Word) => void
   /** Absent when the user may not open Debug: the link is then not rendered at all. */
   onDebug?: () => void
   queue: WriteQueue | null
-  metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
+  metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> & Partial<Pick<MetricsRecorder, 'today'>> | null
   /** The theme toggle in the header; absent where there is nothing to toggle. */
   theme?: { choice: ThemeChoice; scheme: Scheme; onCycle: () => void }
+  /** Dates with activity in the last 7 days, read from the server; null hides the dots. */
+  activity?: ReadonlySet<string> | null
+  /** "Now", injectable so the word of the day and the dots are testable. */
+  now?: Date
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onDebug, queue, metrics, theme }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onOpenWord, onDebug, queue, metrics, theme, activity = null, now: nowProp }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
-    () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, new Date()) : null),
-    [data],
+    () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, nowProp ?? new Date()) : null),
+    [data, nowProp],
   )
 
-  // How many words each practice exercise can use, recomputed with the stats each time Home is shown.
-  const practice = useMemo(() => {
+  // How many words each practice exercise can use, and today's word.
+  const extras = useMemo(() => {
     if (data.status !== 'ready') return null
     return {
       matching: matchingEligibleCount(data.data.words),
       cloze: clozeEligibleCount(data.data.words),
-      t: strings.practice.en, // chrome: English
+      wotd: wordOfTheDay(data.data.words, data.data.settings, nowProp ?? new Date()),
     }
-  }, [data])
+  }, [data, nowProp])
 
   // The start-of-day snapshot (due / pool / limit), captured the first time Home shows each day; a no-op after that.
   useEffect(() => {
@@ -52,50 +62,46 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     }
   }, [stats, metrics])
 
-  const tiles = practice && stats ? buildTiles(stats, practice, { onLearn, onReview, onMatching, onCloze }) : []
+  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze }) : []
+  const now = nowProp ?? new Date()
+  const todayKey = localDateKey(now)
 
   return (
     <main className="screen home">
-      <ScreenHeader title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />} />
+      <ScreenHeader brand title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />} />
 
-      {stats ? (
+      {stats && data.status === 'ready' ? (
         <>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-value">{stats.reviewDue}</div>
-              <div className="stat-label">{strings.home.toReviewToday}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">{stats.newToLearn}</div>
-              <div className="stat-label">{strings.home.newToLearn}</div>
-            </div>
-          </div>
+          <StatusRow stats={stats} data={data.data} activity={activity} todayActive={metrics?.today?.(now)?.active === true} todayKey={todayKey} now={now} />
 
           {queue && <UnsavedNotice queue={queue} />}
-          {data.status === 'ready' && data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
+          {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
-          {/* The actions live at the bottom: this wrapper takes all the space left over and the grid is the biggest square that fits in it. */}
-          <div className="home-grid-wrap">
-            <div className="home-grid">
-              {tiles.map((tile) => (
-                <button
-                  key={tile.id}
-                  type="button"
-                  className={`home-tile${tile.primary ? ' is-primary' : ''}`}
-                  data-tile={tile.id}
-                  disabled={tile.disabled}
-                  onClick={() => {
-                    haptic('tap')
-                    tile.onPress()
-                  }}
-                >
-                  <svg className="home-tile-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    {TILE_ICONS[tile.id]}
-                  </svg>
-                  <span className="home-tile-label">{tile.label}</span>
-                </button>
-              ))}
-            </div>
+          {extras?.wotd ? <WordOfTheDayCard wotd={extras.wotd} onOpen={onOpenWord} /> : <div className="home-spacer" />}
+
+          <div className="home-grid">
+            {tiles.map((tile) => (
+              <button
+                key={tile.id}
+                type="button"
+                className={`tile tile-${tile.id}`}
+                data-tile={tile.id}
+                disabled={tile.disabled}
+                onClick={() => {
+                  haptic('tap')
+                  tile.onPress()
+                }}
+              >
+                <svg className="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {TILE_ICONS[tile.id]}
+                </svg>
+                <span className="tile-text">
+                  <span className="tile-label">{tile.label}</span>
+                  <span className="tile-sub">{tile.disabled ? tile.reason : tile.es}</span>
+                </span>
+                {!tile.disabled && tile.count !== null && <span className="tile-count">{tile.count}</span>}
+              </button>
+            ))}
           </div>
         </>
       ) : (
@@ -113,47 +119,87 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   )
 }
 
+/** Seven dots (the last week, today last) and the streak on the left; today's progress against the daily limit on the right. */
+function StatusRow({ stats, data, activity, todayActive, todayKey, now }: { stats: Stats; data: UserData; activity: ReadonlySet<string> | null; todayActive: boolean; todayKey: string; now: Date }) {
+  const days = lastDays(now)
+  const active = activity ? days.filter((d) => activity.has(d) || (d === todayKey && todayActive)) : []
+  return (
+    <div className="home-status">
+      <div className="streak">
+        {activity && (
+          <span className="streak-dots" role="img" aria-label={strings.home.streakDots(active.length)}>
+            {days.map((d) => (
+              <span key={d} className={active.includes(d) ? 'streak-dot is-active' : 'streak-dot'} />
+            ))}
+          </span>
+        )}
+        <span>{strings.home.streak(stats.streak)}</span>
+      </div>
+      <span>{strings.home.today(learnedToday(data.settings, now), data.settings.dailyNewWordLimit)}</span>
+    </div>
+  )
+}
+
+function WordOfTheDayCard({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word: Word) => void }) {
+  const { sentence, range } = wotd
+  return (
+    <section className="wotd" aria-label={strings.home.wotdTitle}>
+      <div className="wotd-head">
+        <h2 className="wotd-word">{wotd.headword}</h2>
+        <span className="pill">{strings.home.wotdPill}</span>
+      </div>
+      <p className="wotd-sentence">
+        {sentence.slice(0, range.start)}
+        <mark>{sentence.slice(range.start, range.end)}</mark>
+        {sentence.slice(range.end)}
+      </p>
+      <hr className="wotd-divider" />
+      {wotd.translations.length > 0 && <p className="wotd-translation">{wotd.translations.join(' · ')}</p>}
+      {onOpen && (
+        <button type="button" className="link-btn" onClick={() => onOpen(wotd.word)}>
+          {strings.home.seeCard}
+        </button>
+      )}
+    </section>
+  )
+}
+
 export type TileId = 'learn' | 'review' | 'matching' | 'cloze'
 
 interface Tile {
   id: TileId
   label: string
+  /** The Spanish word under the label. */
+  es: string
+  /** Learn and Review show a count; the practice tiles do not. */
+  count: number | null
   disabled: boolean
-  primary: boolean
+  /** Why a disabled tile is disabled, shown in place of the Spanish word. */
+  reason: string
   onPress: () => void
 }
 
-/** The four action tiles, in grid order: Learn, Review / Matching, Cloze. Labels carry the counts; a disabled tile says why. */
+/** The four action tiles, in grid order: Learn, Review / Matching, Cloze. */
 function buildTiles(
   stats: Stats,
-  practice: { matching: number; cloze: number; t: (typeof strings.practice)['en'] },
+  practice: { matching: number; cloze: number },
   on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void },
 ): Tile[] {
-  const learnLabel =
-    stats.newToLearn > 0 ? strings.home.learnWithCount(stats.newToLearn) : stats.learnPool === 0 ? strings.home.learnPoolEmpty : strings.home.learnCapReached
+  const t = strings.home.tiles
+  const need = strings.practice.en.needWords
   return [
-    { id: 'learn', label: learnLabel, disabled: stats.newToLearn === 0, primary: true, onPress: on.onLearn },
     {
-      id: 'review',
-      label: stats.reviewDue > 0 ? strings.home.reviewWithCount(stats.reviewDue) : strings.home.reviewNothingDue,
-      disabled: stats.reviewDue === 0,
-      primary: false,
-      onPress: on.onReview,
+      id: 'learn',
+      label: t.learn.label,
+      es: t.learn.es,
+      count: stats.newToLearn,
+      disabled: stats.newToLearn === 0,
+      reason: stats.learnPool === 0 ? strings.home.learnPoolEmpty : strings.home.learnCapReached,
+      onPress: on.onLearn,
     },
-    {
-      id: 'matching',
-      label: practice.matching >= PRACTICE_MIN_WORDS ? practice.t.matchingButton : practice.t.needWords,
-      disabled: practice.matching < PRACTICE_MIN_WORDS,
-      primary: false,
-      onPress: on.onMatching,
-    },
-    {
-      id: 'cloze',
-      label: practice.cloze >= PRACTICE_MIN_WORDS ? practice.t.clozeButton : practice.t.needWords,
-      disabled: practice.cloze < PRACTICE_MIN_WORDS,
-      primary: false,
-      onPress: on.onCloze,
-    },
+    { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, onPress: on.onReview },
+    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, onPress: on.onMatching },
+    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, onPress: on.onCloze },
   ]
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
 import { bindClosingConfirmation, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
+import type { Word } from './data/types'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, type AuthState } from './lib/auth'
@@ -8,16 +9,18 @@ import { useDebugAccess } from './lib/useDebugAccess'
 import { getSupabase } from './lib/supabase'
 import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
+import { useRecentActivity } from './lib/useRecentActivity'
 import { useTheme } from './lib/useTheme'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
 import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
+import { WordScreen } from './screens/WordScreen'
 import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
 
-type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'debug'
+type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'word' | 'debug'
 type LeaveGuard = () => boolean | Promise<boolean>
 
 function readTelegramInfo(): TelegramInfo {
@@ -41,6 +44,7 @@ function App() {
   const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
 
   const [screen, setScreen] = useState<Screen>('home')
+  const [openWord, setOpenWord] = useState<Word | null>(null)
   const leaveGuard = useRef<LeaveGuard | null>(null)
   const registerLeaveGuard = useCallback((guard: LeaveGuard | null) => {
     leaveGuard.current = guard
@@ -95,6 +99,7 @@ function App() {
     [queue, applySettings],
   )
   const theme = useTheme(readyData?.settings ?? null, persistTheme)
+  const activity = useRecentActivity(client, userId)
 
   // Queue resilience: closing confirmation while anything is unsaved, slow background retries once stuck.
   useEffect(() => {
@@ -198,6 +203,10 @@ function App() {
     return <MatchingScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
   }
 
+  if (screen === 'word' && readyData && openWord) {
+    return <WordScreen word={openWord} data={readyData} onBack={inPageBack} />
+  }
+
   if (screen === 'cloze' && readyData && queue) {
     return <ClozeScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
   }
@@ -212,6 +221,11 @@ function App() {
       onCloze={() => setScreen('cloze')}
       onDebug={debugAllowed ? () => setScreen('debug') : undefined}
       theme={{ choice: theme.choice, scheme: theme.scheme, onCycle: theme.cycle }}
+      activity={activity}
+      onOpenWord={(word) => {
+        setOpenWord(word)
+        setScreen('word')
+      }}
       queue={queue}
       metrics={metrics}
     />
