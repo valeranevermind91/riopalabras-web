@@ -94,7 +94,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
         {status.failed ? (
           <section className="post-batch">
             <h2>{status.pendingRatings > 0 ? strings.review.ratingsNotSaved(status.pendingRatings) : strings.review.progressNotSaved}</h2>
-            <p className="subtitle">{strings.review.notSavedHint}</p>
+            <p className="subtitle">{status.authRejected ? strings.review.signInRejectedHint : strings.review.notSavedHint}</p>
             <div className="post-batch-actions">
               <button type="button" className="btn btn-primary" onClick={() => queue.retry()}>
                 {strings.review.retry}

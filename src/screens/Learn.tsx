@@ -210,7 +210,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
         <div className="learn-finish">
           {error !== null && (
             <p className="error" role="alert">
-              {strings.learn.saveFailed(error)}
+              {status.authRejected ? strings.learn.signInRejected : strings.learn.saveFailed(error)}
             </p>
           )}
           <button type="button" className="btn btn-primary" disabled={phase === 'saving'} onClick={phase === 'error' ? () => void queue.retry() : finish}>

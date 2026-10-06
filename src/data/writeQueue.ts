@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import { wordKey } from './words'
-import { WriteError, upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
+import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
 
 /** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
 export interface HiddenOp {
@@ -18,6 +18,11 @@ export interface QueueSender {
   sendHidden?: (ops: readonly HiddenOp[]) => Promise<void>
   /** Optional: the best-effort metrics lane is simply off without it. */
   sendMetrics?: (rows: readonly DailyMetricsRow[]) => Promise<void>
+  /**
+   * Optional: gets a usable session back (refresh, or sign in again). Called once when the server refuses a write
+   * for who is asking (401/403, row-level security); true means "try the same write again now".
+   */
+  recoverAuth?: () => Promise<boolean>
 }
 
 export interface QueueStatus {
@@ -54,6 +59,12 @@ export interface QueueStatus {
   metricsGaveUp: boolean
   /** Metrics rows are waiting only because progress or settings are still unsent (the lane goes last, by design). */
   metricsWaitingForProgress: boolean
+  /**
+   * The server refused a write for who is asking (no session, an expired login, a policy), in any lane, and
+   * getting a session back did not help. Retrying the same request cannot fix it: the UI says so at once.
+   * Clears when a write is accepted again.
+   */
+  authRejected: boolean
 }
 
 /** What enqueueBatch hands back: asks whether everything that batch queued has reached the server. */
@@ -106,8 +117,11 @@ export interface WriteQueueOptions {
   /** Waits between attempts of the metrics lane; once exhausted it idles until the next enqueue or retry(). */
   metricsRetryDelaysMs?: readonly number[]
   sleep?: (ms: number) => Promise<void>
+  /** A request that has not answered after this long counts as failed (the retries and the banner follow), instead of "saving" forever. */
+  sendTimeoutMs?: number
 }
 
+const DEFAULT_SEND_TIMEOUT_MS = 20_000
 const DEFAULT_RETRY_DELAYS_MS = [1000, 3000, 8000]
 const DEFAULT_CHUNK_SIZE = 100
 const DEFAULT_METRICS_RETRY_DELAYS_MS = [5000, 30_000, 120_000]
@@ -126,6 +140,18 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE
   const metricsDelays = options.metricsRetryDelaysMs ?? DEFAULT_METRICS_RETRY_DELAYS_MS
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+  const sendTimeoutMs = options.sendTimeoutMs ?? DEFAULT_SEND_TIMEOUT_MS
+
+  // Nothing waits for a request forever: a request that stays silent is a failure like any other. (The late
+  // answer, if it ever comes, is harmless: every write here is an idempotent upsert or delete.)
+  const within = <T>(request: Promise<T>): Promise<T> => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const silent = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`no answer after ${sendTimeoutMs} ms`)), sendTimeoutMs)
+    })
+    request.catch(() => {})
+    return Promise.race([request, silent]).finally(() => clearTimeout(timer))
+  }
 
   const progress = new Map<string, ProgressUpdate>()
   let settings: SettingsPatch | null = null
@@ -151,7 +177,12 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let metricsLastAttemptAt: string | null = null
   let metricsLastSuccessAt: string | null = null
   let metricsGaveUp = false
+  let metricsRecoveryTried = false
   let lastError: string | null = null
+  // The server refused the last progress/settings/hidden write (or metrics write) for who is asking.
+  let rejected = false
+  let metricsRejected = false
+  let recoveryTried = false // getting a session back is attempted once per failure, not on every retry
   let consecutiveFailures = 0
   let wakeBackoff: (() => void) | null = null
   // Set by flush()/retry(): the current drain stops sleeping between attempts.
@@ -178,6 +209,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     metricsLastSuccessAt,
     metricsGaveUp,
     metricsWaitingForProgress: metrics.size > 0 && hasPending(),
+    authRejected: rejected || metricsRejected,
   })
   let status = computeStatus()
 
@@ -207,7 +239,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   async function sendOnce() {
     while (progress.size > 0) {
       const chunk = [...progress.values()].slice(0, chunkSize)
-      await sender.sendProgress(chunk)
+      await within(sender.sendProgress(chunk))
       // Only forget what was actually sent: a newer state for the same word stays queued.
       for (const sent of chunk) {
         const key = wordKey(sent.esWord)
@@ -220,7 +252,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
     if (hiddenOps.size > 0) {
       const ops = [...hiddenOps.values()]
-      await sender.sendHidden?.(ops)
+      if (sender.sendHidden) await within(sender.sendHidden(ops))
       // Only forget what was sent: a newer state for the same word stays queued.
       for (const sent of ops) if (hiddenOps.get(wordKey(sent.esWord)) === sent) hiddenOps.delete(wordKey(sent.esWord))
       notify()
@@ -229,10 +261,18 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     if (settings) {
       const sent = settings
       const sentVersion = settingsVersion // every patch merged into `sent` has a version <= this
-      await sender.sendSettings(sent)
+      await within(sender.sendSettings(sent))
       if (settings === sent) settings = null
       settingsSavedVersion = Math.max(settingsSavedVersion, sentVersion)
       notify()
+    }
+  }
+
+  const recover = async () => {
+    try {
+      return (await sender.recoverAuth?.()) ?? false
+    } catch {
+      return false
     }
   }
 
@@ -261,9 +301,24 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         await sendOnce()
         consecutiveFailures = 0
         lastError = null
+        rejected = false
+        recoveryTried = false
       } catch (err) {
         lastError = messageOf(err)
         sending = false
+        if (isRejection(err)) {
+          // Refused for who is asking: waiting and sending the same thing again cannot change that. Get a session
+          // back once and try again at once; if that does not help, say so now instead of after a run of retries.
+          if (!recoveryTried && sender.recoverAuth) {
+            recoveryTried = true
+            if (await recover()) continue
+          }
+          rejected = true
+          failed = true
+          stuck = true
+          notify()
+          return
+        }
         if (consecutiveFailures >= delays.length) {
           failed = true
           stuck = true
@@ -291,15 +346,28 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       metricsAttempts++
       metricsLastAttemptAt = new Date().toISOString()
       try {
-        await send(rows)
+        await within(send(rows))
         // Only forget what was sent: a newer row for the same date stays queued.
         for (const sent of rows) if (metrics.get(sent.date) === sent) metrics.delete(sent.date)
         metricsFailures = 0
         metricsError = null
+        metricsRejected = false
+        metricsRecoveryTried = false
         metricsLastSuccessAt = new Date().toISOString()
         notify()
       } catch (err) {
         metricsError = messageOf(err)
+        if (isRejection(err)) {
+          // Metrics stay best-effort, but a refusal for who is asking is not a hiccup: it is shown, and not retried in a loop.
+          if (!metricsRecoveryTried && sender.recoverAuth) {
+            metricsRecoveryTried = true
+            if (await recover()) continue
+          }
+          metricsRejected = true
+          metricsGaveUp = true
+          notify()
+          return
+        }
         notify()
         if (metricsFailures >= metricsDelays.length) {
           metricsGaveUp = true
@@ -336,6 +404,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const restart = () => {
     failed = false
     consecutiveFailures = 0
+    recoveryTried = false // Retry gets one more attempt at getting a session back
     lastError = null
     notify()
   }
@@ -355,6 +424,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       if (!metricsRun) {
         metricsFailures = 0
         metricsGaveUp = false
+        metricsRecoveryTried = false
       }
       kickMetrics()
       return Promise.resolve(true)
@@ -409,6 +479,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       if (!metricsRun) {
         metricsFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
         metricsGaveUp = false
+        metricsRecoveryTried = false
       }
       notify()
       kickMetrics()
@@ -440,7 +511,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 export interface SupabaseQueueOptions extends WriteQueueOptions {
   /**
    * Gets a usable session back for this user (refresh, or sign in again); true when it did. Without it a missing
-   * session is simply reported as "not signed in".
+   * session is simply reported as a rejection.
    */
   recoverSession?: () => Promise<boolean>
 }
@@ -461,7 +532,7 @@ async function holdsSessionFor(client: SupabaseClient, userId: string): Promise<
  * Every send first checks that the client really holds this user's session. supabase-js does not: with no session it
  * quietly sends the public anon key instead, and the database then refuses the write (or, for a read, answers with an
  * empty list), so an app that only remembers "signed in" looks fine while nothing is ever saved. Here a missing session
- * is recovered once, and if that fails the write is not sent at all.
+ * is recovered once, and if that fails the write is not sent at all and is reported as a rejection.
  */
 export function createSupabaseWriteQueue(
   client: SupabaseClient,
@@ -470,15 +541,12 @@ export function createSupabaseWriteQueue(
   options: SupabaseQueueOptions = {},
 ): WriteQueue {
   const { recoverSession, ...queueOptions } = options
-  const recovered = async () => {
-    try {
-      return !!recoverSession && (await recoverSession()) && (await holdsSessionFor(client, userId))
-    } catch {
-      return false
-    }
+  const recoverAuth = async () => {
+    if (!recoverSession) return false
+    return (await recoverSession()) && (await holdsSessionFor(client, userId))
   }
   const signedIn = async <T>(send: () => Promise<T>): Promise<T> => {
-    if (!(await holdsSessionFor(client, userId)) && !(await recovered())) {
+    if (!(await holdsSessionFor(client, userId)) && !(await recoverAuth())) {
       throw new WriteError('session', "You're not signed in on this device", 401, 'NO_SESSION')
     }
     return send()
@@ -489,6 +557,7 @@ export function createSupabaseWriteQueue(
       sendSettings: (patch) => signedIn(async () => void (await writeSettings(client, userId, getSettings(), patch))),
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
       sendMetrics: (rows) => signedIn(() => upsertDailyMetrics(client, userId, rows)),
+      recoverAuth,
     },
     queueOptions,
   )

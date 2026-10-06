@@ -17,6 +17,18 @@ export class WriteError extends Error {
   }
 }
 
+const AUTH_MESSAGE = /jwt|token.*(expired|invalid)|invalid.*token|not authenticated|no api key|invalid api key|row-level security|permission denied/i
+
+/**
+ * True when the server refused the write for who is asking, not for how it is asking: a missing or expired login (401,
+ * a JWT error), a policy refusing the row (403, 42501, row-level security), or no session at all on this device.
+ * Sending the same request again cannot change that; only a usable session can.
+ */
+export function isRejection(err: unknown): boolean {
+  if (!(err instanceof WriteError)) return false
+  return err.status === 401 || err.status === 403 || err.code === '42501' || err.code === 'PGRST301' || err.code === 'PGRST300' || err.code === 'NO_SESSION' || AUTH_MESSAGE.test(err.message)
+}
+
 const fail = (table: string, error: { message: string; code?: string }, status: number | null): never => {
   throw new WriteError(table, error.message, status, error.code || null)
 }

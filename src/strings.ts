@@ -49,6 +49,7 @@ export const strings = {
       cloze: { label: 'Cloze', es: 'completar' },
     },
     unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
+    signInRejected: "Your progress can't be saved: the sign-in was refused. Retry, or close and reopen the app to sign in again.",
   },
 
   theme: {
@@ -68,6 +69,7 @@ export const strings = {
     next: 'Next',
     finishBatch: 'Finish batch',
     saveFailed: (message: string) => `Couldn't save your progress: ${message}`,
+    signInRejected: "Couldn't save your progress: the sign-in was refused. Retry, or close and reopen the app to sign in again.",
     learnNextBatch: 'Learn next batch',
     reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
@@ -97,6 +99,7 @@ export const strings = {
     ratingsNotSaved: (n: number) => (n === 1 ? '1 rating not saved' : `${n} ratings not saved`),
     progressNotSaved: 'Your progress is not saved',
     notSavedHint: 'Check your connection and try again.',
+    signInRejectedHint: 'The sign-in was refused. Retry, or close and reopen the app to sign in again.',
     retry: 'Retry',
     leaveUnsaved: (n: number) =>
       n > 0

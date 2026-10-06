@@ -255,7 +255,7 @@ function UnsavedNotice({ queue }: { queue: WriteQueue }) {
   if (!showUnsavedNotice(status)) return null
   return (
     <Notice actionLabel={strings.home.retryNow} onAction={() => void queue.retry()}>
-      {strings.home.unsavedProgress}
+      {status.authRejected ? strings.home.signInRejected : strings.home.unsavedProgress}
     </Notice>
   )
 }
