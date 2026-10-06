@@ -1,39 +1,42 @@
 import { learnedState } from '../sm2/sm2'
 import { newWordsPatch, streakPatch } from './daily'
-import { headword } from './headword'
+import { pickBatch, type BatchPick } from './learnPick'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import type { QueueStatus, QueueTicket, WriteQueue } from './writeQueue'
 
 export const LEARN_BATCH_SIZE = 10
 
-export interface LearnBatch {
-  readonly words: readonly Word[]
+export interface LearnBatch extends BatchPick {
   /** Words in the batch that were never learned before — fixed when the batch is built, so a retry can't recount. */
   readonly newCount: number
 }
 
+/** A batch of exactly these words (no window behind it): what a screen or a test holds when the words are already decided. */
+export function batchOf(words: readonly Word[]): LearnBatch {
+  return {
+    words,
+    newCount: words.filter((w) => w.repetitions === 0).length,
+    strata: words.map((_, i) => i),
+    window: words,
+    windowStrata: words.map((_, i) => i),
+    reserve: [],
+    known: [],
+    dayKey: '',
+    size: words.length,
+  }
+}
+
+const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.words.filter((w) => w.repetitions === 0).length })
+
 /**
- * Next Learn batch: min(10, remainingToday) words from the pool in rank order. Two words that
- * would show the same headword never share a batch; the skipped one stays in the pool for a later
- * batch, and scanning continues until the batch is full. learn_picks are ignored for now.
+ * Next Learn batch: min(10, remainingToday) new words, spread over the next 150 candidates instead of taken
+ * from the head of the queue (see pickBatch). Known words are hidden, hence never candidates; only words the
+ * user actually learns are counted towards the daily limit (newCount is the batch itself). learn_picks are ignored for now.
  */
 export function selectLearnBatch(words: readonly Word[], settings: UserSettings, now: Date): LearnBatch {
   const limit = Math.min(LEARN_BATCH_SIZE, computeRemainingToday(settings, now))
-  const batch: Word[] = []
-  const used = new Set<string>()
-
-  if (limit > 0) {
-    for (const word of getLearnPool(words)) {
-      const key = headword(word).text.toLowerCase()
-      if (used.has(key)) continue
-      used.add(key)
-      batch.push(word)
-      if (batch.length >= limit) break
-    }
-  }
-
-  return { words: batch, newCount: batch.filter((w) => w.repetitions === 0).length }
+  return withCount(pickBatch(limit > 0 ? getLearnPool(words) : [], limit, now))
 }
 
 export function learnProgressUpdates(batch: LearnBatch, now: Date): ProgressUpdate[] {

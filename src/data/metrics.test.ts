@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
-import { createBatchFinisher, type LearnBatch } from './learn'
+import { batchOf, createBatchFinisher, type LearnBatch } from './learn'
 import {
   createLocalMetricsStore,
   createMetricsRecorder,
@@ -166,7 +166,7 @@ describe('a Learn session writes the day\'s metrics row', () => {
 
   it('marks the day active and mirrors the new-word counter when the batch is queued (once), and pushes the row after the batch lands', async () => {
     const a = app({ settingsRaw: { streak_count: 3, streak_last_activity_date: '2026-10-03', new_words_learned_today_count: 2, new_words_learned_today_date: KEY1 } })
-    const batch: LearnBatch = { words: ['uno', 'dos', 'tres'].map((w, i) => makeWord(w, { rank: i + 1 })), newCount: 3 }
+    const batch: LearnBatch = batchOf(['uno', 'dos', 'tres'].map((w, i) => makeWord(w, { rank: i + 1 })))
     a.setWords(batch.words)
     const finish = createBatchFinisher(batch, {
       queue: a.queue,

@@ -4,6 +4,7 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { parseDictionary } from './dictionary'
 import { headword } from './headword'
 import {
+  batchOf,
   createBatchFinisher,
   learnPhase,
   learnProgressUpdates,
@@ -50,12 +51,10 @@ function synthetic(esWord: string, rank: number, overrides: Partial<Word> = {}):
 }
 
 describe('selectLearnBatch', () => {
-  it('takes min(10, remainingToday) words in rank order', () => {
+  it('takes min(10, remainingToday) words', () => {
     const fresh = parseSettings({ daily_new_word_limit: 20 })
     const batch = selectLearnBatch(dictionary, fresh, NOW)
     expect(batch.words).toHaveLength(10)
-    const ranks = batch.words.map((w) => w.rank as number)
-    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
 
     const fourLeft = parseSettings({
       daily_new_word_limit: 10,
@@ -65,12 +64,13 @@ describe('selectLearnBatch', () => {
     expect(selectLearnBatch(dictionary, fourLeft, NOW).words).toHaveLength(4)
   })
 
-  it('serves the most frequent reviewable words first (rank 1 = most frequent), skipping function words', () => {
+  it('draws from the next 150 candidates (rank 1 = most frequent, function words skipped), not from the head of the queue alone', () => {
     const batch = selectLearnBatch(dictionary, parseSettings(null), NOW)
-    const ranks = batch.words.map((w) => w.rank)
-    expect(ranks[0]).toBe(5) // "ser" — ranks 1-4 (de, ella, que, el) are non-reviewable parts of speech
-    expect(batch.words[0].esWord).toBe('ser')
-    expect(Math.max(...(ranks as number[]))).toBeLessThan(50)
+    const pool = getLearnPool(dictionary)
+    const window = new Set(pool.slice(0, 150).map((w) => w.esWord))
+    expect(batch.words.every((w) => window.has(w.esWord))).toBe(true)
+    expect(pool.slice(0, 5).map((w) => w.esWord)).toContain('ser') // the head of the queue is ser, haber, ir…
+    expect(batch.words.map((w) => w.esWord).sort()).not.toEqual(pool.slice(0, 10).map((w) => w.esWord).sort())
   })
 
   it('is empty when the daily allowance is used up', () => {
@@ -97,7 +97,7 @@ describe('selectLearnBatch', () => {
       synthetic('perro', 5),
     ]
     const batch = selectLearnBatch(words, parseSettings({ daily_new_word_limit: 3 }), NOW)
-    expect(batch.words.map((w) => w.esWord)).toEqual(['chico', 'casa', 'perro'])
+    expect(batch.words.map((w) => w.esWord).sort()).toEqual(['casa', 'chico', 'perro'])
   })
 
   it('leaves skipped words in the pool for later batches', () => {
@@ -107,7 +107,7 @@ describe('selectLearnBatch', () => {
       synthetic('casa', 3),
     ]
     const first = selectLearnBatch(words, parseSettings(null), NOW)
-    expect(first.words.map((w) => w.esWord)).toEqual(['chico', 'casa'])
+    expect(first.words.map((w) => w.esWord).sort()).toEqual(['casa', 'chico'])
 
     const afterFirst = applyProgressUpdates(words, learnProgressUpdates(first, NOW))
     expect(getLearnPool(afterFirst).map((w) => w.esWord)).toEqual(['niño'])
@@ -146,7 +146,7 @@ describe('selectLearnBatch', () => {
 })
 
 describe('what Finish writes', () => {
-  const batch: LearnBatch = { words: [synthetic('Hacienda', 1), synthetic('casa', 2)], newCount: 2 }
+  const batch: LearnBatch = batchOf([synthetic('Hacienda', 1), synthetic('casa', 2)])
 
   it('progress: every word gets repetitions 1, interval 0, ease 2.5, due tomorrow at local midnight', () => {
     const updates = learnProgressUpdates(batch, NOW)
@@ -182,7 +182,7 @@ describe('what Finish writes', () => {
 })
 
 describe('createBatchFinisher (the batch goes through the write queue)', () => {
-  const batch: LearnBatch = { words: [synthetic('Hacienda', 1), synthetic('casa', 2), synthetic('perro', 3)], newCount: 3 }
+  const batch: LearnBatch = batchOf([synthetic('Hacienda', 1), synthetic('casa', 2), synthetic('perro', 3)])
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -319,7 +319,7 @@ describe('createBatchFinisher (the batch goes through the write queue)', () => {
   })
 
   it('an empty batch with nothing to change queues nothing and is saved at once', async () => {
-    const empty: LearnBatch = { words: [], newCount: 0 }
+    const empty: LearnBatch = batchOf([])
     const h = harness({ streak_last_activity_date: '2026-10-02' }, empty)
     const ticket = h.finish()
     expect(ticket.saved()).toBe(true)

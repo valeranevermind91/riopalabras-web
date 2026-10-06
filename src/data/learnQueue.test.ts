@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeWord } from '../testing/makeWord'
-import { createBatchFinisher, learnPhase, type LearnBatch } from './learn'
+import { batchOf, createBatchFinisher, learnPhase, type LearnBatch } from './learn'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
 import { bindClosingConfirmation, bindReconnectTriggers, retryEverything } from './queueTriggers'
 import { parseSettings } from './settings'
@@ -11,7 +11,7 @@ import { createSupabaseWriteQueue, createWriteQueue } from './writeQueue'
 
 const NOW = new Date(2026, 9, 4, 14, 30)
 const BATCH_WORDS = ['uno', 'dos', 'tres', 'cuatro']
-const batch: LearnBatch = { words: BATCH_WORDS.map((w, i) => makeWord(w, { rank: i + 1 })), newCount: 4 }
+const batch: LearnBatch = batchOf(BATCH_WORDS.map((w, i) => makeWord(w, { rank: i + 1 })))
 
 type Mode = 'ok' | 'fail' | 'lost-response' // lost-response: the server applies the write but the client sees an error
 
