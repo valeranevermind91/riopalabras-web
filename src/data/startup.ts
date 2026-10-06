@@ -1,3 +1,4 @@
+import { isOffline } from '../lib/online'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import type { PendingWrites, RestoreReport, WriteQueue } from './writeQueue'
 
@@ -20,7 +21,8 @@ export function restoreAndFlush(queue: WriteQueue, { waitMs = RESTORE_FLUSH_WAIT
   if (!run) {
     run = (async () => {
       const report = queue.restore()
-      if (report.restored === 0) return report
+      // Nothing to wait for with no network either: the restored writes are queued and shown, and go out when it is back.
+      if (report.restored === 0 || isOffline()) return report
       let timer: ReturnType<typeof setTimeout> | undefined
       const timeout = new Promise<void>((resolve) => {
         timer = setTimeout(resolve, waitMs)

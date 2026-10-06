@@ -3,7 +3,7 @@ import { newWordsPatch, streakPatch } from './daily'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
-import type { QueueStatus, QueueTicket, WriteQueue } from './writeQueue'
+import type { QueueTicket, WriteQueue } from './writeQueue'
 
 export const LEARN_BATCH_SIZE = 10
 
@@ -123,15 +123,14 @@ export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => 
   }
 }
 
-export type LearnPhase = 'reading' | 'saving' | 'error' | 'done'
+export type LearnPhase = 'reading' | 'done'
 
 /**
- * What the Learn screen shows after "Finish batch", derived from the queue instead of its own
- * state: still sending → saving; the queue gave up (automatic retries ran out) and this batch is
- * not saved → error (Retry); batch saved → done. Before the batch is finished it is just reading.
+ * What the Learn screen shows: reading until "Finish batch" is pressed, then done, at once. The batch is already
+ * applied to the in-memory words and settings, so everything the next screen needs is in memory; the write is the
+ * queue's business and is sent when it can be (its progress is `ticket.saved()` and the queue's status, and the
+ * unsaved-progress notice reports on it). Nothing on this screen waits for the network.
  */
-export function learnPhase(ticket: QueueTicket | null, status: Pick<QueueStatus, 'failed'>): LearnPhase {
-  if (!ticket) return 'reading'
-  if (ticket.saved()) return 'done'
-  return status.failed ? 'error' : 'saving'
+export function learnPhase(ticket: QueueTicket | null): LearnPhase {
+  return ticket ? 'done' : 'reading'
 }

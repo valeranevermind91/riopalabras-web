@@ -75,7 +75,7 @@ afterEach(() => {
 })
 
 describe('a failing Learn batch', () => {
-  it('surfaces in Learn, keeps the words queued, turns the closing confirmation on, raises the Home banner once stuck, and drains on reconnect', async () => {
+  it('lets Learn move on at once, keeps the words queued, turns the closing confirmation on, raises the Home banner once stuck, and drains on reconnect', async () => {
     const a = app()
     const confirmation: boolean[] = []
     const unbind = bindClosingConfirmation(a.queue, (on) => confirmation.push(on))
@@ -84,13 +84,15 @@ describe('a failing Learn batch', () => {
     // Finish batch
     const ticket = a.finish()
     expect(confirmation).toEqual([true]) // closing confirmation on as soon as the batch is queued
-    expect(learnPhase(ticket, a.queue.getStatus())).toBe('saving')
+    expect(learnPhase(ticket)).toBe('done') // the screen does not wait for the network
+    expect(ticket.saved()).toBe(false)
     expect(showUnsavedNotice(a.queue.getStatus())).toBe(false) // retries still running: no banner yet
 
     // The automatic retries run out
     await stuck(a.queue)
-    expect(learnPhase(ticket, a.queue.getStatus())).toBe('error') // Learn shows Failed / Retry
-    expect(a.queue.getStatus().error).toContain('user_progress unreachable') // the message Learn displays
+    expect(learnPhase(ticket)).toBe('done')
+    expect(a.queue.getStatus().failed).toBe(true)
+    expect(a.queue.getStatus().error).toContain('user_progress unreachable')
     expect(showUnsavedNotice(a.queue.getStatus())).toBe(true) // Home banner
     expect(confirmation).toEqual([true]) // still on
     expect(a.queue.getStatus()).toMatchObject({ pendingRatings: 4, pendingSettings: true }) // every word and the settings patch are still queued
@@ -115,7 +117,6 @@ describe('a failing Learn batch', () => {
     win.fire()
     await idle(a.queue)
 
-    expect(learnPhase(ticket, a.queue.getStatus())).toBe('done')
     expect(ticket.saved()).toBe(true)
     expect(showUnsavedNotice(a.queue.getStatus())).toBe(false) // banner went away by itself
     expect(confirmation).toEqual([true, false]) // closing confirmation off again
@@ -165,7 +166,7 @@ describe('the settings update is both-or-neither with the words', () => {
     }
   })
 
-  it('one side landing alone is visible: words in, counter pending → the batch is NOT saved and Learn keeps showing Retry', async () => {
+  it('one side landing alone is visible: words in, counter pending → the batch is NOT saved, and the queue says so (the banner), while Learn has moved on', async () => {
     const a = app()
     a.mode.user_settings = 'fail'
     const ticket = a.finish()
@@ -173,7 +174,7 @@ describe('the settings update is both-or-neither with the words', () => {
     expect([...a.progress.keys()]).toHaveLength(4) // the words did land
     expect(a.settings()).toEqual({}) // the counter did not
     expect(ticket.saved()).toBe(false)
-    expect(learnPhase(ticket, a.queue.getStatus())).toBe('error')
+    expect(a.queue.getStatus().failed).toBe(true)
     expect(a.queue.getStatus()).toMatchObject({ pendingRatings: 0, pendingSettings: true }) // only the settings part is queued, so only it is retried
   })
 })

@@ -330,11 +330,9 @@ describe('createBatchFinisher (the batch goes through the write queue)', () => {
 
 describe('learnPhase', () => {
   const ticket = (saved: boolean) => ({ saved: () => saved })
-  it('follows the queue: reading until the batch is queued, saving while it is sent, error once the queue gave up, done when saved', () => {
-    expect(learnPhase(null, { failed: false })).toBe('reading')
-    expect(learnPhase(ticket(false), { failed: false })).toBe('saving')
-    expect(learnPhase(ticket(false), { failed: true })).toBe('error')
-    expect(learnPhase(ticket(true), { failed: false })).toBe('done')
-    expect(learnPhase(ticket(true), { failed: true })).toBe('done') // a later item failing is not this batch's problem
+  it('reading until the batch is queued, done from that moment: whether it has been sent is the queue\'s business, never the screen\'s', () => {
+    expect(learnPhase(null)).toBe('reading')
+    expect(learnPhase(ticket(false))).toBe('done') // not sent yet (offline, retrying, failed): still done
+    expect(learnPhase(ticket(true))).toBe('done')
   })
 })

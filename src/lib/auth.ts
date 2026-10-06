@@ -5,7 +5,7 @@ const PROXY_URL = (import.meta.env.VITE_PROXY_URL ?? '').replace(/\/+$/, '')
 export type AuthResult =
   | { status: 'signed-in'; userId: string; telegramFirstName: string | null; source: 'existing' | 'telegram' }
   | { status: 'no-telegram' }
-  | { status: 'error'; message: string }
+  | { status: 'error'; message: string; /** The auth server could not be reached at all (no network), as opposed to refusing us. */ network?: true }
 
 /** Sign-in as the UI sees it: still working, or one of the three outcomes. */
 export type AuthState = { status: 'loading' } | AuthResult
@@ -14,6 +14,8 @@ interface ProxySession {
   access_token: string
   refresh_token: string
 }
+
+class AuthNetworkError extends Error {}
 
 async function fetchProxySession(initData: string): Promise<ProxySession> {
   if (!PROXY_URL) {
@@ -28,7 +30,7 @@ async function fetchProxySession(initData: string): Promise<ProxySession> {
       body: JSON.stringify({ initData }),
     })
   } catch {
-    throw new Error('Could not reach the auth server (network error or blocked by CORS)')
+    throw new AuthNetworkError('Could not reach the auth server (network error or blocked by CORS)')
   }
 
   if (!res.ok) {
@@ -92,7 +94,7 @@ async function run(client: SupabaseClient, initData: string, telegramUserId: num
       source: 'telegram',
     }
   } catch (err) {
-    return { status: 'error', message: err instanceof Error ? err.message : String(err) }
+    return { status: 'error', message: err instanceof Error ? err.message : String(err), ...(err instanceof AuthNetworkError ? { network: true as const } : {}) }
   }
 }
 

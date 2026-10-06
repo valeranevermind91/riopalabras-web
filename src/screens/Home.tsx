@@ -1,4 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
+import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -8,7 +9,6 @@ import { computeStats, type Stats } from '../data/stats'
 import { DOT_COUNT, STREAK_WINDOW, activityDots, streakFromDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
-import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
 import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
@@ -245,17 +245,6 @@ function DegradedNotice({ data }: { data: UserData }) {
     <Notice actionLabel={strings.home.retryNow} onAction={data.retryDegraded}>
       {strings.home.degraded(names)}
       {data.degraded.includes('user_hidden_words') && ` ${strings.home.degradedHiddenWarning}`}
-    </Notice>
-  )
-}
-
-/** Progress is stuck in the write queue (its retries ran out). Shown until the queue drains, then it goes away by itself. */
-function UnsavedNotice({ queue }: { queue: WriteQueue }) {
-  const status = useQueueStatus(queue)
-  if (!showUnsavedNotice(status)) return null
-  return (
-    <Notice actionLabel={strings.home.retryNow} onAction={() => void queue.retry()}>
-      {status.authRejected ? strings.home.signInRejected : strings.home.unsavedProgress}
     </Notice>
   )
 }

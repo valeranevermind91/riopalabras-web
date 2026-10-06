@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { UnsavedNotice } from '../components/UnsavedNotice'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
@@ -8,7 +9,6 @@ import { learnedToday } from '../data/daily'
 import { createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
-import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
@@ -35,14 +35,12 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
 
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
-  // The batch's place in the write queue, once "Finish batch" was pressed. The screen follows the queue: saving → error (Retry) → done.
+  // The batch's place in the write queue, once "Finish batch" was pressed. The screen is done at that moment: it does not wait for the network.
   const [ticket, setTicket] = useState<QueueTicket | null>(null)
-  const status = useQueueStatus(queue)
 
   const words = batch.words
   const lastIndex = words.length - 1
-  const phase = words.length === 0 ? 'done' : learnPhase(ticket, status)
-  const error = phase === 'error' ? (status.error ?? '') : null
+  const phase = words.length === 0 ? 'done' : learnPhase(ticket)
   const reading = phase === 'reading'
 
   const lastPhase = useRef(phase)
@@ -50,7 +48,6 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     if (lastPhase.current === phase) return
     lastPhase.current = phase
     if (phase === 'done') haptic('success')
-    else if (phase === 'error') haptic('error')
   }, [phase])
 
   // How the card in front arrives after a swipe: from where the leaving card would be one strip-length away (see arrivalOf).
@@ -141,7 +138,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     return (
       <main className="screen">
         <ScreenHeader title={strings.learn.title} onBack={onBack} />
-        <PostBatch data={data} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
+        <PostBatch data={data} queue={queue} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
       </main>
     )
   }
@@ -208,13 +205,8 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
 
       {onLastCard && (
         <div className="learn-finish">
-          {error !== null && (
-            <p className="error" role="alert">
-              {status.authRejected ? strings.learn.signInRejected : strings.learn.saveFailed(error)}
-            </p>
-          )}
-          <button type="button" className="btn btn-primary" disabled={phase === 'saving'} onClick={phase === 'error' ? () => void queue.retry() : finish}>
-            {phase === 'saving' ? strings.common.saving : phase === 'error' ? strings.common.retry : strings.learn.finishBatch}
+          <button type="button" className="btn btn-primary" onClick={finish}>
+            {strings.learn.finishBatch}
           </button>
         </div>
       )}
@@ -224,11 +216,13 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
 
 function PostBatch({
   data,
+  queue,
   onNextBatch,
   onReview,
   onHome,
 }: {
   data: UserData
+  queue: WriteQueue
   onNextBatch: () => void
   onReview: () => void
   onHome: () => void
@@ -256,6 +250,7 @@ function PostBatch({
 
   return (
     <section className="post-batch">
+      <UnsavedNotice queue={queue} />
       <h2>{title}</h2>
       {subtitle && <p className="subtitle">{subtitle}</p>}
       <div className="post-batch-actions">

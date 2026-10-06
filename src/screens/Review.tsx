@@ -1,18 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
 import { langFromSettings } from '../data/rio'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { UnsavedNotice } from '../components/UnsavedNotice'
 import { buildReviewSession, createRater } from '../data/review'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
-import { useQueueStatus } from '../data/useQueueStatus'
-import type { QueueStatus, WriteQueue } from '../data/writeQueue'
-import { confirmDialog, haptic } from '../lib/telegram'
+import type { WriteQueue } from '../data/writeQueue'
+import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { strings } from '../strings'
-
-type LeaveGuard = () => boolean | Promise<boolean>
 
 interface ReviewScreenProps {
   data: UserData
@@ -22,17 +20,15 @@ interface ReviewScreenProps {
   onLearn: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
-  registerLeaveGuard: (guard: LeaveGuard | null) => void
 }
 
-export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, registerLeaveGuard }: ReviewScreenProps) {
+export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: ReviewScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [session, setSession] = useState(() => buildReviewSession(data.words, new Date()))
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [completed, setCompleted] = useState(false)
   const ratedIndex = useRef(-1)
-  const status = useQueueStatus(queue)
 
   const [rate] = useState(() =>
     createRater({
@@ -43,14 +39,6 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
       ...(metrics ? { metrics } : {}),
     }),
   )
-
-  useEffect(() => {
-    registerLeaveGuard(() => {
-      const current = queue.getStatus()
-      return current.unsaved ? confirmDialog(strings.review.leaveUnsaved(current.pendingRatings)) : true
-    })
-    return () => registerLeaveGuard(null)
-  }, [queue, registerLeaveGuard])
 
   const reveal = () => {
     if (revealed || completed) return
@@ -68,7 +56,8 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
 
     if (index >= session.length - 1) {
       setCompleted(true)
-      // Send whatever is still queued now; the screen follows the queue's status, so a failure just shows Retry.
+      // Ask the queue to send what is still waiting. Nothing here waits for it: the ratings are already applied in memory,
+      // and if the network is gone they stay queued (and saved on the device) until it can be sent.
       void queue.flush().catch(() => {})
     } else {
       setIndex(index + 1)
@@ -91,37 +80,19 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
     return (
       <main className="screen">
         {header}
-        {status.failed ? (
-          <section className="post-batch">
-            <h2>{status.pendingRatings > 0 ? strings.review.ratingsNotSaved(status.pendingRatings) : strings.review.progressNotSaved}</h2>
-            <p className="subtitle">{status.authRejected ? strings.review.signInRejectedHint : strings.review.notSavedHint}</p>
-            <div className="post-batch-actions">
-              <button type="button" className="btn btn-primary" onClick={() => queue.retry()}>
-                {strings.review.retry}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={onHome}>
-                {strings.common.backToHome}
-              </button>
-            </div>
-          </section>
-        ) : status.unsaved ? (
-          <section className="post-batch">
-            <h2>{strings.review.saving}</h2>
-          </section>
-        ) : (
-          <section className="post-batch">
-            <h2>{strings.review.allCaughtUp}</h2>
-            <p className="subtitle">{strings.review.allCaughtUpSubtitle}</p>
-            <div className="post-batch-actions">
-              <button type="button" className="btn btn-primary" onClick={onHome}>
-                {strings.common.backToHome}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={refresh}>
-                {strings.review.refresh}
-              </button>
-            </div>
-          </section>
-        )}
+        <UnsavedNotice queue={queue} />
+        <section className="post-batch">
+          <h2>{strings.review.allCaughtUp}</h2>
+          <p className="subtitle">{strings.review.allCaughtUpSubtitle}</p>
+          <div className="post-batch-actions">
+            <button type="button" className="btn btn-primary" onClick={onHome}>
+              {strings.common.backToHome}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={refresh}>
+              {strings.review.refresh}
+            </button>
+          </div>
+        </section>
       </main>
     )
   }
@@ -163,7 +134,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
         <span className="review-count">{strings.review.progress(index + 1, session.length)}</span>
       </header>
 
-      {status.failed && <UnsavedBanner status={status} queue={queue} />}
+      <UnsavedNotice queue={queue} />
 
       <div className="review-slot">
         <ReviewCard key={index} word={word} lang={langFromSettings(data.settings)} revealed={revealed} onReveal={reveal} />
@@ -171,18 +142,5 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, re
 
       <RatingButtons word={word} onRate={onRate} hidden={!revealed} />
     </main>
-  )
-}
-
-function UnsavedBanner({ status, queue }: { status: QueueStatus; queue: WriteQueue }) {
-  return (
-    <div className="banner" role="alert">
-      <span>
-        {status.pendingRatings > 0 ? strings.review.ratingsNotSaved(status.pendingRatings) : strings.review.progressNotSaved} —
-      </span>
-      <button type="button" className="btn-small" onClick={() => queue.retry()}>
-        {strings.review.retry}
-      </button>
-    </div>
   )
 }

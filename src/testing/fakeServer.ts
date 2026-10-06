@@ -32,7 +32,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   const log: { url: string; method: string; role: string; status: number }[] = []
   let nextUser = 1
   // Things a test can break on purpose.
-  const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null }
+  const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false }
 
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -121,12 +121,14 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   }
 
   const fetch: typeof globalThis.fetch = async (input, init) => {
+    if (broken.networkDown) throw new TypeError('Failed to fetch') // no network at all: nothing completes
     const request = new Request(input as RequestInfo, init)
     const url = new URL(request.url)
     let response: Response
     let role = 'none'
     const claims = claimsOf(request.headers.get('authorization'))
     if (claims) role = claims.expired ? 'expired' : String(claims.role)
+    if (url.pathname === '/auth/telegram' && broken.proxyUnreachable) throw new TypeError('Failed to fetch') // no network: the request never completes
     if (url.pathname === '/auth/telegram') response = await proxy(request)
     else if (url.pathname.startsWith('/auth/v1/')) response = await auth(url, request)
     else if (url.pathname.startsWith('/rest/v1/')) response = await rest(url, request)

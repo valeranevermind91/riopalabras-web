@@ -60,7 +60,7 @@ describe('reach: the markup', () => {
   const fresh = Array.from({ length: 12 }, (_, i) => makeWord(`nueva${i}`, { rank: i + 1 }))
 
   it('Review: a full-height page, the card slot, and the rating row last (with only the page padding below)', () => {
-    const html = renderToStaticMarkup(createElement(ReviewScreen, { data: data(due), queue, metrics: null, onHome: () => {}, onLearn: () => {}, registerLeaveGuard: () => {} }))
+    const html = renderToStaticMarkup(createElement(ReviewScreen, { data: data(due), queue, metrics: null, onHome: () => {}, onLearn: () => {} }))
     expect(html).toContain('<main class="screen fill">')
     const order = ['review-head', 'review-slot', 'class="rating'].map((c) => html.indexOf(c))
     expect(order.every((i) => i >= 0)).toBe(true)
@@ -75,7 +75,7 @@ describe('reach: the markup', () => {
     expect(hidden).toContain('aria-hidden="true"')
     expect(renderToStaticMarkup(createElement(RatingButtons, { word: w, onRate: () => {} }))).toContain('class="rating"')
     expect(rule('.rating.is-hidden')).toMatch(/visibility: hidden/)
-    const review = renderToStaticMarkup(createElement(ReviewScreen, { data: data(due), queue, metrics: null, onHome: () => {}, onLearn: () => {}, registerLeaveGuard: () => {} }))
+    const review = renderToStaticMarkup(createElement(ReviewScreen, { data: data(due), queue, metrics: null, onHome: () => {}, onLearn: () => {} }))
     expect(review).toContain('rating is-hidden') // nothing is revealed yet
   })
 

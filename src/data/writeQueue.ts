@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
+import { isOffline } from '../lib/online'
 import { fetchSettings, fetchSettingsRow } from './overlay'
 import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
 import { reconcileSettingsPatch } from './restoreRules'
@@ -678,10 +679,11 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
 export interface SupabaseQueueOptions extends WriteQueueOptions {
   /**
-   * Gets a usable session back for this user (refresh, or sign in again); true when it did. Without it a missing
-   * session is simply reported as a rejection.
+   * Gets a usable session back for this user (refresh, or sign in again): true when it did, false when it was refused,
+   * 'unreachable' when the auth server could not be reached at all (that is being offline, not a refusal). Without it a
+   * missing session is simply reported as a rejection.
    */
-  recoverSession?: () => Promise<boolean>
+  recoverSession?: () => Promise<boolean | 'unreachable'>
 }
 
 /** True when the client holds a session for exactly this user (the token it will put on the next request). */
@@ -711,13 +713,22 @@ export function createSupabaseWriteQueue(
   const { recoverSession, ...rest } = options
   // Persisted per signed-in user, so one account's unsent writes are never picked up by another.
   const queueOptions: WriteQueueOptions = { store: createQueueStore(userId), ...rest }
-  const recoverAuth = async () => {
-    if (!recoverSession) return false
-    return (await recoverSession()) && (await holdsSessionFor(client, userId))
+  /** Signs in again: 'yes', 'no' (refused) or 'unreachable' (no network). */
+  const recover = async (): Promise<'yes' | 'no' | 'unreachable'> => {
+    if (!recoverSession) return 'no'
+    const back = await recoverSession()
+    if (back === 'unreachable') return 'unreachable'
+    return back && (await holdsSessionFor(client, userId)) ? 'yes' : 'no'
   }
+  const recoverAuth = async () => (await recover()) === 'yes'
   const signedIn = async <T>(send: () => Promise<T>): Promise<T> => {
-    if (!(await holdsSessionFor(client, userId)) && !(await recoverAuth())) {
-      throw new WriteError('session', "You're not signed in on this device", 401, 'NO_SESSION')
+    // No network: nothing here can succeed and none of it is a refusal. Fail fast, so the queue's own retries (and, when
+    // they run out, the unsaved-progress notice) take over; the writes stay queued and saved on the device.
+    if (isOffline()) throw new Error('No connection')
+    if (!(await holdsSessionFor(client, userId))) {
+      const back = await recover()
+      if (back === 'unreachable') throw new Error('The server cannot be reached')
+      if (back === 'no') throw new WriteError('session', "You're not signed in on this device", 401, 'NO_SESSION')
     }
     return send()
   }

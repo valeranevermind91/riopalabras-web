@@ -16,7 +16,6 @@ export const strings = {
     retry: 'Retry',
     backToHome: 'Back to home',
     loading: 'Loading your words…',
-    saving: 'Saving…',
     reload: 'Reload',
     signInPrompt: 'Open inside Telegram to sign in.',
     loadFailed: (message: string) => `Couldn't load your data: ${message}`,
@@ -68,8 +67,6 @@ export const strings = {
     previous: 'Previous',
     next: 'Next',
     finishBatch: 'Finish batch',
-    saveFailed: (message: string) => `Couldn't save your progress: ${message}`,
-    signInRejected: "Couldn't save your progress: the sign-in was refused. Retry, or close and reopen the app to sign in again.",
     learnNextBatch: 'Learn next batch',
     reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
@@ -95,16 +92,6 @@ export const strings = {
     allCaughtUp: 'All caught up!',
     allCaughtUpSubtitle: 'No cards are due for review right now.',
     refresh: 'Refresh',
-    saving: 'Saving…',
-    ratingsNotSaved: (n: number) => (n === 1 ? '1 rating not saved' : `${n} ratings not saved`),
-    progressNotSaved: 'Your progress is not saved',
-    notSavedHint: 'Check your connection and try again.',
-    signInRejectedHint: 'The sign-in was refused. Retry, or close and reopen the app to sign in again.',
-    retry: 'Retry',
-    leaveUnsaved: (n: number) =>
-      n > 0
-        ? `${n === 1 ? '1 rating isn\'t' : `${n} ratings aren't`} saved yet. Leave anyway?`
-        : "Your progress isn't fully saved yet. Leave anyway?",
   },
 
   // Matching and Cloze chrome. English is used everywhere today; the Russian half waits for a UI-language setting.

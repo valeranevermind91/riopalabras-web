@@ -22,7 +22,6 @@ import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
 
 type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'word' | 'debug'
-type LeaveGuard = () => boolean | Promise<boolean>
 
 function readTelegramInfo(): TelegramInfo {
   const { webApp, isMock } = getWebApp()
@@ -48,6 +47,7 @@ function App() {
   const recoverSession = useCallback(async () => {
     if (!client || !userId) return false
     const result = await ensureSession(client, telegram.initData, telegram.user?.id ?? null, { force: true })
+    if (result.status === 'error' && result.network) return 'unreachable' // no network is not a refusal
     return result.status === 'signed-in' && result.userId === userId
   }, [client, userId, telegram])
   // The loaded settings, once there are any; until then writes that need them read the server's own copy.
@@ -91,16 +91,8 @@ function App() {
 
   const [screen, setScreen] = useState<Screen>('home')
   const [openWord, setOpenWord] = useState<Word | null>(null)
-  const leaveGuard = useRef<LeaveGuard | null>(null)
-  const registerLeaveGuard = useCallback((guard: LeaveGuard | null) => {
-    leaveGuard.current = guard
-  }, [])
-
-  // Every screen change goes through the active screen's leave guard (unsaved work asks first).
-  const go = useCallback(async (to: Screen) => {
-    if (leaveGuard.current && !(await leaveGuard.current())) return
-    setScreen(to)
-  }, [])
+  // Leaving a screen never asks and never waits: whatever is unsent is held by the queue (and saved on the device), not by the screen.
+  const go = useCallback((to: Screen) => setScreen(to), [])
 
   // supabase-js drops its session when the auth server stops recognising it, and from then on sends the anon key:
   // sign in again at once and let the queue send what waited.
@@ -242,7 +234,6 @@ function App() {
         onHome={() => void go('home')}
         onLearn={() => void go('learn')}
         onBack={inPageBack}
-        registerLeaveGuard={registerLeaveGuard}
       />
     )
   }

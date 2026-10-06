@@ -61,7 +61,7 @@ describe('the Review card and the rating buttons', () => {
     const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
     const settings = parseSettings({})
     const data = { words: due, settings, getSettings: () => settings, applyProgress: () => {}, applySettings: () => {} } as never
-    const props = { data, queue, metrics: null, onHome: () => {}, onLearn: () => {}, registerLeaveGuard: () => {} }
+    const props = { data, queue, metrics: null, onHome: () => {}, onLearn: () => {} }
     const html = renderToStaticMarkup(createElement(ReviewScreen, props))
     expect(html).toContain('<header class="review-head">')
     expect(html).toMatch(/<div class="bar" role="progressbar"[^>]*aria-valuemax="12"[^>]*aria-valuenow="1"/)
