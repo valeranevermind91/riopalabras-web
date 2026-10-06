@@ -589,6 +589,17 @@ mark {
   margin: 0 0 var(--block-gap);
   user-select: none;
   -webkit-user-select: none;
+}
+
+/*
+ * A horizontal drag must reach our pointer handlers. touch-action is only intersected up to the NEAREST scroll
+ * container, so the card (overflow-y: auto, for long content) starts a fresh `auto` for any touch inside it: the
+ * browser then claims the gesture as a pan and cancels the pointer after a couple of moves, and the swipe never
+ * completes. Every element in the swipe area therefore says pan-y itself: vertical scrolling stays with the
+ * browser, horizontal drags stay with us.
+ */
+.swipe-area,
+.swipe-area * {
   touch-action: pan-y;
 }
 

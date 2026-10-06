@@ -9,6 +9,7 @@ import type { UserData } from '../data/useUserData'
 import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueStatus, WriteQueue } from '../data/writeQueue'
 import { confirmDialog, haptic } from '../lib/telegram'
+import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { strings } from '../strings'
 
 type LeaveGuard = () => boolean | Promise<boolean>
@@ -25,6 +26,7 @@ interface ReviewScreenProps {
 }
 
 export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack, registerLeaveGuard }: ReviewScreenProps) {
+  useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [session, setSession] = useState(() => buildReviewSession(data.words, new Date()))
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)

@@ -11,6 +11,7 @@ import type { UserData } from '../data/useUserData'
 import { useQueueStatus } from '../data/useQueueStatus'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
+import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import type { ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
@@ -26,6 +27,7 @@ interface LearnScreenProps {
 }
 
 export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: LearnScreenProps) {
+  useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
   const finisher = useRef<(() => QueueTicket) | null>(null)

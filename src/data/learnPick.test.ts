@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
@@ -342,6 +342,14 @@ describe('a known word never comes back, anywhere', () => {
 
 describe('the daily counter counts only words actually learned', () => {
   const NOW = new Date(2026, 9, 5, 14, 30)
+  // The batch finisher stamps the real clock: pin it to the test's day, or the stored counter would be "from another day".
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
   const settings = () => parseSettings({ streak_count: 2, streak_last_activity_date: '2026-10-04', new_words_learned_today_count: 2, new_words_learned_today_date: '2026-10-05' })
 
   function session() {
@@ -376,7 +384,7 @@ describe('the daily counter counts only words actually learned', () => {
 
     const finish = createBatchFinisher(batch, { queue: s.queue, getSettings: s.getSettings, applyProgress: s.applyProgress, applySettings: s.applySettings })
     finish()
-    await new Promise((r) => setTimeout(r, 10))
+    await vi.waitFor(() => expect(s.queue.getStatus().unsaved).toBe(false))
 
     const progressRows = s.fake.calls.filter((c) => c.table === 'user_progress').flatMap((c) => c.rows as { es_word: string }[])
     expect(progressRows).toHaveLength(8)

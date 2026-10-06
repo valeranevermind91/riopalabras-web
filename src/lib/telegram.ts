@@ -50,6 +50,9 @@ export interface TelegramWebApp {
   // Chrome colours (Bot API 6.1+): a hex colour or 'bg_color' / 'secondary_bg_color'.
   setHeaderColor?: (color: string) => void
   setBackgroundColor?: (color: string) => void
+  // Vertical swipes (Bot API 7.7+): Telegram's swipe-down-to-minimize/close gesture.
+  disableVerticalSwipes?: () => void
+  enableVerticalSwipes?: () => void
   // Closing confirmation (Bot API 6.2+) and events ('activated' arrives with 8.0); absent in the dev mock.
   enableClosingConfirmation?: () => void
   disableClosingConfirmation?: () => void
@@ -164,5 +167,20 @@ export function onTelegramActivated(callback: () => void, webApp: TelegramWebApp
     } catch {
       // already gone
     }
+  }
+}
+
+/**
+ * Turns Telegram's own swipe-down-to-minimize gesture off (Bot API 7.7+) or back on. The Learn and Review cards
+ * scroll vertically inside themselves, and while they are scrolled to the top Telegram would otherwise take the
+ * next downward drag to minimize the app. A no-op outside Telegram, in older clients, and if the call throws.
+ */
+export function setVerticalSwipes(enabled: boolean, webApp: TelegramWebApp = getWebApp().webApp): void {
+  const call = enabled ? webApp.enableVerticalSwipes : webApp.disableVerticalSwipes
+  if (!call || !webApp.isVersionAtLeast?.('7.7')) return
+  try {
+    call.call(webApp)
+  } catch {
+    // a nicety, never a reason to break the screen
   }
 }
