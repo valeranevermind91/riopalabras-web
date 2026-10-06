@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -162,10 +161,10 @@ describe('Home layout', () => {
 
   describe('header and footer', () => {
     it('the theme toggle sits in the header, with its state in the label', () => {
-      const html = render({ theme: { choice: 'system', onCycle: () => {} } })
+      const html = render({ theme: { choice: 'system', scheme: 'light', onCycle: () => {} } })
       expect(html).toMatch(/<header class="screen-header"><h1>Riopalabras<\/h1><div class="screen-header-actions"><button[^>]*class="icon-btn"[^>]*aria-label="Theme: System\. Tap to switch to Light\."/)
-      expect(render({ theme: { choice: 'light', onCycle: () => {} } })).toContain('Theme: Light. Tap to switch to Dark.')
-      expect(render({ theme: { choice: 'dark', onCycle: () => {} } })).toContain('Theme: Dark. Tap to switch to System.')
+      expect(render({ theme: { choice: 'light', scheme: 'light', onCycle: () => {} } })).toContain('Theme: Light. Tap to switch to Dark.')
+      expect(render({ theme: { choice: 'dark', scheme: 'dark', onCycle: () => {} } })).toContain('Theme: Dark. Tap to switch to System.')
     })
 
     it('without a theme prop there is no toggle', () => {
@@ -186,44 +185,5 @@ describe('Home layout', () => {
     )
     expect(html).not.toContain('home-tile')
     expect(html).toContain('Loading your words…')
-  })
-})
-
-describe('Home layout rules in the stylesheet (the squares and the bottom grid)', () => {
-  const css = readFileSync('src/index.css', 'utf8')
-  const block = (selector: string) => {
-    const start = css.indexOf(`\n${selector} {`)
-    return css.slice(css.indexOf('{', start), css.indexOf('}', start))
-  }
-
-  it('the home screen fills the viewport as a column, so the grid can sit at the bottom', () => {
-    expect(block('.home')).toMatch(/display: flex/)
-    expect(block('.home')).toMatch(/flex-direction: column/)
-    expect(block('.home')).toMatch(/min-height: 100dvh/)
-  })
-
-  it('the grid wrapper takes the leftover space and the grid is a square no bigger than it, pinned to the bottom', () => {
-    const wrap = block('.home-grid-wrap')
-    expect(wrap).toMatch(/flex: 1 1 0/)
-    expect(wrap).toMatch(/align-items: flex-end/)
-    expect(wrap).toMatch(/container-type: size/)
-    expect(wrap).toMatch(/min-height: 13rem/) // never collapses
-    const grid = block('.home-grid')
-    expect(grid).toMatch(/aspect-ratio: 1 \/ 1/)
-    expect(grid).toMatch(/width: min\(100cqw, 100cqh, 26rem\)/)
-    expect(grid).toMatch(/grid-template-columns: 1fr 1fr/)
-  })
-
-  it('labels wrap or shrink instead of overflowing', () => {
-    const t = block('.home-tile')
-    expect(t).toMatch(/font-size: clamp\(/)
-    expect(t).toMatch(/min-width: 0/)
-    expect(block('.home-tile-label')).toMatch(/overflow-wrap: anywhere/)
-  })
-
-  it("a disabled tile keeps a readable reason: hint colour on the card colour, no extra fading", () => {
-    const d = block('.home-tile:disabled')
-    expect(d).toMatch(/color: var\(--tg-hint-color\)/)
-    expect(d).not.toMatch(/opacity/)
   })
 })

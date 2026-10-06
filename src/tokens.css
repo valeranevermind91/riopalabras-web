@@ -1,0 +1,109 @@
+/*
+ * Design tokens: the ONLY place colours are written down. Every component reads these custom
+ * properties; src/lib/palette.test.ts fails on a hex colour anywhere else in the source and checks
+ * the contrast of both palettes.
+ *
+ *   teal      the learning path: Learn, Review, progress, "correct"
+ *   lavender  practice and optional things: Matching, Cloze
+ *   amber     the target word inside a sentence, and nowhere else (--hl-*, plus the Hard rating)
+ *   neutrals  warm, never pure white or pure black
+ *
+ * The page carries data-theme="light|dark" (src/lib/theme.ts). Telegram supplies only which of the
+ * two schemes to show; the colours are always ours, so the app looks the same in every Telegram theme.
+ */
+
+:root,
+:root[data-theme='light'] {
+  --page: #f6f4f0;
+  --surface: #ffffff;
+  --surface-2: #f6f4f0;
+  --border: #e6e2da;
+  --border-soft: #edeae3;
+
+  --text: #16211f;
+  --text-2: #2c3836;
+  --muted: #63726f;
+  /* decorative marks on --surface only (chevrons, separators): never text, never on --page */
+  --muted-2: #8a9794;
+
+  --teal: #0e7c78;
+  --teal-ink: #ffffff;
+  --teal-soft: #dceeec;
+  --teal-soft-border: #c2e0dd;
+  --teal-on-soft: #0a4f4c;
+  --teal-on-soft-2: #35736f;
+
+  --lav: #6150a8;
+  --lav-ink: #ffffff;
+  --lav-soft: #e9e5f7;
+  --lav-soft-border: #d8d0f0;
+  --lav-on-soft: #43357f;
+  --lav-on-soft-2: #52429b;
+
+  --hl-bg: #fbebc2;
+  --hl-text: #6b4e06;
+
+  --ok: #17714c;
+  --ok-bg: #e4f3ec;
+  --ok-border: #bfe2d2;
+  --ok-text: #2e5f4b;
+
+  --bad: #a83c3c;
+  --bad-bg: #f8e8e6;
+  --bad-border: #edcfcb;
+}
+
+:root[data-theme='dark'] {
+  --page: #0e1618;
+  --surface: #15201f;
+  --surface-2: #1c2927;
+  --border: #26332f;
+  --border-soft: #26332f;
+
+  --text: #e9efec;
+  --text-2: #c7d3d0;
+  --muted: #8fa19d;
+  --muted-2: #9daca9;
+
+  --teal: #2fa39b;
+  --teal-ink: #06211f;
+  --teal-soft: #10302d;
+  --teal-soft-border: #1c4642;
+  --teal-on-soft: #cfefeb;
+  --teal-on-soft-2: #6fbdb6;
+
+  --lav: #a99be8;
+  --lav-ink: #14102a;
+  --lav-soft: #221e36;
+  --lav-soft-border: #332c52;
+  --lav-on-soft: #dcd6f4;
+  --lav-on-soft-2: #9188cc;
+
+  --hl-bg: rgba(240, 206, 126, 0.17);
+  --hl-text: #f0ce7e;
+
+  --ok: #4cc98a;
+  --ok-bg: #12301f;
+  --ok-border: #1e4b33;
+  --ok-text: #9edcbb;
+
+  --bad: #f08080;
+  --bad-bg: #2c1a1c;
+  --bad-border: #5a2f31;
+}
+
+/* Shape, spacing and type: the same in both themes. */
+:root {
+  --radius-card: 22px;
+  --radius-card-lg: 24px;
+  --radius-tile: 20px;
+  --radius-button: 16px;
+  --radius-small: 14px;
+  --radius-pill: 6px;
+
+  --page-pad: 20px;
+  --block-gap: 16px;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

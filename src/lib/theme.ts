@@ -5,18 +5,15 @@ import type { TelegramWebApp } from './telegram'
  *
  *   choice  system | light | dark  (the user's pick; "system" is the default)
  *   scheme  light | dark           (what is actually shown)
- *   source  telegram | palette     (where the colours come from)
  *
- * "system" follows Telegram's own scheme inside Telegram and the OS preference outside it. Inside
- * Telegram the colours come from Telegram's themeParams whenever the shown scheme is the client's
- * own scheme, so the app matches the client's chrome. When the user forces the OTHER scheme
- * (light in a dark client), Telegram's colours would be wrong, so the app's own designed palette
- * for that scheme is used instead. Outside Telegram it is always the app's palette.
+ * "system" follows Telegram's own scheme inside Telegram and the OS preference outside it. Telegram
+ * supplies ONLY the scheme: the colours are always the app's own palette (src/tokens.css), so the
+ * app looks the same in every Telegram theme. Inside Telegram, the client's header and background
+ * are set to the app's page colour for the scheme being shown.
  */
 
 export type ThemeChoice = 'system' | 'light' | 'dark'
 export type Scheme = 'light' | 'dark'
-export type ThemeSource = 'telegram' | 'palette'
 
 export const THEME_CHOICES: readonly ThemeChoice[] = ['system', 'light', 'dark']
 /** The key in the user_settings blob. */
@@ -50,18 +47,11 @@ export interface ThemeEnv {
   prefersDark: boolean
 }
 
-export interface ResolvedTheme {
-  scheme: Scheme
-  source: ThemeSource
-}
-
-export function resolveTheme(choice: ThemeChoice, env: ThemeEnv): ResolvedTheme {
-  if (choice === 'system') {
-    return env.telegramScheme !== null
-      ? { scheme: env.telegramScheme, source: 'telegram' }
-      : { scheme: env.prefersDark ? 'dark' : 'light', source: 'palette' }
-  }
-  return { scheme: choice, source: env.telegramScheme === choice ? 'telegram' : 'palette' }
+/** The scheme to show: an explicit choice wins; "system" is Telegram's scheme inside Telegram, otherwise the OS preference. */
+export function resolveScheme(choice: ThemeChoice, env: ThemeEnv): Scheme {
+  if (choice !== 'system') return choice
+  if (env.telegramScheme !== null) return env.telegramScheme
+  return env.prefersDark ? 'dark' : 'light'
 }
 
 /** Inside Telegram means a real session: the stub that telegram-web-app.js defines in a plain browser has no initData. */
@@ -105,46 +95,34 @@ export function storeChoice(choice: ThemeChoice, storage: StorageLike | null = d
   }
 }
 
-/** The app's own page colour per scheme, used for Telegram's header when the palette (not Telegram) is in charge. Kept equal to --tg-bg-color in index.css (a test checks). */
-export const PALETTE_BG: Record<Scheme, string> = { light: '#ffffff', dark: '#17212b' }
-
 export interface ThemeRoot {
   dataset: Record<string, string | undefined>
-  style: { setProperty: (name: string, value: string) => void; removeProperty: (name: string) => unknown; colorScheme?: string }
+  style: { colorScheme?: string }
 }
 
-type ThemeWebApp = Pick<TelegramWebApp, 'initData' | 'themeParams' | 'isVersionAtLeast' | 'setHeaderColor' | 'setBackgroundColor'>
+type ThemeWebApp = Pick<TelegramWebApp, 'initData' | 'isVersionAtLeast' | 'setHeaderColor' | 'setBackgroundColor'>
 
-const appliedVars = new WeakMap<object, string[]>()
-
-/** `--tg-<key>` for every themeParams entry that has a value ("bg_color" → "--tg-bg-color"). */
-export function telegramThemeVars(themeParams: Record<string, string | undefined>): [string, string][] {
-  return Object.entries(themeParams).flatMap(([key, value]) => (value ? [[`--tg-${key.replace(/_/g, '-')}`, value] as [string, string]] : []))
+/** The page colour of the scheme just applied, read from the stylesheet (--page in tokens.css), so no colour is written down twice. */
+function pageColorOf(): string {
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue('--page').trim()
+  } catch {
+    return ''
+  }
 }
 
 /**
- * Puts a resolved theme on the page: data-theme / data-theme-source and the native colour-scheme
- * always; Telegram's themeParams as --tg-* variables only when Telegram is the source (otherwise
- * the stylesheet's palette for the scheme applies, so any earlier Telegram values are removed);
- * and, inside Telegram, the header and background colours so the client's chrome matches.
+ * Puts a scheme on the page: data-theme and the native colour-scheme (form controls, scrollbars),
+ * and, inside Telegram (6.1+), the client's header and background colour set to the app's --page so
+ * the chrome around the app matches it. `pageColor` is injectable for tests.
  */
-export function applyTheme(root: ThemeRoot, resolved: ResolvedTheme, webApp: ThemeWebApp | null): void {
-  root.dataset.theme = resolved.scheme
-  root.dataset.themeSource = resolved.source
-  root.style.colorScheme = resolved.scheme
-
-  for (const name of appliedVars.get(root) ?? []) root.style.removeProperty(name)
-  const names: string[] = []
-  if (resolved.source === 'telegram' && webApp) {
-    for (const [name, value] of telegramThemeVars(webApp.themeParams)) {
-      root.style.setProperty(name, value)
-      names.push(name)
-    }
-  }
-  appliedVars.set(root, names)
+export function applyTheme(root: ThemeRoot, scheme: Scheme, webApp: ThemeWebApp | null, pageColor: () => string = pageColorOf): void {
+  root.dataset.theme = scheme
+  root.style.colorScheme = scheme
 
   if (insideTelegram(webApp) && webApp!.isVersionAtLeast?.('6.1')) {
-    const color = resolved.source === 'telegram' ? 'bg_color' : PALETTE_BG[resolved.scheme]
+    const color = pageColor()
+    if (!color) return
     try {
       webApp!.setHeaderColor?.(color)
       webApp!.setBackgroundColor?.(color)

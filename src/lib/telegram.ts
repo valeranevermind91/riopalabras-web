@@ -77,15 +77,7 @@ const MOCK_WEB_APP: TelegramWebApp = {
   initData: '',
   initDataUnsafe: { user: MOCK_USER },
   colorScheme: 'light',
-  themeParams: {
-    bg_color: '#ffffff',
-    text_color: '#222222',
-    hint_color: '#999999',
-    link_color: '#2678b6',
-    button_color: '#50a8eb',
-    button_text_color: '#ffffff',
-    secondary_bg_color: '#f0f0f0',
-  },
+  themeParams: {}, // unused: the app's colours are its own (src/tokens.css); only colorScheme is read
   ready: () => {},
   expand: () => {},
 }

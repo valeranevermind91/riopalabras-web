@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { parseSettings } from '../data/settings'
 import {
-  PALETTE_BG,
   THEME_SETTING_KEY,
   THEME_STORAGE_KEY,
   applyTheme,
@@ -12,9 +11,8 @@ import {
   parseThemeChoice,
   readStoredChoice,
   readThemeEnv,
-  resolveTheme,
+  resolveScheme,
   storeChoice,
-  telegramThemeVars,
   themePatch,
   type Scheme,
   type ThemeChoice,
@@ -24,32 +22,29 @@ import {
 
 const env = (telegramScheme: Scheme | null, prefersDark = false): ThemeEnv => ({ telegramScheme, prefersDark })
 
-describe('resolveTheme', () => {
-  it('system inside Telegram follows Telegram, with Telegram as the colour source', () => {
-    expect(resolveTheme('system', env('dark'))).toEqual({ scheme: 'dark', source: 'telegram' })
-    expect(resolveTheme('system', env('light'))).toEqual({ scheme: 'light', source: 'telegram' })
+describe('resolveScheme', () => {
+  it('system inside Telegram follows Telegram\'s scheme', () => {
+    expect(resolveScheme('system', env('dark'))).toBe('dark')
+    expect(resolveScheme('system', env('light'))).toBe('light')
   })
 
   it("system inside Telegram ignores the OS preference: the client's scheme is the truth", () => {
-    expect(resolveTheme('system', env('light', true))).toEqual({ scheme: 'light', source: 'telegram' })
-    expect(resolveTheme('system', env('dark', false))).toEqual({ scheme: 'dark', source: 'telegram' })
+    expect(resolveScheme('system', env('light', true))).toBe('light')
+    expect(resolveScheme('system', env('dark', false))).toBe('dark')
   })
 
-  it("system outside Telegram follows the OS preference, with the app's own palette", () => {
-    expect(resolveTheme('system', env(null, true))).toEqual({ scheme: 'dark', source: 'palette' })
-    expect(resolveTheme('system', env(null, false))).toEqual({ scheme: 'light', source: 'palette' })
+  it('system outside Telegram follows the OS preference', () => {
+    expect(resolveScheme('system', env(null, true))).toBe('dark')
+    expect(resolveScheme('system', env(null, false))).toBe('light')
   })
 
-  it("an explicit choice outside Telegram is the app's palette in that scheme, whatever the OS says", () => {
-    expect(resolveTheme('light', env(null, true))).toEqual({ scheme: 'light', source: 'palette' })
-    expect(resolveTheme('dark', env(null, false))).toEqual({ scheme: 'dark', source: 'palette' })
-  })
-
-  it("an explicit choice inside Telegram uses Telegram's colours when it matches the client, the app's palette when it does not", () => {
-    expect(resolveTheme('dark', env('dark'))).toEqual({ scheme: 'dark', source: 'telegram' })
-    expect(resolveTheme('light', env('light'))).toEqual({ scheme: 'light', source: 'telegram' })
-    expect(resolveTheme('light', env('dark'))).toEqual({ scheme: 'light', source: 'palette' }) // light in a dark client: Telegram's dark colours would be wrong
-    expect(resolveTheme('dark', env('light'))).toEqual({ scheme: 'dark', source: 'palette' })
+  it('an explicit choice is what is shown, whatever Telegram or the OS say', () => {
+    for (const telegram of [null, 'light', 'dark'] as const) {
+      for (const osDark of [false, true]) {
+        expect(resolveScheme('light', env(telegram, osDark))).toBe('light')
+        expect(resolveScheme('dark', env(telegram, osDark))).toBe('dark')
+      }
+    }
   })
 })
 
@@ -138,70 +133,63 @@ describe('persistence', () => {
 })
 
 describe('applyTheme', () => {
-  function fakeRoot() {
-    const vars = new Map<string, string>()
-    const root: ThemeRoot = {
-      dataset: {},
-      style: { setProperty: (n, v) => void vars.set(n, v), removeProperty: (n) => vars.delete(n) },
-    }
-    return { root, vars }
+  const fakeRoot = (): ThemeRoot & { setProperty: ReturnType<typeof vi.fn> } => {
+    const setProperty = vi.fn()
+    // a style object with a trap: the app must never set a colour variable from Telegram
+    const store: Record<string, unknown> = {}
+    const style = new Proxy(store, { get: (t, k) => (k === 'setProperty' ? setProperty : t[k as string]), set: (t, k, v) => ((t[k as string] = v), true) })
+    return { dataset: {}, style, setProperty } as never
   }
-  const params = { bg_color: '#212121', text_color: '#ffffff', hint_color: '#aaaaaa', secondary_bg_color: '#181818', accent_text_color: undefined }
-  const webApp = (extra: Record<string, unknown> = {}) => ({ initData: 'x', themeParams: params, isVersionAtLeast: () => true, setHeaderColor: vi.fn(), setBackgroundColor: vi.fn(), ...extra })
+  const webApp = (extra: Record<string, unknown> = {}) => ({ initData: 'x', isVersionAtLeast: () => true, setHeaderColor: vi.fn(), setBackgroundColor: vi.fn(), ...extra })
 
-  it('turns themeParams into --tg-* variables, skipping empty ones', () => {
-    expect(telegramThemeVars(params)).toEqual([
-      ['--tg-bg-color', '#212121'],
-      ['--tg-text-color', '#ffffff'],
-      ['--tg-hint-color', '#aaaaaa'],
-      ['--tg-secondary-bg-color', '#181818'],
-    ])
-  })
-
-  it("with Telegram as the source: sets the scheme, Telegram's colours, and lets the client keep its own header", () => {
-    const { root, vars } = fakeRoot()
-    const w = webApp()
-    applyTheme(root, { scheme: 'dark', source: 'telegram' }, w)
-    expect(root.dataset).toMatchObject({ theme: 'dark', themeSource: 'telegram' })
+  it('puts the scheme on the page and on the native colour-scheme', () => {
+    const root = fakeRoot()
+    applyTheme(root, 'dark', null)
+    expect(root.dataset.theme).toBe('dark')
     expect(root.style.colorScheme).toBe('dark')
-    expect(vars.get('--tg-bg-color')).toBe('#212121')
-    expect(w.setHeaderColor).toHaveBeenCalledWith('bg_color')
-    expect(w.setBackgroundColor).toHaveBeenCalledWith('bg_color')
+    applyTheme(root, 'light', null)
+    expect(root.dataset.theme).toBe('light')
+    expect(root.style.colorScheme).toBe('light')
   })
 
-  it("with the palette as the source: no Telegram colours (earlier ones are removed), and Telegram's header follows the app's page colour", () => {
-    const { root, vars } = fakeRoot()
+  it("never takes colours from Telegram: no CSS variable is set, even with themeParams present", () => {
+    const root = fakeRoot()
+    applyTheme(root, 'dark', { ...webApp(), themeParams: { bg_color: '#212121', text_color: '#ffffff' } } as never, () => 'x')
+    expect(root.setProperty).not.toHaveBeenCalled()
+    expect(root.dataset.themeSource).toBeUndefined()
+  })
+
+  it("inside Telegram the client's header and background are set to the app's page colour for that scheme", () => {
+    const root = fakeRoot()
     const w = webApp()
-    applyTheme(root, { scheme: 'dark', source: 'telegram' }, w) // first Telegram's dark colours…
-    expect(vars.size).toBe(4)
-    applyTheme(root, { scheme: 'light', source: 'palette' }, w) // …then the user forces light
-    expect(vars.size).toBe(0)
-    expect(root.dataset).toMatchObject({ theme: 'light', themeSource: 'palette' })
-    expect(w.setHeaderColor).toHaveBeenLastCalledWith(PALETTE_BG.light)
-    expect(w.setBackgroundColor).toHaveBeenLastCalledWith(PALETTE_BG.light)
+    applyTheme(root, 'dark', w, () => '#0e1618')
+    expect(w.setHeaderColor).toHaveBeenLastCalledWith('#0e1618')
+    expect(w.setBackgroundColor).toHaveBeenLastCalledWith('#0e1618')
+    applyTheme(root, 'light', w, () => '#f6f4f0')
+    expect(w.setHeaderColor).toHaveBeenLastCalledWith('#f6f4f0')
   })
 
-  it('outside Telegram there is no Telegram at all to talk to', () => {
-    const { root, vars } = fakeRoot()
-    applyTheme(root, { scheme: 'light', source: 'palette' }, null)
-    expect(root.dataset).toMatchObject({ theme: 'light', themeSource: 'palette' })
-    expect(vars.size).toBe(0)
+  it('outside Telegram there is no Telegram to talk to', () => {
+    const asked = vi.fn(() => '#f6f4f0')
+    applyTheme(fakeRoot(), 'light', null, asked)
+    expect(asked).not.toHaveBeenCalled()
   })
 
-  it('does not touch the header in a client older than 6.1, and survives a header call that throws', () => {
-    const { root } = fakeRoot()
+  it('does not touch the header in a client older than 6.1, for the stub without initData, or when the colour is unknown, and survives a throwing header call', () => {
     const old = webApp({ isVersionAtLeast: () => false })
-    applyTheme(root, { scheme: 'light', source: 'palette' }, old)
+    applyTheme(fakeRoot(), 'light', old, () => '#f6f4f0')
     expect(old.setHeaderColor).not.toHaveBeenCalled()
-    const throwing = webApp({ setHeaderColor: () => { throw new Error('boom') } })
-    expect(() => applyTheme(root, { scheme: 'light', source: 'palette' }, throwing)).not.toThrow()
-  })
 
-  it('does nothing to the header for the stub Telegram object in a plain browser (no initData)', () => {
-    const { root } = fakeRoot()
     const stub = webApp({ initData: '' })
-    applyTheme(root, { scheme: 'light', source: 'palette' }, stub)
+    applyTheme(fakeRoot(), 'light', stub, () => '#f6f4f0')
     expect(stub.setHeaderColor).not.toHaveBeenCalled()
+
+    const unknown = webApp()
+    applyTheme(fakeRoot(), 'light', unknown, () => '')
+    expect(unknown.setHeaderColor).not.toHaveBeenCalled()
+
+    const throwing = webApp({ setHeaderColor: () => { throw new Error('boom') } })
+    expect(() => applyTheme(fakeRoot(), 'light', throwing, () => '#f6f4f0')).not.toThrow()
   })
 })
 
@@ -223,7 +211,7 @@ describe('the first-paint script in index.html agrees with resolveTheme', () => 
     for (const choice of [null, 'system', 'light', 'dark'] as const) {
       for (const tg of [null, { initData: '', colorScheme: 'dark' }, { initData: 'x', colorScheme: 'dark' }, { initData: 'x', colorScheme: 'light' }]) {
         for (const osDark of [false, true]) {
-          const expected = resolveTheme((choice ?? 'system') as ThemeChoice, readThemeEnv(tg as never, () => ({ matches: osDark }))).scheme
+          const expected = resolveScheme((choice ?? 'system') as ThemeChoice, readThemeEnv(tg as never, () => ({ matches: osDark })))
           expect(run(choice, tg, osDark), `${choice} ${JSON.stringify(tg)} os-dark:${osDark}`).toBe(expected)
         }
       }

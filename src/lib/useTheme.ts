@@ -8,15 +8,16 @@ import {
   nextThemeChoice,
   readStoredChoice,
   readThemeEnv,
-  resolveTheme,
+  resolveScheme,
   storeChoice,
-  type ResolvedTheme,
+  type Scheme,
   type ThemeChoice,
 } from './theme'
 
 export interface UseTheme {
   choice: ThemeChoice
-  resolved: ResolvedTheme
+  /** The scheme actually shown (light or dark). */
+  scheme: Scheme
   set: (choice: ThemeChoice) => void
   /** system → light → dark → system. */
   cycle: () => void
@@ -32,12 +33,12 @@ export function useTheme(settings: Pick<UserSettings, 'themeChoice'> | null, per
   const [env, setEnv] = useState(() => readThemeEnv(getWebApp().webApp))
   const settingsChoice = settings?.themeChoice ?? null
   const choice = effectiveChoice(settingsChoice, local)
-  const resolved = resolveTheme(choice, env)
+  const scheme = resolveScheme(choice, env)
 
   useEffect(() => {
     const { webApp } = getWebApp()
-    applyTheme(document.documentElement, resolved, insideTelegram(webApp) ? webApp : null)
-  }, [resolved.scheme, resolved.source, env]) // eslint-disable-line react-hooks/exhaustive-deps
+    applyTheme(document.documentElement, scheme, insideTelegram(webApp) ? webApp : null)
+  }, [scheme, env])
 
   // Follow the OS (outside Telegram) and the client's own theme changes (inside it).
   useEffect(() => {
@@ -76,5 +77,5 @@ export function useTheme(settings: Pick<UserSettings, 'themeChoice'> | null, per
   )
   const cycle = useCallback(() => set(nextThemeChoice(choice)), [set, choice])
 
-  return { choice, resolved, set, cycle }
+  return { choice, scheme, set, cycle }
 }

@@ -10,7 +10,7 @@ import { showUnsavedNotice, useQueueStatus } from '../data/useQueueStatus'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
-import type { ThemeChoice } from '../lib/theme'
+import type { Scheme, ThemeChoice } from '../lib/theme'
 import { strings } from '../strings'
 
 interface HomeScreenProps {
@@ -25,7 +25,7 @@ interface HomeScreenProps {
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> | null
   /** The theme toggle in the header; absent where there is nothing to toggle. */
-  theme?: { choice: ThemeChoice; onCycle: () => void }
+  theme?: { choice: ThemeChoice; scheme: Scheme; onCycle: () => void }
 }
 
 export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onDebug, queue, metrics, theme }: HomeScreenProps) {
@@ -56,7 +56,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
   return (
     <main className="screen home">
-      <ScreenHeader title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} onCycle={theme.onCycle} />} />
+      <ScreenHeader title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />} />
 
       {stats ? (
         <>

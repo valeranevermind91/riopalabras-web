@@ -211,7 +211,7 @@ function App() {
       onMatching={() => setScreen('matching')}
       onCloze={() => setScreen('cloze')}
       onDebug={debugAllowed ? () => setScreen('debug') : undefined}
-      theme={{ choice: theme.choice, onCycle: theme.cycle }}
+      theme={{ choice: theme.choice, scheme: theme.scheme, onCycle: theme.cycle }}
       queue={queue}
       metrics={metrics}
     />

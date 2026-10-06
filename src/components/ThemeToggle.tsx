@@ -1,15 +1,8 @@
 import type { ReactNode } from 'react'
-import { nextThemeChoice, type ThemeChoice } from '../lib/theme'
+import { nextThemeChoice, type Scheme, type ThemeChoice } from '../lib/theme'
 import { strings } from '../strings'
 
-const ICONS: Record<ThemeChoice, ReactNode> = {
-  // half-filled disc: follow the system
-  system: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none" />
-    </>
-  ),
+const ICONS: Record<Scheme, ReactNode> = {
   light: (
     <>
       <circle cx="12" cy="12" r="4" />
@@ -19,13 +12,17 @@ const ICONS: Record<ThemeChoice, ReactNode> = {
   dark: <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" />,
 }
 
-/** A small icon button that cycles the theme: system → light → dark. It moves to Settings later; the logic lives in lib/theme. */
-export function ThemeToggle({ choice, onCycle }: { choice: ThemeChoice; onCycle: () => void }) {
+/**
+ * A round icon button that cycles the theme: system → light → dark. The icon shows the scheme on
+ * screen (sun in light, moon in dark); the label says which choice is active and what a tap does.
+ * It moves to Settings later; the logic lives in lib/theme.
+ */
+export function ThemeToggle({ choice, scheme, onCycle }: { choice: ThemeChoice; scheme: Scheme; onCycle: () => void }) {
   const label = strings.theme.toggle(strings.theme.names[choice], strings.theme.names[nextThemeChoice(choice)])
   return (
-    <button type="button" className="icon-btn" aria-label={label} title={label} data-theme-choice={choice} onClick={onCycle}>
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {ICONS[choice]}
+    <button type="button" className="icon-btn" aria-label={label} title={label} data-theme-choice={choice} data-scheme={scheme} onClick={onCycle}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {ICONS[scheme]}
       </svg>
     </button>
   )
