@@ -30,7 +30,6 @@ export const strings = {
     learnPoolEmpty: 'No new words available',
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
-    debugLink: 'Debug',
     degradedTables: { user_favorites: 'favorites', user_hidden_words: 'hidden words' } as Record<string, string>,
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
@@ -48,6 +47,7 @@ export const strings = {
       cloze: { label: 'Cloze', es: 'completar' },
     },
     wordsButton: 'Words',
+    settingsButton: 'Settings',
     unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
     signInRejected: "Your progress can't be saved: the sign-in was refused. Retry, or close and reopen the app to sign in again.",
   },
@@ -116,7 +116,32 @@ export const strings = {
 
   theme: {
     names: { system: 'System', light: 'Light', dark: 'Dark' } as Record<string, string>,
-    toggle: (current: string, next: string) => `Theme: ${current}. Tap to switch to ${next}.`,
+  },
+
+  // The Settings screen. English chrome.
+  settings: {
+    title: 'Settings',
+    learning: 'Learning',
+    dailyGoal: 'Daily goal',
+    dailyGoalHint: 'New words per day',
+    decrease: 'Decrease the daily goal',
+    increase: 'Increase the daily goal',
+    // from 16 up the day is split into Learn sessions of 10 (as in the Flutter app)
+    sessionsNote: "Amounts of 16+ are split into sessions of 10 — you'll return to Learn between them.",
+    translation: 'Translation language',
+    translationHint: 'Show Russian, English or both. One stays on.',
+    russian: 'Russian',
+    english: 'English',
+    appearance: 'Appearance',
+    theme: 'Theme',
+    notifications: 'Notifications',
+    reminders: 'Reminders — coming soon',
+    remindersHint: 'They will arrive through the bot.',
+    about: 'About',
+    version: 'Version',
+    bot: 'Open the bot',
+    aboutText: 'The app is in development and has no onboarding yet. You can learn words, and your progress is saved.',
+    debug: 'Debug',
   },
 
   learn: {

@@ -231,7 +231,7 @@ describe('highlightTarget', () => {
   it('finds a highlight for every dictionary word', () => {
     const missing = dictionary.filter((w) => highlightTarget(w).range === null).map((w) => w.esWord)
     expect(missing).toEqual([])
-  })
+  }, 30_000) // walks all 4,753 words: about 4 s alone, which is too close to the 5 s default when the browser tests run beside it
 
   it('never leaves ** markers in the sentence', () => {
     for (const w of dictionary) expect(highlightTarget(w).sentence).not.toContain('*')

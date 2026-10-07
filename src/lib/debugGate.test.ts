@@ -115,9 +115,9 @@ describe('resolveDebugAccess (the lookup plus the decision)', () => {
 describe('what the UI shows', () => {
   const props = { auth: { status: 'no-telegram' as const }, data: { status: 'loading' as const }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null }
 
-  it('the Home screen renders the Debug link only when it is given a way to open it', () => {
-    expect(renderToStaticMarkup(createElement(HomeScreen, { ...props, onDebug: () => {} }))).toContain('class="debug-link"')
+  it('the Home screen no longer has a Debug link, whoever is looking: Settings is the way in', () => {
     expect(renderToStaticMarkup(createElement(HomeScreen, props))).not.toContain('debug-link')
+    expect(renderToStaticMarkup(createElement(HomeScreen, { ...props, onSettings: () => {} }))).not.toMatch(/>Debug</)
   })
 
   it('the refusal is a plain "Not available" and nothing else', () => {

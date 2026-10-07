@@ -1,0 +1,199 @@
+import type { MouseEvent } from 'react'
+import { ScreenHeader } from '../components/ScreenHeader'
+import { MAX_DAILY_LIMIT, MIN_DAILY_LIMIT, SESSIONS_NOTE_FROM, isLastLanguage, setLanguage, stepDailyLimit } from '../data/settingsActions'
+import type { UserData } from '../data/useUserData'
+import type { WriteQueue } from '../data/writeQueue'
+import { botHandle, botLink } from '../lib/botLink'
+import { VERSION_LABEL } from '../lib/buildInfo'
+import { getWebApp, haptic } from '../lib/telegram'
+import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
+import { strings } from '../strings'
+
+const t = strings.settings
+
+interface SettingsScreenProps {
+  data: UserData
+  queue: WriteQueue
+  theme: { choice: ThemeChoice; set: (choice: ThemeChoice) => void }
+  /** Whether this user may open Debug. When false the Debug section is not rendered at all. */
+  debugAllowed: boolean
+  onOpenDebug: () => void
+  /** VITE_BOT_USERNAME; no usable value (unset, empty, REPLACE_ME) leaves the link row out. */
+  botUsername?: string
+  /** Only passed where Telegram's native BackButton isn't available. */
+  onBack?: () => void
+}
+
+/**
+ * Settings: the daily goal and the translation languages (new controls on settings the Flutter app also keeps, same keys
+ * and meaning), the theme, a placeholder for reminders, About, and Debug for those allowed to see it. Changes apply at
+ * once and go through the write queue like any other settings change.
+ */
+export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+  const { settings } = data
+  const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
+  const goal = settings.dailyNewWordLimit
+  const link = botLink(botUsername)
+
+  const step = (delta: 1 | -1) => {
+    if (stepDailyLimit(delta, deps)) haptic('select')
+  }
+  const toggleLanguage = (which: 'ru' | 'en', on: boolean) => {
+    if (setLanguage(which, on, deps)) haptic('select')
+  }
+  const openLink = (e: MouseEvent<HTMLAnchorElement>) => {
+    const open = getWebApp().webApp.openTelegramLink
+    if (!link || !open) return // outside Telegram the anchor just opens the page
+    e.preventDefault()
+    open.call(getWebApp().webApp, link)
+  }
+
+  return (
+    <main className="screen settings">
+      <ScreenHeader title={t.title} onBack={onBack} />
+
+      <section className="settings-section" aria-labelledby="settings-learning">
+        <h2 id="settings-learning" className="settings-label">
+          {t.learning}
+        </h2>
+        <div className="settings-group">
+          <div className="setting-row" role="group" aria-labelledby="goal-label">
+            <div className="setting-text">
+              <span id="goal-label" className="setting-label">
+                {t.dailyGoal}
+              </span>
+              <span className="setting-hint">{t.dailyGoalHint}</span>
+            </div>
+            <div className="stepper">
+              <button type="button" className="stepper-btn" aria-label={t.decrease} disabled={goal <= MIN_DAILY_LIMIT} onClick={() => step(-1)}>
+                −
+              </button>
+              <output className="stepper-value" aria-labelledby="goal-label" aria-live="polite">
+                {goal}
+              </output>
+              <button type="button" className="stepper-btn" aria-label={t.increase} disabled={goal >= MAX_DAILY_LIMIT} onClick={() => step(1)}>
+                +
+              </button>
+            </div>
+          </div>
+          {goal >= SESSIONS_NOTE_FROM && <p className="setting-note">{t.sessionsNote}</p>}
+
+          <div className="setting-row setting-row-head">
+            <div className="setting-text">
+              <span id="translation-label" className="setting-label">
+                {t.translation}
+              </span>
+              <span className="setting-hint">{t.translationHint}</span>
+            </div>
+          </div>
+          <div role="group" aria-labelledby="translation-label">
+            <div className="setting-row">
+              <label htmlFor="language-ru" className="setting-label">
+                {t.russian}
+              </label>
+              <input
+                id="language-ru"
+                type="checkbox"
+                role="switch"
+                className="switch"
+                checked={settings.showRuTranslation}
+                disabled={isLastLanguage(settings, 'ru')}
+                onChange={(e) => toggleLanguage('ru', e.target.checked)}
+              />
+            </div>
+            <div className="setting-row">
+              <label htmlFor="language-en" className="setting-label">
+                {t.english}
+              </label>
+              <input
+                id="language-en"
+                type="checkbox"
+                role="switch"
+                className="switch"
+                checked={settings.showEnTranslation}
+                disabled={isLastLanguage(settings, 'en')}
+                onChange={(e) => toggleLanguage('en', e.target.checked)}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-appearance">
+        <h2 id="settings-appearance" className="settings-label">
+          {t.appearance}
+        </h2>
+        <div className="settings-group">
+          <div className="setting-row setting-row-stack">
+            <span id="theme-label" className="setting-label">
+              {t.theme}
+            </span>
+            <div className="segmented" role="radiogroup" aria-labelledby="theme-label">
+              {THEME_CHOICES.map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  className={theme.choice === choice ? 'segment is-active' : 'segment'}
+                  role="radio"
+                  aria-checked={theme.choice === choice}
+                  onClick={() => theme.set(choice)}
+                >
+                  {strings.theme.names[choice]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-notifications">
+        <h2 id="settings-notifications" className="settings-label">
+          {t.notifications}
+        </h2>
+        <div className="settings-group">
+          <div className="setting-row is-disabled">
+            <div className="setting-text">
+              <span className="setting-label">{t.reminders}</span>
+              <span className="setting-hint">{t.remindersHint}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-about">
+        <h2 id="settings-about" className="settings-label">
+          {t.about}
+        </h2>
+        <div className="settings-group">
+          <div className="setting-row">
+            <span className="setting-label">{t.version}</span>
+            <span className="setting-value">{VERSION_LABEL}</span>
+          </div>
+          {link && (
+            <a className="setting-row setting-link" href={link} target="_blank" rel="noopener noreferrer" onClick={openLink}>
+              <span className="setting-label">{t.bot}</span>
+              <span className="setting-value">{botHandle(link)}</span>
+            </a>
+          )}
+        </div>
+        <p className="settings-about">{t.aboutText}</p>
+      </section>
+
+      {debugAllowed && (
+        <section className="settings-section" aria-labelledby="settings-debug">
+          <h2 id="settings-debug" className="settings-label">
+            {t.debug}
+          </h2>
+          <div className="settings-group">
+            <button type="button" className="setting-row setting-nav" onClick={onOpenDebug}>
+              <span className="setting-label">{t.debug}</span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          </div>
+        </section>
+      )}
+    </main>
+  )
+}

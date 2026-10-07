@@ -9,6 +9,7 @@ import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
 import { useDebugAccess } from './lib/useDebugAccess'
 import { getSupabase } from './lib/supabase'
+import { backTarget as backTargetFor, type Screen } from './lib/nav'
 import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
 import { useRecentActivity } from './lib/useRecentActivity'
@@ -18,12 +19,11 @@ import { HomeScreen } from './screens/Home'
 import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
+import { SettingsScreen } from './screens/Settings'
 import { WordDetail } from './screens/WordDetail'
 import { WordsScreen } from './screens/Words'
 import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
-
-type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'words' | 'word' | 'debug'
 
 function readTelegramInfo(): TelegramInfo {
   const { webApp, isMock } = getWebApp()
@@ -99,7 +99,7 @@ function App() {
   // Leaving a screen never asks and never waits: whatever is unsent is held by the queue (and saved on the device), not by the screen.
   const go = useCallback((to: Screen) => setScreen(to), [])
   /** Where Back leads from the current screen. */
-  const backTarget: Screen = screen === 'word' ? (open?.from ?? 'home') : 'home'
+  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null)
   // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
   const backInterceptor = useRef<(() => boolean) | null>(null)
   const registerBack = useCallback((handler: (() => boolean) | null) => {
@@ -212,6 +212,19 @@ function App() {
   // Telegram's BackButton does the job where it exists; elsewhere each screen draws its own.
   const inPageBack = native ? undefined : goBack
 
+  if (screen === 'settings' && readyData && queue) {
+    return (
+      <SettingsScreen
+        data={readyData}
+        queue={queue}
+        theme={{ choice: theme.choice, set: theme.set }}
+        debugAllowed={debugAllowed}
+        onOpenDebug={() => setScreen('debug')}
+        onBack={inPageBack}
+      />
+    )
+  }
+
   if (screen === 'debug') {
     if (!debugAllowed) return <NotAvailable />
     return (
@@ -293,8 +306,7 @@ function App() {
       onMatching={() => setScreen('matching')}
       onCloze={() => setScreen('cloze')}
       onWords={() => setScreen('words')}
-      onDebug={debugAllowed ? () => setScreen('debug') : undefined}
-      theme={{ choice: theme.choice, scheme: theme.scheme, onCycle: theme.cycle }}
+      onSettings={() => setScreen('settings')}
       activity={activity}
       onOpenWord={(word) => {
         setOpen({ key: wordKey(word.esWord), from: 'home' })

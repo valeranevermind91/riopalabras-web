@@ -2,7 +2,6 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { ThemeToggle } from '../components/ThemeToggle'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats, type Stats } from '../data/stats'
@@ -13,7 +12,6 @@ import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
-import type { Scheme, ThemeChoice } from '../lib/theme'
 import { strings } from '../strings'
 
 interface HomeScreenProps {
@@ -27,19 +25,17 @@ interface HomeScreenProps {
   onOpenWord?: (word: Word) => void
   /** Opens the Words screen. */
   onWords?: () => void
-  /** Absent when the user may not open Debug: the link is then not rendered at all. */
-  onDebug?: () => void
+  /** Opens Settings (theme, daily goal, translation, About, and Debug for those allowed). */
+  onSettings?: () => void
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> & Partial<Pick<MetricsRecorder, 'today'>> | null
-  /** The theme toggle in the header; absent where there is nothing to toggle. */
-  theme?: { choice: ThemeChoice; scheme: Scheme; onCycle: () => void }
   /** Dates with activity in the last 30 days, read from the server; null hides the dots and the streak. */
   activity?: ReadonlySet<string> | null
   /** "Now", injectable so the word of the day and the dots are testable. */
   now?: Date
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onOpenWord, onDebug, queue, metrics, theme, activity = null, now: nowProp }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, nowProp ?? new Date()) : null),
@@ -69,10 +65,10 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   return (
     <main className="screen home">
       <ScreenHeader brand title={strings.appTitle} actions={
-          (onWords || theme) && (
+          (onWords || onSettings) && (
             <>
               {onWords && <WordsButton onClick={onWords} />}
-              {theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />}
+              {onSettings && <SettingsButton onClick={onSettings} />}
             </>
           )
         }
@@ -118,11 +114,6 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
         </section>
       )}
 
-      {onDebug && (
-        <button type="button" className="debug-link" onClick={onDebug}>
-          {strings.home.debugLink}
-        </button>
-      )}
     </main>
   )
 }
@@ -259,13 +250,25 @@ function DegradedNotice({ data }: { data: UserData }) {
   )
 }
 
-/** The way into the Words screen: a round icon button in the header, left of the theme toggle. */
+/** The way into the Words screen: a round icon button in the header, left of the gear. */
 function WordsButton({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="icon-btn" aria-label={strings.home.wordsButton} title={strings.home.wordsButton} onClick={onClick}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M8 6h12M8 12h12M8 18h12" />
         <path d="M4 6h.01M4 12h.01M4 18h.01" />
+      </svg>
+    </button>
+  )
+}
+
+/** The way into Settings: a gear, the last button in the header. */
+function SettingsButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="icon-btn" aria-label={strings.home.settingsButton} title={strings.home.settingsButton} onClick={onClick}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
       </svg>
     </button>
   )

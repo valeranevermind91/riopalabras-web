@@ -63,9 +63,9 @@ const tile = (html: string, id: string) => html.match(new RegExp(`<button[^>]*da
 const part = (html: string, id: string, cls: string) => tile(html, id).match(new RegExp(`${cls}">(.*?)</span>`))?.[1]
 
 describe('Home structure', () => {
-  it('header, status row, word of the day, the action grid, then the Debug link', () => {
-    const html = render({ onDebug: () => {}, onOpenWord: () => {}, activity: new Set<string>() }, real)
-    const order = ['screen-header', 'home-status', 'class="wotd"', 'class="home-grid"', 'debug-link'].map((c) => html.indexOf(c))
+  it('header, status row, word of the day, then the action grid', () => {
+    const html = render({ onOpenWord: () => {}, activity: new Set<string>() }, real)
+    const order = ['screen-header', 'home-status', 'class="wotd"', 'class="home-grid"'].map((c) => html.indexOf(c))
     expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
@@ -74,11 +74,10 @@ describe('Home structure', () => {
     expect(render()).toContain('<h1 class="brand home-title">Riopalabras</h1>')
   })
 
-  it('the Debug link is last on the page and only rendered when allowed', () => {
-    const html = render({ onDebug: () => {} })
-    expect(html).toContain('class="debug-link"')
-    expect(html.indexOf('debug-link')).toBeGreaterThan(html.indexOf('home-grid'))
+  it('has no Debug link, for anyone: Settings is the only way to Debug', () => {
     expect(render()).not.toContain('debug-link')
+    expect(render({ onSettings: () => {}, onWords: () => {} })).not.toMatch(/>Debug</)
+    expect(readFileSync('src/screens/Home.tsx', 'utf8')).not.toMatch(/onDebug|debugLink/)
   })
 
   it('while the data is loading there is a status card and no tiles', () => {
@@ -297,44 +296,30 @@ describe('notices', () => {
   })
 })
 
-describe('the theme toggle', () => {
-  it('sits in the header; the icon shows the scheme on screen, the label the choice and what a tap does', () => {
-    const html = render({ theme: { choice: 'system', scheme: 'dark', onCycle: () => {} } })
-    expect(html).toMatch(/<header class="screen-header"><h1[^>]*>Riopalabras<\/h1><div class="screen-header-actions"><button[^>]*class="icon-btn"/)
-    expect(html).toContain('aria-label="Theme: System. Tap to switch to Light."')
-    expect(html).toContain('data-scheme="dark"')
-    expect(render({ theme: { choice: 'light', scheme: 'light', onCycle: () => {} } })).toContain('Theme: Light. Tap to switch to Dark.')
-    expect(render({ theme: { choice: 'dark', scheme: 'dark', onCycle: () => {} } })).toContain('Theme: Dark. Tap to switch to System.')
-  })
-
-  it('draws a moon in the dark scheme and a sun in the light one', () => {
-    const moon = render({ theme: { choice: 'dark', scheme: 'dark', onCycle: () => {} } }).match(/<button[^>]*icon-btn.*?<\/button>/)![0]
-    const sun = render({ theme: { choice: 'light', scheme: 'light', onCycle: () => {} } }).match(/<button[^>]*icon-btn.*?<\/button>/)![0]
-    expect(moon).toContain('M20 14.5A8')
-    expect(moon).not.toContain('<circle')
-    expect(sun).toContain('<circle')
-  })
-
-  it('without a theme prop there is no toggle', () => {
-    expect(render()).not.toContain('icon-btn')
-  })
-})
-
-describe('the way into the Words screen', () => {
-  const theme = { choice: 'system', scheme: 'light', onCycle: () => {} }
-
-  it('is a small icon button in the header, to the left of the theme toggle', () => {
-    const html = render({ onWords: () => {}, theme })
-    const actions = html.match(/<div class="screen-header-actions">.*?<\/div>/)![0]
-    expect(actions.indexOf('aria-label="Words"')).toBeGreaterThanOrEqual(0)
-    expect(actions.indexOf('aria-label="Words"')).toBeLessThan(actions.indexOf('data-theme-choice'))
+describe('the header: the app name, then Words and the gear', () => {
+  it('Words is a small icon button, and the gear (Settings) is the last one on the right', () => {
+    const html = render({ onWords: () => {}, onSettings: () => {} })
+    const header = html.match(/<header class="screen-header">.*?<\/header>/)![0]
+    expect(header.indexOf('Riopalabras')).toBeLessThan(header.indexOf('aria-label="Words"'))
+    expect(header.indexOf('aria-label="Words"')).toBeLessThan(header.indexOf('aria-label="Settings"'))
+    const actions = header.match(/<div class="screen-header-actions">.*<\/div>/)![0]
     expect(actions.match(/class="icon-btn"/g)).toHaveLength(2)
     expect(actions).toContain('title="Words"')
+    expect(actions).toContain('title="Settings"')
   })
 
-  it('is there without a theme toggle too, and absent without a way to open it', () => {
+  it('the theme toggle is gone from the header (it lives in Settings now)', () => {
+    const html = render({ onWords: () => {}, onSettings: () => {} })
+    expect(html).not.toContain('data-theme-choice')
+    expect(html).not.toContain('Tap to switch')
+    expect(html.match(/class="icon-btn"/g)).toHaveLength(2)
+  })
+
+  it('each button is there only when it is given a way to open its screen', () => {
     expect(render({ onWords: () => {} })).toContain('aria-label="Words"')
-    expect(render({ theme })).not.toContain('aria-label="Words"')
+    expect(render({ onWords: () => {} })).not.toContain('aria-label="Settings"')
+    expect(render({ onSettings: () => {} })).not.toContain('aria-label="Words"')
+    expect(render()).not.toContain('icon-btn')
   })
 })
 
