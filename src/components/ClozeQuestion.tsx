@@ -5,21 +5,19 @@ import {
   buildHint,
   checkClozeAnswer,
   clozeCueLines,
+  cueLang,
   splitSentence,
   type ClozeItem,
   type ClozeKind,
   type ClozeOutcome,
 } from '../data/practice'
 import { clozeFeedback } from '../data/clozeFeedback'
-import type { Lang } from '../data/rio'
 import type { UserSettings } from '../data/types'
 import { strings } from '../strings'
 
 interface ClozeQuestionProps {
   item: ClozeItem
   settings: Pick<UserSettings, 'showRuTranslation' | 'showEnTranslation'>
-  /** Language of word content (the "in this sentence" nudge). */
-  lang: Lang
   /** Fires once, when Continue is pressed after the question was answered or given up. */
   onAnswered: (outcome: ClozeOutcome) => void
 }
@@ -27,7 +25,7 @@ interface ClozeQuestionProps {
 type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 
 /** One fill-in-the-blank question. Every element stays mounted in the same place, so nothing shifts when a hint or the feedback appears. */
-export function ClozeQuestion({ item, settings, lang, onAnswered }: ClozeQuestionProps) {
+export function ClozeQuestion({ item, settings, onAnswered }: ClozeQuestionProps) {
   const t = strings.practice.en // chrome: English
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
@@ -50,7 +48,7 @@ export function ClozeQuestion({ item, settings, lang, onAnswered }: ClozeQuestio
     onAnswered(answer.outcome)
   }
 
-  const fb = answer ? clozeFeedback(answer.kind, target, lang) : null
+  const fb = answer ? clozeFeedback(answer.kind, target, cueLang(item.word, settings)) : null
 
   return (
     <section className="cz-card">

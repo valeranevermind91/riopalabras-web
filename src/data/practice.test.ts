@@ -22,7 +22,7 @@ import {
   clozeScore,
   clozeTarget,
   findAllOccurrences,
-  firstRussianGloss,
+  firstMatchGloss,
   glossKey,
   isMatchingComplete,
   isPracticeWord,
@@ -45,6 +45,7 @@ import type { Word } from './types'
 import { createSupabaseWriteQueue } from './writeQueue'
 import { strings } from '../strings'
 import { clozeFeedback } from './clozeFeedback'
+import { RU_ONLY } from '../testing/translationFlags'
 
 const dictionary = parseDictionary(
   JSON.parse(readFileSync('public/words_enriched.json', 'utf8')),
@@ -84,23 +85,23 @@ describe('who can be practised', () => {
   it('in the real dictionary no letter or interjection is ever offered, by either exercise', () => {
     const pos = new Map(everyone.map((w) => [w.esWord.toLowerCase(), w.pos]))
     expect(everyone.some((w) => w.pos === 'letter') && everyone.some((w) => w.pos === 'interj')).toBe(true) // they exist, so the exclusion is meaningful
-    for (const m of matchingPool(everyone)) expect(['letter', 'interj']).not.toContain(pos.get(m.id))
+    for (const m of matchingPool(everyone, RU_ONLY)) expect(['letter', 'interj']).not.toContain(pos.get(m.id))
     for (const item of everyonePool) expect(['letter', 'interj']).not.toContain(item.word.pos)
   })
 })
 
-describe('Matching: first Russian gloss and collisions', () => {
+describe('Matching: first gloss and collisions', () => {
   it('uses the first gloss, without the parenthetical', () => {
-    expect(firstRussianGloss(learned('a', { ruTranslation: 'эмпанада (вид запечённого пирожка), пирожок' }))).toBe('эмпанада')
-    expect(firstRussianGloss(learned('a', { ruTranslation: 'стол, табличка' }))).toBe('стол')
-    expect(firstRussianGloss(learned('a', { ruTranslation: 'быть; находиться' }))).toBe('быть')
-    expect(firstRussianGloss(learned('a', { ruTranslation: '(устар.) дом' }))).toBe('(устар.) дом') // never an empty tile
+    expect(firstMatchGloss(learned('a', { ruTranslation: 'эмпанада (вид запечённого пирожка), пирожок' }), RU_ONLY)).toBe('эмпанада')
+    expect(firstMatchGloss(learned('a', { ruTranslation: 'стол, табличка' }), RU_ONLY)).toBe('стол')
+    expect(firstMatchGloss(learned('a', { ruTranslation: 'быть; находиться' }), RU_ONLY)).toBe('быть')
+    expect(firstMatchGloss(learned('a', { ruTranslation: '(устар.) дом' }), RU_ONLY)).toBe('(устар.) дом') // never an empty tile
   })
 
   it('follows the card: an overlay translation replaces the dictionary one when the Rioplatense headword leads', () => {
     const w = byWord(everyone, 'vagabundo')
     expect(w.rio?.translation?.ru).toBe('бездомный, бродяга')
-    expect(firstRussianGloss(w)).toBe('бездомный')
+    expect(firstMatchGloss(w, RU_ONLY)).toBe('бездомный')
   })
 
   it('glossKey ignores case, ё/е, accents, punctuation and spacing', () => {
@@ -120,7 +121,7 @@ describe('Matching: first Russian gloss and collisions', () => {
       learned('siete', { ruTranslation: 'дверь (входная)' }),
     ]
     for (let i = 0; i < 50; i++) {
-      const group = buildMatchingGroup(words)!
+      const group = buildMatchingGroup(words, RU_ONLY)!
       const keys = group.items.map((m) => glossKey(m.gloss))
       expect(new Set(keys).size).toBe(MATCH_GROUP_SIZE)
       expect(group.items.filter((m) => m.id === 'uno' || m.id === 'dos').length).toBeLessThanOrEqual(1)
@@ -129,16 +130,16 @@ describe('Matching: first Russian gloss and collisions', () => {
 
   it('counts colliding words once: eligibility is about words a group can really use', () => {
     const collide = ['uno', 'dos', 'tres', 'cuatro', 'cinco'].map((w) => learned(w, { ruTranslation: 'одно и то же' }))
-    expect(matchingEligibleCount(collide)).toBe(1)
-    expect(buildMatchingGroup(collide)).toBeNull()
+    expect(matchingEligibleCount(collide, RU_ONLY)).toBe(1)
+    expect(buildMatchingGroup(collide, RU_ONLY)).toBeNull()
     const four = ['a', 'b', 'c', 'd'].map((w, i) => learned(w, { ruTranslation: `слово${'абвг'[i]}` }))
-    expect(matchingEligibleCount([...four, learned('e', { ruTranslation: 'слово а' }), learned('f', { ruTranslation: 'слово б' })])).toBeGreaterThanOrEqual(4)
+    expect(matchingEligibleCount([...four, learned('e', { ruTranslation: 'слово а' }), learned('f', { ruTranslation: 'слово б' })], RU_ONLY)).toBeGreaterThanOrEqual(4)
   })
 
   it('on the real dictionary: groups are 5 distinct non-colliding pairs, with both columns holding the same words', () => {
     const words = learnedFirst(800)
     for (let i = 0; i < 200; i++) {
-      const g = buildMatchingGroup(words)!
+      const g = buildMatchingGroup(words, RU_ONLY)!
       expect(g.items).toHaveLength(MATCH_GROUP_SIZE)
       expect(new Set(g.items.map((m) => glossKey(m.gloss))).size).toBe(MATCH_GROUP_SIZE)
       expect(new Set(g.items.map((m) => m.spanish.toLowerCase())).size).toBe(MATCH_GROUP_SIZE)
@@ -153,7 +154,7 @@ describe('Matching: first Russian gloss and collisions', () => {
     const seen = new Set<string>()
     let overlapped = false
     for (let i = 0; i < 40; i++) {
-      for (const m of buildMatchingGroup(words)!.items) {
+      for (const m of buildMatchingGroup(words, RU_ONLY)!.items) {
         if (seen.has(m.id)) overlapped = true
         seen.add(m.id)
       }
@@ -164,16 +165,16 @@ describe('Matching: first Russian gloss and collisions', () => {
 
   it('the Spanish column shows the headword by the Learn / Review rule', () => {
     const words = everyone
-    const item = matchingPool(words).find((m) => m.id === 'cigarrillo')!
+    const item = matchingPool(words, RU_ONLY).find((m) => m.id === 'cigarrillo')!
     expect(item.spanish).toBe('pucho')
   })
 
   it('needs 5 usable words: 4 give no group, 5 do', () => {
     const mk = (n: number) => Array.from({ length: n }, (_, i) => learned(`w${i}`, { ruTranslation: `слово ${'абвгде'[i]}` }))
-    expect(buildMatchingGroup(mk(4))).toBeNull()
-    expect(buildMatchingGroup(mk(5))).not.toBeNull()
-    expect(matchingEligibleCount(mk(4))).toBeLessThan(PRACTICE_MIN_WORDS)
-    expect(matchingEligibleCount(mk(5))).toBe(5)
+    expect(buildMatchingGroup(mk(4), RU_ONLY)).toBeNull()
+    expect(buildMatchingGroup(mk(5), RU_ONLY)).not.toBeNull()
+    expect(matchingEligibleCount(mk(4), RU_ONLY)).toBeLessThan(PRACTICE_MIN_WORDS)
+    expect(matchingEligibleCount(mk(5), RU_ONLY)).toBe(5)
   })
 })
 
@@ -557,9 +558,9 @@ describe('practice does not touch SM-2 or the daily limit', () => {
   it('no practice function takes or returns progress or the new-word counter: the words are only read', () => {
     const words = learnedFirst(200)
     const frozen = JSON.stringify(words)
-    buildMatchingGroup(words)
+    buildMatchingGroup(words, RU_ONLY)
     buildClozeSession(words)
-    matchingEligibleCount(words)
+    matchingEligibleCount(words, RU_ONLY)
     clozeEligibleCount(words)
     expect(JSON.stringify(words)).toBe(frozen)
   })

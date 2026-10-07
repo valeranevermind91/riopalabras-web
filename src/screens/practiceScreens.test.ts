@@ -69,8 +69,8 @@ describe('Home: the two practice buttons', () => {
   it('count words independently: Matching needs 5 words with different glosses, Cloze needs 5 with a blank', () => {
     const tileOf = (html: string, id: string) => html.match(new RegExp(`<button[^>]*data-tile="${id}"[^>]*>`))![0]
     const sameGloss = words(6).map((w) => ({ ...w, ruTranslation: 'одно и то же' }))
-    const html = home(sameGloss, { show_ru_translation: false, show_en_translation: true })
-    expect(tileOf(html, 'matching')).toContain('disabled') // Matching: all six collide
+    const html = home(sameGloss, { show_ru_translation: true, show_en_translation: false })
+    expect(tileOf(html, 'matching')).toContain('disabled') // Matching: all six Russian glosses collide
     expect(tileOf(html, 'cloze')).not.toContain('disabled') // Cloze still has six usable blanks
     const noBlank = words(6).map((w) => ({ ...w, exampleSentence: 'Una frase sin la palabra buscada.' }))
     const html2 = home(noBlank, { show_ru_translation: false, show_en_translation: true })
@@ -132,7 +132,7 @@ describe('Cloze screen and question', () => {
   it('never shows the answer in the question', () => {
     const items = buildClozeSession(words(12))!
     for (const item of items) {
-      const html = renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings({}), lang: 'en', onAnswered: () => {} }))
+      const html = renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings({}), onAnswered: () => {} }))
       expect(html).not.toContain(item.target.target)
       expect(html).toContain('class="cz-blank"')
       expect(html).not.toMatch(/<mark/)
@@ -141,7 +141,7 @@ describe('Cloze screen and question', () => {
 
   it('the cue follows the translation settings (RU, EN, both)', () => {
     const item = clozePool(words(6))[0]
-    const cue = (raw: Record<string, unknown>) => renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings(raw), lang: 'ru', onAnswered: () => {} }))
+    const cue = (raw: Record<string, unknown>) => renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings(raw), onAnswered: () => {} }))
     expect(cue({ show_ru_translation: true, show_en_translation: false })).toMatch(/cz-cue-pill">RU<\/span> слово/)
     expect(cue({ show_ru_translation: true, show_en_translation: false })).not.toContain('>EN<')
     const both = cue({ show_ru_translation: true, show_en_translation: true })

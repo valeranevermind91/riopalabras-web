@@ -8,9 +8,10 @@ import { parseRioOverlay, type Lang } from '../data/rio'
 import { strings } from '../strings'
 import { RelationBlock } from './RelationBlock'
 import { WordCard } from './WordCard'
+import { flagsFor } from '../testing/translationFlags'
 
 const words = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8')), parseRioOverlay(JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))))
-const html = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(RelationBlock, { relation: relationFor(words.find((w) => w.esWord === esWord)!), lang }))
+const html = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(RelationBlock, { relation: relationFor(words.find((w) => w.esWord === esWord)!), settings: flagsFor(lang) }))
 
 describe('RelationBlock', () => {
   it('shows only the first gloss of the standard meaning (foco: "focus", not "focus, spotlight")', () => {
@@ -75,17 +76,17 @@ describe('RelationBlock', () => {
 
   it('the hint depends on std_usage alone: equally_used and not_used say something, less_common and unknown say nothing', () => {
     const hint = (stdUsage: string | null, lang: 'en' | 'ru') =>
-      renderToStaticMarkup(createElement(RelationBlock, { relation: { type: 'replacement', standardWord: 'x', standardUsage: stdUsage as 'not_used' | null }, lang })).includes('wc-hint')
+      renderToStaticMarkup(createElement(RelationBlock, { relation: { type: 'replacement', standardWord: 'x', standardUsage: stdUsage as 'not_used' | null }, settings: flagsFor(lang) })).includes('wc-hint')
     expect([hint('equally_used', 'en'), hint('not_used', 'en'), hint('less_common', 'en'), hint(null, 'en')]).toEqual([true, true, false, false])
     expect([hint('equally_used', 'ru'), hint('not_used', 'ru'), hint('less_common', 'ru'), hint(null, 'ru')]).toEqual([true, true, false, false])
-    const text = (lang: 'en' | 'ru') => renderToStaticMarkup(createElement(RelationBlock, { relation: { type: 'replacement', standardWord: 'x', standardUsage: 'not_used' }, lang }))
+    const text = (lang: 'en' | 'ru') => renderToStaticMarkup(createElement(RelationBlock, { relation: { type: 'replacement', standardWord: 'x', standardUsage: 'not_used' }, settings: flagsFor(lang) }))
     expect(text('ru')).toBe(text('en')) // the hint is chrome: the same English words in both languages
   })
 
   it('no card shows a geography claim such as "in Spain" / "в Испании", for any overlay word in either language', () => {
     for (const w of words.filter((x) => x.rio)) {
       for (const lang of ['en', 'ru'] as const) {
-        const card = renderToStaticMarkup(createElement(WordCard, { word: w, lang }))
+        const card = renderToStaticMarkup(createElement(WordCard, { word: w, settings: flagsFor(lang) }))
         expect(card, `${w.esWord} ${lang}`).not.toMatch(/in spain|в испании|\bspain\b|испани/i)
       }
     }

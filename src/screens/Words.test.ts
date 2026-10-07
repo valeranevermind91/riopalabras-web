@@ -95,7 +95,7 @@ describe('the Words screen', () => {
   })
 
   it('shows the English line instead when the user has switched Russian off', () => {
-    const html = render(learnedSome(), view({ segment: 'learned' }), parseSettings({ show_ru_translation: false }))
+    const html = render(learnedSome(), view({ segment: 'learned' }), parseSettings({ show_ru_translation: false, show_en_translation: true }))
     expect(html).toContain(ordinary[0].enTranslation)
     expect(html).not.toContain(`>${ordinary[0].ruTranslation}</span>`)
   })

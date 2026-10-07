@@ -3,6 +3,7 @@ import { ClozeQuestion } from '../components/ClozeQuestion'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import {
+  clozeCueLines,
   PRACTICE_MIN_WORDS,
   answerCloze,
   buildClozeSession,
@@ -10,13 +11,10 @@ import {
   clozeScore,
   recordPracticeCompleted,
   startCloze,
-  stripParenthetical,
   type ClozeItem,
   type ClozeOutcome,
   type ClozeProgress,
 } from '../data/practice'
-import { translationsFor } from '../data/relation'
-import { langFromSettings } from '../data/rio'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
@@ -32,7 +30,6 @@ interface ClozeScreenProps {
 }
 
 export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScreenProps) {
-  const lang = langFromSettings(data.settings) // word content only (the nudge and the summary glosses); the chrome is English
   const t = strings.practice.en
   const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(data.words))
   const [progress, setProgress] = useState<ClozeProgress>(startCloze)
@@ -82,7 +79,7 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
           <p className="subtitle">{t.score(clozeScore(results), results.length)}</p>
           <ul className="cz-results">
             {session.map((item, i) => {
-              const gloss = stripParenthetical(translationsFor(item.word)[lang === 'ru' ? 'ru' : 'en'])
+              const gloss = clozeCueLines(item.word, data.settings).map((line) => line.text).join(' · ') // every enabled language (the cue's lines), on the one line
               return (
                 <li key={item.headword} className={`cz-result cz-result-${results[i]}`}>
                   <span className="cz-result-word">{item.headword}</span>
@@ -113,7 +110,7 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
       <div className="bar" role="progressbar" aria-label={t.progressLabel} aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
         <div className="bar-fill" style={{ width: `${((index + 1) / session.length) * 100}%` }} />
       </div>
-      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} lang={lang} onAnswered={answered} />
+      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} onAnswered={answered} />
     </main>
   )
 }

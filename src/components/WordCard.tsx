@@ -1,7 +1,7 @@
 import { effectiveExample, headword } from '../data/headword'
 import { posLabel, showPosBadge } from '../data/pos'
 import { headwordRegion, headwordRegister, relationFor, translationsFor } from '../data/relation'
-import type { Lang } from '../data/rio'
+import { translationLines, type TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { HighlightedSentence } from './HighlightedSentence'
@@ -18,24 +18,39 @@ export function TranslationRow({ label, text }: { label: string; text: string })
   )
 }
 
-/** Highlighted example sentence with its EN/RU translations (the overlay's example when there is one); renders nothing when there is no example. */
-export function ExampleBlock({ word }: { word: Word }) {
+/** Highlighted example sentence with its translations, one line per enabled language (the overlay's example when there is one); renders nothing when there is no example. */
+export function ExampleBlock({ word, settings }: { word: Word; settings: TranslationFlags }) {
   const example = effectiveExample(word)
   if (example.sentence.trim() === '') return null
 
   return (
     <section className="wc-example">
       <HighlightedSentence word={word} />
-      {example.en.trim() !== '' && <p className="wc-translation">{example.en}</p>}
-      {example.ru.trim() !== '' && <p className="wc-translation">{example.ru}</p>}
+      {translationLines({ ru: example.ru, en: example.en }, settings).map((line) => (
+        <p key={line.lang} className="wc-translation">
+          {line.text}
+        </p>
+      ))}
     </section>
   )
 }
 
+/** The word's translation rows, one per enabled language that has text (RU first), the language that has text if none does. */
+export function TranslationRows({ word, settings }: { word: Word; settings: TranslationFlags }) {
+  const lines = translationLines(translationsFor(word), settings)
+  if (lines.length === 0) return null
+  return (
+    <div className="wc-translations">
+      {lines.map((line) => (
+        <TranslationRow key={line.lang} label={line.label} text={line.text} />
+      ))}
+    </div>
+  )
+}
+
 /** A word's full card: pills, headword, the standard-word line, then the example, the translations and the note. Shared by Learn, the Review answer, the word of the day and the Debug preview. */
-export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
+export function WordCard({ word, settings }: { word: Word; settings: TranslationFlags }) {
   const head = headword(word)
-  const translations = translationsFor(word)
   const relation = relationFor(word)
 
   return (
@@ -49,18 +64,15 @@ export function WordCard({ word, lang }: { word: Word; lang: Lang }) {
 
       <h2 className="wc-headword">{head.text}</h2>
 
-      <RelationLines relation={relation} lang={lang} />
+      <RelationLines relation={relation} settings={settings} />
 
       <hr className="wc-divider" />
 
-      <ExampleBlock word={word} />
+      <ExampleBlock word={word} settings={settings} />
 
-      <div className="wc-translations">
-        <TranslationRow label={strings.card.en} text={translations.en} />
-        <TranslationRow label={strings.card.ru} text={translations.ru} />
-      </div>
+      <TranslationRows word={word} settings={settings} />
 
-      <RelationNote relation={relation} lang={lang} />
+      <RelationNote relation={relation} settings={settings} />
     </article>
   )
 }

@@ -94,6 +94,8 @@ export function WordPreview({ defaultLang }: { defaultLang: Lang }) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Word | null>(null)
   const [lang, setLang] = useState<Lang>(defaultLang)
+  // The preview's own RU / EN switch: one language at a time, so the cards can be compared in each.
+  const previewFlags = { showRuTranslation: lang === 'ru', showEnTranslation: lang === 'en' }
   const [revealed, setRevealed] = useState(true)
   const [flip, setFlip] = useState(0) // remounts the Review card so "flip back" replays from the front
 
@@ -187,11 +189,11 @@ export function WordPreview({ defaultLang }: { defaultLang: Lang }) {
               </div>
 
               <h3>{t.learnCard}</h3>
-              <WordCard word={selected} lang={lang} />
+              <WordCard word={selected} settings={previewFlags} />
 
               <h3>{t.reviewBack}</h3>
               <div className="review-slot">
-                <ReviewCard key={`${selected.esWord}-${flip}`} word={selected} lang={lang} revealed={revealed} onReveal={() => setRevealed(true)} />
+                <ReviewCard key={`${selected.esWord}-${flip}`} word={selected} settings={previewFlags} revealed={revealed} onReveal={() => setRevealed(true)} />
               </div>
               <button
                 type="button"

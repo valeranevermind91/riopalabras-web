@@ -16,6 +16,7 @@ import { getLearnPool, isReviewDue } from './stats'
 import type { Word } from './types'
 import { createSupabaseWriteQueue } from './writeQueue'
 import { LearnScreen } from '../screens/Learn'
+import { RU_ONLY } from '../testing/translationFlags'
 
 const DAY = new Date(2026, 9, 5, 9, 0)
 const dayN = (n: number) => new Date(2026, 9, 1 + n, 9, 0)
@@ -310,12 +311,12 @@ describe('a known word never comes back, anywhere', () => {
 
   it('it never reappears in Matching or Cloze', () => {
     const learned = real.filter((w) => (w.rank ?? 1e9) <= 400).map((w) => ({ ...w, repetitions: 2, nextReview: new Date('2026-09-01T03:00:00.000Z') }))
-    const inBoth = matchingPool(learned).find((m) => clozePool(learned).some((i) => i.word.esWord.toLowerCase() === m.id))!
+    const inBoth = matchingPool(learned, RU_ONLY).find((m) => clozePool(learned).some((i) => i.word.esWord.toLowerCase() === m.id))!
     const target = learned.find((w) => w.esWord.toLowerCase() === inBoth.id)!.esWord
     expect(isPracticeWord(learned.find((w) => w.esWord === target)!)).toBe(true)
     const after = know(learned, target)
     expect(isPracticeWord(after.find((w) => w.esWord === target)!)).toBe(false)
-    expect(matchingPool(after).some((m) => m.id === target.toLowerCase())).toBe(false)
+    expect(matchingPool(after, RU_ONLY).some((m) => m.id === target.toLowerCase())).toBe(false)
     expect(clozePool(after).some((i) => i.word.esWord === target)).toBe(false)
   })
 

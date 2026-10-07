@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
-import { langFromSettings } from '../data/rio'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { buildReviewSession, createRater } from '../data/review'
@@ -137,7 +136,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
       <UnsavedNotice queue={queue} />
 
       <div className="review-slot">
-        <ReviewCard key={index} word={word} lang={langFromSettings(data.settings)} revealed={revealed} onReveal={reveal} />
+        <ReviewCard key={index} word={word} settings={data.settings} revealed={revealed} onReveal={reveal} />
       </div>
 
       <RatingButtons word={word} onRate={onRate} hidden={!revealed} />

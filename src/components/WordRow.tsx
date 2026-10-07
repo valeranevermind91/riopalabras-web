@@ -1,6 +1,6 @@
 import { rowTitle } from '../data/rowTitle'
 import { translationsFor } from '../data/relation'
-import type { Lang } from '../data/rio'
+import { firstTranslation, translationLines, type TranslationFlags } from '../data/translations'
 import type { ListRow } from '../data/wordList'
 import { wordStage, type WordState } from '../data/wordState'
 import { strings } from '../strings'
@@ -26,7 +26,7 @@ export function StarIcon({ filled }: { filled: boolean }) {
 
 interface WordRowProps {
   row: ListRow
-  lang: Lang
+  settings: TranslationFlags
   onOpen: (esWord: string) => void
   onToggleFavourite: (esWord: string, favourite: boolean) => void
   onBringBack: (esWord: string) => void
@@ -37,12 +37,17 @@ interface WordRowProps {
  * Due badge, one translation line, and on the right a favourite star, or "Bring back" for a hidden word. Tapping the row
  * opens the word; the star and the button act on their own.
  */
-export function WordRow({ row, lang, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
+export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
   const { word, state, via } = row
   const { title: head, alt } = rowTitle(word, via)
-  // A match through the other language's translation shows that translation, so the reason for the hit is visible.
-  const shownLang: Lang = via === 'en' ? 'en' : via === 'ru' ? 'ru' : lang
-  const translation = translationsFor(word)[shownLang]
+  // One muted line: every enabled language that has text, RU then EN, joined with " · " (the line truncates with an ellipsis
+  // rather than wrapping, so a row is always the same height). A search that matched through a translation adds that
+  // language if it is switched off, so the reason for the hit is always on the row.
+  const texts = translationsFor(word)
+  const shown = translationLines(texts, settings)
+  const matched = via === 'en' || via === 'ru' ? firstTranslation({ [via]: texts[via] }, { showRuTranslation: via === 'ru', showEnTranslation: via === 'en' }) : null
+  const lines = matched && !shown.some((l) => l.lang === matched.lang) ? [...shown, matched].sort((a, b) => (a.lang === 'ru' ? -1 : b.lang === 'ru' ? 1 : 0)) : shown
+  const translation = lines.map((l) => l.text).join(' · ')
   const pos = t.posTag[word.pos.toLowerCase()] ?? word.pos
 
   return (
@@ -56,7 +61,7 @@ export function WordRow({ row, lang, onOpen, onToggleFavourite, onBringBack }: W
         </span>
         <span className="word-row-line">
           {alt && <span className="word-row-alt">{alt}</span>}
-          <span className="word-row-tr">{translation || '—'}</span>
+          {translation && <span className="word-row-tr">{translation}</span>}
         </span>
       </button>
       {word.isHidden ? (

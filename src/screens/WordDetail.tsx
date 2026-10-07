@@ -2,7 +2,6 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
-import { langFromSettings } from '../data/rio'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
 import { hasHistory, wordState, type WordState } from '../data/wordState'
@@ -56,7 +55,7 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
   return (
     <main className="screen word-detail">
       <ScreenHeader title={t.detailTitle} onBack={onBack} />
-      <WordCard word={word} lang={langFromSettings(data.settings)} />
+      <WordCard word={word} settings={data.settings} />
 
       <section className="state-block" aria-label={d.progress}>
         {note && <p className="state-note">{note}</p>}

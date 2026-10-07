@@ -5,7 +5,7 @@ import { MetricsSection } from '../components/MetricsSection'
 import { TestingSection } from '../components/TestingSection'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordPreview } from '../components/WordPreview'
-import { langFromSettings } from '../data/rio'
+import { enabledLanguages } from '../data/translations'
 import type { MetricsRecorder } from '../data/metrics'
 import type { WriteQueue } from '../data/writeQueue'
 import type { DataState } from '../data/useUserData'
@@ -72,7 +72,7 @@ export function DebugScreen({ telegram, auth, data, onBack, queue, metrics, clie
 
       <LoadLogSection degraded={data.status === 'ready' ? data.data.degraded : []} />
 
-      <WordPreview defaultLang={data.status === 'ready' ? langFromSettings(data.data.settings) : 'ru'} />
+      <WordPreview defaultLang={data.status === 'ready' ? (enabledLanguages(data.data.settings)[0] ?? 'ru') : 'ru'} />
 
       <section className="card">
         <h2>Telegram identity</h2>

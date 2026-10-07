@@ -96,17 +96,6 @@ export function firstGloss(text: string): string {
   return text.trim()
 }
 
-/** The note/meaning in the user's language, falling back to the other language; null if there is none. */
-export function pickLocalized(value: Localized | null, lang: Lang): string | null {
-  if (!value) return null
-  return clean(value[lang]) ?? clean(value[lang === 'en' ? 'ru' : 'en'])
-}
-
-/** Which language the user reads: Russian unless they switched the Russian translation off. */
-export function langFromSettings(settings: { readonly showRuTranslation: boolean }): Lang {
-  return settings.showRuTranslation ? 'ru' : 'en'
-}
-
 /** Parses the overlay file into a map keyed by trimmed lower-case es_word; malformed and non-accepted entries are skipped. */
 export function parseRioOverlay(raw: unknown): ReadonlyMap<string, RioInfo> {
   if (!Array.isArray(raw)) throw new Error('Rioplatense overlay is not a JSON array')

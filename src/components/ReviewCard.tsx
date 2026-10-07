@@ -1,17 +1,17 @@
 import type { KeyboardEvent } from 'react'
 import { headword } from '../data/headword'
-import { headwordRegion, headwordRegister, relationFor, translationsFor } from '../data/relation'
-import type { Lang } from '../data/rio'
+import { headwordRegion, headwordRegister, relationFor } from '../data/relation'
+import type { TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 import { RegionTag } from './RegionTag'
 import { RegisterLabel } from './RegisterLabel'
 import { RelationLines, RelationNote } from './RelationBlock'
-import { ExampleBlock, TranslationRow } from './WordCard'
+import { ExampleBlock, TranslationRows } from './WordCard'
 
 interface ReviewCardProps {
   word: Word
-  lang: Lang
+  settings: TranslationFlags
   revealed: boolean
   onReveal: () => void
 }
@@ -21,9 +21,8 @@ interface ReviewCardProps {
  * there is no flipping back — and `revealed` flips immediately, so whatever depends on it (the
  * rating buttons) appears at the tap, not after the 450 ms animation.
  */
-export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) {
+export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardProps) {
   const head = headword(word)
-  const translations = translationsFor(word)
   const region = headwordRegion(word)
   const register = headwordRegister(word)
   const relation = relationFor(word)
@@ -63,14 +62,11 @@ export function ReviewCard({ word, lang, revealed, onReveal }: ReviewCardProps) 
             <RegisterLabel register={register} />
           </div>
           <h2 className="wc-headword">{head.text}</h2>
-          <RelationLines relation={relation} lang={lang} />
+          <RelationLines relation={relation} settings={settings} />
           <hr className="wc-divider" />
-          <ExampleBlock word={word} />
-          <div className="wc-translations">
-            <TranslationRow label={strings.card.en} text={translations.en} />
-            <TranslationRow label={strings.card.ru} text={translations.ru} />
-          </div>
-          <RelationNote relation={relation} lang={lang} />
+          <ExampleBlock word={word} settings={settings} />
+          <TranslationRows word={word} settings={settings} />
+          <RelationNote relation={relation} settings={settings} />
         </div>
       </div>
     </div>

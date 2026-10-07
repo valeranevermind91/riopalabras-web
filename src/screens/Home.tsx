@@ -46,7 +46,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   const extras = useMemo(() => {
     if (data.status !== 'ready') return null
     return {
-      matching: matchingEligibleCount(data.data.words),
+      matching: matchingEligibleCount(data.data.words, data.data.settings),
       cloze: clozeEligibleCount(data.data.words),
       wotd: wordOfTheDay(data.data.words, data.data.settings, nowProp ?? new Date()),
     }

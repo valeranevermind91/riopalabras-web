@@ -4,7 +4,6 @@ import { UnsavedNotice } from '../components/UnsavedNotice'
 import { VirtualList } from '../components/VirtualList'
 import { WORD_ROW_HEIGHT, WordRow } from '../components/WordRow'
 import { FiltersSheet, SortSheet } from '../components/WordsSheets'
-import { langFromSettings } from '../data/rio'
 import type { UserData } from '../data/useUserData'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
 import { hasProgress } from '../data/wordState'
@@ -39,7 +38,6 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const [view, setViewState] = useState<ListView>(() => savedView ?? initialListView())
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null)
   const now = useMemo(() => new Date(), [])
-  const lang = langFromSettings(data.settings)
 
   useEffect(() => {
     if (!sheet || !registerBack) return
@@ -150,7 +148,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
             onViewChange(latest.current)
           }}
           getKey={(i) => wordKey(list.rows[i].word.esWord)}
-          renderRow={(i) => <WordRow row={list.rows[i]} lang={lang} onOpen={onOpen} onToggleFavourite={toggleFavourite} onBringBack={bringBack} />}
+          renderRow={(i) => <WordRow row={list.rows[i]} settings={data.settings} onOpen={onOpen} onToggleFavourite={toggleFavourite} onBringBack={bringBack} />}
         />
       )}
 

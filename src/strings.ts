@@ -4,7 +4,7 @@
 //  - UI chrome (buttons, headings, labels, status text, summaries, confirmations): ALWAYS English for now.
 //    Groups that exist in both languages (`practice`, `rio`) keep their Russian half for the day a real
 //    UI-language setting arrives; until then only the `en` half is read, via `strings.practice.en` / `strings.rio.en`.
-//  - Word content, which follows the translation setting (see langFromSettings): `wordContent` below (the Cloze
+//  - Word content, which follows the translation flags (see data/translations.ts): `wordContent` below (the Cloze
 //    "in this sentence" nudge), plus data that comes from the dictionary or overlay (translations, overlay notes, the Cloze cue).
 //    The register labels (informal, vulgar, …) are chrome, like "standard" and "also": they live in `rio`.
 
@@ -245,7 +245,7 @@ export const strings = {
     ru: 'RU',
   },
 
-  // Word-related text that follows the translation setting (see langFromSettings), not the UI language. Only the Cloze nudge for now.
+  // Word-related text that follows the translation flags (see data/translations.ts), not the UI language. Only the Cloze nudge for now.
   wordContent: {
     en: {
       // Cloze nudge when the headword was typed instead of the form in the sentence

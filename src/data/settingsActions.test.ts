@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeServer, initDataFor } from '../testing/fakeServer'
 import { applySettingsPatch } from './mutations'
+import { enabledLanguages } from './translations'
 import { MAX_DAILY_LIMIT, MIN_DAILY_LIMIT, SESSIONS_NOTE_FROM, clampDailyLimit, dailyLimitPatch, isLastLanguage, isValidLanguages, languagesPatch, setLanguage, stepDailyLimit } from './settingsActions'
 import { parseSettings } from './settings'
 import type { SettingsPatch, UserSettings } from './types'
@@ -48,10 +49,30 @@ describe('the translation languages: two switches, one must stay on', () => {
     expect([isLastLanguage(s(true, true), 'ru'), isLastLanguage(s(true, true), 'en')]).toEqual([false, false])
   })
 
-  it('the defaults are Russian on, English off, as before: so Russian is the last one on, until English is turned on', () => {
-    const defaults = parseSettings(null)
-    expect([defaults.showRuTranslation, defaults.showEnTranslation]).toEqual([true, false])
-    expect(isLastLanguage(defaults, 'ru')).toBe(true)
+  describe('the defaults: both languages on when the key is not stored, so the cards keep showing both', () => {
+    it('a blob with neither key resolves to both languages, and with no blob at all too', () => {
+      for (const blob of [{}, { daily_new_word_limit: 10 }, null]) {
+        const settings = parseSettings(blob)
+        expect([settings.showRuTranslation, settings.showEnTranslation], JSON.stringify(blob)).toEqual([true, true])
+        expect(enabledLanguages(settings)).toEqual(['ru', 'en'])
+        expect(isLastLanguage(settings, 'ru')).toBe(false)
+        expect(isLastLanguage(settings, 'en')).toBe(false)
+      }
+    })
+
+    it('a blob with show_en_translation: false (set from the Flutter app) stays Russian only', () => {
+      const settings = parseSettings({ show_en_translation: false })
+      expect([settings.showRuTranslation, settings.showEnTranslation]).toEqual([true, false])
+      expect(enabledLanguages(settings)).toEqual(['ru'])
+      expect(isLastLanguage(settings, 'ru')).toBe(true)
+    })
+
+    it('each key is read on its own: an explicit show_ru_translation: false leaves English on by default, and nothing is written by reading', () => {
+      const settings = parseSettings({ show_ru_translation: false })
+      expect([settings.showRuTranslation, settings.showEnTranslation]).toEqual([false, true])
+      expect(settings.raw).toEqual({ show_ru_translation: false }) // the stored blob is exactly what was there: the default is applied on read, never written
+      expect(parseSettings({}).raw).toEqual({})
+    })
   })
 })
 

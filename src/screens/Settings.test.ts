@@ -103,11 +103,21 @@ describe('the Settings screen', () => {
       expect(switchFor(enOnly, 'language-ru')).not.toContain('disabled')
     })
 
-    it('with both on, neither is disabled; with nothing stored it is Russian only, as it always was', () => {
+    it('with both on, neither is disabled; with nothing stored both are on (the cards always showed both), and neither is disabled', () => {
       const both = render({ show_ru_translation: true, show_en_translation: true })
       expect(switchFor(both, 'language-ru')).not.toContain('disabled')
       expect(switchFor(both, 'language-en')).not.toContain('disabled')
-      expect(switchFor(render({}), 'language-ru')).toContain('disabled')
+      const none = render({})
+      expect(switchFor(none, 'language-ru')).toContain('checked')
+      expect(switchFor(none, 'language-en')).toContain('checked')
+      expect(switchFor(none, 'language-ru')).not.toContain('disabled')
+      expect(switchFor(none, 'language-en')).not.toContain('disabled')
+    })
+
+    it('an explicit "English off" from the Flutter app is kept: English stays off and Russian is the one that cannot be turned off', () => {
+      const html = render({ show_en_translation: false })
+      expect(switchFor(html, 'language-en')).not.toContain('checked')
+      expect(switchFor(html, 'language-ru')).toContain('disabled')
     })
   })
 

@@ -29,7 +29,7 @@ interface MatchingScreenProps {
 }
 
 const newRound = (data: UserData): MatchingState | null => {
-  const group = buildMatchingGroup(data.words)
+  const group = buildMatchingGroup(data.words, data.settings)
   return group ? startMatching(group) : null
 }
 
@@ -97,7 +97,7 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
   }
 
   if (isMatchingComplete(round)) {
-    const canContinue = matchingEligibleCount(data.words) >= PRACTICE_MIN_WORDS
+    const canContinue = matchingEligibleCount(data.words, data.settings) >= PRACTICE_MIN_WORDS
     return (
       <main className="screen practice">
         {header}

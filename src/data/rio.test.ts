@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from './dictionary'
 import { effectiveExample, headword, headwordDecision, highlightTarget } from './headword'
 import { headwordRegion, relationFor, translationsFor } from './relation'
-import { findFormRange, firstGloss, inflectionOf, langFromSettings, parseFallbackExamples, parseRioOverlay, pickLocalized, type RioInfo } from './rio'
+import { findFormRange, firstGloss, inflectionOf, parseFallbackExamples, parseRioOverlay, type RioInfo } from './rio'
+import { pickLocalizedAll, type TranslationFlags } from './translations'
 import { strings } from '../strings'
 import { makeWord } from '../testing/makeWord'
 import type { Word } from './types'
+import { EN_ONLY, RU_ONLY } from '../testing/translationFlags'
 
 const rawDictionary = JSON.parse(readFileSync('public/words_enriched.json', 'utf8'))
 const rawOverlay = JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))
@@ -24,6 +26,9 @@ const highlighted = (w: Word) => {
   const r = highlightTarget(w)
   return r.range ? r.sentence.slice(r.range.start, r.range.end) : null
 }
+
+// The first paragraph of the block (the cards show every enabled language; these tests care about the text and the fallback).
+const pickLocalized = (value: Parameters<typeof pickLocalizedAll>[0], flags: TranslationFlags) => pickLocalizedAll(value, flags)[0] ?? null
 
 describe('the overlay file', () => {
   it('has 76 accepted entries, all in the dictionary, none of type none', () => {
@@ -322,7 +327,7 @@ describe('notes, alternatives and translations', () => {
   it('shows the note on a replacement too (coger / agarrar carries a warning) and the translation override of the headword', () => {
     const w = entry('coger')
     const rel = relationFor(w)
-    expect(pickLocalized(rel?.note ?? null, 'en')).toMatch(/vulgar/)
+    expect(pickLocalized(rel?.note ?? null, EN_ONLY)).toMatch(/vulgar/)
     expect(translationsFor(w)).toEqual({ en: 'to grab, to catch', ru: 'брать, хватать' })
   })
 
@@ -349,12 +354,10 @@ describe('notes, alternatives and translations', () => {
 
   it('picks the note by language and falls back to the other one', () => {
     const l = { en: 'English', ru: 'Русский' }
-    expect(pickLocalized(l, 'ru')).toBe('Русский')
-    expect(pickLocalized(l, 'en')).toBe('English')
-    expect(pickLocalized({ en: 'English', ru: '' }, 'ru')).toBe('English')
-    expect(pickLocalized(null, 'en')).toBeNull()
-    expect(langFromSettings({ showRuTranslation: true })).toBe('ru')
-    expect(langFromSettings({ showRuTranslation: false })).toBe('en')
+    expect(pickLocalized(l, RU_ONLY)).toBe('Русский')
+    expect(pickLocalized(l, EN_ONLY)).toBe('English')
+    expect(pickLocalized({ en: 'English', ru: '' }, RU_ONLY)).toBe('English')
+    expect(pickLocalized(null, EN_ONLY)).toBeNull()
   })
 
   it('has every label in both languages', () => {
@@ -476,9 +479,9 @@ describe('overlay examples (pass 2)', () => {
       expect(headword(w)).toEqual({ text: form, form: 'rioplatense', secondary: esWord })
       const rel = relationFor(w)
       expect(rel).toMatchObject({ type: 'replacement', standardWord: esWord })
-      expect(pickLocalized(rel?.note ?? null, 'en')).toContain(`"${esWord}"`)
-      expect(pickLocalized(rel?.note ?? null, 'en')).toContain('Peninsular')
-      expect(pickLocalized(rel?.note ?? null, 'ru')).toContain(`"${esWord}"`)
+      expect(pickLocalized(rel?.note ?? null, EN_ONLY)).toContain(`"${esWord}"`)
+      expect(pickLocalized(rel?.note ?? null, EN_ONLY)).toContain('Peninsular')
+      expect(pickLocalized(rel?.note ?? null, RU_ONLY)).toContain(`"${esWord}"`)
     }
   })
 

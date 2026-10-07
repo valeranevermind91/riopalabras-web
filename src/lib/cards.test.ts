@@ -11,6 +11,7 @@ import { parseSettings } from '../data/settings'
 import type { Word } from '../data/types'
 import { ReviewScreen } from '../screens/Review'
 import { makeWord } from '../testing/makeWord'
+import { EN_ONLY } from '../testing/translationFlags'
 
 const css = readFileSync('src/index.css', 'utf8')
 
@@ -30,16 +31,16 @@ describe('the Review card and the rating buttons', () => {
   const withNote = dictionary.find((w) => w.esWord === 'tú')!
 
   it('the card reads: pills, the headword, the standard line, a divider, the sentence, the translations, then the note in its own box', () => {
-    const card = renderToStaticMarkup(createElement(WordCard, { word: withNote, lang: 'en' }))
+    const card = renderToStaticMarkup(createElement(WordCard, { word: withNote, settings: EN_ONLY }))
     const order = ['wc-meta', 'wc-headword', 'wc-relation', 'wc-divider', 'wc-example', 'wc-translations', 'wc-note'].map((c) => card.indexOf(`class="${c}`))
     expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
-    expect(card).toMatch(/<p class="wc-note"><span>Note:<\/span>/)
+    expect(card).toMatch(/<div class="wc-note"><p><span>Note: <\/span>/)
   })
 
   it('the pills row carries the rioplatense pill and the region, the register in italics', () => {
     const pucho = dictionary.find((w) => w.esWord === 'cigarrillo')!
-    const card = renderToStaticMarkup(createElement(WordCard, { word: pucho, lang: 'en' }))
+    const card = renderToStaticMarkup(createElement(WordCard, { word: pucho, settings: EN_ONLY }))
     expect(card).toMatch(/<div class="wc-meta"><span class="wc-rio">Rioplatense<\/span>.*<span class="wc-register">informal<\/span>/)
   })
 

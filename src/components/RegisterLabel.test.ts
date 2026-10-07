@@ -10,13 +10,14 @@ import { RelationBlock } from './RelationBlock'
 import { RegisterLabel } from './RegisterLabel'
 import { ReviewCard } from './ReviewCard'
 import { WordCard } from './WordCard'
+import { flagsFor } from '../testing/translationFlags'
 
 const rawOverlay = JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))
 const words = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8')), parseRioOverlay(rawOverlay))
 const word = (esWord: string) => words.find((w) => w.esWord === esWord)!
-const card = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(WordCard, { word: word(esWord), lang }))
-const relation = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(RelationBlock, { relation: relationFor(word(esWord)), lang }))
-const review = (esWord: string, lang: Lang, revealed: boolean) => renderToStaticMarkup(createElement(ReviewCard, { word: word(esWord), lang, revealed, onReveal: () => {} }))
+const card = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(WordCard, { word: word(esWord), settings: flagsFor(lang) }))
+const relation = (esWord: string, lang: Lang) => renderToStaticMarkup(createElement(RelationBlock, { relation: relationFor(word(esWord)), settings: flagsFor(lang) }))
+const review = (esWord: string, lang: Lang, revealed: boolean) => renderToStaticMarkup(createElement(ReviewCard, { word: word(esWord), settings: flagsFor(lang), revealed, onReveal: () => {} }))
 
 describe('register label next to the headword', () => {
   it('linyera is pejorative and carries a note naming the neutral phrase, in both languages', () => {

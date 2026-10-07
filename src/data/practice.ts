@@ -2,8 +2,9 @@ import { headword, highlightTarget, type HighlightRange } from './headword'
 import type { MetricsRecorder } from './metrics'
 import { streakPatch } from './daily'
 import { translationsFor } from './relation'
-import { firstGloss } from './rio'
+import { firstGloss, type Lang } from './rio'
 import { shuffle } from './review'
+import { firstTranslation, translationLines, type TranslationFlags } from './translations'
 import type { SettingsPatch, UserSettings, Word } from './types'
 import { hasTranslations, isReviewablePos, wordKey } from './words'
 import type { WriteQueue } from './writeQueue'
@@ -59,7 +60,7 @@ export interface MatchItem {
   readonly id: string
   /** The Spanish headword, by the same rule as Learn and Review. */
   readonly spanish: string
-  /** The first Russian gloss (parenthetical dropped). */
+  /** The first gloss in the first enabled translation language (parenthetical dropped). */
   readonly gloss: string
 }
 
@@ -74,20 +75,24 @@ export function glossKey(gloss: string): string {
     .trim()
 }
 
-/** The first Russian gloss of the word as the card shows it (overlay translation included), without parentheticals. */
-export function firstRussianGloss(word: Word): string {
-  const full = translationsFor(word).ru
-  const first = firstGloss(full)
+/**
+ * The first gloss of the word, as the card shows it (overlay translation included), without parentheticals, in the first
+ * enabled translation language that has text (RU, then EN; see translations.ts). Empty when the word has none in either.
+ */
+export function firstMatchGloss(word: Word, settings: TranslationFlags): string {
+  const line = firstTranslation(translationsFor(word), settings)
+  if (!line) return ''
+  const first = firstGloss(line.text)
   return stripParenthetical(first) || first.trim()
 }
 
-export function matchItem(word: Word): MatchItem {
-  return { id: wordKey(word.esWord), spanish: headword(word).text, gloss: firstRussianGloss(word) }
+export function matchItem(word: Word, settings: TranslationFlags): MatchItem {
+  return { id: wordKey(word.esWord), spanish: headword(word).text, gloss: firstMatchGloss(word, settings) }
 }
 
 /** Everything a group can be drawn from, in dictionary order: practice words with a usable gloss. */
-export function matchingPool(words: readonly Word[]): MatchItem[] {
-  return words.filter(isPracticeWord).map(matchItem).filter((m) => glossKey(m.gloss) !== '')
+export function matchingPool(words: readonly Word[], settings: TranslationFlags): MatchItem[] {
+  return words.filter(isPracticeWord).map((word) => matchItem(word, settings)).filter((m) => glossKey(m.gloss) !== '')
 }
 
 /** Greedy pick of non-colliding items (no shared gloss key, no shared headword) in the given order, up to `limit`. */
@@ -112,21 +117,21 @@ function pickNonColliding(items: readonly MatchItem[], limit: number): MatchItem
  * gloss or a headword with another one counted. Home enables Matching at PRACTICE_MIN_WORDS of these,
  * so a group can always be built when the button is enabled.
  */
-export function matchingEligibleCount(words: readonly Word[]): number {
-  return pickNonColliding(matchingPool(words), Number.POSITIVE_INFINITY).length
+export function matchingEligibleCount(words: readonly Word[], settings: TranslationFlags): number {
+  return pickNonColliding(matchingPool(words, settings), Number.POSITIVE_INFINITY).length
 }
 
 export interface MatchGroup {
   readonly items: readonly MatchItem[]
   /** Spanish column order. */
   readonly left: readonly MatchItem[]
-  /** Russian column order (shuffled separately). */
+  /** Gloss column order (shuffled separately). */
   readonly right: readonly MatchItem[]
 }
 
 /** MATCH_GROUP_SIZE random eligible words with pairwise different first glosses; null when there are not enough. Repeats across groups are fine. */
-export function buildMatchingGroup(words: readonly Word[], random: () => number = Math.random): MatchGroup | null {
-  const items = pickNonColliding(shuffle(matchingPool(words), random), MATCH_GROUP_SIZE)
+export function buildMatchingGroup(words: readonly Word[], settings: TranslationFlags, random: () => number = Math.random): MatchGroup | null {
+  const items = pickNonColliding(shuffle(matchingPool(words, settings), random), MATCH_GROUP_SIZE)
   if (items.length < MATCH_GROUP_SIZE) return null
   return { items, left: shuffle(items, random), right: shuffle(items, random) }
 }
@@ -333,18 +338,16 @@ export interface CueLine {
   readonly text: string
 }
 
-/** The gloss line(s) under the sentence, RU first, per the translation settings; falls back to whichever language has text. */
-export function clozeCueLines(word: Word, settings: Pick<UserSettings, 'showRuTranslation' | 'showEnTranslation'>): CueLine[] {
+/** The gloss line(s) under the sentence (parentheticals dropped), by the one translation rule (translations.ts). */
+export function clozeCueLines(word: Word, settings: TranslationFlags): CueLine[] {
   const t = translationsFor(word)
-  const ru = stripParenthetical(t.ru)
-  const en = stripParenthetical(t.en)
-  const lines: CueLine[] = []
-  if (settings.showRuTranslation && ru) lines.push({ label: 'RU', text: ru })
-  if (settings.showEnTranslation && en) lines.push({ label: 'EN', text: en })
-  if (lines.length > 0) return lines
-  if (ru) return [{ label: 'RU', text: ru }]
-  if (en) return [{ label: 'EN', text: en }]
-  return []
+  return translationLines({ ru: stripParenthetical(t.ru), en: stripParenthetical(t.en) }, settings).map(({ label, text }) => ({ label, text }))
+}
+
+/** The language of the first cue line, which prose tied to the word (the Cloze nudge) is written in; "en" when the word has no text at all. */
+export function cueLang(word: Word, settings: TranslationFlags): Lang {
+  const t = translationsFor(word)
+  return firstTranslation({ ru: stripParenthetical(t.ru), en: stripParenthetical(t.en) }, settings)?.lang ?? 'en'
 }
 
 export type ClozeOutcome = 'correct' | 'wrong' | 'gaveUp'

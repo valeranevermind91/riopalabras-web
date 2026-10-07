@@ -862,7 +862,15 @@ mark {
   font-weight: 400;
 }
 
-/* The note sits at the bottom of the card in its own box. */
+/* The note sits at the bottom of the card in its own box; with both languages on it holds one paragraph for each. */
+.wc-note p {
+  margin: 0;
+}
+
+.wc-note p + p {
+  margin-top: 8px;
+}
+
 .wc-note {
   margin: 0;
   padding: 12px 14px;

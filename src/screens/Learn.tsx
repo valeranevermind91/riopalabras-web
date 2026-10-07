@@ -4,7 +4,6 @@ import { UnsavedNotice } from '../components/UnsavedNotice'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
-import { langFromSettings } from '../data/rio'
 import { learnedToday } from '../data/daily'
 import { createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
@@ -165,12 +164,12 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
               className={arrival ? 'card-enter card-arrive' : `card-enter card-enter-${direction}`}
               style={arrival ? ({ '--arrive-from': `${arrival.from}px`, '--arrive-ms': `${arrival.duration}ms` } as CSSProperties) : undefined}
             >
-              <WordCard word={words[index]} lang={langFromSettings(data.settings)} />
+              <WordCard word={words[index]} settings={data.settings} />
             </div>
           </div>
           {leaving && (
             <SwipeGhost key={leaving.id} plan={leaving.plan} onDone={clearLeaving}>
-              <WordCard word={words[leaving.index]} lang={langFromSettings(data.settings)} />
+              <WordCard word={words[leaving.index]} settings={data.settings} />
             </SwipeGhost>
           )}
         </div>

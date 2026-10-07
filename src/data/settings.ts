@@ -26,7 +26,8 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     newWordsLearnedTodayCount: num(raw.new_words_learned_today_count, 0),
     newWordsLearnedTodayDate: str(raw.new_words_learned_today_date),
     showRuTranslation: bool(raw.show_ru_translation, true),
-    showEnTranslation: bool(raw.show_en_translation, false),
+    // Absent means on: both languages, as the cards always showed. An explicit false (set from the Flutter app) stays off.
+    showEnTranslation: bool(raw.show_en_translation, true),
     themeChoice: parseThemeChoice(raw[THEME_SETTING_KEY]),
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
