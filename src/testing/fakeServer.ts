@@ -103,6 +103,21 @@ export function createFakeServer(options: FakeServerOptions = {}) {
     }
     if (broken.hangWrites && request.method !== 'GET') return new Promise<Response>(() => {})
     if (broken.forbidWrites || broken.forbidTable === table) return json({ code: '42501', message: `new row violates row-level security policy for table "${table}"` }, 403)
+    if (request.method === 'DELETE' && role === 'authenticated') {
+      // .eq('user_id', …).in('es_word', […]) arrives as user_id=eq.x&es_word=in.("a","b")
+      const keep = rows.filter((r) => {
+        for (const [column, filter] of url.searchParams) {
+          if (filter.startsWith('eq.') && String(r[column]) !== filter.slice(3)) return true
+          if (filter.startsWith('in.(')) {
+            const values = filter.slice(4, -1).split(',').map((v) => v.replace(/^"|"$/g, ''))
+            if (!values.includes(String(r[column]))) return true
+          }
+        }
+        return false
+      })
+      tables.set(table, keep)
+      return new Response(null, { status: 204 })
+    }
     const incoming = ((await request.json()) as Row | Row[]) ?? []
     const batch = Array.isArray(incoming) ? incoming : [incoming]
     if (role !== 'authenticated') {
@@ -119,7 +134,6 @@ export function createFakeServer(options: FakeServerOptions = {}) {
       tables.set(table, rows)
       return new Response(null, { status: 201 })
     }
-    if (request.method === 'DELETE') return new Response(null, { status: 204 })
     return json({ message: 'unsupported' }, 400)
   }
 

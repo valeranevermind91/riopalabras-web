@@ -25,6 +25,8 @@ interface HomeScreenProps {
   onCloze: () => void
   /** Opens a word's full card (the word of the day's "See the card"). */
   onOpenWord?: (word: Word) => void
+  /** Opens the Words screen. */
+  onWords?: () => void
   /** Absent when the user may not open Debug: the link is then not rendered at all. */
   onDebug?: () => void
   queue: WriteQueue | null
@@ -37,7 +39,7 @@ interface HomeScreenProps {
   now?: Date
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onOpenWord, onDebug, queue, metrics, theme, activity = null, now: nowProp }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onOpenWord, onDebug, queue, metrics, theme, activity = null, now: nowProp }: HomeScreenProps) {
   // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
   const stats = useMemo(
     () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, nowProp ?? new Date()) : null),
@@ -66,7 +68,15 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
   return (
     <main className="screen home">
-      <ScreenHeader brand title={strings.appTitle} actions={theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />} />
+      <ScreenHeader brand title={strings.appTitle} actions={
+          (onWords || theme) && (
+            <>
+              {onWords && <WordsButton onClick={onWords} />}
+              {theme && <ThemeToggle choice={theme.choice} scheme={theme.scheme} onCycle={theme.onCycle} />}
+            </>
+          )
+        }
+      />
 
       {stats && data.status === 'ready' ? (
         <>
@@ -246,6 +256,18 @@ function DegradedNotice({ data }: { data: UserData }) {
       {strings.home.degraded(names)}
       {data.degraded.includes('user_hidden_words') && ` ${strings.home.degradedHiddenWarning}`}
     </Notice>
+  )
+}
+
+/** The way into the Words screen: a round icon button in the header, left of the theme toggle. */
+function WordsButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="icon-btn" aria-label={strings.home.wordsButton} title={strings.home.wordsButton} onClick={onClick}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 6h12M8 12h12M8 18h12" />
+        <path d="M4 6h.01M4 12h.01M4 18h.01" />
+      </svg>
+    </button>
   )
 }
 

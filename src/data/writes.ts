@@ -124,20 +124,26 @@ export async function upsertDailyMetrics(
 }
 
 /**
- * Writes hidden-word changes to user_hidden_words the way the Flutter app did: additions are one upsert
- * on (user_id, es_word) (created_at is left to the database default), removals one delete by es_word.
- * Both are safe to repeat. Throws on any failure.
+ * Writes a word flag's changes to its table (user_hidden_words, user_favorites) the way the Flutter app did: additions are
+ * one upsert on (user_id, es_word) (created_at is left to the database default), removals one delete by es_word. Both are
+ * safe to repeat. Throws on any failure.
  */
-export async function writeHiddenWords(client: SupabaseClient, userId: string, ops: readonly { esWord: string; hidden: boolean }[]): Promise<void> {
-  const added = ops.filter((o) => o.hidden).map((o) => ({ user_id: userId, es_word: o.esWord }))
-  const removed = ops.filter((o) => !o.hidden).map((o) => o.esWord)
+async function writeWordFlags(client: SupabaseClient, userId: string, table: 'user_hidden_words' | 'user_favorites', ops: readonly { esWord: string; on: boolean }[]): Promise<void> {
+  const added = ops.filter((o) => o.on).map((o) => ({ user_id: userId, es_word: o.esWord }))
+  const removed = ops.filter((o) => !o.on).map((o) => o.esWord)
 
   if (added.length > 0) {
-    const { error, status } = await client.from('user_hidden_words').upsert(added, { onConflict: 'user_id,es_word' })
-    if (error) fail('user_hidden_words', error, status)
+    const { error, status } = await client.from(table).upsert(added, { onConflict: 'user_id,es_word' })
+    if (error) fail(table, error, status)
   }
   if (removed.length > 0) {
-    const { error, status } = await client.from('user_hidden_words').delete().eq('user_id', userId).in('es_word', removed)
-    if (error) fail('user_hidden_words', error, status)
+    const { error, status } = await client.from(table).delete().eq('user_id', userId).in('es_word', removed)
+    if (error) fail(table, error, status)
   }
 }
+
+export const writeHiddenWords = (client: SupabaseClient, userId: string, ops: readonly { esWord: string; hidden: boolean }[]) =>
+  writeWordFlags(client, userId, 'user_hidden_words', ops.map((o) => ({ esWord: o.esWord, on: o.hidden })))
+
+export const writeFavoriteWords = (client: SupabaseClient, userId: string, ops: readonly { esWord: string; favorite: boolean }[]) =>
+  writeWordFlags(client, userId, 'user_favorites', ops.map((o) => ({ esWord: o.esWord, on: o.favorite })))

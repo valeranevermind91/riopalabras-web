@@ -23,7 +23,7 @@ describe('fonts', () => {
   it('Manrope is the default face; Fraunces is set only on Spanish words', () => {
     expect(rule('body')).toMatch(/font-family: var\(--font-ui\)/)
     const selectors = [...css.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim().replace(/\s+/g, ' '))
-    expect(selectors.sort()).toEqual(['.brand', '.cz-input', '.cz-result-word', '.match-tile.is-es', '.tile-sub', '.wc-headword', '.wotd-word'].sort())
+    expect(selectors.sort()).toEqual(['.brand', '.cz-input', '.cz-result-word', '.match-tile.is-es', '.tile-sub', '.wc-headword', '.wotd-word', '.word-row-head'].sort())
   })
 
   it('Cyrillic is covered by the UI face (Manrope has it), so the Russian UI of the future needs no change', () => {

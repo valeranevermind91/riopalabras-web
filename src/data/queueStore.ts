@@ -24,10 +24,16 @@ export interface HiddenOpEntry {
   readonly hidden: boolean
 }
 
+export interface FavoriteOpEntry {
+  readonly esWord: string
+  readonly favorite: boolean
+}
+
 /** What is waiting to be sent, with each entry's queue time. */
 export interface QueueSnapshot {
   progress: Stamped<ProgressUpdate>[]
   hidden: Stamped<HiddenOpEntry>[]
+  favorites: Stamped<FavoriteOpEntry>[]
   /** The pending settings patch, with the queue time of each key (a key keeps the time of its latest value). */
   settings: { patch: SettingsPatch; at: Record<string, number> } | null
   metrics: Stamped<DailyMetricsRow>[]
@@ -63,7 +69,7 @@ export function safeLocalStorage(): StorageLike | null {
   }
 }
 
-export const isEmptySnapshot = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.settings === null && s.metrics.length === 0
+export const isEmptySnapshot = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.favorites.length === 0 && s.settings === null && s.metrics.length === 0
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -86,6 +92,11 @@ function readMetrics(raw: unknown): DailyMetricsRow | null {
 function readHidden(raw: unknown): HiddenOpEntry | null {
   if (!isObject(raw) || typeof raw.esWord !== 'string' || !raw.esWord || typeof raw.hidden !== 'boolean') return null
   return { esWord: raw.esWord, hidden: raw.hidden }
+}
+
+function readFavorite(raw: unknown): FavoriteOpEntry | null {
+  if (!isObject(raw) || typeof raw.esWord !== 'string' || !raw.esWord || typeof raw.favorite !== 'boolean') return null
+  return { esWord: raw.esWord, favorite: raw.favorite }
 }
 
 /** Turns a stored list of {value, at} into stamped entries, dropping the stale and the unreadable (counted). */
@@ -125,6 +136,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
             savedAt: now(),
             progress: snapshot.progress.map((e) => ({ value: { ...e.value, nextReview: e.value.nextReview.toISOString() }, at: e.at })),
             hidden: snapshot.hidden,
+            favorites: snapshot.favorites,
             settings: snapshot.settings,
             metrics: snapshot.metrics,
           }),
@@ -148,17 +160,18 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
       try {
         record = JSON.parse(text)
       } catch {
-        return { snapshot: { progress: [], hidden: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: 1 }
       }
       // Never another account's queue, even if it somehow sits under this key.
       if (!isObject(record) || record.v !== 1 || record.userId !== userId) {
-        return { snapshot: { progress: [], hidden: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: isObject(record) && record.userId !== userId ? 0 : 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: isObject(record) && record.userId !== userId ? 0 : 1 }
       }
 
       const cutoff = now() - MAX_AGE_MS
       const tally = { stale: 0, unreadable: 0 }
       const progress = readList(record.progress, readProgress, cutoff, tally)
       const hidden = readList(record.hidden, readHidden, cutoff, tally)
+      const favorites = readList(record.favorites, readFavorite, cutoff, tally)
       const metrics = readList(record.metrics, readMetrics, cutoff, tally)
 
       let settings: QueueSnapshot['settings'] = null
@@ -179,7 +192,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
         tally.unreadable++
       }
 
-      return { snapshot: { progress, hidden, settings, metrics }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable }
+      return { snapshot: { progress, hidden, favorites, settings, metrics }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable }
     },
   }
 }

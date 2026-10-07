@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthState } from '../lib/auth'
 import { loadDictionary } from './dictionary'
-import { applyFlagLists, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFavoriteFlag, applyFlagLists, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { loadOverlay, recoverTables, type NonCriticalTable } from './overlay'
 import { createBackgroundRetrier, type Retrier } from './recovery'
 import { parseSettings } from './settings'
@@ -25,6 +25,8 @@ export interface UserData {
   applySettings: (patch: SettingsPatch) => void
   /** Mirror a hide / un-hide ("already know it") into the in-memory words, at once. */
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
+  /** Mirror a favourite / un-favourite into the in-memory words, at once. */
+  applyFavorite: (esWords: readonly string[], favorite: boolean) => void
   /** Non-critical tables (favorites, hidden words) that failed at launch and are still being retried in the background. */
   degraded: readonly NonCriticalTable[]
   /** Retry the degraded tables now instead of waiting for the next background attempt. */
@@ -117,6 +119,12 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
     )
   }, [])
 
+  const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => {
+    setBase((prev) =>
+      prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: applyFavoriteFlag(prev.loaded.words, esWords, favorite) } } : prev,
+    )
+  }, [])
+
   const applySettings = useCallback((patch: SettingsPatch) => {
     // Eager, so a read right after the write (getSettings) already sees it, not only after the next render.
     if (latestSettings.current) latestSettings.current = applySettingsPatch(latestSettings.current, patch)
@@ -183,9 +191,10 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
         applyProgress,
         applySettings,
         applyHidden,
+        applyFavorite,
         degraded: loaded.degraded,
         retryDegraded,
       },
     }
-  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, retryDegraded])
+  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, applyFavorite, retryDegraded])
 }

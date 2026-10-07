@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
-import type { Word } from './data/types'
+import { wordKey } from './data/words'
+import { createViewStore } from './data/wordList'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
@@ -17,11 +18,12 @@ import { HomeScreen } from './screens/Home'
 import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
-import { WordScreen } from './screens/WordScreen'
+import { WordDetail } from './screens/WordDetail'
+import { WordsScreen } from './screens/Words'
 import { NotAvailable } from './screens/NotAvailable'
 import { ReviewScreen } from './screens/Review'
 
-type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'word' | 'debug'
+type Screen = 'home' | 'learn' | 'review' | 'matching' | 'cloze' | 'words' | 'word' | 'debug'
 
 function readTelegramInfo(): TelegramInfo {
   const { webApp, isMock } = getWebApp()
@@ -90,9 +92,14 @@ function App() {
   }, [queue, readyData, userId])
 
   const [screen, setScreen] = useState<Screen>('home')
-  const [openWord, setOpenWord] = useState<Word | null>(null)
+  // A word's detail is opened from the word of the day (back goes Home) or from the Words list (back goes to the list).
+  const [open, setOpen] = useState<{ key: string; from: 'home' | 'words' } | null>(null)
+  // The Words list as it was left, so it comes back with its search, filters, segment and place while a word is open.
+  const [wordsView] = useState(createViewStore)
   // Leaving a screen never asks and never waits: whatever is unsent is held by the queue (and saved on the device), not by the screen.
   const go = useCallback((to: Screen) => setScreen(to), [])
+  /** Where Back leads from the current screen. */
+  const backTarget: Screen = screen === 'word' ? (open?.from ?? 'home') : 'home'
 
   // supabase-js drops its session when the auth server stops recognising it, and from then on sends the anon key:
   // sign in again at once and let the queue send what waited.
@@ -188,13 +195,13 @@ function App() {
       return
     }
     native.show()
-    const onClick = () => void go('home')
+    const onClick = () => void go(backTarget)
     native.onClick(onClick)
     return () => native.offClick(onClick)
-  }, [native, screen, go])
+  }, [native, screen, go, backTarget])
 
   // Telegram's BackButton does the job where it exists; elsewhere each screen draws its own.
-  const inPageBack = native ? undefined : () => void go('home')
+  const inPageBack = native ? undefined : () => void go(backTarget)
 
   if (screen === 'debug') {
     if (!debugAllowed) return <NotAvailable />
@@ -242,8 +249,25 @@ function App() {
     return <MatchingScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
   }
 
-  if (screen === 'word' && readyData && openWord) {
-    return <WordScreen word={openWord} data={readyData} onBack={inPageBack} />
+  if (screen === 'words' && readyData && queue) {
+    return (
+      <WordsScreen
+        data={readyData}
+        queue={queue}
+        savedView={wordsView.get()}
+        onViewChange={wordsView.set}
+        onOpen={(key) => {
+          setOpen({ key, from: 'words' })
+          setScreen('word')
+        }}
+        onBack={inPageBack}
+      />
+    )
+  }
+
+  const openedWord = screen === 'word' && open ? readyData?.words.find((w) => wordKey(w.esWord) === open.key) : undefined
+  if (openedWord && readyData && queue) {
+    return <WordDetail word={openedWord} data={readyData} queue={queue} onBack={inPageBack} />
   }
 
   if (screen === 'cloze' && readyData && queue) {
@@ -258,11 +282,12 @@ function App() {
       onReview={() => setScreen('review')}
       onMatching={() => setScreen('matching')}
       onCloze={() => setScreen('cloze')}
+      onWords={() => setScreen('words')}
       onDebug={debugAllowed ? () => setScreen('debug') : undefined}
       theme={{ choice: theme.choice, scheme: theme.scheme, onCycle: theme.cycle }}
       activity={activity}
       onOpenWord={(word) => {
-        setOpenWord(word)
+        setOpen({ key: wordKey(word.esWord), from: 'home' })
         setScreen('word')
       }}
       queue={queue}

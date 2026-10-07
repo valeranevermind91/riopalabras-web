@@ -320,6 +320,24 @@ describe('the theme toggle', () => {
   })
 })
 
+describe('the way into the Words screen', () => {
+  const theme = { choice: 'system', scheme: 'light', onCycle: () => {} }
+
+  it('is a small icon button in the header, to the left of the theme toggle', () => {
+    const html = render({ onWords: () => {}, theme })
+    const actions = html.match(/<div class="screen-header-actions">.*?<\/div>/)![0]
+    expect(actions.indexOf('aria-label="Words"')).toBeGreaterThanOrEqual(0)
+    expect(actions.indexOf('aria-label="Words"')).toBeLessThan(actions.indexOf('data-theme-choice'))
+    expect(actions.match(/class="icon-btn"/g)).toHaveLength(2)
+    expect(actions).toContain('title="Words"')
+  })
+
+  it('is there without a theme toggle too, and absent without a way to open it', () => {
+    expect(render({ onWords: () => {} })).toContain('aria-label="Words"')
+    expect(render({ theme })).not.toContain('aria-label="Words"')
+  })
+})
+
 describe('the word of the day card', () => {
   const card = (html: string) => html.match(/<section class="wotd".*?<\/section>/)?.[0] ?? ''
   const headwordOf = (html: string) => card(html).match(/class="wotd-word">(.*?)</)?.[1]

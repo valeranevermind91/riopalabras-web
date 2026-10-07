@@ -6,15 +6,21 @@ import { fetchSettings, fetchSettingsRow } from './overlay'
 import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
 import { reconcileSettingsPatch } from './restoreRules'
 import { parseSettings } from './settings'
-import { createQueueStore, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
+import { createQueueStore, type FavoriteOpEntry, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
 import { wordKey } from './words'
-import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeHiddenWords, writeSettings } from './writes'
+import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeFavoriteWords, writeHiddenWords, writeSettings } from './writes'
 
 /** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
 export interface HiddenOp {
   /** The word in its dictionary casing (the casing the rows are written with). */
   esWord: string
   hidden: boolean
+}
+
+/** One word's latest favourite state: favorite = true adds it to user_favorites, false removes it. */
+export interface FavoriteOp {
+  esWord: string
+  favorite: boolean
 }
 
 export interface QueueSender {
@@ -26,6 +32,8 @@ export interface QueueSender {
   sendSettings: (patch: SettingsPatch, restored?: { keys: ReadonlySet<string>; queuedAt: Readonly<Record<string, number>> }) => Promise<void>
   /** Optional: without it hidden-word changes are not queued at all. Receives the latest state per word. */
   sendHidden?: (ops: readonly HiddenOp[]) => Promise<void>
+  /** Optional: without it favourite changes are not queued at all. Receives the latest state per word. */
+  sendFavorites?: (ops: readonly FavoriteOp[]) => Promise<void>
   /** Optional: the best-effort metrics lane is simply off without it. */
   /** `restoredDates` is given only when some rows came back from storage after a restart (see restoreRules.ts / metrics merge). */
   sendMetrics?: (rows: readonly DailyMetricsRow[], restoredDates?: ReadonlySet<string>) => Promise<void>
@@ -42,6 +50,8 @@ export interface QueueStatus {
   pendingSettings: boolean
   /** Hidden-word changes (user_hidden_words) not yet sent. */
   pendingHidden: number
+  /** Favourite changes (user_favorites) not yet sent. */
+  pendingFavorites: number
   /** A request is in flight right now. */
   sending: boolean
   /** Automatic retries are exhausted: the UI shows a banner and waits for retry(). */
@@ -94,6 +104,7 @@ export interface RestoreReport {
 export interface PendingWrites {
   progress: ProgressUpdate[]
   hidden: HiddenOpEntry[]
+  favorites: FavoriteOpEntry[]
   settings: SettingsPatch | null
 }
 
@@ -113,6 +124,8 @@ export interface WriteQueue {
    * followed by "undo" before anything is sent leaves one idempotent removal, never a stuck row.
    */
   enqueueHidden: (esWord: string, hidden: boolean) => void
+  /** Favourites or un-favourites a word (user_favorites), the same way: the latest state per word wins. */
+  enqueueFavorite: (esWord: string, favorite: boolean) => void
   /**
    * A finished Learn batch: its words and its settings patch (streak, new-word counter) queued
    * together, in one step, so the drain never sees one without the other. Progress is always sent
@@ -203,6 +216,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let settings: SettingsPatch | null = null
   const metrics = new Map<string, DailyMetricsRow>()
   const hiddenOps = new Map<string, HiddenOp>()
+  const favoriteOps = new Map<string, FavoriteOp>()
   // When each pending state was queued (the objects themselves are the keys), for the staleness rule on restore.
   const queuedAt = new WeakMap<object, number>()
   let settingsQueuedAt: Record<string, number> = {}
@@ -249,16 +263,17 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
   const listeners = new Set<() => void>()
 
-  const hasPending = () => progress.size > 0 || hiddenOps.size > 0 || settings !== null
+  const hasPending = () => progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || settings !== null
 
   const computeStatus = (): QueueStatus => ({
     pendingRatings: progress.size,
     pendingSettings: settings !== null,
     pendingHidden: hiddenOps.size,
+    pendingFavorites: favoriteOps.size,
     sending,
     failed,
     error: lastError,
-    unsaved: progress.size > 0 || hiddenOps.size > 0 || settings !== null || sending,
+    unsaved: progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || settings !== null || sending,
     stuck,
     pendingMetrics: metrics.size,
     metricsError,
@@ -280,6 +295,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     return {
       progress: [...progress.values()].map(stamped),
       hidden: [...hiddenOps.values()].map(stamped),
+      favorites: [...favoriteOps.values()].map(stamped),
       settings: settings ? { patch: settings, at: { ...settingsQueuedAt } } : null,
       metrics: [...metrics.values()].map(stamped),
     }
@@ -345,6 +361,18 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       for (const sent of ops) {
         if (hiddenOps.get(wordKey(sent.esWord)) === sent) {
           hiddenOps.delete(wordKey(sent.esWord))
+          version++
+        }
+      }
+      notify()
+    }
+
+    if (favoriteOps.size > 0) {
+      const ops = [...favoriteOps.values()]
+      if (sender.sendFavorites) await within(sender.sendFavorites(ops))
+      for (const sent of ops) {
+        if (favoriteOps.get(wordKey(sent.esWord)) === sent) {
+          favoriteOps.delete(wordKey(sent.esWord))
           version++
         }
       }
@@ -567,6 +595,16 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       kick()
     },
 
+    enqueueFavorite(esWord, favorite) {
+      if (!sender.sendFavorites) return
+      const op = { esWord, favorite }
+      queuedAt.set(op, nowMs())
+      version++
+      favoriteOps.set(wordKey(esWord), op)
+      notify()
+      kick()
+    },
+
     enqueueBatch(updates, patch) {
       const state: TicketState = { updates: new Set(), settingsVersion: null }
       tickets.add(state) // registered first, so a word that appears twice in the batch hands its ticket to the newer state
@@ -639,6 +677,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         hiddenOps.set(wordKey(op.esWord), op)
         restored++
       }
+      for (const { value, at } of result.snapshot.favorites) {
+        if (favoriteOps.has(wordKey(value.esWord))) continue
+        const op = { esWord: value.esWord, favorite: value.favorite }
+        queuedAt.set(op, at)
+        favoriteOps.set(wordKey(op.esWord), op)
+        restored++
+      }
       if (result.snapshot.settings) {
         const { patch, at } = result.snapshot.settings
         for (const key of Object.keys(patch)) {
@@ -672,6 +717,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     pending: () => ({
       progress: [...progress.values()],
       hidden: [...hiddenOps.values()].map(({ esWord, hidden }) => ({ esWord, hidden })),
+      favorites: [...favoriteOps.values()].map(({ esWord, favorite }) => ({ esWord, favorite })),
       settings: settings ? { ...settings } : null,
     }),
   }
@@ -749,6 +795,7 @@ export function createSupabaseWriteQueue(
           if (Object.keys(write).length > 0) await writeSettings(client, userId, getSettings() ?? parseSettings(server.blob), write)
         }),
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
+      sendFavorites: (ops) => signedIn(() => writeFavoriteWords(client, userId, ops)),
       sendMetrics: (rows, restoredDates) =>
         signedIn(async () => {
           // A row from an earlier run may be behind what another device pushed for that day: merge, never overwrite.

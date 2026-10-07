@@ -43,6 +43,7 @@ export interface PendingTargets {
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   applySettings: (patch: SettingsPatch) => void
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
+  applyFavorite: (esWords: readonly string[], favorite: boolean) => void
 }
 
 /**
@@ -56,6 +57,10 @@ export function mirrorPending(pending: PendingWrites, targets: PendingTargets): 
   const show = pending.hidden.filter((op) => !op.hidden).map((op) => op.esWord)
   if (hide.length > 0) targets.applyHidden(hide, true)
   if (show.length > 0) targets.applyHidden(show, false)
+  const like = pending.favorites.filter((op) => op.favorite).map((op) => op.esWord)
+  const unlike = pending.favorites.filter((op) => !op.favorite).map((op) => op.esWord)
+  if (like.length > 0) targets.applyFavorite(like, true)
+  if (unlike.length > 0) targets.applyFavorite(unlike, false)
 }
 
 /**

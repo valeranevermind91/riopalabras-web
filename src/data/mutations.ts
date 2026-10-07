@@ -54,3 +54,16 @@ export function applyHiddenFlag(words: readonly Word[], esWords: readonly string
   })
   return changed ? Object.freeze(next) : words
 }
+
+/** Pure: sets (or clears) the favourite flag of the given words (matched by wordKey); the same list back if nothing changes. */
+export function applyFavoriteFlag(words: readonly Word[], esWords: readonly string[], favorite: boolean): readonly Word[] {
+  const keys = new Set(esWords.map(wordKey))
+  if (keys.size === 0) return words
+  let changed = false
+  const next = words.map((word) => {
+    if (!keys.has(wordKey(word.esWord)) || word.isFavorite === favorite) return word
+    changed = true
+    return Object.freeze({ ...word, isFavorite: favorite })
+  })
+  return changed ? Object.freeze(next) : words
+}
