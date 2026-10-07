@@ -78,7 +78,7 @@ export const strings = {
     states: { new: 'Not started', learning: 'In progress', established: 'Known well', due: 'Due now' },
     favourites: 'Favourites',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
-    sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned' },
+    sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned', random: 'Random' },
     bestMatch: 'Best match',
     // short part-of-speech tags on a row
     posTag: { n: 'noun', v: 'verb', adj: 'adj', adv: 'adv', pron: 'pron', num: 'num', prep: 'prep', determiner: 'det', conj: 'conj', interj: 'interj', letter: 'letter', contraction: 'contr', art: 'art' } as Record<string, string>,
@@ -98,13 +98,13 @@ export const strings = {
     open: (word: string) => `Open ${word}`,
     detail: {
       progress: 'Progress',
+      scheduling: 'Scheduling details',
       state: 'State',
       repetitions: 'Repetitions',
       interval: 'Interval',
       nextReview: 'Next review',
       notScheduled: 'Not scheduled',
       dueNow: 'due now',
-      more: 'More',
       ease: 'Ease factor',
       noteHidden: 'Marked as known: hidden from Learn, Review and practice. Its progress is kept, so bringing it back puts it in rotation as it was.',
       noteReference: (why: string) => `Reference only: ${why}, so it is never in Learn or Review.`,

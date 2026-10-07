@@ -36,6 +36,16 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     return page
   }
 
+  /** The names and expanded state of the nodes in the browser's accessibility tree (what a screen reader is given). */
+  const axTree = async (page: Page) => {
+    const client = await page.createCDPSession()
+    await client.send('Accessibility.enable')
+    const { nodes } = (await client.send('Accessibility.getFullAXTree')) as { nodes: { ignored?: boolean; role?: { value: string }; name?: { value: string }; properties?: { name: string; value: { value: unknown } }[] }[] }
+    await client.detach()
+    return nodes.filter((n) => !n.ignored).map((n) => ({ role: n.role?.value, name: n.name?.value ?? '', expanded: n.properties?.find((p) => p.name === 'expanded')?.value.value }))
+  }
+  const inTree = async (page: Page, text: string) => (await axTree(page)).some((n) => n.name.includes(text))
+
   const rows = (page: Page) => page.$$eval('.word-row-head', (els) => els.map((e) => e.textContent ?? ''))
   const fixture = (page: Page) => page.evaluate(() => (window as never as { __fixture: { lapsed: string; hidden: string[]; favourite: string } }).__fixture)
   const sent = (page: Page) => page.evaluate(() => (window as never as { __sent: { favorites: { esWord: string; favorite: boolean }[]; hidden: { esWord: string; hidden: boolean }[] } }).__sent)
@@ -217,6 +227,63 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
+  describe('the scheduling details', () => {
+    it('are collapsed on every open, and their contents are not in the accessibility tree until expanded', async () => {
+      const page = await open()
+      await openRow(page, 0)
+      expect(await page.$eval('details.sched', (e) => (e as HTMLDetailsElement).open)).toBe(false)
+      expect(await page.$eval('details.sched summary', (e) => e.textContent)).toBe('Scheduling details')
+      // none of the five rows is shown or exposed to a screen reader while it is closed
+      for (const label of ['State', 'Repetitions', 'Interval', 'Next review', 'Ease factor']) expect(await inTree(page, label), label).toBe(false)
+      expect(await page.$eval('details.sched dl', (e) => e.checkVisibility())).toBe(false)
+
+      const summary = (await axTree(page)).find((n) => n.name === 'Scheduling details')
+      expect(summary?.expanded).toBe(false) // the control says it is collapsed
+
+      await page.click('details.sched summary')
+      await page.waitForFunction(() => (document.querySelector('details.sched') as HTMLDetailsElement).open)
+      for (const label of ['State', 'Repetitions', 'Interval', 'Next review', 'Ease factor']) expect(await inTree(page, label), label).toBe(true)
+      expect((await axTree(page)).find((n) => n.name === 'Scheduling details')?.expanded).toBe(true)
+      expect(await page.$eval('details.sched dl', (e) => e.checkVisibility())).toBe(true)
+      await page.close()
+    }, 60_000)
+
+    it('open and close from the keyboard (Enter and Space on the summary)', async () => {
+      const page = await open()
+      await openRow(page, 0)
+      await page.focus('details.sched summary')
+      const isOpen = () => page.$eval('details.sched', (e) => (e as HTMLDetailsElement).open)
+      await page.keyboard.press('Enter')
+      expect(await isOpen()).toBe(true)
+      await page.keyboard.press('Enter')
+      expect(await isOpen()).toBe(false)
+      await page.keyboard.press('Space')
+      expect(await isOpen()).toBe(true)
+      await page.close()
+    }, 60_000)
+
+    it('are not remembered: closed again on the next open, even for the same word', async () => {
+      const page = await open()
+      await openRow(page, 0)
+      await page.click('details.sched summary')
+      await page.waitForFunction(() => (document.querySelector('details.sched') as HTMLDetailsElement).open)
+      await back(page)
+      await openRow(page, 0)
+      expect(await page.$eval('details.sched', (e) => (e as HTMLDetailsElement).open)).toBe(false)
+      await page.close()
+    }, 60_000)
+
+    it('the explanation for a lapsed, hidden or reference word stays visible, outside the footnote', async () => {
+      const page = await open()
+      const fx = await fixture(page)
+      await search(page, fx.lapsed)
+      await page.waitForSelector('.word-row')
+      await openRow(page, 0)
+      expect(await inTree(page, 'Again')).toBe(true) // the note is in the tree with the disclosure closed
+      await page.close()
+    }, 60_000)
+  })
+
   it('the detail of a lapsed word shows that it reads as new and why', async () => {
     const page = await open()
     const fx = await fixture(page)
@@ -276,6 +343,94 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect((await rows(page))[0]).toBe('de')
       await page.close()
     }, 60_000)
+
+    describe('Random', () => {
+      const chooseSort = async (page: Page, label: string) => {
+        await control(page, 'Sort')
+        await page.waitForSelector('.sheet')
+        await press(page, '.sheet-row', label)
+        await page.waitForFunction(() => document.querySelector('.sheet') === null)
+      }
+
+      it('is the last option in the sort sheet, and is named on the button', async () => {
+        const page = await open()
+        await control(page, 'Sort')
+        await page.waitForSelector('.sheet')
+        expect(await page.$$eval('.sheet-row', (els) => els.map((e) => e.textContent))).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently learned', 'Random'])
+        await press(page, '.sheet-row', 'Random')
+        await page.waitForFunction(() => document.querySelector('.sheet') === null)
+        expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Random'])
+        expect((await rows(page))[0]).not.toBe('de') // not the frequency order
+        await page.close()
+      }, 60_000)
+
+      it('stays put: scrolling, opening a word and coming back, and a filter on and off do not reorder the list', async () => {
+        const page = await open()
+        await chooseSort(page, 'Random')
+        const order = await rows(page)
+        expect(order.length).toBeGreaterThan(8)
+
+        await scrollTo(page, 72 * 400)
+        await scrollTo(page, 0)
+        expect(await rows(page)).toEqual(order) // scrolling
+
+        await openRow(page, 2)
+        await back(page)
+        expect(await rows(page)).toEqual(order) // a word opened and closed
+
+        await chooseFilter(page, 'Filters', 'Favourites')
+        await page.waitForSelector('.vlist')
+        await control(page, 'Filters')
+        await page.waitForSelector('.sheet')
+        await press(page, '.sheet .link-btn', 'Clear all')
+        await closeSheet(page)
+        await page.waitForSelector('.vlist')
+        expect(await rows(page)).toEqual(order) // a filter on and off again
+        await page.close()
+      }, 60_000)
+
+      it('choosing Random again, while it is already the order, shuffles again', async () => {
+        const page = await open()
+        await chooseSort(page, 'Random')
+        const first = await rows(page)
+        await chooseSort(page, 'Random')
+        expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Random'])
+        expect(await rows(page)).not.toEqual(first)
+        await page.close()
+      }, 60_000)
+
+      it('un-starring a word with Favourites on takes only that word out: the others keep their order', async () => {
+        const page = await open()
+        await segment(page, 'Learned')
+        // star five learned words, then look at them in a random order, favourites only
+        for (const i of [0, 1, 2, 3, 4]) await page.evaluate((n) => (document.querySelectorAll('.word-row-star')[n] as HTMLElement).click(), i)
+        await chooseSort(page, 'Random')
+        await chooseFilter(page, 'Filters', 'Favourites')
+        await page.waitForFunction(() => document.querySelectorAll('.word-row-star.is-on').length >= 5)
+        const before = await rows(page)
+        expect(before.length).toBeGreaterThanOrEqual(5)
+
+        await page.evaluate(() => (document.querySelectorAll('.word-row-star.is-on')[1] as HTMLElement).click()) // un-star the second row
+        await page.waitForFunction((n) => document.querySelectorAll('.word-row').length === n - 1, {}, before.length)
+        expect(await rows(page)).toEqual(before.filter((_, i) => i !== 1))
+        await page.close()
+      }, 60_000)
+
+      it('is ignored during a search (Best match), and comes back when the search is cleared', async () => {
+        const page = await open()
+        await chooseSort(page, 'Random')
+        const order = await rows(page)
+        await search(page, 'casa')
+        expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Best match'])
+        expect((await rows(page))[0]).toBe('casa')
+        await page.focus('.words-search')
+        await page.keyboard.press('End')
+        for (let i = 0; i < 4; i++) await page.keyboard.press('Backspace') // "casa", one letter at a time
+        await page.waitForFunction(() => (document.querySelector('.control-btn:nth-child(2)') as HTMLButtonElement).textContent === 'Sort: Random')
+        expect(await rows(page)).toEqual(order) // the same shuffle as before the search
+        await page.close()
+      }, 60_000)
+    })
 
     it('two changes in the same instant both land (each is built from the latest filters, not the ones the last render saw)', async () => {
       const page = await open()

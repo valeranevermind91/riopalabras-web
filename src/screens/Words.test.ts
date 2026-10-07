@@ -33,7 +33,7 @@ const learnedSome = (): Word[] => {
 
 const render = (words: readonly Word[], savedView: ListView | null = null, settings = parseSettings({})) =>
   renderToStaticMarkup(createElement(WordsScreen, { data: dataFor(words, settings), queue, savedView, onViewChange: noop, onOpen: noop }))
-const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
+const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', seed: 1, filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
 
 describe('the Words screen', () => {
   it('has the header, a search field, the segments All · Learned · Hidden with their counts, the two buttons and the list', () => {
@@ -217,12 +217,11 @@ describe('the filters sheet', () => {
 })
 
 describe('the sort sheet', () => {
-  const sheet = (sort: 'frequency' | 'az' | 'due' | 'recent' = 'frequency') => renderToStaticMarkup(createElement(SortSheet, { sort, onSelect: noop, onClose: noop }))
+  const sheet = (sort: 'frequency' | 'az' | 'due' | 'recent' | 'random' = 'frequency') => renderToStaticMarkup(createElement(SortSheet, { sort, onSelect: noop, onClose: noop }))
 
-  it('offers Frequency · A to Z · Due soonest · Recently learned, and no Random', () => {
+  it('offers Frequency · A to Z · Due soonest · Recently learned · Random, Random last', () => {
     const html = sheet()
-    expect([...html.matchAll(/role="radio"[^>]*><span>([^<]+)<\/span>/g)].map((m) => m[1])).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently learned'])
-    expect(html).not.toContain('Random')
+    expect([...html.matchAll(/role="radio"[^>]*><span>([^<]+)<\/span>/g)].map((m) => m[1])).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently learned', 'Random'])
     expect(html).toContain('aria-label="Sort by"')
   })
 
@@ -230,6 +229,7 @@ describe('the sort sheet', () => {
     expect(sheet('frequency')).toMatch(/class="sheet-row is-active" role="radio" aria-checked="true"><span>Frequency/)
     expect(sheet('recent')).toMatch(/aria-checked="true"><span>Recently learned/)
     expect(sheet('recent')).toMatch(/aria-checked="false"><span>Frequency/)
+    expect(sheet('random')).toMatch(/aria-checked="true"><span>Random/)
   })
 })
 
@@ -242,25 +242,66 @@ describe('the word detail', () => {
     const html = detail(base)
     expect(html.indexOf('wc-headword')).toBeLessThan(html.indexOf('state-block'))
     expect(html.indexOf('state-block')).toBeLessThan(html.indexOf('detail-actions'))
-    for (const label of ['State', 'Repetitions', 'Interval', 'Next review']) expect(html).toContain(`<dt>${label}</dt>`)
-    expect(html).toContain('<dd>Not started</dd>')
-    expect(html).toContain('Not scheduled')
     expect(html).toContain('Add to favourites')
     expect(html).not.toContain('Bring back')
   })
 
-  it('shows repetitions, interval and the next review date for a learned word, and the ease factor behind a disclosure', () => {
-    const html = detail({ ...base, repetitions: 3, interval: 12, easeFactor: 2.36, nextReview: new Date(NOWISH + 3 * day) })
-    expect(html).toContain('<dd>Known well</dd>')
-    expect(html).toContain('<dt>Repetitions</dt><dd>3</dd>')
-    expect(html).toContain('<dt>Interval</dt><dd>12d</dd>')
-    expect(html).toMatch(/<details class="state-more"><summary>More<\/summary><dl><dt>Ease factor<\/dt><dd>2\.36<\/dd>/)
-    expect(html.indexOf('<details')).toBeGreaterThan(html.indexOf('Next review'))
+  describe('the scheduling details: one collapsed disclosure holding the five rows', () => {
+    const learned = { ...base, repetitions: 3, interval: 12, easeFactor: 2.36, nextReview: new Date(NOWISH + 3 * day) }
+    const details = (html: string) => html.match(/<details class="sched">.*?<\/details>/)![0]
+
+    it('is a real <details>, closed (no "open"), with the summary "Scheduling details" — not "More"', () => {
+      const html = detail(learned)
+      expect(html.match(/<details/g)).toHaveLength(1)
+      expect(html).toMatch(/<details class="sched"><summary>Scheduling details<\/summary>/)
+      expect(details(html)).not.toMatch(/^<details[^>]*\bopen\b/)
+      expect(html).not.toContain('>More<')
+    })
+
+    it('holds all five rows: State, Repetitions, Interval, Next review and Ease factor', () => {
+      const inside = details(detail(learned))
+      expect([...inside.matchAll(/<dt>([^<]+)<\/dt>/g)].map((m) => m[1])).toEqual(['State', 'Repetitions', 'Interval', 'Next review', 'Ease factor'])
+      expect(inside).toContain('<dt>State</dt><dd>Known well</dd>')
+      expect(inside).toContain('<dt>Repetitions</dt><dd>3</dd>')
+      expect(inside).toContain('<dt>Interval</dt><dd>12d</dd>')
+      expect(inside).toContain('<dt>Ease factor</dt><dd>2.36</dd>')
+    })
+
+    it('shows none of them outside it: nothing in the card is a visible row any more', () => {
+      const html = detail(learned)
+      const outside = html.replace(details(html), '')
+      for (const label of ['State', 'Repetitions', 'Interval', 'Next review', 'Ease factor']) expect(outside).not.toContain(`<dt>${label}</dt>`)
+    })
+
+    it('is the same for every kind of word: new, hidden and reference-only ones get all five rows too', () => {
+      for (const word of [base, { ...base, isHidden: true }, makeWord('de', { pos: 'prep', rank: 1 })]) {
+        const inside = details(detail(word))
+        expect(inside.match(/<dt>/g)).toHaveLength(5)
+        expect(inside).toContain('Ease factor')
+      }
+      expect(details(detail(base))).toContain('Not scheduled')
+    })
+
+    it('has no card of its own: quiet text under the card, in the muted colour and a smaller size', () => {
+      const html = detail(learned)
+      expect(html).not.toMatch(/class="card state-block"/)
+      const css = readFileSync('src/index.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+      expect(css).toMatch(/\.sched \{[^}]*color: var\(--muted\)[^}]*font-size: 13px/s)
+      expect(css).toMatch(/\.sched summary \{[^}]*color: var\(--muted\)/s)
+      expect(css).not.toMatch(/\.sched \{[^}]*background/s)
+      expect(css).not.toMatch(/\.sched \{[^}]*border:/s)
+    })
+
+    it('nothing remembers whether it was open: the component has no state for it', () => {
+      const source = readFileSync('src/screens/WordDetail.tsx', 'utf8')
+      expect(source).not.toMatch(/useState|localStorage|sessionStorage/)
+      expect(source).not.toMatch(/<details[^>]*\bopen\b/)
+    })
   })
 
   it('a due word says so next to its date', () => {
     const html = detail({ ...base, repetitions: 2, interval: 6, nextReview: new Date(NOWISH - day) })
-    expect(html).toContain('<dd>Due now</dd>')
+    expect(html).toContain('<dt>State</dt><dd>Due now</dd>')
     expect(html).toContain('· due now')
   })
 

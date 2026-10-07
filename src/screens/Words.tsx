@@ -10,6 +10,7 @@ import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type Lis
 import { hasProgress } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
 import { wordKey } from '../data/words'
+import { newSeed } from '../lib/random'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
 
@@ -57,10 +58,10 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
     onViewChange(next)
   }
   // Changing what is listed starts it from the top; scrolling only reports its place.
-  const change = (patch: Partial<Pick<ListView, 'segment' | 'sort' | 'filters' | 'query'>>) => setView({ ...latest.current, ...patch, scrollTop: 0 })
+  const change = (patch: Partial<Pick<ListView, 'segment' | 'sort' | 'seed' | 'filters' | 'query'>>) => setView({ ...latest.current, ...patch, scrollTop: 0 })
   const setFilters = (patch: Partial<ListFilters>) => change({ filters: { ...latest.current.filters, ...patch } })
 
-  const list = useMemo(() => buildWordList(data.words, view, now), [data.words, view.segment, view.sort, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
+  const list = useMemo(() => buildWordList(data.words, view, now), [data.words, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(
     () => ({
       learned: data.words.filter((w) => !w.isHidden && hasProgress(w)).length,
@@ -84,7 +85,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
   const anyFilter = view.filters.state || view.filters.favourites || view.filters.pos
   const emptyText = list.rows.length > 0 ? null : list.searching || anyFilter ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
-  const listKey = `${view.segment}|${view.sort}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.pos}`
+  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.pos}`
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 
@@ -160,7 +161,8 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         <SortSheet
           sort={view.sort}
           onSelect={(sort) => {
-            change({ sort })
+            // Random is a fresh shuffle every time it is chosen, including when it is already the order; the others just apply.
+            change(sort === 'random' ? { sort, seed: newSeed() } : { sort })
             setSheet(null)
           }}
           onClose={() => setSheet(null)}

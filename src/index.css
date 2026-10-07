@@ -1898,45 +1898,71 @@ mark {
   background: var(--muted-2);
 }
 
-.state-block dl,
-.state-more dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 14px;
-  margin: 0;
-}
-
-.state-block dt {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.state-block dd {
-  margin: 0;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
+.state-block {
+  margin-bottom: var(--block-gap);
 }
 
 .state-note {
-  margin: 12px 0 0;
+  margin: 0 0 12px;
   color: var(--text-2);
   font-size: 14px;
   line-height: 1.5;
 }
 
-.state-more {
-  margin-top: 12px;
+/* The scheduler's numbers as a footnote: quiet, small, no card of its own, closed on every open. */
+.sched {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-.state-more summary {
+.sched summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  color: var(--muted);
+  font-weight: 600;
   cursor: pointer;
+  list-style: none;
 }
 
-.state-more dl {
-  margin-top: 8px;
+.sched summary::-webkit-details-marker {
+  display: none;
+}
+
+.sched summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.sched[open] summary::before {
+  transform: rotate(45deg);
+}
+
+.sched summary:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.sched dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 6px 0 0;
+}
+
+.sched dt {
+  color: var(--muted);
+}
+
+.sched dd {
+  margin: 0;
+  color: var(--text-2);
+  font-weight: 600;
 }
 
 .detail-actions {

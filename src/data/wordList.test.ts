@@ -10,7 +10,7 @@ import { NO_FILTERS, activeFilterCount, buildWordList, createViewStore, initialL
 const NOW = new Date('2026-10-06T15:00:00Z')
 const day = 24 * 60 * 60 * 1000
 const at = (days: number) => new Date(NOW.getTime() + days * day)
-const view = (over: Partial<ListView> = {}) => ({ segment: 'learned' as const, sort: 'frequency' as const, filters: NO_FILTERS, query: '', ...over })
+const view = (over: Partial<ListView> = {}) => ({ segment: 'learned' as const, sort: 'frequency' as const, seed: 1, filters: NO_FILTERS, query: '', ...over })
 const names = (words: readonly Word[], v: Partial<ListView> = {}) => buildWordList(words, view(v), NOW).rows.map((r) => r.word.esWord)
 
 // A small dictionary with every kind of word in it.
@@ -54,7 +54,7 @@ describe('the Learned list', () => {
 
 describe('where the screen opens', () => {
   it('on All, most common first, with nothing filtered', () => {
-    expect(initialListView()).toEqual({ segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0 })
+    expect(initialListView()).toEqual({ segment: 'all', sort: 'frequency', seed: 0, filters: NO_FILTERS, query: '', scrollTop: 0 })
   })
 })
 
@@ -96,6 +96,78 @@ describe('sorting', () => {
   it('a search keeps its own order, how well it matches, whatever the sort', () => {
     const small = [w('xcasa', { rank: 1 }), w('casa', { rank: 2 })]
     for (const sort of ['frequency', 'az', 'due', 'recent'] as const) expect(names(small, { query: 'casa', sort })).toEqual(['casa', 'xcasa'])
+  })
+
+  describe('Random', () => {
+    const big = Array.from({ length: 300 }, (_, i) => w(`palabra${String(i).padStart(3, '0')}`, { rank: i + 1, isFavorite: i % 3 === 0, pos: i % 2 === 0 ? 'n' : 'v' }))
+    const random = (seed: number, over: Partial<ListView> = {}) => names(big, { segment: 'all', sort: 'random', seed, ...over })
+
+    it('is the same order for the same seed, however many times the list is built', () => {
+      expect(random(42)).toEqual(random(42))
+      expect(random(42)).toEqual(random(42))
+    })
+
+    it('is a different order for a different seed, and not the plain frequency order', () => {
+      expect(random(42)).not.toEqual(random(43))
+      expect(random(42)).not.toEqual(names(big, { segment: 'all', sort: 'frequency' }))
+    })
+
+    it('the filtered list is the whole shuffle with the other words taken out: same words, same relative order', () => {
+      const whole = random(21)
+      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, favourites: true, pos: 'noun' as const }]) {
+        const filtered = random(21, { filters })
+        expect(filtered.length).toBeGreaterThan(0)
+        expect(filtered.length).toBeLessThan(whole.length)
+        expect(whole.filter((name) => filtered.includes(name))).toEqual(filtered)
+      }
+    })
+
+    it('removing a word from the filtered set leaves the others in the same relative order', () => {
+      const favourites = { ...NO_FILTERS, favourites: true }
+      const before = random(33, { filters: favourites })
+      expect(before.length).toBeGreaterThan(10)
+      for (const removed of [before[0], before[Math.floor(before.length / 2)], before[before.length - 1]]) {
+        const after = names(
+          big.map((word) => (word.esWord === removed ? ({ ...word, isFavorite: false } as Word) : word)), // un-starred
+          { segment: 'all', sort: 'random', seed: 33, filters: favourites },
+        )
+        expect(after).toHaveLength(before.length - 1)
+        expect(after).toEqual(before.filter((name) => name !== removed)) // nothing else moved
+      }
+    })
+
+    it('the same holds in the Hidden list: bringing one word back leaves the rest where they were', () => {
+      const hiddenBig = big.map((word, i) => (i % 4 === 0 ? ({ ...word, isHidden: true } as Word) : word))
+      const before = names(hiddenBig, { segment: 'hidden', sort: 'random', seed: 5 })
+      const brought = before[3]
+      const after = names(hiddenBig.map((word) => (word.esWord === brought ? ({ ...word, isHidden: false } as Word) : word)), { segment: 'hidden', sort: 'random', seed: 5 })
+      expect(after).toEqual(before.filter((name) => name !== brought))
+    })
+
+    it('shows every word of the filtered list exactly once, nothing added and nothing lost', () => {
+      for (const filters of [NO_FILTERS, { ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }]) {
+        const plain = names(big, { segment: 'all', sort: 'frequency', filters })
+        const shuffled = random(9, { filters })
+        expect(shuffled).toHaveLength(plain.length)
+        expect(new Set(shuffled).size).toBe(shuffled.length) // no word twice
+        expect([...shuffled].sort()).toEqual([...plain].sort()) // the same words
+      }
+    })
+
+    it('does not depend on the sort that was chosen before (it always starts from the same list)', () => {
+      expect(names(big, { segment: 'all', sort: 'random', seed: 5 })).toEqual(names(big, { segment: 'all', sort: 'random', seed: 5, filters: NO_FILTERS }))
+    })
+
+    it('putting a filter on and taking it off gives the same order back (the seed is what fixes it)', () => {
+      const before = random(11)
+      random(11, { filters: { ...NO_FILTERS, favourites: true } })
+      expect(random(11)).toEqual(before)
+    })
+
+    it('is ignored during a search: the match order stays', () => {
+      const small = [w('xcasa', { rank: 1 }), w('casa', { rank: 2 })]
+      for (const seed of [1, 2, 3, 4, 5, 6]) expect(names(small, { query: 'casa', sort: 'random', seed })).toEqual(['casa', 'xcasa'])
+    })
   })
 
   it('counts the filters that are on (the state filter does not count where it is not offered)', () => {
@@ -233,7 +305,7 @@ describe('the list view store', () => {
   it('holds the view between visits and starts empty', () => {
     const store = createViewStore()
     expect(store.get()).toBeNull()
-    const saved: ListView = { segment: 'all', sort: 'az', filters: { ...NO_FILTERS, pos: 'verb' }, query: 'ca', scrollTop: 1440 }
+    const saved: ListView = { segment: 'all', sort: 'az', seed: 7, filters: { ...NO_FILTERS, pos: 'verb' }, query: 'ca', scrollTop: 1440 }
     store.set(saved)
     expect(store.get()).toEqual(saved)
   })

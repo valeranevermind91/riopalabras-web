@@ -5,7 +5,7 @@ import { headword } from '../data/headword'
 import { langFromSettings } from '../data/rio'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
-import { hasHistory, isReferenceOnly, wordState, type WordState } from '../data/wordState'
+import { hasHistory, wordState, type WordState } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
 import { formatInterval } from '../sm2/sm2'
@@ -33,8 +33,8 @@ interface WordDetailProps {
 }
 
 /**
- * One word in full: the same card Learn shows, then where it stands (state, repetitions, interval, next review; the ease
- * factor behind a disclosure), then what can be done with it: favourite it, or bring it back if it was marked as known.
+ * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
+ * scheduling numbers in a collapsed footnote, then what can be done with it: favourite it, or bring it back if it was marked as known.
  */
 export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
   const now = new Date()
@@ -58,30 +58,27 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
       <ScreenHeader title={t.detailTitle} onBack={onBack} />
       <WordCard word={word} lang={langFromSettings(data.settings)} />
 
-      <section className="card state-block" aria-label={d.progress}>
-        <dl>
-          <dt>{d.state}</dt>
-          <dd>{t.stateName[state]}</dd>
-          <dt>{d.repetitions}</dt>
-          <dd>{word.repetitions}</dd>
-          <dt>{d.interval}</dt>
-          <dd>{word.interval > 0 ? formatInterval(word.interval) : '—'}</dd>
-          <dt>{d.nextReview}</dt>
-          <dd>
-            {word.nextReview ? date(word.nextReview) : d.notScheduled}
-            {state === 'due' ? ` · ${d.dueNow}` : ''}
-          </dd>
-        </dl>
+      <section className="state-block" aria-label={d.progress}>
         {note && <p className="state-note">{note}</p>}
-        {!isReferenceOnly(word) && (
-          <details className="state-more">
-            <summary>{d.more}</summary>
-            <dl>
-              <dt>{d.ease}</dt>
-              <dd>{word.easeFactor.toFixed(2)}</dd>
-            </dl>
-          </details>
-        )}
+        {/* The scheduler's numbers, as a footnote: closed on every open (a plain <details>, nothing remembers it). */}
+        <details className="sched">
+          <summary>{d.scheduling}</summary>
+          <dl>
+            <dt>{d.state}</dt>
+            <dd>{t.stateName[state]}</dd>
+            <dt>{d.repetitions}</dt>
+            <dd>{word.repetitions}</dd>
+            <dt>{d.interval}</dt>
+            <dd>{word.interval > 0 ? formatInterval(word.interval) : '—'}</dd>
+            <dt>{d.nextReview}</dt>
+            <dd>
+              {word.nextReview ? date(word.nextReview) : d.notScheduled}
+              {state === 'due' ? ` · ${d.dueNow}` : ''}
+            </dd>
+            <dt>{d.ease}</dt>
+            <dd>{word.easeFactor.toFixed(2)}</dd>
+          </dl>
+        </details>
       </section>
 
       <div className="detail-actions">

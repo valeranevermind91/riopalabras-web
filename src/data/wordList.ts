@@ -1,4 +1,5 @@
 import { headword } from './headword'
+import { shuffled } from '../lib/random'
 import { searchWords, type MatchVia } from './search'
 import type { Word } from './types'
 import { dueDate, hasProgress, lastReviewedAt, wordState, type WordState } from './wordState'
@@ -7,7 +8,7 @@ import { compareByRank } from './words'
 /** The three lists: every word, the words with progress, and the words marked as known (hidden). */
 export type Segment = 'all' | 'learned' | 'hidden'
 /** How the list is ordered (a search is always ordered by how well it matches instead). */
-export type SortKey = 'frequency' | 'az' | 'due' | 'recent'
+export type SortKey = 'frequency' | 'az' | 'due' | 'recent' | 'random'
 export type StateFilter = 'new' | 'learning' | 'established' | 'due'
 export type PosFilter = 'verb' | 'noun' | 'adj' | 'adv'
 
@@ -23,6 +24,8 @@ export interface ListFilters {
 export interface ListView {
   segment: Segment
   sort: SortKey
+  /** The shuffle's seed: picked when Random is chosen (again), kept while the screen is in use, so the order never changes by itself. */
+  seed: number
   filters: ListFilters
   query: string
   scrollTop: number
@@ -43,7 +46,7 @@ export const NO_FILTERS: ListFilters = { state: null, favourites: false, pos: nu
 
 /** The first time the list opens: every word, most common first. */
 export function initialListView(): ListView {
-  return { segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0 }
+  return { segment: 'all', sort: 'frequency', seed: 0, filters: NO_FILTERS, query: '', scrollTop: 0 }
 }
 
 export interface ListRow {
@@ -100,7 +103,7 @@ function comparatorFor(sort: SortKey): (a: Word, b: Word) => number {
  * every word, whatever the segment, ranked by how well it matches (Spanish, Rioplatense form, English and Russian,
  * accent-insensitive, no cap) and narrowed by the same filters; the sort does not apply, the match quality does.
  */
-export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segment' | 'filters' | 'query'> & Partial<Pick<ListView, 'sort'>>, now: Date): BuiltList {
+export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segment' | 'filters' | 'query'> & Partial<Pick<ListView, 'sort' | 'seed'>>, now: Date): BuiltList {
   const query = view.query.trim()
   const searching = query !== ''
   const segment = view.segment
@@ -109,8 +112,16 @@ export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segm
   if (searching) {
     rows = searchWords(words, query, Number.POSITIVE_INFINITY, { translations: true }).map((hit) => ({ word: hit.word, state: wordState(hit.word, now), via: hit.via }))
   } else {
-    const inSegment = words.filter((w) => (segment === 'hidden' ? w.isHidden : segment === 'learned' ? !w.isHidden && hasProgress(w) : true))
-    rows = [...inSegment].sort(comparatorFor(view.sort ?? 'frequency')).map((word) => ({ word, state: wordState(word, now), via: null }))
+    const inSegment = (w: Word) => (segment === 'hidden' ? w.isHidden : segment === 'learned' ? !w.isHidden && hasProgress(w) : true)
+    // Random shuffles ALL the words once for the seed (from the plain frequency order, so a seed always gives the same
+    // order), and the segment and the filters only take words out of that order. A shuffle of the segment itself would
+    // be a different shuffle each time the segment changed size; this way a word that leaves the list (brought back from
+    // Hidden, un-starred under Favourites) never moves any of the others, and any list is a subsequence of the same order.
+    const ordered =
+      view.sort === 'random'
+        ? shuffled([...words].sort(compareByRank), view.seed ?? 0).filter(inSegment)
+        : words.filter(inSegment).sort(comparatorFor(view.sort ?? 'frequency'))
+    rows = ordered.map((word) => ({ word, state: wordState(word, now), via: null }))
   }
 
   const { state, favourites, pos } = view.filters

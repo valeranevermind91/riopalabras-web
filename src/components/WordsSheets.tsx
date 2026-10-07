@@ -7,7 +7,7 @@ const s = t.sheet
 
 const STATES: readonly StateFilter[] = ['new', 'learning', 'established', 'due']
 const POS: readonly PosFilter[] = ['verb', 'noun', 'adj', 'adv']
-const SORTS: readonly SortKey[] = ['frequency', 'az', 'due', 'recent']
+const SORTS: readonly SortKey[] = ['frequency', 'az', 'due', 'recent', 'random']
 
 /**
  * A sheet that rises from the bottom over a dimmed screen. Tapping the dimmed part, pressing Escape, or (in the app)
@@ -104,7 +104,7 @@ export function FiltersSheet({ filters, segment, searching, onChange, onClearAll
   )
 }
 
-/** The four orders. Choosing one applies it and closes the sheet. */
+/** The five orders. Choosing one applies it and closes the sheet; choosing Random again shuffles again. */
 export function SortSheet({ sort, onSelect, onClose }: { sort: SortKey; onSelect: (sort: SortKey) => void; onClose: () => void }) {
   return (
     <BottomSheet label={s.sortTitle} onClose={onClose}>
