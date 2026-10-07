@@ -96,7 +96,10 @@ export function createFakeServer(options: FakeServerOptions = {}) {
       for (const [column, filter] of url.searchParams) {
         if (filter.startsWith('eq.')) visible = visible.filter((r) => String(r[column]) === filter.slice(3))
       }
-      return json(visible)
+      // Paging, as PostgREST does it: .range(from, to) arrives as offset and limit.
+      const offset = Number(url.searchParams.get('offset') ?? 0)
+      const limit = url.searchParams.get('limit')
+      return json(visible.slice(offset, limit === null ? undefined : offset + Number(limit)))
     }
     if (broken.hangWrites && request.method !== 'GET') return new Promise<Response>(() => {})
     if (broken.forbidWrites || broken.forbidTable === table) return json({ code: '42501', message: `new row violates row-level security policy for table "${table}"` }, 403)

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { loadLog, type LoadLog } from './loadLog'
 import { TableLoadError, loadWithRetry, type RetryOptions } from './retry'
 
-// Supabase caps a single select at 1000 rows by default; user_progress alone can exceed that.
+// Supabase caps a single select at 1000 rows by default (the project may set it lower); user_progress alone can exceed that.
 const PAGE_SIZE = 1000
 
 export interface UserWordRow {
@@ -39,8 +39,10 @@ async function fetchAll<T>(
   columns: string,
   userId: string,
 ): Promise<T[]> {
+  // Read until a page comes back empty, and continue from the rows actually received, not from the page size asked for:
+  // a server that returns fewer rows than requested (a max-rows setting below 1000) must not end the load early.
   const rows: T[] = []
-  for (let from = 0; ; from += PAGE_SIZE) {
+  for (let from = 0; ; from = rows.length) {
     const { data, error, status } = await client
       .from(table)
       .select(columns)
@@ -50,8 +52,8 @@ async function fetchAll<T>(
     if (error) throw new TableLoadError(table, error.message, status ?? null, error.code || null)
 
     const page = (data ?? []) as unknown as T[]
+    if (page.length === 0) return rows
     rows.push(...page)
-    if (page.length < PAGE_SIZE) return rows
   }
 }
 

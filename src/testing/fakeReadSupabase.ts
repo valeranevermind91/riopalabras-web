@@ -12,17 +12,21 @@ export const networkError = (): ScriptedResult => httpError(0, 'TypeError: Faile
  * from('user_settings')...maybeSingle(), plus auth.refreshSession(). Each table can be given a script of results
  * that are consumed one request at a time before it falls back to its rows.
  */
-export function fakeReadSupabase(rows: Record<string, unknown[]> = {}) {
+export function fakeReadSupabase(rows: Record<string, unknown[]> = {}, options: { maxRows?: number } = {}) {
   const scripts: Record<string, ScriptedResult[]> = {}
   const requests: string[] = []
   const state = { refreshCalls: 0, refreshError: null as { message: string } | null }
 
-  const respond = async (table: string, single: boolean): Promise<ScriptedResult> => {
+  const respond = async (table: string, single: boolean, range?: [number, number]): Promise<ScriptedResult> => {
     requests.push(table)
     const scripted = scripts[table]?.shift()
     if (scripted) return scripted
     const data = rows[table] ?? []
-    return { data: single ? (data[0] ?? null) : data, error: null, status: 200 }
+    if (single) return { data: data[0] ?? null, error: null, status: 200 }
+    // Like PostgREST: the requested range, cut down to the server's max-rows setting.
+    const [from, to] = range ?? [0, data.length - 1]
+    const wanted = to - from + 1
+    return { data: data.slice(from, from + Math.min(wanted, options.maxRows ?? Number.POSITIVE_INFINITY)), error: null, status: 200 }
   }
 
   const client = {
@@ -31,7 +35,7 @@ export function fakeReadSupabase(rows: Record<string, unknown[]> = {}) {
         select: () => chain,
         eq: () => chain,
         order: () => chain,
-        range: () => respond(table, false),
+        range: (from: number, to: number) => respond(table, false, [from, to]),
         maybeSingle: () => respond(table, true),
       }
       return chain

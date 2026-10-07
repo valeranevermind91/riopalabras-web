@@ -38,7 +38,7 @@ describe('loadOverlay', () => {
     const { overlay, degraded } = await load()
     expect(degraded).toEqual([])
     expect(overlay.hidden).toEqual(['perro'])
-    expect(fake.count('user_hidden_words')).toBe(3)
+    expect(fake.count('user_hidden_words')).toBe(4) // two failed attempts, the page, and the empty page that ends the read
     expect(sleep.mock.calls.map((c) => c[0])).toEqual([1000, 3000])
     expect(log.snapshot().filter((e) => e.outcome === 'retrying').map((e) => [e.table, e.status, e.message])).toEqual([
       ['user_hidden_words', 503, 'upstream timeout'],
@@ -88,7 +88,7 @@ describe('loadOverlay', () => {
     fake.script('user_progress', networkError())
     const { overlay } = await load()
     expect(overlay.progress).toHaveLength(1)
-    expect(fake.count('user_progress')).toBe(2)
+    expect(fake.count('user_progress')).toBe(3) // the failed attempt, the page, the empty page that ends the read
   })
 
   it('an auth error (401 / expired JWT) refreshes the session once and retries, even with several tables failing together', async () => {
@@ -98,7 +98,7 @@ describe('loadOverlay', () => {
     expect(degraded).toEqual([])
     expect(overlay.progress).toHaveLength(1)
     expect(fake.state.refreshCalls).toBe(1) // one refresh shared by all five tables
-    for (const table of Object.keys(ROWS)) expect(fake.count(table)).toBe(2)
+    for (const table of Object.keys(ROWS)) expect(fake.count(table)).toBe(table === 'user_settings' ? 2 : 3) // the failed attempt, then the retry (paged tables also end on an empty page)
   })
 
   it('if the session cannot be refreshed, a critical table fails with the original error and a non-critical one degrades', async () => {
@@ -121,6 +121,23 @@ describe('loadOverlay', () => {
     fake.script('user_words', { data: many.slice(0, 1000), error: null, status: 200 }, { data: many.slice(1000), error: null, status: 200 })
     const { overlay } = await loadOverlay(fake.client, 'u1', { log: createLoadLog(), sleep: async () => {} })
     expect(overlay.customWords).toHaveLength(1500)
+    expect(fake.count('user_words')).toBe(3) // 1000, 500, and the empty page that ends the read
+  })
+
+  it('a server that returns at most 500 rows per request (a lower max-rows setting) still gets every row', async () => {
+    const many = Array.from({ length: 1300 }, (_, i) => ({ es_word: `w${String(i).padStart(4, '0')}`, ease_factor: 2.5, interval_days: 1, repetitions: 1, next_review: null }))
+    const fake = fakeReadSupabase({ ...ROWS, user_progress: many }, { maxRows: 500 })
+    const { overlay } = await loadOverlay(fake.client, 'u1', { log: createLoadLog(), sleep: async () => {} })
+    expect(overlay.progress).toHaveLength(1300)
+    expect(new Set(overlay.progress.map((p) => p.es_word)).size).toBe(1300) // no row twice, none skipped
+    expect(fake.count('user_progress')).toBe(4) // 500, 500, 300, and the empty page
+  })
+
+  it('stops on the first empty page even when a table has exactly one full page', async () => {
+    const exactly = Array.from({ length: 1000 }, (_, i) => ({ es_word: `w${i}` }))
+    const fake = fakeReadSupabase({ ...ROWS, user_words: exactly })
+    const { overlay } = await loadOverlay(fake.client, 'u1', { log: createLoadLog(), sleep: async () => {} })
+    expect(overlay.customWords).toHaveLength(1000)
     expect(fake.count('user_words')).toBe(2)
   })
 })
