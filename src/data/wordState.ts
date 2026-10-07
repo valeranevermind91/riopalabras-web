@@ -42,3 +42,25 @@ export function hasHistory(word: Word): boolean {
 export function hasProgress(word: Word): boolean {
   return word.repetitions > 0 || hasHistory(word)
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * When the word is next due, for sorting: only a word that is in the schedule has one. A word that lapsed (back to new)
+ * and one never learned have none, even though a lapsed word still carries the time of its last rating.
+ */
+export function dueDate(word: Word): Date | null {
+  return word.repetitions > 0 ? word.nextReview : null
+}
+
+/**
+ * When the word was last reviewed, as far as it can be told: the review time is not stored, but the schedule is
+ * (next_review = the review time + the interval), so it is worked back from it. A word just learned (repetitions 1,
+ * interval 0) is due at the start of the next day, so it was learned the day before that. A lapsed word was due the moment
+ * it lapsed. Null for a word never reviewed.
+ */
+export function lastReviewedAt(word: Word): Date | null {
+  if (!word.nextReview) return null
+  if (word.repetitions > 0 && word.interval === 0) return new Date(word.nextReview.getTime() - DAY_MS)
+  return new Date(word.nextReview.getTime() - word.interval * DAY_MS)
+}

@@ -1527,20 +1527,7 @@ mark {
   font-weight: 600;
 }
 
-.chips {
-  display: flex;
-  gap: 8px;
-  padding-bottom: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.chips::-webkit-scrollbar {
-  display: none;
-}
-
 .chip {
-  flex: none;
   padding: 7px 13px;
   border: 1px solid var(--border-soft);
   border-radius: 999px;
@@ -1556,6 +1543,175 @@ mark {
   border-color: var(--lav-soft-border);
   background: var(--lav-soft);
   color: var(--lav-on-soft);
+}
+
+/* The two buttons under the segments: Filters (with a count of what is on) and Sort: <current>. Each opens a sheet. */
+.words-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.control-btn:disabled {
+  color: var(--muted-2);
+  cursor: default;
+}
+
+.control-btn.is-active {
+  border-color: var(--lav-soft-border);
+  background: var(--lav-soft);
+  color: var(--lav-on-soft);
+}
+
+.control-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--lav);
+  color: var(--lav-ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.control-btn:focus-visible,
+.sheet-row:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+/* The bottom sheet: dims the screen, rises from the bottom, closes on a tap outside, Escape or the back button. */
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--text);
+  opacity: 0.4;
+}
+
+.sheet {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  box-sizing: border-box;
+  max-width: 480px;
+  max-height: 80vh;
+  max-height: 80dvh;
+  margin: 0 auto;
+  padding: 10px var(--page-pad) calc(24px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--surface);
+  color: var(--text);
+  animation: sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet:focus {
+  outline: none;
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
+
+.sheet-grip {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sheet-group h3 {
+  margin: 16px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
+
+.sheet-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sheet-list {
+  display: grid;
+}
+
+.sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-row.is-active {
+  color: var(--teal);
+  font-weight: 700;
 }
 
 .words-note {
@@ -1649,16 +1805,36 @@ mark {
 }
 
 .word-row-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   overflow: hidden;
   color: var(--muted);
   font-size: 13.5px;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.word-row-via {
-  color: var(--lav);
+.word-row-alt {
+  /* the word's other form, first in the muted line: a Spanish word, so the display face */
+  flex: none;
+  max-width: 50%;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 600;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+}
+
+.word-row-alt::after {
+  content: ' ·';
+  color: var(--muted-2);
+}
+
+.word-row-tr {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .word-row-star {

@@ -1,10 +1,13 @@
+import { headword } from './headword'
 import { searchWords, type MatchVia } from './search'
 import type { Word } from './types'
-import { hasProgress, wordState, type WordState } from './wordState'
+import { dueDate, hasProgress, lastReviewedAt, wordState, type WordState } from './wordState'
 import { compareByRank } from './words'
 
-/** The three lists: words with progress, every word, and the words marked as known (hidden). */
-export type Segment = 'learned' | 'all' | 'hidden'
+/** The three lists: every word, the words with progress, and the words marked as known (hidden). */
+export type Segment = 'all' | 'learned' | 'hidden'
+/** How the list is ordered (a search is always ordered by how well it matches instead). */
+export type SortKey = 'frequency' | 'az' | 'due' | 'recent'
 export type StateFilter = 'new' | 'learning' | 'established' | 'due'
 export type PosFilter = 'verb' | 'noun' | 'adj' | 'adv'
 
@@ -19,6 +22,7 @@ export interface ListFilters {
 /** Everything the Words screen remembers while a word's detail is open. */
 export interface ListView {
   segment: Segment
+  sort: SortKey
   filters: ListFilters
   query: string
   scrollTop: number
@@ -37,9 +41,9 @@ export function createViewStore() {
 
 export const NO_FILTERS: ListFilters = { state: null, favourites: false, pos: null }
 
-/** The first time the list opens: the learned words (buildWordList shows every word instead while nothing has been learned). */
+/** The first time the list opens: every word, most common first. */
 export function initialListView(): ListView {
-  return { segment: 'learned', filters: NO_FILTERS, query: '', scrollTop: 0 }
+  return { segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0 }
 }
 
 export interface ListRow {
@@ -51,10 +55,7 @@ export interface ListRow {
 
 export interface BuiltList {
   rows: ListRow[]
-  /** The segment actually shown: "learned" falls back to "all" while nothing has been learned. */
-  segment: Segment
-  fellBack: boolean
-  /** True when a query is overriding the segment. */
+  /** True when a query is overriding the segment and the sort. */
   searching: boolean
 }
 
@@ -67,39 +68,62 @@ const POS_CODES: Record<PosFilter, readonly string[]> = {
 
 const matchesPos = (word: Word, pos: PosFilter) => POS_CODES[pos].includes(word.pos.toLowerCase())
 
-/** Due words first, then the soonest next review (none last), then the most common. */
-function compareLearned(now: Date) {
-  const time = (w: Word) => w.nextReview?.getTime() ?? Number.POSITIVE_INFINITY
-  const due = (w: Word) => (wordState(w, now) === 'due' ? 0 : 1)
-  return (a: Word, b: Word) => due(a) - due(b) || time(a) - time(b) || compareByRank(a, b)
+const collator = new Intl.Collator('es', { sensitivity: 'base' })
+
+/** Earlier first; a word with no time at all goes last; ties by frequency. */
+function byTime(time: (w: Word) => number | null, newestFirst: boolean) {
+  return (a: Word, b: Word) => {
+    const ta = time(a)
+    const tb = time(b)
+    if (ta === null && tb === null) return compareByRank(a, b)
+    if (ta === null) return 1
+    if (tb === null) return -1
+    return ta === tb ? compareByRank(a, b) : newestFirst ? tb - ta : ta - tb
+  }
+}
+
+function comparatorFor(sort: SortKey): (a: Word, b: Word) => number {
+  switch (sort) {
+    case 'az':
+      return (a, b) => collator.compare(headword(a).text, headword(b).text) || compareByRank(a, b)
+    case 'due':
+      return byTime((w) => dueDate(w)?.getTime() ?? null, false)
+    case 'recent':
+      return byTime((w) => lastReviewedAt(w)?.getTime() ?? null, true)
+    default:
+      return compareByRank
+  }
 }
 
 /**
- * The rows for a view. Without a query: the segment's words (learned: due first, then soonest next review; all and hidden:
- * most common first), narrowed by the filters. With a query: every word, whatever the segment, ranked by how well it
- * matches (Spanish, Rioplatense form, English and Russian, accent-insensitive, no cap) and narrowed by the same filters.
+ * The rows for a view. Without a query: the segment's words in the chosen order, narrowed by the filters. With a query:
+ * every word, whatever the segment, ranked by how well it matches (Spanish, Rioplatense form, English and Russian,
+ * accent-insensitive, no cap) and narrowed by the same filters; the sort does not apply, the match quality does.
  */
-export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segment' | 'filters' | 'query'>, now: Date): BuiltList {
+export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segment' | 'filters' | 'query'> & Partial<Pick<ListView, 'sort'>>, now: Date): BuiltList {
   const query = view.query.trim()
   const searching = query !== ''
-  const anyLearned = words.some((w) => !w.isHidden && hasProgress(w))
-  const fellBack = !searching && view.segment === 'learned' && !anyLearned
-  const segment: Segment = fellBack ? 'all' : view.segment
+  const segment = view.segment
 
   let rows: ListRow[]
   if (searching) {
     rows = searchWords(words, query, Number.POSITIVE_INFINITY, { translations: true }).map((hit) => ({ word: hit.word, state: wordState(hit.word, now), via: hit.via }))
   } else {
     const inSegment = words.filter((w) => (segment === 'hidden' ? w.isHidden : segment === 'learned' ? !w.isHidden && hasProgress(w) : true))
-    const sorted = segment === 'learned' ? [...inSegment].sort(compareLearned(now)) : [...inSegment].sort(compareByRank)
-    rows = sorted.map((word) => ({ word, state: wordState(word, now), via: null }))
+    rows = [...inSegment].sort(comparatorFor(view.sort ?? 'frequency')).map((word) => ({ word, state: wordState(word, now), via: null }))
   }
 
   const { state, favourites, pos } = view.filters
-  // In the hidden list every word is "hidden", so a state chip has nothing to say there.
+  // In the hidden list every word is "hidden", so a state filter has nothing to say there.
   if (state && segment !== 'hidden') rows = rows.filter((r) => r.state === state)
   if (favourites) rows = rows.filter((r) => r.word.isFavorite)
   if (pos) rows = rows.filter((r) => matchesPos(r.word, pos))
 
-  return { rows, segment, fellBack, searching }
+  return { rows, searching }
+}
+
+/** How many filters are on (a state filter does not count in the hidden list, where it is not offered). */
+export function activeFilterCount(filters: ListFilters, segment: Segment, searching = false): number {
+  const stateShown = segment !== 'hidden' || searching
+  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.pos ? 1 : 0)
 }

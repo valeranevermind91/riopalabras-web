@@ -9,11 +9,13 @@ import type { Word } from '../data/types'
 import { NO_FILTERS, type ListView } from '../data/wordList'
 import { createWriteQueue } from '../data/writeQueue'
 import { makeWord } from '../testing/makeWord'
+import { FiltersSheet, SortSheet } from '../components/WordsSheets'
 import { WordDetail } from './WordDetail'
 import { WordsScreen } from './Words'
 
 const real = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8')), parseRioOverlay(JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))))
 const day = 86_400_000
+const word = (esWord: string) => real.find((w) => w.esWord === esWord)!
 const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
 const noop = () => {}
 
@@ -31,28 +33,45 @@ const learnedSome = (): Word[] => {
 
 const render = (words: readonly Word[], savedView: ListView | null = null, settings = parseSettings({})) =>
   renderToStaticMarkup(createElement(WordsScreen, { data: dataFor(words, settings), queue, savedView, onViewChange: noop, onOpen: noop }))
-const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
+const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
 
 describe('the Words screen', () => {
-  it('has the header, a search field, the three segments with their counts, the chips and the list', () => {
+  it('has the header, a search field, the segments All · Learned · Hidden with their counts, the two buttons and the list', () => {
     const html = render(learnedSome())
     expect(html).toContain('<h1>Words</h1>')
     expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English or Russian"/)
-    for (const label of ['Learned', 'All', 'Hidden']) expect(html).toContain(`>${label} <span class="segment-count">`)
-    expect(html).toContain('<span class="segment-count">5</span>') // Learned: five words with progress
-    expect(html).toContain('<span class="segment-count">4753</span>')
-    for (const chip of ['New', 'Learning', 'Established', 'Due', 'Favourites', 'Verbs', 'Nouns', 'Adjectives', 'Adverbs']) expect(html).toContain(`>${chip}</button>`)
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Learned 5', 'Hidden 0'])
     expect(html).toContain('role="list"')
   })
 
-  it('opens on the learned words when there are some, else on all words with a note saying so', () => {
-    const learned = render(learnedSome())
-    expect(learned).toMatch(/class="segment is-active" aria-pressed="true">Learned/)
-    expect(learned.match(/class="word-row"/g)).toHaveLength(5)
+  it('opens on All, most common first, with nothing filtered', () => {
+    const html = render(learnedSome())
+    expect(html).toMatch(/class="segment is-active" aria-pressed="true">All/)
+    expect(html).toContain('Sort: Frequency')
+  })
 
-    const fresh = render(real)
-    expect(fresh).toMatch(/class="segment is-active" aria-pressed="true">All/)
-    expect(fresh).toContain('Nothing learned yet')
+  it('has one row of two buttons where the chips were: Filters and Sort: <current>', () => {
+    const html = render(real)
+    const controls = html.match(/<div class="words-controls">.*?<\/div>/)![0]
+    expect(controls.match(/<button/g)).toHaveLength(2)
+    expect(controls).toMatch(/class="control-btn"[^>]*>Filters<\/button>/)
+    expect(controls).toMatch(/class="control-btn"[^>]*>Sort: Frequency<\/button>/)
+    // the mixed chip strip is gone: nothing but the segments and these two buttons sits above the list
+    expect(html).not.toContain('class="chips"')
+    expect(html).not.toContain('class="chip')
+    expect(html).not.toContain('class="sheet') // and no sheet until one is asked for
+  })
+
+  it('Filters shows how many are on, and Sort names the current order', () => {
+    const html = render(real, view({ sort: 'recent', filters: { state: 'due', favourites: true, pos: 'verb' } }))
+    expect(html).toMatch(/class="control-btn is-active"[^>]*>Filters<span class="control-count" aria-label="3 filters on">3<\/span>/)
+    expect(html).toContain('Sort: Recently learned')
+    expect(render(real, view({ filters: { ...NO_FILTERS, favourites: true } }))).toContain('aria-label="1 filter on">1</span>')
+  })
+
+  it('while a search is on, the order is "Best match" and the Sort button is off', () => {
+    const html = render(real, view({ query: 'casa', sort: 'az' }))
+    expect(html).toMatch(/class="control-btn" aria-haspopup="dialog" disabled="">Sort: Best match/)
   })
 
   it('renders only a screenful of 4,753 words: a window, not the list', () => {
@@ -63,7 +82,7 @@ describe('the Words screen', () => {
     expect(html).toContain(`style="height:${4753 * 72}px"`) // but the scroll height is the whole list
   })
 
-  it('a row: the headword in the display face, a part-of-speech tag, a state dot, one translation in the user\'s language, a star', () => {
+  it('a row: the headword in the display face, a part-of-speech tag, a state dot, one muted line with the translation in the user\'s language, a star', () => {
     const html = render(learnedSome(), view({ segment: 'learned' }))
     expect(html).toContain(`<span class="word-row-head">${ordinary[0].esWord}</span>`)
     expect(html).toMatch(/<span class="word-row-pos">(noun|verb|adj)<\/span>/)
@@ -81,63 +100,136 @@ describe('the Words screen', () => {
     expect(html).not.toContain(`>${ordinary[0].ruTranslation}</span>`)
   })
 
-  it('a due word has a Due badge, and a favourite star is filled and pressed', () => {
+  it('a due word has a "Due now" badge, and a favourite star is filled and pressed', () => {
     const words = learnedSome().map((w) => (w.esWord === ordinary[2].esWord ? ({ ...w, isFavorite: true } as Word) : w))
     const html = render(words, view({ segment: 'learned' }))
-    expect(html).toContain('<span class="word-row-due">Due</span>')
+    expect(html).toContain('<span class="word-row-due">Due now</span>')
     expect(html).toMatch(/word-row-star is-on" aria-pressed="true" aria-label="Remove [^"]+ from favourites"/)
   })
 
-  it('the Hidden list has "Bring back" on each row in place of the star, and no state chips', () => {
+  it('the Hidden list has "Bring back" on each row in place of the star', () => {
     const words = [makeWord('siete', { rank: 1, isHidden: true, repetitions: 2, nextReview: new Date(Date.now() + day) }), makeWord('uno', { rank: 2 })]
     const html = render(words, view({ segment: 'hidden' }))
     expect(html).toContain('Bring back</button>')
     expect(html).toContain('aria-label="Bring back siete"')
     expect(html).not.toContain('word-row-star')
-    for (const chip of ['>New</button>', '>Learning</button>', '>Established</button>', '>Due</button>']) expect(html).not.toContain(chip)
-    expect(html).toContain('>Favourites</button>')
     expect(html.match(/class="word-row"/g)).toHaveLength(1)
   })
 
-  it('an empty Hidden list says what goes there', () => {
+  it('an empty list says what goes there', () => {
     expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('Nothing hidden. Words you mark as known appear here.')
+    expect(render([makeWord('uno')], view({ segment: 'learned' }))).toContain('Nothing learned yet.')
+    expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain('No words match.')
   })
 
-  it('active chips are marked (lavender), inactive ones are not, and the filters narrow the list', () => {
-    const html = render(real, view({ filters: { ...NO_FILTERS, pos: 'verb', favourites: false } }))
-    expect(html).toContain('class="chip is-active" aria-pressed="true">Verbs')
-    expect(html).toContain('class="chip" aria-pressed="false">Nouns')
+  it('a filter narrows the list', () => {
+    const html = render(real, view({ filters: { ...NO_FILTERS, pos: 'verb' } }))
     expect(html).toMatch(/<span class="word-row-pos">verb<\/span>/)
     expect(html).not.toContain('<span class="word-row-pos">noun</span>')
   })
 
-  it('a search overrides the segment (no segment is lit) and marks a Rioplatense match', () => {
-    const html = render(real, view({ segment: 'learned', query: 'aca' }))
+  it('a search overrides the segment (no segment is lit) and a row leads with the form that matched, with no "Rioplatense" marker', () => {
+    const html = render(real, view({ segment: 'learned', query: 'pucho' }))
     expect(html).not.toContain('segment is-active')
     expect(html).toMatch(/\d+ words/) // the count line
-    expect(html).toContain('<span class="pill" title="acá">Rioplatense</span>')
+    expect(html).toContain('<span class="word-row-head">pucho</span>')
+    expect(html).toContain('<span class="word-row-alt">cigarro</span>')
+    expect(html).toContain('<span class="word-row-alt">cigarrillo</span>')
+    expect(html).not.toContain('class="pill"')
+    expect(html).not.toContain('>Rioplatense<')
+
+    const ciga = render(real, view({ query: 'ciga' }))
+    expect(ciga).toContain('<span class="word-row-head">cigarrillo</span>')
+    expect(ciga).toContain('<span class="word-row-alt">pucho</span>')
   })
 
-  it('comes back as it was left: the saved query, segment, filters and scroll position are used, not the defaults', () => {
-    const saved = view({ segment: 'learned', query: 'ca', filters: { ...NO_FILTERS, favourites: true, state: 'due' }, scrollTop: 0 })
+  it('outside a search the standard word sits first in the muted line when the headword is not it', () => {
+    const forCigarro = render([word('cigarro')], view())
+    expect(forCigarro).toContain('<span class="word-row-head">pucho</span>')
+    expect(forCigarro).toContain('<span class="word-row-alt">cigarro</span><span class="word-row-tr">')
+  })
+
+  it('comes back as it was left: the saved query, segment, sort, filters and scroll position are used, not the defaults', () => {
+    const saved = view({ segment: 'learned', sort: 'due', query: 'ca', filters: { ...NO_FILTERS, favourites: true, state: 'due' } })
     const html = render(learnedSome(), saved)
     expect(html).toContain('value="ca"')
-    expect(html).toContain('class="chip is-active" aria-pressed="true">Favourites')
-    expect(html).toContain('class="chip is-active" aria-pressed="true">Due')
+    expect(html).toContain('aria-label="2 filters on"')
+    expect(html).toContain('Sort: Best match') // a query is on, so the sort name steps aside
+    expect(render(learnedSome(), view({ sort: 'due' }))).toContain('Sort: Due soonest')
   })
 
-  it('no hex colours or Telegram theme variables in the new styles (tokens only), and the headword is the only display-face text', () => {
+  it('no hex colours or Telegram theme variables in the new styles (tokens only), and only Spanish words use the display face', () => {
     const css = readFileSync('src/index.css', 'utf8')
-    const words = css.slice(css.indexOf('/* ---- Words:'))
+    const words = css.slice(css.indexOf('/* ---- Words:')).replace(/\/\*[\s\S]*?\*\//g, '')
     expect(words).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
     expect(words).not.toMatch(/rgba?\(/)
     expect(words).not.toContain('--tg-')
-    expect([...words.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim())).toEqual(['.word-row-head'])
+    expect([...words.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim().replace(/\s+/g, ' ')).sort()).toEqual(['.word-row-alt', '.word-row-head'])
     expect(words).toMatch(/\.word-row-head \{[^}]*font-size: 18px/)
     expect(words).toMatch(/\.words-search \{[^}]*border: 1px solid var\(--border\)[^}]*border-radius: var\(--radius-button\)/s)
     expect(words).toMatch(/\.words-search \{[^}]*background: var\(--surface\)/s)
     expect(words).toMatch(/\.chip \{[^}]*background: var\(--surface-2\)/s)
     expect(words).toMatch(/\.chip\.is-active \{[^}]*background: var\(--lav-soft\)/s)
+    expect(words).toMatch(/\.sheet \{[^}]*background: var\(--surface\)/s)
+  })
+})
+
+describe('the filters sheet', () => {
+  const sheet = (props: Partial<Parameters<typeof FiltersSheet>[0]> = {}) =>
+    renderToStaticMarkup(createElement(FiltersSheet, { filters: NO_FILTERS, segment: 'all', searching: false, onChange: noop, onClearAll: noop, onClose: noop, ...props }))
+
+  it('has "Clear all" at the top and three groups with headings, in this order: Progress, Show only, Part of speech', () => {
+    const html = sheet()
+    expect(html).toContain('role="dialog" aria-modal="true" aria-label="Filters"')
+    expect(html.indexOf('Clear all')).toBeLessThan(html.indexOf('>Progress<'))
+    const headings = [...html.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((m) => m[1])
+    expect(headings).toEqual(['Progress', 'Show only', 'Part of speech'])
+  })
+
+  it('Progress: Any · Not started · In progress · Known well · Due now; Show only: Favourites; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
+    const html = sheet()
+    const group = (id: string) => [...html.match(new RegExp(`aria-labelledby="${id}">.*?</section>`))![0].matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
+    expect(group('sheet-progress')).toEqual(['Any', 'Not started', 'In progress', 'Known well', 'Due now'])
+    expect(group('sheet-show-only')).toEqual(['Favourites'])
+    expect(group('sheet-pos')).toEqual(['Verbs', 'Nouns', 'Adjectives', 'Adverbs'])
+  })
+
+  it('marks what is on: Any when no progress filter is set, the chosen option otherwise', () => {
+    expect(sheet()).toMatch(/class="chip is-active" aria-pressed="true">Any/)
+    const on = sheet({ filters: { state: 'due', favourites: true, pos: 'adj' } })
+    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Due now/)
+    expect(on).toMatch(/class="chip" aria-pressed="false">Any/)
+    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Favourites/)
+    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Adjectives/)
+  })
+
+  it('"Clear all" is off when nothing is on', () => {
+    expect(sheet()).toMatch(/class="link-btn" disabled="">Clear all/)
+    expect(sheet({ filters: { ...NO_FILTERS, favourites: true } })).toMatch(/class="link-btn">Clear all/)
+  })
+
+  it('in the Hidden list the Progress group is left out, and it is back while searching', () => {
+    expect(sheet({ segment: 'hidden' })).not.toContain('Progress')
+    expect(sheet({ segment: 'hidden' })).not.toContain('Not started')
+    expect(sheet({ segment: 'hidden' })).toContain('Part of speech')
+    expect(sheet({ segment: 'hidden', searching: true })).toContain('>Progress<')
+  })
+})
+
+describe('the sort sheet', () => {
+  const sheet = (sort: 'frequency' | 'az' | 'due' | 'recent' = 'frequency') => renderToStaticMarkup(createElement(SortSheet, { sort, onSelect: noop, onClose: noop }))
+
+  it('offers Frequency · A to Z · Due soonest · Recently learned, and no Random', () => {
+    const html = sheet()
+    expect([...html.matchAll(/role="radio"[^>]*><span>([^<]+)<\/span>/g)].map((m) => m[1])).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently learned'])
+    expect(html).not.toContain('Random')
+    expect(html).toContain('aria-label="Sort by"')
+  })
+
+  it('checks the current one', () => {
+    expect(sheet('frequency')).toMatch(/class="sheet-row is-active" role="radio" aria-checked="true"><span>Frequency/)
+    expect(sheet('recent')).toMatch(/aria-checked="true"><span>Recently learned/)
+    expect(sheet('recent')).toMatch(/aria-checked="false"><span>Frequency/)
   })
 })
 
@@ -151,7 +243,7 @@ describe('the word detail', () => {
     expect(html.indexOf('wc-headword')).toBeLessThan(html.indexOf('state-block'))
     expect(html.indexOf('state-block')).toBeLessThan(html.indexOf('detail-actions'))
     for (const label of ['State', 'Repetitions', 'Interval', 'Next review']) expect(html).toContain(`<dt>${label}</dt>`)
-    expect(html).toContain('<dd>New</dd>')
+    expect(html).toContain('<dd>Not started</dd>')
     expect(html).toContain('Not scheduled')
     expect(html).toContain('Add to favourites')
     expect(html).not.toContain('Bring back')
@@ -159,7 +251,7 @@ describe('the word detail', () => {
 
   it('shows repetitions, interval and the next review date for a learned word, and the ease factor behind a disclosure', () => {
     const html = detail({ ...base, repetitions: 3, interval: 12, easeFactor: 2.36, nextReview: new Date(NOWISH + 3 * day) })
-    expect(html).toContain('<dd>Established</dd>')
+    expect(html).toContain('<dd>Known well</dd>')
     expect(html).toContain('<dt>Repetitions</dt><dd>3</dd>')
     expect(html).toContain('<dt>Interval</dt><dd>12d</dd>')
     expect(html).toMatch(/<details class="state-more"><summary>More<\/summary><dl><dt>Ease factor<\/dt><dd>2\.36<\/dd>/)
@@ -168,13 +260,13 @@ describe('the word detail', () => {
 
   it('a due word says so next to its date', () => {
     const html = detail({ ...base, repetitions: 2, interval: 6, nextReview: new Date(NOWISH - day) })
-    expect(html).toContain('<dd>Due</dd>')
+    expect(html).toContain('<dd>Due now</dd>')
     expect(html).toContain('· due now')
   })
 
-  it('a lapsed word reads as new and shows its history, so it is not confusing', () => {
+  it('a lapsed word reads as not started and shows its history, so it is not confusing', () => {
     const html = detail({ ...base, repetitions: 0, interval: 0, easeFactor: 2.18, nextReview: new Date(NOWISH - day) })
-    expect(html).toContain('<dd>New</dd>')
+    expect(html).toContain('<dd>Not started</dd>')
     expect(html).toContain('You learned this word before. An “Again” rating set it back to new (ease 2.18')
     expect(html).toContain('so it is in the Learn pool again')
   })

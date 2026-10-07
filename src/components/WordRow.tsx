@@ -1,4 +1,4 @@
-import { headword } from '../data/headword'
+import { rowTitle } from '../data/rowTitle'
 import { translationsFor } from '../data/relation'
 import type { Lang } from '../data/rio'
 import type { ListRow } from '../data/wordList'
@@ -33,13 +33,13 @@ interface WordRowProps {
 }
 
 /**
- * One word in the list: the headword (Rioplatense form where the cards use it), a state dot, a part-of-speech tag, a
+ * One word in the list: the title (see rowTitle: the form that matched in a search, the headword otherwise), a state dot, a part-of-speech tag, a
  * Due badge, one translation line, and on the right a favourite star, or "Bring back" for a hidden word. Tapping the row
  * opens the word; the star and the button act on their own.
  */
 export function WordRow({ row, lang, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
   const { word, state, via } = row
-  const head = headword(word).text
+  const { title: head, alt } = rowTitle(word, via)
   // A match through the other language's translation shows that translation, so the reason for the hit is visible.
   const shownLang: Lang = via === 'en' ? 'en' : via === 'ru' ? 'ru' : lang
   const translation = translationsFor(word)[shownLang]
@@ -53,11 +53,10 @@ export function WordRow({ row, lang, onOpen, onToggleFavourite, onBringBack }: W
           <span className="word-row-head">{head}</span>
           <span className="word-row-pos">{pos}</span>
           {state === 'due' && <span className="word-row-due">{t.due}</span>}
-          {via === 'rio_form' && word.rio && <span className="pill" title={word.rio.form}>{t.viaRio}</span>}
         </span>
         <span className="word-row-line">
-          {via === 'rio_form' && word.rio && word.rio.form !== head && <><span className="word-row-via">{word.rio.form}</span> · </>}
-          {translation || '—'}
+          {alt && <span className="word-row-alt">{alt}</span>}
+          <span className="word-row-tr">{translation || '—'}</span>
         </span>
       </button>
       {word.isHidden ? (

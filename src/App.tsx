@@ -100,6 +100,15 @@ function App() {
   const go = useCallback((to: Screen) => setScreen(to), [])
   /** Where Back leads from the current screen. */
   const backTarget: Screen = screen === 'word' ? (open?.from ?? 'home') : 'home'
+  // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
+  const backInterceptor = useRef<(() => boolean) | null>(null)
+  const registerBack = useCallback((handler: (() => boolean) | null) => {
+    backInterceptor.current = handler
+  }, [])
+  const goBack = useCallback(() => {
+    if (backInterceptor.current?.()) return
+    go(backTarget)
+  }, [go, backTarget])
 
   // supabase-js drops its session when the auth server stops recognising it, and from then on sends the anon key:
   // sign in again at once and let the queue send what waited.
@@ -195,13 +204,13 @@ function App() {
       return
     }
     native.show()
-    const onClick = () => void go(backTarget)
+    const onClick = () => goBack()
     native.onClick(onClick)
     return () => native.offClick(onClick)
-  }, [native, screen, go, backTarget])
+  }, [native, screen, goBack])
 
   // Telegram's BackButton does the job where it exists; elsewhere each screen draws its own.
-  const inPageBack = native ? undefined : () => void go(backTarget)
+  const inPageBack = native ? undefined : goBack
 
   if (screen === 'debug') {
     if (!debugAllowed) return <NotAvailable />
@@ -256,6 +265,7 @@ function App() {
         queue={queue}
         savedView={wordsView.get()}
         onViewChange={wordsView.set}
+        registerBack={registerBack}
         onOpen={(key) => {
           setOpen({ key, from: 'words' })
           setScreen('word')

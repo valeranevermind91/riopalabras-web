@@ -5,12 +5,12 @@ import { parseDictionary } from './dictionary'
 import { parseRioOverlay } from './rio'
 import { searchWords } from './search'
 import type { Word } from './types'
-import { NO_FILTERS, buildWordList, createViewStore, initialListView, type ListView } from './wordList'
+import { NO_FILTERS, activeFilterCount, buildWordList, createViewStore, initialListView, type ListView } from './wordList'
 
 const NOW = new Date('2026-10-06T15:00:00Z')
 const day = 24 * 60 * 60 * 1000
 const at = (days: number) => new Date(NOW.getTime() + days * day)
-const view = (over: Partial<ListView> = {}) => ({ segment: 'learned' as const, filters: NO_FILTERS, query: '', ...over })
+const view = (over: Partial<ListView> = {}) => ({ segment: 'learned' as const, sort: 'frequency' as const, filters: NO_FILTERS, query: '', ...over })
 const names = (words: readonly Word[], v: Partial<ListView> = {}) => buildWordList(words, view(v), NOW).rows.map((r) => r.word.esWord)
 
 // A small dictionary with every kind of word in it.
@@ -32,10 +32,8 @@ const words: Word[] = [
 ]
 
 describe('the Learned list', () => {
-  it('has the words with progress, due first, then the soonest next review, then the most common', () => {
-    // due: cinco (3 days late), cuatro (1 day late), once (no schedule counts as due, sorts last by time);
-    // then not due by next review: seis (lapsed, yesterday), dos (tomorrow), diez (2 days), tres (10 days)
-    expect(names(words)).toEqual(['cinco', 'cuatro', 'once', 'seis', 'dos', 'diez', 'tres'])
+  it('has the words with progress, in the chosen order (most common first by default)', () => {
+    expect(names(words)).toEqual(['dos', 'tres', 'cuatro', 'cinco', 'seis', 'diez', 'once'])
   })
 
   it('leaves out hidden words (they are in Hidden) and words never touched', () => {
@@ -47,34 +45,64 @@ describe('the Learned list', () => {
     const row = buildWordList(words, view(), NOW).rows.find((r) => r.word.esWord === 'seis')
     expect(row?.state).toBe('new')
   })
+
+  it('is empty while nothing is learned, and says so rather than showing something else', () => {
+    const untouched = [w('b', { rank: 2 }), w('a', { rank: 1 }), w('c', { rank: 3, isHidden: true, repetitions: 3 })]
+    expect(buildWordList(untouched, view(), NOW).rows).toEqual([]) // a hidden word with progress is in Hidden, not here
+  })
 })
 
-describe('the fallback when nothing is learned yet', () => {
-  const untouched = [w('b', { rank: 2 }), w('a', { rank: 1 }), w('c', { rank: 3, isHidden: true })]
+describe('where the screen opens', () => {
+  it('on All, most common first, with nothing filtered', () => {
+    expect(initialListView()).toEqual({ segment: 'all', sort: 'frequency', filters: NO_FILTERS, query: '', scrollTop: 0 })
+  })
+})
 
-  it('shows every word, most common first, and says it fell back', () => {
-    const list = buildWordList(untouched, view(), NOW)
-    expect(list.fellBack).toBe(true)
-    expect(list.segment).toBe('all')
-    expect(list.rows.map((r) => r.word.esWord)).toEqual(['a', 'b', 'c'])
+describe('sorting', () => {
+  const order = (sort: ListView['sort'], segment: ListView['segment'] = 'all') => names(words, { segment, sort })
+
+  it('Frequency: most common first, words with no rank (custom) last', () => {
+    expect(order('frequency')).toEqual(['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'de', 'nueve', 'diez', 'once', 'mia'])
   })
 
-  it('the screen always opens on Learned, and the list falls back to everything by itself while nothing is learned', () => {
-    expect(initialListView()).toEqual({ segment: 'learned', filters: NO_FILTERS, query: '', scrollTop: 0 })
-    expect(buildWordList(untouched, initialListView(), NOW).fellBack).toBe(true)
-    expect(buildWordList(words, initialListView(), NOW).fellBack).toBe(false)
-    // hidden words with progress are not "learned" for this purpose: they are in Hidden
-    expect(buildWordList([w('x', { isHidden: true, repetitions: 3 }), w('y')], initialListView(), NOW).fellBack).toBe(true)
+  it('A to Z: by the word as the row shows it, accents ignored', () => {
+    const tricky = [w('zorro', { rank: 1 }), w('árbol', { rank: 2 }), w('arbusto', { rank: 3 }), w('Barco', { rank: 4 }), w('ñandú', { rank: 5 })]
+    expect(names(tricky, { segment: 'all', sort: 'az' })).toEqual(['árbol', 'arbusto', 'Barco', 'ñandú', 'zorro'])
   })
 
-  it('does not fall back when you chose All or Hidden, or when you search', () => {
-    expect(buildWordList(untouched, view({ segment: 'hidden' }), NOW).fellBack).toBe(false)
-    expect(buildWordList(untouched, view({ segment: 'all' }), NOW).fellBack).toBe(false)
-    expect(buildWordList(untouched, view({ query: 'a' }), NOW).fellBack).toBe(false)
+  it('Due soonest: the earliest next review first, words with no due date last (lapsed and never-learned ones have none)', () => {
+    // cinco (3 days late), cuatro (1 day late), dos (tomorrow), diez (in 2 days), siete (hidden, in 5 days), tres (in 10 days)
+    // once is learned but has no stored schedule; seis lapsed (no due date): all after the dated ones, by frequency
+    expect(order('due').slice(0, 6)).toEqual(['cinco', 'cuatro', 'dos', 'diez', 'siete', 'tres'])
+    expect(order('due').slice(6)).toEqual(['uno', 'seis', 'ocho', 'de', 'nueve', 'once', 'mia'])
   })
 
-  it('once something is learned the Learned list is the learned words only', () => {
-    expect(buildWordList([...untouched, w('d', { repetitions: 1, nextReview: at(1) })], view(), NOW).rows.map((r) => r.word.esWord)).toEqual(['d'])
+  it('Recently learned: by the last review, newest first, words never reviewed last', () => {
+    const reviewed = [
+      w('viejo', { rank: 1, repetitions: 3, interval: 10, nextReview: at(1) }), // reviewed 9 days ago
+      w('ayer', { rank: 2, repetitions: 2, interval: 4, nextReview: at(3) }), // reviewed yesterday
+      w('hoy', { rank: 3, repetitions: 1, interval: 0, nextReview: at(1) }), // learned today: due at the start of tomorrow
+      w('lapso', { rank: 4, repetitions: 0, interval: 0, nextReview: at(-2) }), // lapsed two days ago
+      w('nunca', { rank: 5 }),
+    ]
+    expect(names(reviewed, { segment: 'all', sort: 'recent' })).toEqual(['hoy', 'ayer', 'lapso', 'viejo', 'nunca'])
+  })
+
+  it('sorts inside the segment and under the filters', () => {
+    expect(names(words, { segment: 'learned', sort: 'due' })).toEqual(['cinco', 'cuatro', 'dos', 'diez', 'tres', 'seis', 'once'])
+    expect(names(words, { segment: 'all', sort: 'due', filters: { ...NO_FILTERS, favourites: true } })).toEqual(['diez', 'nueve'])
+  })
+
+  it('a search keeps its own order, how well it matches, whatever the sort', () => {
+    const small = [w('xcasa', { rank: 1 }), w('casa', { rank: 2 })]
+    for (const sort of ['frequency', 'az', 'due', 'recent'] as const) expect(names(small, { query: 'casa', sort })).toEqual(['casa', 'xcasa'])
+  })
+
+  it('counts the filters that are on (the state filter does not count where it is not offered)', () => {
+    expect(activeFilterCount(NO_FILTERS, 'all')).toBe(0)
+    expect(activeFilterCount({ state: 'due', favourites: true, pos: 'verb' }, 'all')).toBe(3)
+    expect(activeFilterCount({ state: 'due', favourites: false, pos: null }, 'hidden')).toBe(0)
+    expect(activeFilterCount({ state: 'due', favourites: false, pos: null }, 'hidden', true)).toBe(1) // searching shows it again
   })
 })
 
@@ -92,9 +120,9 @@ describe('All and Hidden', () => {
 describe('filters', () => {
   const learnedWith = (filters: Partial<typeof NO_FILTERS>, segment: ListView['segment'] = 'learned') => names(words, { segment, filters: { ...NO_FILTERS, ...filters } })
 
-  it('state: one at a time, by the derived state (a due word is Due, not Established)', () => {
-    expect(learnedWith({ state: 'due' })).toEqual(['cinco', 'cuatro', 'once'])
-    expect(learnedWith({ state: 'established' })).toEqual(['diez', 'tres']) // cuatro is established by repetitions but due, so it is under Due
+  it('state: one at a time, by the derived state (a due word is Due now, not Known well)', () => {
+    expect(learnedWith({ state: 'due' })).toEqual(['cuatro', 'cinco', 'once'])
+    expect(learnedWith({ state: 'established' })).toEqual(['tres', 'diez']) // cuatro is established by repetitions but due, so it is under Due
     expect(learnedWith({ state: 'learning' })).toEqual(['dos'])
     expect(learnedWith({ state: 'new' })).toEqual(['seis']) // the lapsed word
     expect(learnedWith({ state: 'new' }, 'all')).toEqual(['uno', 'seis', 'nueve', 'mia'])
@@ -205,7 +233,7 @@ describe('the list view store', () => {
   it('holds the view between visits and starts empty', () => {
     const store = createViewStore()
     expect(store.get()).toBeNull()
-    const saved: ListView = { segment: 'all', filters: { ...NO_FILTERS, pos: 'verb' }, query: 'ca', scrollTop: 1440 }
+    const saved: ListView = { segment: 'all', sort: 'az', filters: { ...NO_FILTERS, pos: 'verb' }, query: 'ca', scrollTop: 1440 }
     store.set(saved)
     expect(store.get()).toEqual(saved)
   })
