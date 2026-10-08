@@ -51,7 +51,7 @@ const enrich = (input: { word: string; pos: string | null }): Promise<EnrichResu
     ? impl(input)
     : Promise.resolve({
         ok: true,
-        value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: 'Me gusta el zapallito.', exampleTranslationEn: 'I like little squash.', exampleTranslationRu: 'Мне нравится кабачок.', esRioplatense: null, isRioplatenseVariant: false },
+        value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: 'Me gusta el zapallito.', exampleTranslationEn: 'I like little squash.', exampleTranslationRu: 'Мне нравится кабачок.', esRioplatense: null, isRioplatenseVariant: false, region: null, register: null, esStandard: null },
       })
 }
 ;(window as never as { __queue: typeof queue }).__queue = queue

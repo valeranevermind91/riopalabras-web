@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isOffline } from '../lib/online'
+import { customRegion, customRegister, type CustomRegister } from './customMarks'
+import type { RioRegion } from './rio'
 import { strings } from '../strings'
 
 // The proxy's POST /enrich: fills in a translation, an example and a Rioplatense form for a Spanish word the user typed.
@@ -21,6 +23,11 @@ export interface Enriched {
   exampleTranslationRu: string
   esRioplatense: string | null
   isRioplatenseVariant: boolean
+  /** 'ar' or 'uy'; null for both countries, not Rioplatense, or not sure. Anything else the proxy sent is null here too. */
+  region: RioRegion | null
+  register: CustomRegister | null
+  /** The standard-Spanish equivalent, when the typed word is itself Rioplatense. */
+  esStandard: string | null
 }
 
 export type EnrichFailure =
@@ -76,6 +83,9 @@ function entryFor(payload: unknown, word: string): Enriched | null {
     exampleTranslationRu: textOf(item.example_translation_ru),
     esRioplatense: rio === '' ? null : rio,
     isRioplatenseVariant: item.is_rioplatense_variant === true,
+    region: customRegion(item.region),
+    register: customRegister(item.register),
+    esStandard: textOf(item.es_standard) || null,
   }
 }
 

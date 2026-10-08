@@ -88,6 +88,9 @@ export function upsertCustomWord(words: readonly Word[], incoming: Word): readon
     exampleTranslationEn: incoming.exampleTranslationEn,
     exampleTranslationRu: incoming.exampleTranslationRu,
     isRioplatenseVariant: incoming.isRioplatenseVariant,
+    region: incoming.region,
+    register: incoming.register,
+    esStandard: incoming.esStandard,
     pos: incoming.pos,
     isEnriched: incoming.isEnriched,
   })

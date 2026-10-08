@@ -8,7 +8,14 @@ import type { Word } from './types'
 // standard word and actually demonstrated by the example sentence's target form.
 
 export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> &
-  Partial<Pick<Word, 'rio' | 'fallbackExample' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu'>>
+  Partial<Pick<Word, 'rio' | 'fallbackExample' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu' | 'isCustom' | 'isRioplatenseVariant' | 'region' | 'register' | 'esStandard'>>
+
+/**
+ * A word the user added that the proxy (or the user) marked as itself Rioplatense: it has no overlay entry, but the typed word IS
+ * the Rioplatense form, so it carries the same marks a dictionary word with a Rioplatense headword does. (A dictionary word's
+ * is_rioplatense_variant flag means something else and is not read here.)
+ */
+export const isOwnRioplatense = (word: Pick<HeadwordSource, 'isCustom' | 'isRioplatenseVariant' | 'rio'>): boolean => word.isCustom === true && word.isRioplatenseVariant === true && !word.rio
 type HighlightSource = HeadwordSource & Pick<Word, 'exampleSentence'>
 
 export type HeadwordForm = 'rioplatense' | 'standard'
@@ -89,6 +96,7 @@ export function effectiveExample(word: HeadwordSource): EffectiveExample {
 export type HeadwordReason =
   | 'no-overlay'
   | 'legacy'
+  | 'own-rioplatense'
   | 'not-replacement'
   | 'unclean-form'
   | 'same-as-es-word'
@@ -116,6 +124,7 @@ export function headwordDecision(word: HeadwordSource): HeadwordDecision {
   const rio = word.rio
   const base = { matched: null, exampleSource: example.source } as const
   if (!rio) {
+    if (isOwnRioplatense(word)) return { ...base, switched: true, reason: 'own-rioplatense' }
     if (word.esRioplatense) return { ...base, switched: legacyHeadword(word) !== null, reason: 'legacy' }
     return { ...base, switched: false, reason: 'no-overlay' }
   }
@@ -140,6 +149,9 @@ function legacyHeadword(word: HeadwordSource): string | null {
 }
 
 export function headword(word: HeadwordSource): Headword {
+  // The typed word is the Rioplatense form. Its standard equivalent is NOT the secondary form: the lists use that for a muted second
+  // title, and a row stays as it is. The card shows it in its "standard" line (see relationFor).
+  if (isOwnRioplatense(word)) return { text: word.esWord, form: 'rioplatense', secondary: null }
   if (word.rio) {
     return headwordDecision(word).switched
       ? { text: word.rio.form, form: 'rioplatense', secondary: word.esWord }

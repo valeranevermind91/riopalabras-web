@@ -1,4 +1,6 @@
+import { customRegion, customRegister, type CustomRegister } from './customMarks'
 import { addToQueue, removeKeys } from './learnPicks'
+import type { RioRegion } from './rio'
 import type { CustomWordRow, SettingsPatch, UserSettings, Word } from './types'
 import { customWordFromRow, wordKey } from './words'
 import type { WriteQueue } from './writeQueue'
@@ -59,6 +61,12 @@ export interface WordValues {
   /** Not typed: they come back from enrichment (or stay as the word has them). */
   esRioplatense: string | null
   isRioplatenseVariant: boolean
+  /** Where a Rioplatense word is used (null: both countries, or unknown). */
+  region: RioRegion | null
+  /** How a Rioplatense word sounds (null: unknown). */
+  register: CustomRegister | null
+  /** The standard-Spanish equivalent of a Rioplatense word. */
+  esStandard: string | null
 }
 
 export type SaveProblem = 'word' | 'pos' | 'translations'
@@ -71,7 +79,7 @@ export function checkSave(values: WordValues): { ok: true } | { ok: false; probl
   return { ok: true }
 }
 
-/** The row to write: exactly the columns the client owns, es_word as typed (trimmed), text trimmed. */
+/** The row to write: exactly the twelve columns the client owns, es_word as typed (trimmed), text trimmed. */
 export function rowFromValues(values: WordValues): CustomWordRow {
   return {
     es_word: values.esWord.trim(),
@@ -82,6 +90,9 @@ export function rowFromValues(values: WordValues): CustomWordRow {
     example_translation_en: values.exampleTranslationEn.trim(),
     example_translation_ru: values.exampleTranslationRu.trim(),
     is_rioplatense_variant: values.isRioplatenseVariant,
+    region: customRegion(values.region),
+    register: customRegister(values.register),
+    es_standard: values.esStandard?.trim() || null,
     pos: values.pos ?? 'custom',
   }
 }
@@ -97,6 +108,9 @@ export const blankValues = (): WordValues => ({
   exampleTranslationRu: '',
   esRioplatense: null,
   isRioplatenseVariant: false,
+  region: null,
+  register: null,
+  esStandard: null,
 })
 
 /** The form's values for a word already there (editing). */
@@ -111,6 +125,9 @@ export function valuesOf(word: Word): WordValues {
     exampleTranslationRu: word.exampleTranslationRu,
     esRioplatense: word.esRioplatense,
     isRioplatenseVariant: word.isRioplatenseVariant,
+    region: word.region,
+    register: customRegister(word.register),
+    esStandard: word.esStandard,
   }
 }
 

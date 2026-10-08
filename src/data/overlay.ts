@@ -14,6 +14,9 @@ export interface UserWordRow {
   example_translation_en: string | null
   example_translation_ru: string | null
   is_rioplatense_variant: boolean | null
+  region?: string | null
+  register?: string | null
+  es_standard?: string | null
   pos: string | null
 }
 
@@ -84,7 +87,7 @@ export async function fetchSettingsRow(client: SupabaseClient, userId: string): 
 }
 
 const WORD_COLUMNS =
-  'es_word, es_rioplatense, en_translation, ru_translation, example_sentence, example_translation_en, example_translation_ru, is_rioplatense_variant, pos'
+  'es_word, es_rioplatense, en_translation, ru_translation, example_sentence, example_translation_en, example_translation_ru, is_rioplatense_variant, region, register, es_standard, pos'
 
 /** Without these the app would show wrong progress or lose the user's own words: a failure here is an error. */
 export const CRITICAL_TABLES = ['user_words', 'user_progress', 'user_settings'] as const

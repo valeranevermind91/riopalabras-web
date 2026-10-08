@@ -93,9 +93,9 @@ describe('what saving needs', () => {
     expect(checkSave(filled({ exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '' }))).toEqual({ ok: true })
   })
 
-  it('the row carries exactly the intended columns, the word as typed: no id, no created_at, no word_form_in_example, no user_id', () => {
+  it('the row carries exactly the twelve intended columns, the word as typed: no id, no created_at, no word_form_in_example, no user_id', () => {
     const row = rowFromValues(filled({ exampleSentence: ' Me gusta el zapallito. ', esRioplatense: ' zapallito ', isRioplatenseVariant: true }))
-    expect(Object.keys(row).sort()).toEqual(['en_translation', 'es_rioplatense', 'es_word', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'is_rioplatense_variant', 'pos', 'ru_translation'])
+    expect(Object.keys(row).sort()).toEqual(['en_translation', 'es_rioplatense', 'es_standard', 'es_word', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'is_rioplatense_variant', 'pos', 'region', 'register', 'ru_translation'])
     expect(row).toEqual({
       es_word: 'Zapallito',
       es_rioplatense: 'zapallito',
@@ -105,8 +105,21 @@ describe('what saving needs', () => {
       example_translation_en: '',
       example_translation_ru: '',
       is_rioplatense_variant: true,
+      region: null,
+      register: null,
+      es_standard: null,
       pos: 'n',
     })
+  })
+
+  it('carries the three marks: region, register and the standard equivalent, trimmed', () => {
+    expect(rowFromValues(filled({ isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: ' calabacín ' }))).toMatchObject({ is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' })
+    expect(rowFromValues(filled({ esStandard: '   ' }))).toMatchObject({ es_standard: null })
+  })
+
+  it('a region or register outside the allowed values is never written (the columns have CHECKs): it goes as null', () => {
+    const odd = filled({ region: 'br' as never, register: 'rude' as never })
+    expect(rowFromValues(odd)).toMatchObject({ region: null, register: null })
   })
 
   it('without enrichment the Rioplatense columns are null and false', () => {
@@ -209,6 +222,16 @@ describe('adding a word', () => {
 describe('editing a word', () => {
   const own = customWordFromRow(rowFromValues(filled()))
 
+  it('the form round-trips the three marks, and a mark cleared back to null is written as null', () => {
+    const marked = customWordFromRow(rowFromValues(filled({ isRioplatenseVariant: true, region: 'ar', register: 'vulgar', esStandard: 'calabacín' })))
+    const values = valuesOf(marked)
+    expect(values).toMatchObject({ region: 'ar', register: 'vulgar', esStandard: 'calabacín' })
+    expect(rowFromValues(values)).toMatchObject({ region: 'ar', register: 'vulgar', es_standard: 'calabacín', is_rioplatense_variant: true })
+    expect(rowFromValues({ ...values, region: null })).toMatchObject({ region: null, register: 'vulgar', es_standard: 'calabacín' })
+    expect(rowFromValues({ ...values, register: null })).toMatchObject({ region: 'ar', register: null })
+    expect(rowFromValues({ ...values, esStandard: null })).toMatchObject({ region: 'ar', es_standard: null })
+  })
+
   it('writes the same key with the typed casing, takes es_word from the word (it cannot be changed), and touches no progress', () => {
     const s = spies([...dictionary, own])
     const result = editCustomWord(own, filled({ esWord: 'zapallito', ruTranslation: 'тыква', pos: 'adj' }), s.deps)
@@ -295,8 +318,22 @@ describe('the tombstone clearing', () => {
   })
 })
 
+describe('loading the three marks', () => {
+  const base = { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'x', ru_translation: 'y', example_sentence: null, example_translation_en: null, example_translation_ru: null, is_rioplatense_variant: true, pos: 'n' }
+  it('reads them from the row', () => {
+    expect(customWordFromRow({ ...base, region: 'uy', register: 'pejorative', es_standard: ' calabacín ' })).toMatchObject({ region: 'uy', register: 'pejorative', esStandard: 'calabacín' })
+  })
+  it('a row without them (written before the columns existed), or with nulls, has none', () => {
+    expect(customWordFromRow(base)).toMatchObject({ region: null, register: null, esStandard: null })
+    expect(customWordFromRow({ ...base, region: null, register: null, es_standard: null })).toMatchObject({ region: null, register: null, esStandard: null })
+  })
+  it('a value outside the allowed ones is read as none', () => {
+    expect(customWordFromRow({ ...base, region: 'br', register: 'rude', es_standard: '' })).toMatchObject({ region: null, register: null, esStandard: null })
+  })
+})
+
 describe('loading: tombstoned words', () => {
-  const row = (es_word: string) => ({ es_word, es_rioplatense: null, en_translation: 'x', ru_translation: 'y', example_sentence: null, example_translation_en: null, example_translation_ru: null, is_rioplatense_variant: false, pos: 'n' })
+  const row = (es_word: string) => ({ es_word, es_rioplatense: null, en_translation: 'x', ru_translation: 'y', example_sentence: null, example_translation_en: null, example_translation_ru: null, is_rioplatense_variant: false, region: null, register: null, es_standard: null, pos: 'n' })
   const overlay = (customWords: ReturnType<typeof row>[], settings: Record<string, unknown> | null) => ({ customWords, progress: [], favorites: [], hidden: [], settings })
 
   it('does not show a custom word whose key Flutter has queued for deletion (its cloud row may still be there)', () => {
@@ -390,10 +427,32 @@ describe('through the write queue', () => {
         example_translation_en: '',
         example_translation_ru: '',
         is_rioplatense_variant: false,
+        region: null,
+        register: null,
+        es_standard: null,
         pos: 'n',
       },
     ])
     expect(blob()).toEqual({ daily_new_word_limit: 10, some_future_key: { a: 1 }, learn_picks: ['zapallito'] })
+  })
+
+  it('the three marks are written with the word; an edit that clears one writes null, and the others stay', async () => {
+    const a = await app()
+    addCustomWord(filled({ isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'calabacín' }), a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' })
+
+    let own = a.words().find((w) => w.isCustom)!
+    expect(own).toMatchObject({ region: 'uy', register: 'informal', esStandard: 'calabacín' })
+    editCustomWord(own, { ...valuesOf(own), region: null }, a.deps) // "Unknown"
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ region: null, register: 'informal', es_standard: 'calabacín' })
+
+    own = a.words().find((w) => w.isCustom)!
+    editCustomWord(own, { ...valuesOf(own), register: null, esStandard: '' }, a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ region: null, register: null, es_standard: null })
+    expect(a.words().find((w) => w.isCustom)).toMatchObject({ region: null, register: null, esStandard: null })
   })
 
   it('adding clears a matching tombstone on the server in the same write that queues the word', async () => {

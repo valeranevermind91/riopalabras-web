@@ -1,5 +1,6 @@
 import { parseUtc } from './dates'
 import type { Overlay, UserWordRow } from './overlay'
+import { customRegion, customRegister } from './customMarks'
 import type { Word } from './types'
 
 const NON_REVIEWABLE_POS = new Set(['art', 'prep', 'conj', 'contraction', 'determiner', 'pron'])
@@ -58,6 +59,9 @@ export function customWordFromRow(row: UserWordRow): Word {
     exampleTranslationRu: row.example_translation_ru ?? '',
     wordFormInExample: null,
     isRioplatenseVariant: row.is_rioplatense_variant === true,
+    region: customRegion(row.region),
+    register: customRegister(row.register),
+    esStandard: row.es_standard?.trim() || null,
     pos: row.pos?.trim() || 'custom',
     frequency: 0,
     rank: null,

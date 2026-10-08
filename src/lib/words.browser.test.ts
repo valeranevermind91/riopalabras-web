@@ -622,10 +622,14 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       page.evaluate((l) => {
         const control = Array.from(document.querySelectorAll('.form-field'))
           .find((x) => x.querySelector('.form-label')?.textContent === l)
-          ?.querySelector<HTMLInputElement>('input,textarea')
+          ?.querySelector<HTMLInputElement>('input,textarea,select')
         if (!control) throw new Error(`no field ${l}`)
         return control.value
       }, label)
+    const choose = async (page: Page, label: string, value: string) => {
+      const handle = await page.evaluateHandle((l) => Array.from(document.querySelectorAll('.form-field')).find((x) => x.querySelector('.form-label')?.textContent === l)?.querySelector('select') as HTMLSelectElement, label)
+      await (handle as unknown as { select: (v: string) => Promise<string[]> }).select(value)
+    }
     const typeIn = async (page: Page, label: string, text: string) => {
       const handle = await page.evaluateHandle((l) => Array.from(document.querySelectorAll('.form-field')).find((x) => x.querySelector('.form-label')?.textContent === l)?.querySelector('input,textarea') as HTMLElement, label)
       await handle.focus()
@@ -679,7 +683,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect(sent.words).toEqual([
         {
           kind: 'save',
-          row: { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'baby squash', ru_translation: 'кабачок', example_sentence: 'Me gusta el zapallito.', example_translation_en: 'I like little squash.', example_translation_ru: 'Мне нравится кабачок.', is_rioplatense_variant: false, pos: 'n' },
+          row: { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'baby squash', ru_translation: 'кабачок', example_sentence: 'Me gusta el zapallito.', example_translation_en: 'I like little squash.', example_translation_ru: 'Мне нравится кабачок.', is_rioplatense_variant: false, region: null, register: null, es_standard: null, pos: 'n' },
         },
       ])
       expect(sent.settings.at(-1)).toEqual({ learn_picks: ['zapallito'] })
@@ -922,6 +926,76 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect(await page.$$eval('.word-row-head', (els) => els.map((e) => e.textContent).filter((t) => t?.startsWith('Zapallito')))).toEqual([])
       await page.close()
     }, 150_000)
+
+    it('a Rioplatense word from the lookup shows the same marks a dictionary word does: the chip, the region, the register, "standard: …" (and its list row stays as it was)', async () => {
+      const page = await open()
+      await stub(page, { ok: true, value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: null, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'calabacín' } })
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      expect(await fieldValue(page, f.region)).toBe('uy') // the form shows what was filled in
+      expect(await fieldValue(page, f.register)).toBe('informal')
+      expect(await fieldValue(page, f.standard)).toBe('calabacín')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toMatchObject([{ kind: 'save', row: { is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' } }])
+
+      await search(page, 'Zapallito')
+      await page.waitForSelector('.word-row')
+      expect(await page.$eval('.word-row-head', (e) => e.textContent)).toBe('Zapallito') // the row has none of the marks
+      expect(await page.$eval('.word-row-line', (e) => e.textContent)).toBe('кабачок · little squash')
+      expect(await page.$('.word-row .wc-rio, .word-row .wc-tag, .word-row .wc-register, .word-row-alt')).toBeNull()
+      await openRow(page, 0)
+      expect(await page.$$eval('.wc-meta .wc-rio', (els) => els.map((e) => e.textContent))).toEqual([strings.rio.en.pill])
+      expect(await page.$$eval('.wc-meta .wc-tag', (els) => els.map((e) => e.textContent))).toEqual([strings.rio.en.tag.uy])
+      expect(await page.$$eval('.wc-meta .wc-register', (els) => els.map((e) => e.textContent))).toEqual(['informal'])
+      expect(await page.$eval('.wc-relation', (e) => e.textContent?.replace(/\s+/g, ' ').trim())).toBe('standard: calabacín')
+      await page.close()
+    }, 90_000)
+
+    it('the edit form has region and register selects with "Unknown", and a standard field; they round-trip, re-running the lookup refills them, and clearing one writes null', async () => {
+      const page = await open()
+      await addWord(page)
+      await openByName(page, 'Zapallito')
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await page.$$eval('.form-field select', (els) => els.map((e) => Array.from((e as HTMLSelectElement).options).map((o) => o.textContent)))).toEqual([
+        ['Unknown', 'Argentina only', 'Uruguay only'],
+        ['Unknown', 'Neutral', 'Informal', 'Vulgar', 'Offensive', 'Pejorative'],
+      ])
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['', '', '']) // all unknown
+
+      await choose(page, f.region, 'ar')
+      await choose(page, f.register, 'vulgar')
+      await typeIn(page, f.standard, 'calabacín')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ kind: 'save', row: { es_word: 'Zapallito', region: 'ar', register: 'vulgar', es_standard: 'calabacín' } })
+
+      // back in the form they are as saved; re-running the lookup refills them like the other fields
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['ar', 'vulgar', 'calabacín'])
+      await stub(page, { ok: true, value: { enTranslation: 'squash', ruTranslation: 'кабачок', exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: null, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'zapallo' } })
+      await clickText(page, 'button', f.rerun)
+      await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in again'))
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['uy', 'informal', 'zapallo'])
+      await clickText(page, 'button', f.putBack)
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['ar', 'vulgar', 'calabacín'])
+
+      // clear each back to unknown: null is written
+      await choose(page, f.region, '')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { region: null, register: 'vulgar', es_standard: 'calabacín' } })
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      await choose(page, f.register, '')
+      await typeIn(page, f.standard, '')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { region: null, register: null, es_standard: null } })
+      await page.close()
+    }, 120_000)
 
     it('the Filters sheet has "Custom" under "Show only", and it lists only the words added', async () => {
       const page = await open()

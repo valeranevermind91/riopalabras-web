@@ -109,6 +109,10 @@ function readWordOp(raw: unknown): CustomWordOp | null {
     example_translation_en: r.example_translation_en,
     example_translation_ru: r.example_translation_ru,
     is_rioplatense_variant: r.is_rioplatense_variant,
+    // a save queued by an earlier version of the app has no marks
+    region: text(r.region) ? r.region : null,
+    register: text(r.register) ? r.register : null,
+    es_standard: text(r.es_standard) ? r.es_standard : null,
     pos: r.pos,
   }
   return { kind: 'save', row }

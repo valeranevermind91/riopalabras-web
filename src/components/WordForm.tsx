@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { CUSTOM_REGIONS, CUSTOM_REGISTERS, customRegion, customRegister } from '../data/customMarks'
 import { POS_CODES, checkSpanish, findDuplicate, type Duplicate, type PosCode, type WordValues } from '../data/customWords'
 import { BottomSheet } from './WordsSheets'
 import { enrichFailureMessage, type EnrichResult } from '../data/enrich'
@@ -275,6 +276,34 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
       <label className="form-field">
         <span className="form-label">{f.exampleRu}</span>
         <textarea className="form-input" lang="ru" rows={2} value={values.exampleTranslationRu} disabled={looking} onChange={(e) => set({ exampleTranslationRu: e.target.value })} />
+      </label>
+      <label className="form-field">
+        <span className="form-label">{f.standard}</span>
+        <input className="form-input" lang="es" value={values.esStandard ?? ''} disabled={looking} onChange={(e) => set({ esStandard: e.target.value })} />
+        <span className="form-hint">{f.standardHint}</span>
+      </label>
+      <label className="form-field">
+        <span className="form-label">{f.region}</span>
+        <select className="form-input" value={values.region ?? ''} disabled={looking} onChange={(e) => set({ region: customRegion(e.target.value) })}>
+          <option value="">{f.unknown}</option>
+          {CUSTOM_REGIONS.map((region) => (
+            <option key={region} value={region}>
+              {f.regionNames[region]}
+            </option>
+          ))}
+        </select>
+        <span className="form-hint">{f.regionHint}</span>
+      </label>
+      <label className="form-field">
+        <span className="form-label">{f.register}</span>
+        <select className="form-input" value={values.register ?? ''} disabled={looking} onChange={(e) => set({ register: customRegister(e.target.value) })}>
+          <option value="">{f.unknown}</option>
+          {CUSTOM_REGISTERS.map((register) => (
+            <option key={register} value={register}>
+              {f.registerNames[register]}
+            </option>
+          ))}
+        </select>
       </label>
       {values.esRioplatense && <p className="form-hint">{f.rioplatenseForm(values.esRioplatense)}</p>}
 

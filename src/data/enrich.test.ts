@@ -11,6 +11,9 @@ const entry = {
   example_sentence: 'Es muy tímido.',
   example_translation_en: 'He is very shy.',
   example_translation_ru: 'Он очень застенчив.',
+  es_standard: null,
+  region: null,
+  register: 'neutral',
   word_form_in_example: 'tímido',
 }
 
@@ -76,8 +79,28 @@ describe('a good answer', () => {
         exampleTranslationRu: 'Он очень застенчив.',
         esRioplatense: 'chiquito',
         isRioplatenseVariant: true,
+        region: null,
+        register: 'neutral',
+        esStandard: null,
       },
     })
+  })
+
+  it('reads the marks: region, register and the standard equivalent', async () => {
+    const answer = { ...entry, word: 'zapallito', is_rioplatense_variant: true, es_standard: ' calabacín ', region: 'uy', register: 'informal' }
+    const result = await enrichWord({ word: 'zapallito', pos: 'n' }, deps(async () => reply(200, { words: [answer] })))
+    expect(result.ok && result.value).toMatchObject({ isRioplatenseVariant: true, esStandard: 'calabacín', region: 'uy', register: 'informal' })
+  })
+
+  it('an answer from an older proxy (no marks), or with values outside the allowed ones, gives none', async () => {
+    const old = { ...entry }
+    delete (old as Partial<typeof entry>).es_standard
+    delete (old as Partial<typeof entry>).region
+    delete (old as Partial<typeof entry>).register
+    const oldResult = await enrichWord({ word: 'tímido', pos: null }, deps(async () => reply(200, { words: [old] })))
+    expect(oldResult.ok && oldResult.value).toMatchObject({ region: null, register: null, esStandard: null })
+    const bad = await enrichWord({ word: 'tímido', pos: null }, deps(async () => reply(200, { words: [{ ...entry, region: 'br', register: 'rude', es_standard: '  ' }] })))
+    expect(bad.ok && bad.value).toMatchObject({ region: null, register: null, esStandard: null })
   })
 
   it('ignores word_form_in_example: it has no column and is not synced', async () => {

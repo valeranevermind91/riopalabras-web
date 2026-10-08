@@ -1,5 +1,5 @@
 import type { ThemeChoice } from '../lib/theme'
-import type { RioExample, RioInfo } from './rio'
+import type { RioExample, RioInfo, RioRegion } from './rio'
 
 export interface Word {
   readonly esWord: string
@@ -16,6 +16,12 @@ export interface Word {
   readonly exampleTranslationRu: string
   readonly wordFormInExample: string | null
   readonly isRioplatenseVariant: boolean
+  /** Custom words only (null for a dictionary word, whose overlay entry says it): where a Rioplatense word is used; null for both countries or unknown. */
+  readonly region: RioRegion | null
+  /** Custom words only: how a Rioplatense word sounds (informal, vulgar, ...); null when unknown. */
+  readonly register: string | null
+  /** Custom words only: the standard-Spanish equivalent of a Rioplatense word. */
+  readonly esStandard: string | null
   readonly pos: string
   /** Raw corpus count (higher = more common). Never sort by this — use `rank`. */
   readonly frequency: number
@@ -69,6 +75,12 @@ export interface CustomWordRow {
   example_translation_en: string
   example_translation_ru: string
   is_rioplatense_variant: boolean
+  /** 'ar' | 'uy' | null (the column has a CHECK). */
+  region: string | null
+  /** 'neutral' | 'informal' | 'vulgar' | 'offensive' | 'pejorative' | null (the column has a CHECK). */
+  register: string | null
+  /** The standard-Spanish equivalent of a Rioplatense headword. */
+  es_standard: string | null
   pos: string
 }
 

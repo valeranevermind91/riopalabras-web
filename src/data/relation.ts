@@ -1,4 +1,4 @@
-import { headword, type HeadwordSource } from './headword'
+import { headword, isOwnRioplatense, type HeadwordSource } from './headword'
 import type { Localized, RioRegion, RioType, StdUsage } from './rio'
 import type { Word } from './types'
 
@@ -28,6 +28,8 @@ export function relationFor(word: HeadwordSource): Relation {
   const rio = word.rio
 
   if (!rio) {
+    // A Rioplatense word the user added: the standard equivalent, in the same line a dictionary word uses.
+    if (isOwnRioplatense(word)) return word.esStandard ? { type: 'replacement', standardWord: word.esStandard } : null
     // Legacy fallback: only the replacement shape can be derived from the free-text field.
     if (head.form === 'rioplatense' && head.secondary) return { type: 'replacement', standardWord: head.secondary }
     return null
@@ -52,6 +54,7 @@ export function relationFor(word: HeadwordSource): Relation {
 /** The region tag that belongs next to the headword: not for a replacement whose form is only a note (the note carries its own). */
 export function headwordRegion(word: HeadwordSource): RioRegion | null {
   const rio = word.rio
+  if (isOwnRioplatense(word)) return word.region ?? null
   if (!rio?.region) return null
   if (rio.type === 'replacement' && headword(word).form !== 'rioplatense') return null
   return rio.region
@@ -64,6 +67,7 @@ export function headwordRegion(word: HeadwordSource): RioRegion | null {
  */
 export function headwordRegister(word: HeadwordSource): string | null {
   const rio = word.rio
+  if (isOwnRioplatense(word)) return !word.register || word.register === 'neutral' ? null : word.register
   if (!rio || rio.register === 'neutral') return null
   if (rio.type === 'replacement' && headword(word).form !== 'rioplatense') return null
   return rio.register
