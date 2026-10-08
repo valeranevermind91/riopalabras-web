@@ -1977,6 +1977,14 @@ mark {
   color: var(--teal);
 }
 
+/* What the Learn queue says under its button: where the word stands, or why it was not added. Quiet, like the state note. */
+.detail-actions .queue-note {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* ---- Settings: small uppercase section labels over grouped rows (at least 48px tall, each labelled) ---- */
 
 .settings {

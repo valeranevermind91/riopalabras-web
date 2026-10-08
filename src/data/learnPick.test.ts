@@ -359,11 +359,14 @@ describe('the daily counter counts only words actually learned', () => {
     let current = settings()
     const getSettings = () => current
     const queue = createSupabaseWriteQueue(fake.client, 'user-1', getSettings, { retryDelaysMs: [], sleep: () => Promise.resolve() })
+    const applySettings = (p: Record<string, unknown>) => (current = applySettingsPatch(current, p))
     const deps = {
       queue,
       applyHidden: (esWords: readonly string[], hidden: boolean) => (words = applyHiddenFlag(words, esWords, hidden)),
+      getSettings,
+      applySettings,
     }
-    return { fake, queue, deps, getWords: () => words, getSettings, applySettings: (p: Record<string, unknown>) => (current = applySettingsPatch(current, p)), applyProgress: (u: Parameters<typeof applyProgressUpdates>[1]) => (words = applyProgressUpdates(words, u)) }
+    return { fake, queue, deps, getWords: () => words, getSettings, applySettings, applyProgress: (u: Parameters<typeof applyProgressUpdates>[1]) => (words = applyProgressUpdates(words, u)) }
   }
 
   it('newCount is the number of words the user will learn, however many were marked known along the way', () => {

@@ -30,7 +30,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
   const finisher = useRef<(() => QueueTicket) | null>(null)
-  const knownDeps = { queue, applyHidden: data.applyHidden }
+  const knownDeps = { queue, applyHidden: data.applyHidden, getSettings: data.getSettings, applySettings: data.applySettings }
 
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')

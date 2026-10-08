@@ -1,12 +1,13 @@
 // A page for the real-browser Words test (src/lib/words.browser.test.ts): the real Words list and word detail over the
 // real 4,753-word dictionary, with a little progress, a few favourites and some hidden words, and a write queue whose
 // senders just record what they are given (window.__sent). The list and the detail swap the way App swaps them.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import { parseDictionary } from '../data/dictionary'
-import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates } from '../data/mutations'
+import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from '../data/mutations'
 import { parseRioOverlay } from '../data/rio'
+import { isInLearnPool } from '../data/stats'
 import { isReferenceOnly } from '../data/wordState'
 import { parseSettings } from '../data/settings'
 import { createViewStore } from '../data/wordList'
@@ -16,11 +17,11 @@ import type { Word } from '../data/types'
 import { WordDetail } from '../screens/WordDetail'
 import { WordsScreen } from '../screens/Words'
 
-const sent: { favorites: unknown[]; hidden: unknown[] } = { favorites: [], hidden: [] }
+const sent: { favorites: unknown[]; hidden: unknown[]; settings: Record<string, unknown>[] } = { favorites: [], hidden: [], settings: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
 
 const queue = createWriteQueue(
-  { sendProgress: async () => {}, sendSettings: async () => {}, sendFavorites: async (ops) => void sent.favorites.push(...ops), sendHidden: async (ops) => void sent.hidden.push(...ops) },
+  { sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch), sendFavorites: async (ops) => void sent.favorites.push(...ops), sendHidden: async (ops) => void sent.hidden.push(...ops) },
   { retryDelaysMs: [1], sleep: async () => {} },
 )
 ;(window as never as { __queue: typeof queue }).__queue = queue
@@ -42,12 +43,15 @@ async function boot() {
   const withProgress = applyProgressUpdates(base, updates)
   const hide = applyHiddenFlag(withProgress, [base[100].esWord, base[101].esWord], true)
   const start = applyFavoriteFlag(hide, [base[0].esWord], true)
-  ;(window as never as { __fixture: unknown }).__fixture = { lapsed: lapsed.esWord, hidden: [base[100].esWord, base[101].esWord], favourite: base[0].esWord }
-  createRoot(document.getElementById('root')!).render(<Harness start={start} />)
+  // Words that can be queued (not started, teachable), after the ones given progress; ?picks=N starts with the first N already queued.
+  const fresh = start.filter(isInLearnPool).map((w) => w.esWord)
+  const preQueued = Number(new URLSearchParams(location.search).get('picks') ?? 0)
+  ;(window as never as { __fixture: unknown }).__fixture = { lapsed: lapsed.esWord, hidden: [base[100].esWord, base[101].esWord], favourite: base[0].esWord, fresh, learned: learned.slice(0, 3).map((w) => w.esWord) }
+  createRoot(document.getElementById('root')!).render(<Harness start={start} picks={fresh.slice(0, preQueued).map((w) => w.toLowerCase())} />)
   ;(window as never as { __ready: boolean }).__ready = true
 }
 
-export function Harness({ start }: { start: readonly Word[] }) {
+export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?: readonly string[] }) {
   const [words, setWords] = useState(start)
   const [open, setOpen] = useState<string | null>(null)
   const [viewStore] = useState(createViewStore)
@@ -59,10 +63,16 @@ export function Harness({ start }: { start: readonly Word[] }) {
   useEffect(() => {
     ;(window as never as { __pressBack: () => string }).__pressBack = () => (backInterceptor.current?.() ? 'closed-sheet' : 'left')
   }, [])
-  const settings = useMemo(() => parseSettings({ daily_new_word_limit: 10 }), [])
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, ...(picks.length > 0 ? { learn_picks: picks } : {}), a_future_key: { kept: true } }))
+  const latestSettings = useRef(settings)
+  const getSettings = useCallback(() => latestSettings.current, [])
+  const applySettings = useCallback((patch: Record<string, unknown>) => {
+    latestSettings.current = applySettingsPatch(latestSettings.current, patch)
+    setSettings(latestSettings.current)
+  }, [])
   const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => setWords((w) => applyFavoriteFlag(w, esWords, favorite)), [])
   const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => setWords((w) => applyHiddenFlag(w, esWords, hidden)), [])
-  const data = { words, settings, applyFavorite, applyHidden } as never
+  const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden } as never
 
   const opened = open ? words.find((w) => wordKey(w.esWord) === open) : undefined
   if (opened) return <WordDetail word={opened} data={data} queue={queue} onBack={() => setOpen(null)} />

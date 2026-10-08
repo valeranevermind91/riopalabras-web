@@ -63,7 +63,7 @@ describe('the Words screen', () => {
   })
 
   it('Filters shows how many are on, and Sort names the current order', () => {
-    const html = render(real, view({ sort: 'recent', filters: { state: 'due', favourites: true, pos: 'verb' } }))
+    const html = render(real, view({ sort: 'recent', filters: { state: 'due', favourites: true, queued: false, pos: 'verb' } }))
     expect(html).toMatch(/class="control-btn is-active"[^>]*>Filters<span class="control-count" aria-label="3 filters on">3<\/span>/)
     expect(html).toContain('Sort: Recently learned')
     expect(render(real, view({ filters: { ...NO_FILTERS, favourites: true } }))).toContain('aria-label="1 filter on">1</span>')
@@ -186,17 +186,17 @@ describe('the filters sheet', () => {
     expect(headings).toEqual(['Progress', 'Show only', 'Part of speech'])
   })
 
-  it('Progress: Any · Not started · In progress · Known well · Due now; Show only: Favourites; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
+  it('Progress: Any · Not started · In progress · Known well · Due now; Show only: Favourites · Queued; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
     const html = sheet()
     const group = (id: string) => [...html.match(new RegExp(`aria-labelledby="${id}">.*?</section>`))![0].matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
     expect(group('sheet-progress')).toEqual(['Any', 'Not started', 'In progress', 'Known well', 'Due now'])
-    expect(group('sheet-show-only')).toEqual(['Favourites'])
+    expect(group('sheet-show-only')).toEqual(['Favourites', 'Queued'])
     expect(group('sheet-pos')).toEqual(['Verbs', 'Nouns', 'Adjectives', 'Adverbs'])
   })
 
   it('marks what is on: Any when no progress filter is set, the chosen option otherwise', () => {
     expect(sheet()).toMatch(/class="chip is-active" aria-pressed="true">Any/)
-    const on = sheet({ filters: { state: 'due', favourites: true, pos: 'adj' } })
+    const on = sheet({ filters: { state: 'due', favourites: true, queued: false, pos: 'adj' } })
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Due now/)
     expect(on).toMatch(/class="chip" aria-pressed="false">Any/)
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Favourites/)
@@ -292,9 +292,9 @@ describe('the word detail', () => {
       expect(css).not.toMatch(/\.sched \{[^}]*border:/s)
     })
 
-    it('nothing remembers whether it was open: the component has no state for it', () => {
+    it('nothing remembers whether it was open: no storage, and the disclosure is not driven by any state', () => {
       const source = readFileSync('src/screens/WordDetail.tsx', 'utf8')
-      expect(source).not.toMatch(/useState|localStorage|sessionStorage/)
+      expect(source).not.toMatch(/localStorage|sessionStorage/)
       expect(source).not.toMatch(/<details[^>]*\bopen\b/)
     })
   })

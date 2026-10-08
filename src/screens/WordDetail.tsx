@@ -1,7 +1,10 @@
+import { useMemo, useState } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
+import { MAX_LEARN_PICKS, isQueueable, livePicks, queuePosition, toggleQueued } from '../data/learnPicks'
+import { computeRemainingToday } from '../data/stats'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
 import { hasHistory, wordState, type WordState } from '../data/wordState'
@@ -40,6 +43,18 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
   const state = wordState(word, now)
   const note = noteFor(word, state)
   const head = headword(word).text
+
+  // The Learn queue: only a word that is not started can be in it. `said` is what the last tap said (a confirmation, or why it was refused).
+  const [said, setSaid] = useState<{ esWord: string; text: string } | null>(null)
+  const live = useMemo(() => livePicks(data.words, data.settings.learnPicks), [data.words, data.settings.learnPicks])
+  const place = queuePosition(live, word)
+  const queueable = isQueueable(word)
+  const beyondToday = place !== null && place > computeRemainingToday(data.settings, now)
+  const toggleQueue = () => {
+    haptic('select')
+    const result = toggleQueued(word, { getSettings: data.getSettings, words: data.words, applySettings: data.applySettings, queue })
+    setSaid(result.done === 'queued' ? { esWord: word.esWord, text: t.queuedAt(result.position) } : result.done === 'refused' && result.reason === 'full' ? { esWord: word.esWord, text: t.queueFull(MAX_LEARN_PICKS) } : null)
+  }
 
   const toggleFavourite = () => {
     haptic('select')
@@ -84,6 +99,17 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
         <button type="button" className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={word.isFavorite} onClick={toggleFavourite}>
           <StarIcon filled={word.isFavorite} /> {word.isFavorite ? t.removeFavourite : t.addFavourite}
         </button>
+        {queueable && (
+          <button type="button" className={place !== null ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={place !== null} onClick={toggleQueue}>
+            {place !== null ? t.removeFromQueue : t.queueForLearn}
+          </button>
+        )}
+        {queueable && place !== null && beyondToday && <p className="queue-note">{t.beyondToday}</p>}
+        {said && said.esWord === word.esWord && (
+          <p className="queue-note" role="status">
+            {said.text}
+          </p>
+        )}
         {word.isHidden && (
           <button type="button" className="btn btn-primary" aria-label={t.bringBackWord(head)} onClick={bringBack}>
             {t.bringBack}

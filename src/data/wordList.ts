@@ -3,7 +3,7 @@ import { shuffled } from '../lib/random'
 import { searchWords, type MatchVia } from './search'
 import type { Word } from './types'
 import { dueDate, hasProgress, lastReviewedAt, wordState, type WordState } from './wordState'
-import { compareByRank } from './words'
+import { compareByRank, wordKey } from './words'
 
 /** The three lists: every word, the words with progress, and the words marked as known (hidden). */
 export type Segment = 'all' | 'learned' | 'hidden'
@@ -16,6 +16,8 @@ export interface ListFilters {
   /** One state at a time (tap again to clear). */
   state: StateFilter | null
   favourites: boolean
+  /** Only the words queued for Learn. */
+  queued: boolean
   /** One part of speech at a time. */
   pos: PosFilter | null
 }
@@ -42,7 +44,9 @@ export function createViewStore() {
   }
 }
 
-export const NO_FILTERS: ListFilters = { state: null, favourites: false, pos: null }
+const NO_KEYS: ReadonlySet<string> = new Set()
+
+export const NO_FILTERS: ListFilters = { state: null, favourites: false, queued: false, pos: null }
 
 /** The first time the list opens: every word, most common first. */
 export function initialListView(): ListView {
@@ -103,7 +107,13 @@ function comparatorFor(sort: SortKey): (a: Word, b: Word) => number {
  * every word, whatever the segment, ranked by how well it matches (Spanish, Rioplatense form, English and Russian,
  * accent-insensitive, no cap) and narrowed by the same filters; the sort does not apply, the match quality does.
  */
-export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segment' | 'filters' | 'query'> & Partial<Pick<ListView, 'sort' | 'seed'>>, now: Date): BuiltList {
+export function buildWordList(
+  words: readonly Word[],
+  view: Pick<ListView, 'segment' | 'filters' | 'query'> & Partial<Pick<ListView, 'sort' | 'seed'>>,
+  now: Date,
+  /** The wordKey of every word queued for Learn (only needed for the Queued filter). */
+  queued: ReadonlySet<string> = NO_KEYS,
+): BuiltList {
   const query = view.query.trim()
   const searching = query !== ''
   const segment = view.segment
@@ -124,10 +134,11 @@ export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segm
     rows = ordered.map((word) => ({ word, state: wordState(word, now), via: null }))
   }
 
-  const { state, favourites, pos } = view.filters
+  const { state, favourites, queued: onlyQueued, pos } = view.filters
   // In the hidden list every word is "hidden", so a state filter has nothing to say there.
   if (state && segment !== 'hidden') rows = rows.filter((r) => r.state === state)
   if (favourites) rows = rows.filter((r) => r.word.isFavorite)
+  if (onlyQueued) rows = rows.filter((r) => queued.has(wordKey(r.word.esWord)))
   if (pos) rows = rows.filter((r) => matchesPos(r.word, pos))
 
   return { rows, searching }
@@ -136,5 +147,5 @@ export function buildWordList(words: readonly Word[], view: Pick<ListView, 'segm
 /** How many filters are on (a state filter does not count in the hidden list, where it is not offered). */
 export function activeFilterCount(filters: ListFilters, segment: Segment, searching = false): number {
   const stateShown = segment !== 'hidden' || searching
-  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.pos ? 1 : 0)
+  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.queued ? 1 : 0) + (filters.pos ? 1 : 0)
 }

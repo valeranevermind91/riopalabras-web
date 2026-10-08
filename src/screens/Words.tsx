@@ -5,6 +5,7 @@ import { VirtualList } from '../components/VirtualList'
 import { WORD_ROW_HEIGHT, WordRow } from '../components/WordRow'
 import { FiltersSheet, SortSheet } from '../components/WordsSheets'
 import type { UserData } from '../data/useUserData'
+import { livePicks } from '../data/learnPicks'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
 import { hasProgress } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
@@ -59,7 +60,9 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const change = (patch: Partial<Pick<ListView, 'segment' | 'sort' | 'seed' | 'filters' | 'query'>>) => setView({ ...latest.current, ...patch, scrollTop: 0 })
   const setFilters = (patch: Partial<ListFilters>) => change({ filters: { ...latest.current.filters, ...patch } })
 
-  const list = useMemo(() => buildWordList(data.words, view, now), [data.words, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
+  // The words queued for Learn that Learn can still teach (a pick that went stale is not shown as queued).
+  const queuedKeys = useMemo(() => new Set(livePicks(data.words, data.settings.learnPicks).map((w) => wordKey(w.esWord))), [data.words, data.settings.learnPicks])
+  const list = useMemo(() => buildWordList(data.words, view, now, queuedKeys), [data.words, queuedKeys, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(
     () => ({
       learned: data.words.filter((w) => !w.isHidden && hasProgress(w)).length,
@@ -81,9 +84,9 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   }
 
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
-  const anyFilter = view.filters.state || view.filters.favourites || view.filters.pos
+  const anyFilter = view.filters.state || view.filters.favourites || view.filters.queued || view.filters.pos
   const emptyText = list.rows.length > 0 ? null : list.searching || anyFilter ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
-  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.pos}`
+  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.queued}|${view.filters.pos}`
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 

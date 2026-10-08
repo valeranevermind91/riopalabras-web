@@ -8,6 +8,13 @@
 //    "in this sentence" nudge), plus data that comes from the dictionary or overlay (translations, overlay notes, the Cloze cue).
 //    The register labels (informal, vulgar, …) are chrome, like "standard" and "also": they live in `rio`.
 
+/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st. */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13
+  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'
+  return `${n}${suffix}`
+}
+
 export const strings = {
   appTitle: 'Riopalabras',
 
@@ -77,6 +84,7 @@ export const strings = {
     // what the learning states are called to the user (the code keeps new / learning / established / due)
     states: { new: 'Not started', learning: 'In progress', established: 'Known well', due: 'Due now' },
     favourites: 'Favourites',
+    queued: 'Queued',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
     sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned', random: 'Random' },
     bestMatch: 'Best match',
@@ -88,6 +96,12 @@ export const strings = {
     unfavourite: (word: string) => `Remove ${word} from favourites`,
     addFavourite: 'Add to favourites',
     removeFavourite: 'Remove from favourites',
+    // the Learn queue: "Queue for Learn" in the detail of a word that is not started
+    queueForLearn: 'Queue for Learn',
+    removeFromQueue: 'Queued — remove',
+    queuedAt: (place: number) => `Queued — ${ordinal(place)} in line.`,
+    queueFull: (max: number) => `The queue is full (${max} words). Take one out to add another.`,
+    beyondToday: "Beyond today's batch",
     bringBack: 'Bring back',
     bringBackWord: (word: string) => `Bring back ${word}`,
     emptyLearned: 'Nothing learned yet.',

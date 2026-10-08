@@ -1,6 +1,7 @@
 import { learnedState } from '../sm2/sm2'
 import { newWordsPatch, streakPatch } from './daily'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
+import { livePicks, removeKeys, restoreKey, storedIndex } from './learnPicks'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import type { QueueTicket, WriteQueue } from './writeQueue'
@@ -21,6 +22,7 @@ export function batchOf(words: readonly Word[]): LearnBatch {
     window: words,
     windowStrata: words.map((_, i) => i),
     reserve: [],
+    overflow: [],
     known: [],
     dayKey: '',
     size: words.length,
@@ -30,39 +32,59 @@ export function batchOf(words: readonly Word[]): LearnBatch {
 const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.words.filter((w) => w.repetitions === 0).length })
 
 /**
- * Next Learn batch: min(10, remainingToday) new words, spread over the next 150 candidates instead of taken
- * from the head of the queue (see pickBatch). Known words are hidden, hence never candidates; only words the
- * user actually learns are counted towards the daily limit (newCount is the batch itself). learn_picks are ignored for now.
+ * Next Learn batch: min(10, remainingToday) new words. The words the user queued (learn_picks) come first, in the
+ * order they were queued; the rest is spread over the next 150 candidates instead of taken from the head of the
+ * queue (see pickBatch). Known words are hidden, hence never candidates; only words the user actually learns are
+ * counted towards the daily limit (newCount is the batch itself). The queue is only read here: a queued word leaves it
+ * when the batch is finished (learnSettingsPatch), never when it is drawn.
  */
 export function selectLearnBatch(words: readonly Word[], settings: UserSettings, now: Date): LearnBatch {
   const limit = Math.min(LEARN_BATCH_SIZE, computeRemainingToday(settings, now))
-  return withCount(pickBatch(limit > 0 ? getLearnPool(words) : [], limit, now))
+  if (limit <= 0) return withCount(pickBatch([], 0, now))
+  return withCount(pickBatch(getLearnPool(words), limit, now, livePicks(words, settings.learnPicks)))
 }
 
 export interface KnownDeps {
-  queue: Pick<WriteQueue, 'enqueueHidden'>
+  queue: Pick<WriteQueue, 'enqueueHidden' | 'enqueueSettings'>
   /** Optimistic: mirror the hide / un-hide into the in-memory words at once. */
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
+  /** The latest settings (read at call time): a queued word that is marked as known leaves learn_picks. */
+  getSettings: () => UserSettings
+  applySettings: (patch: SettingsPatch) => void
+}
+
+const saveQueue = (patch: SettingsPatch | null, deps: Pick<KnownDeps, 'applySettings' | 'queue'>) => {
+  if (!patch) return
+  deps.applySettings(patch)
+  deps.queue.enqueueSettings(patch)
 }
 
 /**
  * "Already know it": the word at `index` is hidden for good (it leaves Learn, Review and the practice
  * exercises) through the write queue, and the next candidate takes its place. The batch keeps its size.
+ * A queued word also leaves the Learn queue (through the settings lane).
  */
 export function markKnown(batch: LearnBatch, index: number, deps: KnownDeps): LearnBatch {
   const word = batch.words[index]
   if (!word) return batch
   deps.applyHidden([word.esWord], true)
   deps.queue.enqueueHidden(word.esWord, true)
-  return withCount(replaceKnown(batch, index))
+  const settings = deps.getSettings()
+  const queuedAt = storedIndex(settings, word.esWord)
+  saveQueue(queuedAt >= 0 ? removeKeys(settings, [word.esWord]) : null, deps)
+  const next = replaceKnown(batch, index)
+  const known = next.known.slice()
+  known[known.length - 1] = { ...known[known.length - 1], queuedAt: queuedAt >= 0 ? queuedAt : null }
+  return withCount({ ...next, known })
 }
 
-/** Undo for the last "already know it": the word is shown again (and un-hidden). */
+/** Undo for the last "already know it": the word is shown again (and un-hidden), and back in the queue if it was queued. */
 export function undoKnown(batch: LearnBatch, deps: KnownDeps): LearnBatch {
   const last = batch.known[batch.known.length - 1]
   if (!last) return batch
   deps.applyHidden([last.word.esWord], false)
   deps.queue.enqueueHidden(last.word.esWord, false)
+  if (last.queuedAt !== null) saveQueue(restoreKey(deps.getSettings(), last.word.esWord, last.queuedAt), deps)
   return withCount(restoreKnown(batch))
 }
 
@@ -77,10 +99,16 @@ export function learnProgressUpdates(batch: LearnBatch, now: Date): ProgressUpda
   }))
 }
 
+/**
+ * The settings one finished batch writes: the streak, today's new-word counter and the queue. The words the batch taught
+ * leave learn_picks, exactly those (the queued words that did not fit stay, in order); the key is written only when something
+ * left it, so a user who never queued anything gets no learn_picks key.
+ */
 export function learnSettingsPatch(settings: UserSettings, batch: LearnBatch, now: Date): SettingsPatch {
   return {
     ...streakPatch(settings, now),
     ...newWordsPatch(settings, batch.newCount, now),
+    ...removeKeys(settings, batch.words.map((w) => w.esWord)),
   }
 }
 

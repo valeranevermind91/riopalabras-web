@@ -27,10 +27,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await server?.close()
   })
 
-  async function open() {
+  async function open(query = '') {
     const page = await browser.newPage()
     await page.setViewport({ width: 390, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
-    await page.goto(`${base}/src/testing/wordsHarness.html`, { waitUntil: 'networkidle0' })
+    await page.goto(`${base}/src/testing/wordsHarness.html${query}`, { waitUntil: 'networkidle0' })
     await page.waitForFunction(() => (window as never as { __ready?: boolean }).__ready === true)
     await page.waitForSelector('.word-row')
     return page
@@ -47,8 +47,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
   const inTree = async (page: Page, text: string) => (await axTree(page)).some((n) => n.name.includes(text))
 
   const rows = (page: Page) => page.$$eval('.word-row-head', (els) => els.map((e) => e.textContent ?? ''))
-  const fixture = (page: Page) => page.evaluate(() => (window as never as { __fixture: { lapsed: string; hidden: string[]; favourite: string } }).__fixture)
-  const sent = (page: Page) => page.evaluate(() => (window as never as { __sent: { favorites: { esWord: string; favorite: boolean }[]; hidden: { esWord: string; hidden: boolean }[] } }).__sent)
+  const fixture = (page: Page) => page.evaluate(() => (window as never as { __fixture: { lapsed: string; hidden: string[]; favourite: string; fresh: string[]; learned: string[] } }).__fixture)
+  const sent = (page: Page) => page.evaluate(() => (window as never as { __sent: { favorites: { esWord: string; favorite: boolean }[]; hidden: { esWord: string; hidden: boolean }[]; settings: Record<string, unknown>[] } }).__sent)
   const status = (page: Page) => page.evaluate(() => (window as never as { __queue: { getStatus: () => Record<string, number | boolean> } }).__queue.getStatus())
   const segment = (page: Page, label: string) =>
     page.evaluate((text) => (Array.from(document.querySelectorAll('.segment')).find((b) => b.textContent?.startsWith(text)) as HTMLElement).click(), label)
@@ -498,6 +498,114 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect(await controlTexts(page)).toEqual(['Filters1', 'Sort: Recently learned'])
       await page.close()
     }, 60_000)
+  })
+
+  describe('Queue for Learn', () => {
+    const queueButton = (page: Page) => page.$$eval('.detail-actions .btn', (els) => els.map((e) => `${e.textContent?.trim()}|${e.getAttribute('aria-pressed')}`))
+    const note = (page: Page) => page.$$eval('.detail-actions .queue-note', (els) => els.map((e) => `${e.textContent}|${e.getAttribute('role')}`))
+    const openWord = async (page: Page, esWord: string) => {
+      await search(page, esWord)
+      await page.waitForSelector('.word-row')
+      const at = (await rows(page)).findIndex((r) => r.startsWith(esWord))
+      await openRow(page, Math.max(0, at))
+    }
+    const tapQueue = async (page: Page) => {
+      await page.evaluate(() => (Array.from(document.querySelectorAll('.detail-actions .btn')).find((b) => /Queue for Learn|Queued/.test(b.textContent ?? '')) as HTMLElement).click())
+    }
+
+    it('queues a word from its detail with a confirmation naming its place, then takes it out again; the blob keeps its other keys', async () => {
+      const page = await open()
+      const fx = await fixture(page)
+      await openWord(page, fx.fresh[0])
+      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      expect(await note(page)).toEqual([])
+
+      await tapQueue(page)
+      await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') !== null)
+      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queued — remove|true'])
+      expect(await note(page)).toEqual(['Queued — 1st in line.|status'])
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
+      expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [fx.fresh[0].toLowerCase()] })
+
+      await tapQueue(page)
+      await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') === null)
+      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
+      expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [] })
+      await page.close()
+    }, 60_000)
+
+    it('names each place as the queue grows (1st, 2nd, 3rd), and the Queued filter lists exactly those words', async () => {
+      const page = await open()
+      const fx = await fixture(page)
+      const queued = fx.fresh.slice(0, 3)
+      const places: string[] = []
+      for (const esWord of queued) {
+        await openWord(page, esWord)
+        await tapQueue(page)
+        await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') !== null)
+        places.push((await note(page))[0])
+        await back(page)
+      }
+      expect(places).toEqual(['Queued — 1st in line.|status', 'Queued — 2nd in line.|status', 'Queued — 3rd in line.|status'])
+
+      await page.click('.words-search', { count: 3 })
+      await page.keyboard.press('Backspace')
+      await page.waitForFunction(() => (document.querySelector('.words-search') as HTMLInputElement).value === '')
+      await control(page, 'Filters')
+      await page.waitForSelector('.sheet')
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued'])
+      await press(page, '.sheet .chip', 'Queued')
+      await closeSheet(page)
+      await page.waitForSelector('.vlist')
+      expect(await controlTexts(page)).toEqual(['Filters1', 'Sort: Frequency'])
+      expect((await rows(page)).map((r) => r.replace(/\s.*/, '')).sort()).toEqual([...queued].sort())
+      await page.close()
+    }, 90_000)
+
+    it('has no such action on a word that is in progress or known well, and none on the list row', async () => {
+      const page = await open()
+      const fx = await fixture(page)
+      expect(await page.$$eval('.word-row button', (els) => els.map((e) => e.getAttribute('aria-label') ?? ''))).not.toContain('Queue for Learn')
+      await openWord(page, fx.learned[0])
+      expect(await queueButton(page)).toEqual(['Add to favourites|false'])
+      await page.close()
+    }, 60_000)
+
+    it('refuses the 51st word with a message and sends nothing', async () => {
+      const page = await open('?picks=50')
+      const fx = await fixture(page)
+      await openWord(page, fx.fresh[50])
+      await tapQueue(page)
+      await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') !== null)
+      expect(await note(page)).toEqual(['The queue is full (50 words). Take one out to add another.|status'])
+      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      expect((await sent(page)).settings).toEqual([])
+      // taking one out makes room
+      await back(page)
+      await openWord(page, fx.fresh[0])
+      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queued — remove|true'])
+      await tapQueue(page)
+      await back(page)
+      await openWord(page, fx.fresh[50])
+      await tapQueue(page)
+      await page.waitForFunction(() => Array.from(document.querySelectorAll('.detail-actions .queue-note')).some((e) => e.textContent?.startsWith('Queued')))
+      expect(await note(page)).toEqual(["Beyond today's batch|null", 'Queued — 50th in line.|status'])
+      await page.close()
+    }, 90_000)
+
+    it('says "Beyond today\'s batch" on a queued word past what is left today (a goal of 10, the 11th word queued)', async () => {
+      const page = await open('?picks=10')
+      const fx = await fixture(page)
+      await openWord(page, fx.fresh[9])
+      expect(await note(page)).toEqual([])
+      await back(page)
+      await openWord(page, fx.fresh[10])
+      await tapQueue(page)
+      await page.waitForFunction(() => document.querySelectorAll('.detail-actions .queue-note').length === 2)
+      expect(await note(page)).toEqual(["Beyond today's batch|null", 'Queued — 11th in line.|status'])
+      await page.close()
+    }, 90_000)
   })
 
   it('the whole thing is wired into the app: the Home button, Telegram\'s back button, and the list kept while a word is open', () => {
