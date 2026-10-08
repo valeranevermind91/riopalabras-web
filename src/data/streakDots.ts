@@ -1,7 +1,7 @@
 import { lastDays } from './metrics'
 
-// Home's week of dots and the streak number that goes with them. The number is derived from the dots,
-// so the two can never disagree.
+// Home's week of dots: which of the last days user_daily_metrics says were active. (The streak NUMBER is not derived from
+// these: it is the stored streak in the settings, see computeStreak.)
 
 /** One letter per weekday, Monday first (Mon..Sun). */
 export const WEEKDAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const
@@ -22,8 +22,6 @@ export interface Dot {
 
 /** Days shown as dots. */
 export const DOT_COUNT = 7
-/** Days read from the server for the streak: a streak that reaches the far edge of this window is shown as "30+". */
-export const STREAK_WINDOW = 30
 
 /**
  * The last `count` days (default: the week of dots), oldest first and today last. A day is active when the
@@ -37,24 +35,4 @@ export function activityDots(now: Date, active: ReadonlySet<string>, todayActive
     active: active.has(date) || (i === days.length - 1 && todayActiveLocally),
     today: i === days.length - 1,
   }))
-}
-
-export interface DotStreak {
-  /** Consecutive active days ending today (or yesterday, while today is still to come). */
-  count: number
-  /** The run reaches the oldest day that was read, so it may be longer: shown as "30+". */
-  atLeast: boolean
-}
-
-/**
- * The streak of a run of days: consecutive active days ending today, or yesterday while today has no activity
- * yet. Pass the whole 30-day window; the week of dots is just its last seven entries, so the number and the
- * dots always agree. "At least" only when the run touches the oldest day of the window.
- */
-export function streakFromDots(dots: readonly Dot[]): DotStreak {
-  let end = dots.length - 1
-  if (end >= 0 && !dots[end].active) end -= 1 // today is still open: the run may end yesterday
-  let count = 0
-  for (let i = end; i >= 0 && dots[i].active; i--) count++
-  return { count, atLeast: count > 0 && end - count + 1 === 0 }
 }

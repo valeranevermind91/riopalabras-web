@@ -997,6 +997,68 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 120_000)
 
+    it('"This word is Rioplatense" is in the details step of both forms: the lookup sets it, the user can correct it, and unchecking keeps the marks until it is checked again', async () => {
+      const page = await open()
+      const checkbox = (p: Page) => p.$eval('.form-check input', (e) => (e as HTMLInputElement).checked)
+      await stub(page, { ok: true, value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: null, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'calabacín' } })
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      // add form: the checkbox, its label and the one quiet line, filled in by the lookup
+      expect(await page.$eval('.form-check', (e) => e.textContent)).toBe(f.rioplatenseCheck)
+      expect(await page.$$eval('.form-field .form-hint', (els) => els.map((e) => e.textContent))).toContain(f.rioplatenseHint)
+      expect(await checkbox(page)).toBe(true)
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+
+      // edit form: the same checkbox, checked as saved; unchecking changes nothing typed
+      await openByName(page, 'Zapallito')
+      expect(await page.$$eval('.wc-meta .wc-rio', (els) => els.length)).toBe(1)
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await checkbox(page)).toBe(true)
+      await page.click('.form-check input')
+      expect(await checkbox(page)).toBe(false)
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['uy', 'informal', 'calabacín'])
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { is_rioplatense_variant: false, region: 'uy', register: 'informal', es_standard: 'calabacín' } })
+      // the marks are hidden on the card
+      expect(await page.$$eval('.wc-meta .wc-rio, .wc-meta .wc-tag, .wc-meta .wc-register, .wc-relation', (els) => els.length)).toBe(0)
+
+      // and still there in the form, ready to come back with a tick
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await checkbox(page)).toBe(false)
+      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['uy', 'informal', 'calabacín'])
+      await page.click('.form-check input')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' } })
+      expect(await page.$$eval('.wc-meta .wc-rio', (els) => els.length)).toBe(1)
+      expect(await page.$$eval('.wc-meta .wc-tag', (els) => els.map((e) => e.textContent))).toEqual([strings.rio.en.tag.uy])
+      expect(await page.$eval('.wc-relation', (e) => e.textContent?.replace(/\s+/g, ' ').trim())).toBe('standard: calabacín')
+      await page.close()
+    }, 120_000)
+
+    it('a word typed by hand can be marked Rioplatense with the checkbox, and its marks show', async () => {
+      const page = await open()
+      await stub(page, { ok: false, failure: { kind: 'offline' } })
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      expect(await page.$eval('.form-check input', (e) => (e as HTMLInputElement).checked)).toBe(false) // nothing looked up: off
+      await typeIn(page, f.ru, 'кабачок')
+      await typeIn(page, f.en, 'squash')
+      await page.click('.form-check input')
+      await choose(page, f.region, 'ar')
+      await typeIn(page, f.standard, 'calabacín')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toMatchObject([{ row: { is_rioplatense_variant: true, region: 'ar', register: null, es_standard: 'calabacín' } }])
+      await openByName(page, 'Zapallito')
+      expect(await page.$$eval('.wc-meta .wc-tag', (els) => els.map((e) => e.textContent))).toEqual([strings.rio.en.tag.ar])
+      await page.close()
+    }, 90_000)
+
     it('the Filters sheet has "Custom" under "Show only", and it lists only the words added', async () => {
       const page = await open()
       await addWord(page)

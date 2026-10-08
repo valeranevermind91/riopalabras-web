@@ -89,8 +89,12 @@ describe('Home structure', () => {
   })
 })
 
-describe('the status row: the week of dots and the streak they show', () => {
+describe('the status row: the week of dots, and the stored streak', () => {
   const dotsOf = (html: string) => [...html.matchAll(/<span class="streak-day[^"]*" data-date="([\d-]+)"><span class="(streak-dot[^"]*)"><\/span><span class="streak-letter">(\w)<\/span><\/span>/g)].map((m) => ({ date: m[1], cls: m[2], letter: m[3] }))
+  const YESTERDAY = '2026-10-04'
+  const streakOf = (html: string) => html.match(/<span>(\d+)-day streak<\/span>/)?.[1] ?? null
+  const withStreak = (count: number, last: string | null, over: Record<string, unknown> = {}) =>
+    render({ activity: new Set<string>(), ...over }, undefined, { streak_count: count, ...(last ? { streak_last_activity_date: last } : {}) })
 
   it('seven dots, six days ago on the left and today on the right, each with a one-letter weekday label (week starts Monday)', () => {
     const dots = dotsOf(render({ activity: new Set<string>() }))
@@ -112,66 +116,79 @@ describe('the status row: the week of dots and the streak they show', () => {
     expect(dotsOf(render({ activity: new Set(['2026-09-01']) })).some((d) => d.cls.includes('is-active'))).toBe(false)
     const local = render({ activity: new Set<string>(), metrics: { captureStartOfDaySnapshotIfNeeded: () => {}, today: () => ({ active: true }) } })
     expect(dotsOf(local).filter((d) => d.cls.includes('is-active')).map((d) => d.date)).toEqual(['2026-10-05'])
-    expect(local).toContain('<span>1-day streak</span>')
   })
 
-  it('the streak number is read off the dots: consecutive active days ending today', () => {
-    expect(render({ activity: new Set(['2026-10-05', '2026-10-04', '2026-10-03']) })).toContain('<span>3-day streak</span>')
-    expect(render({ activity: new Set(['2026-10-05']) })).toContain('<span>1-day streak</span>')
+  describe('the number is the stored streak_count, when streak_last_activity_date is today or yesterday', () => {
+    it('last activity today: the stored count', () => {
+      expect(streakOf(withStreak(5, TODAY))).toBe('5')
+      expect(streakOf(withStreak(1, TODAY))).toBe('1')
+    })
+
+    it('last activity yesterday: the stored count (today is still to come)', () => {
+      expect(streakOf(withStreak(5, YESTERDAY))).toBe('5')
+    })
+
+    it('an older date, or no date at all: 0', () => {
+      expect(streakOf(withStreak(5, '2026-10-03'))).toBe('0')
+      expect(streakOf(withStreak(40, '2026-09-01'))).toBe('0')
+      expect(streakOf(withStreak(5, null))).toBe('0')
+      expect(streakOf(render({ activity: new Set<string>() }))).toBe('0') // nothing stored at all
+    })
+
+    it('a date in the future (another timezone): 0, as in the Flutter app', () => {
+      expect(streakOf(withStreak(5, '2026-10-06'))).toBe('0')
+    })
+
+    it('a count above 30 is shown whole: no cap, and no "30+"', () => {
+      for (const count of [31, 45, 365, 1200]) {
+        const html = withStreak(count, TODAY)
+        expect(streakOf(html)).toBe(String(count))
+        expect(html).not.toContain('+ day streak')
+      }
+      expect(streakOf(withStreak(100, YESTERDAY))).toBe('100')
+    })
+
+    it('does not depend on the metrics: a full week of dots does not make a streak, and an empty week does not end one', () => {
+      const days = lastDays(NOW, 7)
+      expect(streakOf(withStreak(0, null, { activity: new Set(days) }))).toBe('0')
+      expect(streakOf(render({ activity: new Set(['2026-10-05']) }))).toBe('0') // today in the dots, nothing stored
+      expect(streakOf(withStreak(12, TODAY, { activity: new Set<string>() }))).toBe('12')
+    })
+
+    it('the dots and the number are read from different sources and may disagree: a gap under a number that keeps counting', () => {
+      const html = withStreak(9, TODAY, { activity: new Set(['2026-10-05', '2026-10-04', '2026-10-02', '2026-10-01']) }) // 3 October has no metrics row
+      expect(streakOf(html)).toBe('9')
+      expect(dotsOf(html).map((d) => d.cls.includes('is-active'))).toEqual([false, false, true, true, false, true, true])
+    })
   })
 
-  it('…or ending yesterday, while today has no activity yet', () => {
-    expect(render({ activity: new Set(['2026-10-04', '2026-10-03']) })).toContain('<span>2-day streak</span>')
+  it('the dots are driven by the metrics alone: the stored streak does not light or dim any of them', () => {
+    const activity = new Set(['2026-10-05', '2026-10-03'])
+    const lit = (html: string) => dotsOf(html).filter((d) => d.cls.includes('is-active')).map((d) => d.date)
+    const without = lit(render({ activity }))
+    expect(lit(render({ activity }, undefined, { streak_count: 40, streak_last_activity_date: TODAY }))).toEqual(without)
+    expect(lit(render({ activity }, undefined, { streak_count: 0 }))).toEqual(without)
+    expect(without).toEqual(['2026-10-03', '2026-10-05'])
   })
 
-  it('a gap ends the streak; an old run does not count; no recent activity is 0', () => {
-    expect(render({ activity: new Set(['2026-10-05', '2026-10-03', '2026-10-02']) })).toContain('<span>1-day streak</span>')
-    expect(render({ activity: new Set(['2026-10-02', '2026-10-01', '2026-09-30']) })).toContain('<span>0-day streak</span>')
-    expect(render({ activity: new Set<string>() })).toContain('<span>0-day streak</span>')
-  })
-
-  it('the stored streak count in the settings no longer drives the number: the dots do', () => {
-    const html = render({ activity: new Set(['2026-10-05', '2026-10-04']) }, undefined, { streak_count: 30, streak_last_activity_date: TODAY })
-    expect(html).toContain('<span>2-day streak</span>')
-    expect(html).not.toContain('30-day')
-  })
-
-  const lastNDays = (n: number) => lastDays(NOW, 30).slice(30 - n)
-
-  it('a streak longer than the week shows its true number, while only seven dots are drawn', () => {
-    const html = render({ activity: new Set(lastNDays(12)) })
-    expect(dotsOf(html)).toHaveLength(7)
-    expect(dotsOf(html).every((d) => d.cls.includes('is-active'))).toBe(true)
-    expect(html).toContain('<span>12-day streak</span>')
-    expect(render({ activity: new Set(lastNDays(7)) })).toContain('<span>7-day streak</span>') // exactly a week: no "+", the day before is empty
-    expect(render({ activity: new Set(lastNDays(8)) })).toContain('<span>8-day streak</span>')
-    expect(render({ activity: new Set(lastNDays(29)) })).toContain('<span>29-day streak</span>')
-  })
-
-  it('a long streak that ends yesterday (today still open) counts too', () => {
-    const days = lastDays(NOW, 30)
-    expect(render({ activity: new Set(days.slice(30 - 21, 29)) })).toContain('<span>20-day streak</span>')
-  })
-
-  it('only a run that reaches the 30-day edge reads "30+"', () => {
-    expect(render({ activity: new Set(lastNDays(30)) })).toContain('<span>30+ day streak</span>')
-    expect(render({ activity: new Set(lastNDays(29)) })).not.toContain('+ day streak')
-    expect(render({ activity: new Set(lastNDays(12)) })).not.toContain('+ day streak')
-  })
-
-  it('a gap in the last month ends the run, however long the older streak was', () => {
-    const days = lastDays(NOW, 30)
-    const withGap = days.filter((d) => d !== days[30 - 10]) // nine days ago is missing
-    expect(render({ activity: new Set(withGap) })).toContain('<span>9-day streak</span>')
-  })
-
-  it('without the dots\' data (still loading, or the read failed) there is no row, no dots and no number', () => {
+  it('without the dots\' data (still loading, or the read failed) there are no dots, and the stored number stays', () => {
     for (const activity of [null, undefined]) {
-      const html = render({ activity })
-      expect(html).not.toContain('home-status')
-      expect(html).not.toContain('streak')
+      const html = render({ activity }, undefined, { streak_count: 7, streak_last_activity_date: TODAY })
+      expect(html).toContain('home-status')
+      expect(html).not.toContain('streak-dots')
+      expect(dotsOf(html)).toEqual([])
+      expect(streakOf(html)).toBe('7')
     }
     expect(render({ activity: null }).match(/class="tile /g)).toHaveLength(4)
+  })
+
+  it('settings not loaded: no status row at all, so no zero where a streak should be', () => {
+    for (const data of [{ status: 'loading' }, { status: 'error', message: 'x' }, { status: 'signed-out', dictionaryCount: 0 }]) {
+      const html = render({ data, activity: new Set(['2026-10-05']) })
+      expect(html).not.toContain('home-status')
+      expect(html).not.toContain('streak')
+      expect(html).not.toContain('-day streak')
+    }
   })
 
   it('the "Today N / M" text is gone', () => {
@@ -183,6 +200,13 @@ describe('the status row: the week of dots and the streak they show', () => {
 
   it('the dots label for screen readers counts the active days', () => {
     expect(render({ activity: new Set(['2026-10-05', '2026-10-03']) })).toContain('aria-label="Active on 2 of the last 7 days"')
+  })
+
+  it('Home reads the stored streak and the week of dots only (no 30-day recomputation is left)', () => {
+    const home = readFileSync('src/screens/Home.tsx', 'utf8')
+    expect(home).toMatch(/streak=\{stats\.streak\}/)
+    expect(home).not.toMatch(/STREAK_WINDOW|streakFromDots/)
+    expect(readFileSync('src/lib/useRecentActivity.ts', 'utf8')).toMatch(/fetchRecentActivity\(client, userId, new Date\(\), DOT_COUNT\)/)
   })
 })
 

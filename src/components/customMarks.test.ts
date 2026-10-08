@@ -69,6 +69,23 @@ describe('a custom word that is itself Rioplatense carries the marks a dictionar
   })
 })
 
+describe('the flag switches the marks on and off without losing them', () => {
+  const marks = { region: 'ar', register: 'vulgar', esStandard: 'calabacín' } as const
+  const on = custom({ isRioplatenseVariant: true, ...marks })
+  const off = { ...on, isRioplatenseVariant: false }
+
+  it('on: all the marks; off: none of them; on again: all of them back, from the same stored values', () => {
+    const shown = (word: Word) => {
+      const html = card(word)
+      return [pill(html), tags(html), register(html), standard(html)]
+    }
+    expect(shown(on)).toEqual([true, [strings.rio.en.tag.ar], ['vulgar'], ['calabacín']])
+    expect(shown(off)).toEqual([false, [], [], []])
+    expect(off).toMatchObject(marks) // hidden, not cleared
+    expect(shown({ ...off, isRioplatenseVariant: true })).toEqual(shown(on))
+  })
+})
+
 describe('without is_rioplatense_variant the marks do not show, whatever else is stored', () => {
   it('a standard custom word shows no chip, no region, no register and no standard line, even with the columns filled', () => {
     const html = card(custom({ isRioplatenseVariant: false, region: 'uy', register: 'vulgar', esStandard: 'calabacín' }))

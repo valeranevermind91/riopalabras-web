@@ -455,6 +455,37 @@ describe('through the write queue', () => {
     expect(a.words().find((w) => w.isCustom)).toMatchObject({ region: null, register: null, esStandard: null })
   })
 
+  it('the Rioplatense flag round-trips through the upsert; unchecking keeps the stored marks and checking again brings them back', async () => {
+    const a = await app()
+    const marks = { region: 'uy', register: 'informal', esStandard: 'calabacín' } as const
+    addCustomWord(filled({ isRioplatenseVariant: true, ...marks }), a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' })
+
+    // unchecked: the flag is false, and what was typed stays (in the row, in memory, and in the form's values)
+    let own = a.words().find((w) => w.isCustom)!
+    expect(valuesOf(own).isRioplatenseVariant).toBe(true)
+    editCustomWord(own, { ...valuesOf(own), isRioplatenseVariant: false }, a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ is_rioplatense_variant: false, region: 'uy', register: 'informal', es_standard: 'calabacín' })
+    own = a.words().find((w) => w.isCustom)!
+    expect(own).toMatchObject({ isRioplatenseVariant: false, region: 'uy', register: 'informal', esStandard: 'calabacín' })
+    expect(valuesOf(own)).toMatchObject({ isRioplatenseVariant: false, ...marks })
+
+    // checked again, without retyping anything
+    editCustomWord(own, { ...valuesOf(own), isRioplatenseVariant: true }, a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ is_rioplatense_variant: true, region: 'uy', register: 'informal', es_standard: 'calabacín' })
+    expect(a.words().find((w) => w.isCustom)).toMatchObject({ isRioplatenseVariant: true, ...marks })
+  })
+
+  it('a word added by hand with the flag on carries it, with nothing from a lookup', async () => {
+    const a = await app()
+    addCustomWord(filled({ isRioplatenseVariant: true, esRioplatense: null }), a.deps)
+    await idle(a.queue)
+    expect(userWords()[0]).toMatchObject({ is_rioplatense_variant: true, es_rioplatense: null, region: null, register: null, es_standard: null })
+  })
+
   it('adding clears a matching tombstone on the server in the same write that queues the word', async () => {
     const a = await app(memoryStorage(), { pending_word_deletes: ['zapallito', 'otra'], some_future_key: 1 })
     addCustomWord(filled(), a.deps)

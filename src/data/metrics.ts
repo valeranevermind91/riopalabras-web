@@ -379,9 +379,9 @@ export function lastDays(now: Date, count = 7): string[] {
 }
 
 /**
- * Home's activity: which of the last 30 days had activity, read once from the server in one query (read-only,
- * display only; nothing else depends on it). The week of dots is the last seven of them and the streak number is
- * read off all thirty. Rejects on any failure: the caller just hides the dots and the number.
+ * Home's activity: which of the last `count` days had activity, read once from the server in one query (read-only,
+ * display only; nothing else depends on it): the week of dots. The streak number is not read from here (it is the stored
+ * streak in the settings). Rejects on any failure: the caller just hides the dots.
  */
 export async function fetchRecentActivity(client: SupabaseClient, userId: string, now: Date = new Date(), count = 30): Promise<ReadonlySet<string>> {
   const days = lastDays(now, count)

@@ -277,6 +277,13 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
         <span className="form-label">{f.exampleRu}</span>
         <textarea className="form-input" lang="ru" rows={2} value={values.exampleTranslationRu} disabled={looking} onChange={(e) => set({ exampleTranslationRu: e.target.value })} />
       </label>
+      <div className="form-field">
+        <label className="form-check">
+          <input type="checkbox" checked={values.isRioplatenseVariant} disabled={looking} onChange={(e) => set({ isRioplatenseVariant: e.target.checked })} />
+          <span>{f.rioplatenseCheck}</span>
+        </label>
+        <span className="form-hint">{f.rioplatenseHint}</span>
+      </div>
       <label className="form-field">
         <span className="form-label">{f.standard}</span>
         <input className="form-input" lang="es" value={values.esStandard ?? ''} disabled={looking} onChange={(e) => set({ esStandard: e.target.value })} />

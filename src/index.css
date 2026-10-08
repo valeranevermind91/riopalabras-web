@@ -2332,3 +2332,27 @@ mark {
   background: var(--bad-bg);
   color: var(--bad);
 }
+
+/* "This word is Rioplatense": a checkbox row at least 44px tall; the box takes the accent colour. */
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.form-check input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--teal);
+}
+
+.form-check input:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
