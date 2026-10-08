@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthState } from '../lib/auth'
 import { loadDictionary } from './dictionary'
-import { applyFavoriteFlag, applyFlagLists, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFavoriteFlag, applyFlagLists, applyHiddenFlag, applyProgressUpdates, applySettingsPatch, removeCustomWord, upsertCustomWord } from './mutations'
 import { loadOverlay, recoverTables, type NonCriticalTable } from './overlay'
 import { createBackgroundRetrier, type Retrier } from './recovery'
 import { parseSettings } from './settings'
@@ -27,6 +27,10 @@ export interface UserData {
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
   /** Mirror a favourite / un-favourite into the in-memory words, at once. */
   applyFavorite: (esWords: readonly string[], favorite: boolean) => void
+  /** Mirror a custom word being added or edited into the in-memory words, at once (its progress and flags are kept). */
+  upsertCustomWord: (word: Word) => void
+  /** Mirror a custom word being deleted into the in-memory words, at once. */
+  removeCustomWord: (esWord: string) => void
   /** Non-critical tables (favorites, hidden words) that failed at launch and are still being retried in the background. */
   degraded: readonly NonCriticalTable[]
   /** Retry the degraded tables now instead of waiting for the next background attempt. */
@@ -125,6 +129,13 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
     )
   }, [])
 
+  const upsertCustom = useCallback((word: Word) => {
+    setBase((prev) => (prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: upsertCustomWord(prev.loaded.words, word) } } : prev))
+  }, [])
+  const removeCustom = useCallback((esWord: string) => {
+    setBase((prev) => (prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: removeCustomWord(prev.loaded.words, esWord) } } : prev))
+  }, [])
+
   const applySettings = useCallback((patch: SettingsPatch) => {
     // Eager, so a read right after the write (getSettings) already sees it, not only after the next render.
     if (latestSettings.current) latestSettings.current = applySettingsPatch(latestSettings.current, patch)
@@ -192,9 +203,11 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
         applySettings,
         applyHidden,
         applyFavorite,
+        upsertCustomWord: upsertCustom,
+        removeCustomWord: removeCustom,
         degraded: loaded.degraded,
         retryDegraded,
       },
     }
-  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, applyFavorite, retryDegraded])
+  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, applyFavorite, upsertCustom, removeCustom, retryDegraded])
 }

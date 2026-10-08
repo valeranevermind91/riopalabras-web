@@ -1,6 +1,6 @@
 import { parseSettings } from './settings'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
-import { wordKey } from './words'
+import { compareByRank, wordKey } from './words'
 
 /** Pure: returns a new word list with the updates applied (same order), leaving the input untouched. */
 export function applyProgressUpdates(words: readonly Word[], updates: readonly ProgressUpdate[]): readonly Word[] {
@@ -66,4 +66,37 @@ export function applyFavoriteFlag(words: readonly Word[], esWords: readonly stri
     return Object.freeze({ ...word, isFavorite: favorite })
   })
   return changed ? Object.freeze(next) : words
+}
+
+/**
+ * Pure: puts a custom word in the list. A word already there (same key) keeps its progress and flags and takes the new
+ * content; a new one is added in its place in the rank order (custom words, having no rank, sort after the ranked ones).
+ */
+export function upsertCustomWord(words: readonly Word[], incoming: Word): readonly Word[] {
+  const key = wordKey(incoming.esWord)
+  const at = words.findIndex((w) => wordKey(w.esWord) === key)
+  if (at < 0) return Object.freeze([...words, Object.freeze(incoming)].sort(compareByRank))
+  const existing = words[at]
+  const next = [...words]
+  next[at] = Object.freeze({
+    ...existing,
+    esWord: incoming.esWord,
+    esRioplatense: incoming.esRioplatense,
+    enTranslation: incoming.enTranslation,
+    ruTranslation: incoming.ruTranslation,
+    exampleSentence: incoming.exampleSentence,
+    exampleTranslationEn: incoming.exampleTranslationEn,
+    exampleTranslationRu: incoming.exampleTranslationRu,
+    isRioplatenseVariant: incoming.isRioplatenseVariant,
+    pos: incoming.pos,
+    isEnriched: incoming.isEnriched,
+  })
+  return Object.freeze(next)
+}
+
+/** Pure: takes a custom word out of the list (matched by wordKey); the same list back if it is not there. Dictionary words are never removed. */
+export function removeCustomWord(words: readonly Word[], esWord: string): readonly Word[] {
+  const key = wordKey(esWord)
+  const next = words.filter((w) => !(w.isCustom && wordKey(w.esWord) === key))
+  return next.length === words.length ? words : Object.freeze(next)
 }

@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import { parseDictionary } from '../data/dictionary'
-import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from '../data/mutations'
+import { createTombstoneClearer } from '../data/customWords'
+import type { EnrichResult } from '../data/enrich'
+import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch, removeCustomWord, upsertCustomWord } from '../data/mutations'
 import { parseRioOverlay } from '../data/rio'
 import { isInLearnPool } from '../data/stats'
 import { isReferenceOnly } from '../data/wordState'
@@ -13,17 +15,45 @@ import { parseSettings } from '../data/settings'
 import { createViewStore } from '../data/wordList'
 import { wordKey } from '../data/words'
 import { createWriteQueue } from '../data/writeQueue'
-import type { Word } from '../data/types'
+import type { CustomWordOp, Word } from '../data/types'
 import { WordDetail } from '../screens/WordDetail'
 import { WordsScreen } from '../screens/Words'
 
-const sent: { favorites: unknown[]; hidden: unknown[]; settings: Record<string, unknown>[] } = { favorites: [], hidden: [], settings: [] }
+const sent: { favorites: unknown[]; hidden: unknown[]; settings: Record<string, unknown>[]; words: CustomWordOp[]; order: string[] } = { favorites: [], hidden: [], settings: [], words: [], order: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
 
+// Deleted words' tombstones are cleared once the delete went through, as in the app.
+const tombstones = createTombstoneClearer()
 const queue = createWriteQueue(
-  { sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch), sendFavorites: async (ops) => void sent.favorites.push(...ops), sendHidden: async (ops) => void sent.hidden.push(...ops) },
-  { retryDelaysMs: [1], sleep: async () => {} },
+  {
+    sendProgress: async () => {},
+    sendSettings: async (patch) => {
+      sent.settings.push(patch)
+      sent.order.push(`settings:${Object.keys(patch).sort().join(',')}`)
+    },
+    sendFavorites: async (ops) => void sent.favorites.push(...ops),
+    sendHidden: async (ops) => void sent.hidden.push(...ops),
+    sendWords: async (ops) => {
+      sent.words.push(...ops)
+      for (const op of ops) sent.order.push(`words:${op.kind}`)
+    },
+  },
+  { retryDelaysMs: [1], sleep: async () => {}, onWordsDeleted: tombstones.clear },
 )
+
+// The proxy's /enrich is stubbed: a test sets window.__enrichImpl to say what comes back (or never does); every request is recorded.
+const enrichCalls: { word: string; pos: string | null }[] = []
+;(window as never as { __enrichCalls: typeof enrichCalls }).__enrichCalls = enrichCalls
+const enrich = (input: { word: string; pos: string | null }): Promise<EnrichResult> => {
+  enrichCalls.push(input)
+  const impl = (window as never as { __enrichImpl?: (i: typeof input) => Promise<EnrichResult> }).__enrichImpl
+  return impl
+    ? impl(input)
+    : Promise.resolve({
+        ok: true,
+        value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: 'Me gusta el zapallito.', exampleTranslationEn: 'I like little squash.', exampleTranslationRu: 'Мне нравится кабачок.', esRioplatense: null, isRioplatenseVariant: false },
+      })
+}
 ;(window as never as { __queue: typeof queue }).__queue = queue
 
 async function boot() {
@@ -72,11 +102,17 @@ export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?:
   }, [])
   const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => setWords((w) => applyFavoriteFlag(w, esWords, favorite)), [])
   const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => setWords((w) => applyHiddenFlag(w, esWords, hidden)), [])
-  const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden } as never
+  const upsertCustom = useCallback((word: Word) => setWords((w) => upsertCustomWord(w, word)), [])
+  const removeCustom = useCallback((esWord: string) => setWords((w) => removeCustomWord(w, esWord)), [])
+  useEffect(() => {
+    tombstones.use({ read: getSettings, apply: applySettings })
+    return () => tombstones.use(null)
+  }, [getSettings, applySettings])
+  const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden, upsertCustomWord: upsertCustom, removeCustomWord: removeCustom } as never
 
   const opened = open ? words.find((w) => wordKey(w.esWord) === open) : undefined
-  if (opened) return <WordDetail word={opened} data={data} queue={queue} onBack={() => setOpen(null)} />
-  return <WordsScreen data={data} queue={queue} savedView={viewStore.get()} onViewChange={viewStore.set} registerBack={registerBack} onOpen={setOpen} />
+  if (opened) return <WordDetail word={opened} data={data} queue={queue} enrich={enrich} registerBack={registerBack} onDeleted={() => setOpen(null)} onBack={() => setOpen(null)} />
+  return <WordsScreen data={data} queue={queue} savedView={viewStore.get()} onViewChange={viewStore.set} registerBack={registerBack} enrich={enrich} onOpen={(esWord) => setOpen(wordKey(esWord))} />
 }
 
 void boot()

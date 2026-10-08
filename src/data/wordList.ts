@@ -18,6 +18,8 @@ export interface ListFilters {
   favourites: boolean
   /** Only the words queued for Learn. */
   queued: boolean
+  /** Only the words the user added. */
+  custom: boolean
   /** One part of speech at a time. */
   pos: PosFilter | null
 }
@@ -46,7 +48,7 @@ export function createViewStore() {
 
 const NO_KEYS: ReadonlySet<string> = new Set()
 
-export const NO_FILTERS: ListFilters = { state: null, favourites: false, queued: false, pos: null }
+export const NO_FILTERS: ListFilters = { state: null, favourites: false, queued: false, custom: false, pos: null }
 
 /** The first time the list opens: every word, most common first. */
 export function initialListView(): ListView {
@@ -134,11 +136,12 @@ export function buildWordList(
     rows = ordered.map((word) => ({ word, state: wordState(word, now), via: null }))
   }
 
-  const { state, favourites, queued: onlyQueued, pos } = view.filters
+  const { state, favourites, queued: onlyQueued, custom, pos } = view.filters
   // In the hidden list every word is "hidden", so a state filter has nothing to say there.
   if (state && segment !== 'hidden') rows = rows.filter((r) => r.state === state)
   if (favourites) rows = rows.filter((r) => r.word.isFavorite)
   if (onlyQueued) rows = rows.filter((r) => queued.has(wordKey(r.word.esWord)))
+  if (custom) rows = rows.filter((r) => r.word.isCustom)
   if (pos) rows = rows.filter((r) => matchesPos(r.word, pos))
 
   return { rows, searching }
@@ -147,5 +150,5 @@ export function buildWordList(
 /** How many filters are on (a state filter does not count in the hidden list, where it is not offered). */
 export function activeFilterCount(filters: ListFilters, segment: Segment, searching = false): number {
   const stateShown = segment !== 'hidden' || searching
-  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.queued ? 1 : 0) + (filters.pos ? 1 : 0)
+  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.queued ? 1 : 0) + (filters.custom ? 1 : 0) + (filters.pos ? 1 : 0)
 }

@@ -114,7 +114,7 @@ describe('sorting', () => {
 
     it('the filtered list is the whole shuffle with the other words taken out: same words, same relative order', () => {
       const whole = random(21)
-      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, favourites: true, queued: false, pos: 'noun' as const }]) {
+      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, favourites: true, queued: false, custom: false, pos: 'noun' as const }]) {
         const filtered = random(21, { filters })
         expect(filtered.length).toBeGreaterThan(0)
         expect(filtered.length).toBeLessThan(whole.length)
@@ -172,9 +172,9 @@ describe('sorting', () => {
 
   it('counts the filters that are on (the state filter does not count where it is not offered)', () => {
     expect(activeFilterCount(NO_FILTERS, 'all')).toBe(0)
-    expect(activeFilterCount({ state: 'due', favourites: true, queued: false, pos: 'verb' }, 'all')).toBe(3)
-    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, pos: null }, 'hidden')).toBe(0)
-    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, pos: null }, 'hidden', true)).toBe(1) // searching shows it again
+    expect(activeFilterCount({ state: 'due', favourites: true, queued: false, custom: false, pos: 'verb' }, 'all')).toBe(3)
+    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, custom: false, pos: null }, 'hidden')).toBe(0)
+    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, custom: false, pos: null }, 'hidden', true)).toBe(1) // searching shows it again
   })
 })
 

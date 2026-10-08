@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { strings } from '../strings'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
 
@@ -554,7 +555,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.waitForFunction(() => (document.querySelector('.words-search') as HTMLInputElement).value === '')
       await control(page, 'Filters')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued'])
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued', 'Custom'])
       await press(page, '.sheet .chip', 'Queued')
       await closeSheet(page)
       await page.waitForSelector('.vlist')
@@ -608,12 +609,341 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }, 90_000)
   })
 
+  describe('custom words', () => {
+    type Sent = { words: { kind: string; row?: Record<string, unknown>; esWord?: string; tombstone?: string }[]; settings: Record<string, unknown>[]; order: string[] }
+    const sentAll = (page: Page) => page.evaluate(() => (window as never as { __sent: Sent }).__sent)
+    const enrichCalls = (page: Page) => page.evaluate(() => (window as never as { __enrichCalls: unknown[] }).__enrichCalls)
+    const stub = (page: Page, result: unknown) => page.evaluate((r) => void ((window as never as { __enrichImpl: unknown }).__enrichImpl = async () => r), result)
+    const f = strings.words.form
+
+    const clickText = (page: Page, selector: string, text: string) =>
+      page.evaluate((sel, t) => (Array.from(document.querySelectorAll(sel)).find((b) => b.textContent?.trim() === t) as HTMLElement).click(), selector, text)
+    const fieldValue = (page: Page, label: string) =>
+      page.evaluate((l) => {
+        const control = Array.from(document.querySelectorAll('.form-field'))
+          .find((x) => x.querySelector('.form-label')?.textContent === l)
+          ?.querySelector<HTMLInputElement>('input,textarea')
+        if (!control) throw new Error(`no field ${l}`)
+        return control.value
+      }, label)
+    const typeIn = async (page: Page, label: string, text: string) => {
+      const handle = await page.evaluateHandle((l) => Array.from(document.querySelectorAll('.form-field')).find((x) => x.querySelector('.form-label')?.textContent === l)?.querySelector('input,textarea') as HTMLElement, label)
+      await handle.focus()
+      await handle.evaluate((el) => (el as HTMLInputElement).select())
+      await page.keyboard.press('Backspace')
+      if (text) await handle.type(text)
+    }
+    /** Cancel on a form that has something in it asks first: this answers "Discard". */
+    const cancelAndDiscard = async (page: Page) => {
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.sheet')
+      await clickText(page, '.sheet .btn', f.discard)
+    }
+    const notes = (page: Page) => page.$$eval('.form-note', (els) => els.map((e) => (e as HTMLElement).innerText.replace(/\s+/g, ' ').trim()))
+    const startAdding = async (page: Page, word: string, pos: string) => {
+      await page.click('button[aria-label="Add a word"]')
+      await page.waitForSelector('.word-form')
+      await typeIn(page, f.spanish, word)
+      await clickText(page, '[role="radio"]', pos)
+      await clickText(page, 'button', f.continue)
+    }
+    const addWord = async (page: Page, word = 'Zapallito') => {
+      await startAdding(page, word, 'Noun')
+      await page.waitForSelector('.form-word')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+    }
+    const openByName = async (page: Page, esWord: string) => {
+      await search(page, esWord)
+      await page.waitForSelector('.word-row')
+      await openRow(page, Math.max(0, (await rows(page)).findIndex((r) => r.startsWith(esWord))))
+    }
+
+    it('"+" in the header adds a word: type it, pick a part of speech, the translation is filled in, change anything, save; it is written and queued for Learn', async () => {
+      const page = await open()
+      expect(await page.$$eval('.screen-header-actions .icon-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Add a word'])
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      expect(await enrichCalls(page)).toEqual([{ word: 'Zapallito', pos: 'n' }])
+      expect(await fieldValue(page, f.ru)).toBe('кабачок')
+      expect(await fieldValue(page, f.en)).toBe('little squash')
+      expect(await fieldValue(page, f.example)).toBe('Me gusta el zapallito.')
+      expect(await notes(page)).toEqual([f.filled])
+
+      await typeIn(page, f.en, 'baby squash') // every field can be changed before saving
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('Added, and queued for Learn.')
+
+      const sent = await sentAll(page)
+      expect(sent.words).toEqual([
+        {
+          kind: 'save',
+          row: { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'baby squash', ru_translation: 'кабачок', example_sentence: 'Me gusta el zapallito.', example_translation_en: 'I like little squash.', example_translation_ru: 'Мне нравится кабачок.', is_rioplatense_variant: false, pos: 'n' },
+        },
+      ])
+      expect(sent.settings.at(-1)).toEqual({ learn_picks: ['zapallito'] })
+
+      await openByName(page, 'Zapallito')
+      expect(await page.$eval('.custom-mark', (e) => e.textContent)).toBe('Added by you')
+      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toEqual(['Add to favourites', 'Queued — remove', 'Edit', 'Delete'])
+      await page.close()
+    }, 90_000)
+
+    it('Back (Telegram\'s or the page\'s) closes the form first, and the list is as it was', async () => {
+      const page = await open()
+      await page.click('button[aria-label="Add a word"]')
+      await page.waitForSelector('.word-form')
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet')
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toEqual([])
+      await page.close()
+    }, 60_000)
+
+    it('a word that is already there is not added: the message says where it matched, "Open" goes to it, and nothing is looked up or written', async () => {
+      const page = await open()
+      await startAdding(page, 'CASA', 'Noun')
+      await page.waitForFunction(() => document.querySelector('.form-note.is-error') !== null)
+      expect(await notes(page)).toEqual([`${f.duplicate('CASA', 'casa', 'es_word')} ${f.openExisting('casa')}`])
+      expect(await enrichCalls(page)).toEqual([])
+      expect((await sentAll(page)).words).toEqual([])
+      await clickText(page, 'button', f.openExisting('casa'))
+      await page.waitForSelector('.word-detail')
+      expect(await page.$eval('.wc-headword', (e) => e.textContent)).toBe('casa')
+      expect(await page.$('.custom-mark')).toBeNull() // a dictionary word is not "added by you"
+      await page.close()
+    }, 60_000)
+
+    it('each way the lookup can fail has its own message, and the form is open to type the fields', async () => {
+      const page = await open()
+      const failures: [unknown, string][] = [
+        [{ kind: 'offline' }, strings.words.enrich.offline],
+        [{ kind: 'unauthorized' }, strings.words.enrich.unauthorized],
+        [{ kind: 'daily-quota', usage: 100, limit: 100 }, strings.words.enrich.dailyQuota(100, 100)],
+        [{ kind: 'rate-limit' }, strings.words.enrich.rateLimit],
+        [{ kind: 'busy' }, strings.words.enrich.busy],
+        [{ kind: 'timeout' }, strings.words.enrich.timeout],
+        [{ kind: 'network' }, strings.words.enrich.network],
+        [{ kind: 'no-result' }, strings.words.enrich.noResult],
+        [{ kind: 'other', status: 500 }, strings.words.enrich.other(500)],
+      ]
+      for (const [failure, message] of failures) {
+        await stub(page, { ok: false, failure })
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await notes(page)).toEqual([message])
+        expect(await fieldValue(page, f.ru)).toBe('') // nothing was filled in
+        await cancelAndDiscard(page) // the word and the part of speech were typed: leaving asks
+        await page.waitForSelector('.words-search')
+      }
+      expect((await sentAll(page)).words).toEqual([])
+
+      // and the manual form works, with the reason both translations are needed
+      await stub(page, { ok: false, failure: { kind: 'offline' } })
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      await typeIn(page, f.ru, 'кабачок')
+      await clickText(page, 'button', f.save)
+      expect(await notes(page)).toContain(f.problems.translations)
+      expect((await sentAll(page)).words).toEqual([]) // one translation is not enough
+      await typeIn(page, f.en, 'squash')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toMatchObject([{ kind: 'save', row: { es_word: 'Zapallito', ru_translation: 'кабачок', en_translation: 'squash', es_rioplatense: null, is_rioplatense_variant: false } }])
+      await page.close()
+    }, 120_000)
+
+    it('a lookup that never answers is never a dead end: "Fill it in myself" opens the form', async () => {
+      const page = await open()
+      await page.evaluate(() => void ((window as never as { __enrichImpl: unknown }).__enrichImpl = () => new Promise(() => {})))
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Looking up'))
+      expect(await page.$eval('.word-form input', (e) => (e as HTMLInputElement).disabled)).toBe(true)
+      await clickText(page, 'button', f.fillMyself)
+      await page.waitForSelector('.form-word')
+      await typeIn(page, f.ru, 'кабачок')
+      await typeIn(page, f.en, 'squash')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toHaveLength(1)
+      await page.close()
+    }, 60_000)
+
+    it('an untouched form closes without asking; once anything is filled in, Cancel and Back ask "Discard this word?" and nothing is written either way', async () => {
+      const page = await open()
+      // untouched: no question, from Cancel and from Back
+      await page.click('button[aria-label="Add a word"]')
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.words-search')
+      await page.click('button[aria-label="Add a word"]')
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet')
+      await page.waitForSelector('.words-search')
+      expect(await page.$('.sheet')).toBeNull()
+
+      // typed something: Cancel asks; Keep editing keeps the text
+      await page.click('button[aria-label="Add a word"]')
+      await typeIn(page, f.spanish, 'Zapa')
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.sheet')
+      expect(await page.$eval('.sheet h2', (e) => e.textContent)).toBe('Discard this word?')
+      expect(await page.$$eval('.sheet .btn', (els) => els.map((e) => e.textContent))).toEqual(['Discard', 'Keep editing'])
+      await clickText(page, '.sheet .btn', f.keepEditing)
+      await page.waitForFunction(() => document.querySelector('.sheet') === null)
+      expect(await fieldValue(page, f.spanish)).toBe('Zapa')
+
+      // Back asks too (and Back again closes the question, like any sheet)
+      await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())
+      await page.waitForSelector('.sheet')
+      await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())
+      await page.waitForFunction(() => document.querySelector('.sheet') === null)
+      expect(await fieldValue(page, f.spanish)).toBe('Zapa')
+
+      // a picked part of speech alone counts as filled in
+      await page.reload({ waitUntil: 'networkidle0' })
+      await page.waitForFunction(() => (window as never as { __ready?: boolean }).__ready === true)
+      await page.waitForSelector('.word-row')
+      await page.click('button[aria-label="Add a word"]')
+      await clickText(page, '[role="radio"]', 'Verb')
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.sheet')
+      await clickText(page, '.sheet .btn', f.discard)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toEqual([])
+      await page.close()
+    }, 90_000)
+
+    it('the edit form follows the same rule: untouched closes, changed asks, Keep editing keeps the change', async () => {
+      const page = await open()
+      await addWord(page)
+      await openByName(page, 'Zapallito')
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      await clickText(page, 'button', f.cancel) // nothing changed
+      await page.waitForSelector('.word-detail')
+      expect(await page.$('.sheet')).toBeNull()
+
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      await typeIn(page, f.ru, 'тыква')
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet')
+      await page.waitForSelector('.sheet')
+      expect(await page.$eval('.sheet h2', (e) => e.textContent)).toBe('Discard this word?')
+      await clickText(page, '.sheet .btn', f.keepEditing)
+      expect(await fieldValue(page, f.ru)).toBe('тыква')
+      const before = (await sentAll(page)).words.length
+      await cancelAndDiscard(page)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words).toHaveLength(before) // discarded: nothing written
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await fieldValue(page, f.ru)).toBe('кабачок') // the old text is still what the word has
+      await page.close()
+    }, 90_000)
+
+    it('rules on the word: one word, at most 50 characters, a part of speech, and an "Other" lookup leaves pos out', async () => {
+      const page = await open()
+      await page.click('button[aria-label="Add a word"]')
+      await clickText(page, 'button', f.continue)
+      expect(await notes(page)).toEqual([f.problems.empty])
+      await typeIn(page, f.spanish, 'dos palabras')
+      await clickText(page, 'button', f.continue)
+      expect(await notes(page)).toEqual([f.problems.spaces])
+      await typeIn(page, f.spanish, 'a'.repeat(51))
+      await clickText(page, 'button', f.continue)
+      expect(await notes(page)).toEqual([f.problems['too-long']])
+      await typeIn(page, f.spanish, 'Zapallito')
+      await clickText(page, 'button', f.continue)
+      expect(await notes(page)).toEqual([f.problems.pos]) // no default part of speech
+      expect(await page.$$eval('[role="radio"]', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['Verb:false', 'Noun:false', 'Adjective:false', 'Adverb:false', 'Other:false'])
+      await clickText(page, '[role="radio"]', 'Other')
+      await clickText(page, 'button', f.continue)
+      await page.waitForSelector('.form-word')
+      expect(await enrichCalls(page)).toEqual([{ word: 'Zapallito', pos: 'custom' }]) // the form passes the code; enrichWord leaves it out of the request
+      await page.close()
+    }, 60_000)
+
+    it('edits a word from its detail (same key, progress untouched), can re-run the lookup and put back what it had, then deletes it behind a confirm', async () => {
+      const page = await open()
+      await addWord(page)
+      await openByName(page, 'Zapallito')
+
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await fieldValue(page, f.ru)).toBe('кабачок')
+      expect(await page.$eval('.form-word strong', (e) => e.textContent)).toBe('Zapallito') // the word itself cannot be changed
+      await typeIn(page, f.ru, 'тыква')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect(await page.$$eval('.queue-note', (els) => els.map((e) => e.textContent))).toContain('Saved.')
+      const afterEdit = await sentAll(page)
+      expect(afterEdit.words.at(-1)).toMatchObject({ kind: 'save', row: { es_word: 'Zapallito', ru_translation: 'тыква', pos: 'n' } })
+
+      // re-run enrichment: refills the fields, which can be kept, edited or put back
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      await stub(page, { ok: true, value: { enTranslation: 'courgette', ruTranslation: 'цуккини', exampleSentence: 'Un zapallito.', exampleTranslationEn: 'A courgette.', exampleTranslationRu: 'Цуккини.', esRioplatense: 'zapallito', isRioplatenseVariant: true } })
+      await clickText(page, 'button', f.rerun)
+      await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in again'))
+      expect(await fieldValue(page, f.ru)).toBe('цуккини')
+      await clickText(page, 'button', f.putBack)
+      expect(await fieldValue(page, f.ru)).toBe('тыква')
+      await clickText(page, 'button', f.cancel) // back to exactly what the word has: nothing to lose, no question
+      await page.waitForSelector('.word-detail')
+      expect(await page.$('.sheet')).toBeNull()
+      expect((await sentAll(page)).words.at(-1)).toEqual(afterEdit.words.at(-1)) // cancelling wrote nothing
+
+      // delete: a confirm that names the word
+      await clickText(page, '.detail-actions .btn', 'Delete')
+      await page.waitForSelector('.sheet')
+      expect(await page.$eval('.confirm-delete h2', (e) => e.textContent)).toBe('Delete “Zapallito”?')
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet') // Back closes the question
+      await page.waitForFunction(() => document.querySelector('.sheet') === null)
+      expect((await sentAll(page)).words.at(-1)?.kind).toBe('save') // nothing deleted yet
+
+      await clickText(page, '.detail-actions .btn', 'Delete')
+      await page.waitForSelector('.sheet')
+      await clickText(page, '.sheet .btn', 'Delete')
+      await page.waitForSelector('.words-search') // back on the list
+      await page.waitForFunction(() => (window as never as { __sent: { words: { kind: string }[] } }).__sent.words.at(-1)?.kind === 'delete')
+      const sent = await sentAll(page)
+      expect(sent.words.at(-1)).toEqual({ kind: 'delete', esWord: 'Zapallito', tombstone: 'zapallito' }) // the stored casing and the lowercased key
+
+      // the tombstone went out BEFORE the delete, and was cleared after it
+      await page.waitForFunction(() => (window as never as { __sent: { order: string[] } }).__sent.order.at(-1) === 'settings:pending_word_deletes')
+      const order = (await sentAll(page)).order
+      const del = order.indexOf('words:delete')
+      expect(order.slice(0, del).some((o) => o.includes('pending_word_deletes'))).toBe(true)
+      expect(order.slice(del + 1)).toEqual(['settings:pending_word_deletes'])
+      const patches = (await sentAll(page)).settings
+      expect(patches.at(-2)).toMatchObject({ pending_word_deletes: ['zapallito'], learn_picks: [] })
+      expect(patches.at(-1)).toEqual({ pending_word_deletes: [] })
+
+      await search(page, 'Zapallito')
+      expect(await page.$$eval('.word-row-head', (els) => els.map((e) => e.textContent).filter((t) => t?.startsWith('Zapallito')))).toEqual([])
+      await page.close()
+    }, 150_000)
+
+    it('the Filters sheet has "Custom" under "Show only", and it lists only the words added', async () => {
+      const page = await open()
+      await addWord(page)
+      await control(page, 'Filters')
+      await page.waitForSelector('.sheet')
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued', 'Custom'])
+      await press(page, '.sheet .chip', 'Custom')
+      await closeSheet(page)
+      await page.waitForSelector('.vlist')
+      expect(await controlTexts(page)).toEqual(['Filters1', 'Sort: Frequency'])
+      expect((await rows(page)).map((r) => r.replace(/\s.*/, ''))).toEqual(['Zapallito'])
+      await page.close()
+    }, 90_000)
+  })
+
   it('the whole thing is wired into the app: the Home button, Telegram\'s back button, and the list kept while a word is open', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
     expect(app).toMatch(/onWords=\{\(\) => setScreen\('words'\)\}/)
     expect(app).toMatch(/savedView=\{wordsView\.get\(\)\}/)
     expect(app).toMatch(/onViewChange=\{wordsView\.set\}/)
-    expect(app).toMatch(/setOpen\(\{ key, from: 'words' \}\)/)
+    expect(app).toMatch(/setOpen\(\{ key: wordKey\(esWord\), from: 'words' \}\)/)
     expect(app).toMatch(/setOpen\(\{ key: wordKey\(word\.esWord\), from: 'home' \}\)/)
     expect(app).toMatch(/const backTarget: Screen = backTargetFor\(screen, screen === 'word' \? \(open\?\.from \?\? null\) : null\)/) // a word goes back to where it was opened (src/lib/nav.ts)
     expect(app).toMatch(/const onClick = \(\) => goBack\(\)/)

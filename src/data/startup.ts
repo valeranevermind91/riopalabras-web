@@ -1,5 +1,6 @@
 import { isOffline } from '../lib/online'
-import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
+import { customWordFromRow } from './words'
+import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import type { PendingWrites, RestoreReport, WriteQueue } from './writeQueue'
 
 /** How long opening the app waits for restored writes to reach the server before it loads the user's state anyway. */
@@ -44,6 +45,9 @@ export interface PendingTargets {
   applySettings: (patch: SettingsPatch) => void
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
   applyFavorite: (esWords: readonly string[], favorite: boolean) => void
+  /** Without these, custom-word changes still waiting are not shown (nothing else depends on them). */
+  upsertCustomWord?: (word: Word) => void
+  removeCustomWord?: (esWord: string) => void
 }
 
 /**
@@ -61,6 +65,10 @@ export function mirrorPending(pending: PendingWrites, targets: PendingTargets): 
   const unlike = pending.favorites.filter((op) => !op.favorite).map((op) => op.esWord)
   if (like.length > 0) targets.applyFavorite(like, true)
   if (unlike.length > 0) targets.applyFavorite(unlike, false)
+  for (const op of pending.words) {
+    if (op.kind === 'save') targets.upsertCustomWord?.(customWordFromRow(op.row))
+    else targets.removeCustomWord?.(op.esWord)
+  }
 }
 
 /**

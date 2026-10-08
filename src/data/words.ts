@@ -43,7 +43,7 @@ export interface MergedWords {
   diagnostics: MergeDiagnostics
 }
 
-function customWordFromRow(row: UserWordRow): Word {
+export function customWordFromRow(row: UserWordRow): Word {
   const enTranslation = row.en_translation ?? ''
   const ruTranslation = row.ru_translation ?? ''
   return {
@@ -72,15 +72,21 @@ function customWordFromRow(row: UserWordRow): Word {
   }
 }
 
+const stringList = (value: unknown): string[] => (Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [])
+
 /** Pure: overlays the user's cloud rows onto the immutable dictionary and returns new Word objects. */
 export function mergeWords(base: readonly Word[], overlay: Overlay): MergedWords {
   const byKey = new Map<string, Word>()
   for (const word of base) byKey.set(wordKey(word.esWord), word)
 
+  // A word the Flutter app deleted offline is still in the cloud until its tombstone is processed: it is not shown meanwhile
+  // (the Flutter app's own pull skips it the same way).
+  const tombstoned = new Set(stringList(overlay.settings?.pending_word_deletes).map(wordKey))
+
   let customShadowingBase = 0
   for (const row of overlay.customWords) {
     const key = wordKey(row.es_word)
-    if (!key) continue
+    if (!key || tombstoned.has(key)) continue
     if (byKey.get(key)?.isCustom === false) customShadowingBase++
     byKey.set(key, customWordFromRow(row))
   }

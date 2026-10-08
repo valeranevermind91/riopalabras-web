@@ -333,7 +333,7 @@ describe('mirroring writes that are still waiting into the loaded state', () => 
   it('applies progress, settings, hidden words and favourites, hides and un-hides (likes and un-likes) separately', () => {
     const calls: string[] = []
     mirrorPending(
-      { progress: [makeUpdate('casa')], settings: { streak_count: 4 }, hidden: [{ esWord: 'a', hidden: true }, { esWord: 'b', hidden: false }, { esWord: 'c', hidden: true }], favorites: [{ esWord: 'x', favorite: true }, { esWord: 'y', favorite: false }] },
+      { progress: [makeUpdate('casa')], settings: { streak_count: 4 }, hidden: [{ esWord: 'a', hidden: true }, { esWord: 'b', hidden: false }, { esWord: 'c', hidden: true }], favorites: [{ esWord: 'x', favorite: true }, { esWord: 'y', favorite: false }], words: [] },
       {
         applyProgress: (u) => calls.push(`progress:${u.map((x) => x.esWord)}`),
         applySettings: (p) => calls.push(`settings:${JSON.stringify(p)}`),
@@ -345,7 +345,7 @@ describe('mirroring writes that are still waiting into the loaded state', () => 
   })
   it('does nothing when nothing is waiting', () => {
     const calls: string[] = []
-    mirrorPending({ progress: [], settings: null, hidden: [], favorites: [] }, { applyProgress: () => calls.push('p'), applySettings: () => calls.push('s'), applyHidden: () => calls.push('h'), applyFavorite: () => calls.push('f') })
+    mirrorPending({ progress: [], settings: null, hidden: [], favorites: [], words: [] }, { applyProgress: () => calls.push('p'), applySettings: () => calls.push('s'), applyHidden: () => calls.push('h'), applyFavorite: () => calls.push('f') })
     expect(calls).toEqual([])
   })
 })

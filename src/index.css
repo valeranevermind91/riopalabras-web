@@ -2207,3 +2207,128 @@ mark {
     transition: none;
   }
 }
+
+/* ---- Adding and editing the user's own words: a plain stacked form (labelled fields, 16px text so iOS does not zoom) ---- */
+
+.word-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-label {
+  padding: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.form-input:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.form-input:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.form-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.form-pos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-word {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.form-word strong {
+  font-size: 20px;
+}
+
+.form-word-pos {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.form-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.form-note p {
+  margin: 0;
+}
+
+.form-note.is-error {
+  border-color: var(--bad-border);
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.form-actions {
+  display: grid;
+  gap: 12px;
+}
+
+/* The quiet "Added by you" under a custom word's card. */
+.custom-mark {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.confirm-delete p {
+  margin: 8px 0 16px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.btn-danger {
+  border-color: var(--bad-border);
+  background: var(--bad-bg);
+  color: var(--bad);
+}

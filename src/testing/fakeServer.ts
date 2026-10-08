@@ -32,6 +32,8 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   const log: { url: string; method: string; role: string; status: number }[] = []
   let nextUser = 1
   // Things a test can break on purpose.
+  // Lets a test look at the server's state at the moment a request arrives (before it is applied).
+  const spy: { beforeRest: ((request: { method: string; table: string }) => void) | null } = { beforeRest: null }
   const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false }
 
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -84,6 +86,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
 
   async function rest(url: URL, request: Request) {
     const table = url.pathname.replace('/rest/v1/', '')
+    spy.beforeRest?.({ method: request.method, table })
     const claims = claimsOf(request.headers.get('authorization'))
     if (!claims) return json({ message: 'No API key found in request', hint: 'No `apikey` request header or url param was found.' }, 401)
     if (claims.expired) return json({ code: 'PGRST301', message: 'JWT expired' }, 401)
@@ -164,6 +167,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
     tables,
     log,
     users,
+    spy,
     /** Break things on purpose: sessions the auth server no longer knows, a proxy that is down, writes that never answer, writes refused by policy. */
     break: broken,
     /** The real supabase-js client, pointed at this fake. `storage` stands in for the webview's localStorage. */

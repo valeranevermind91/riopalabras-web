@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
-import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
+import type { CustomWordOp, ProgressUpdate, SettingsPatch, UserSettings } from './types'
 
 /** A failed write, with what the server said, so the queue can tell "try again" from "this request will never be accepted". */
 export class WriteError extends Error {
@@ -147,3 +147,22 @@ export const writeHiddenWords = (client: SupabaseClient, userId: string, ops: re
 
 export const writeFavoriteWords = (client: SupabaseClient, userId: string, ops: readonly { esWord: string; favorite: boolean }[]) =>
   writeWordFlags(client, userId, 'user_favorites', ops.map((o) => ({ esWord: o.esWord, on: o.favorite })))
+
+/**
+ * Writes custom-word changes to user_words the way the Flutter app does: saves are one upsert on (user_id, es_word), with
+ * es_word as typed and without id, created_at (the database fills it on insert and leaves it on update) or
+ * word_form_in_example (no such column); deletes are one request per word, matched by the word's STORED casing. (A lowercased
+ * key silently matches no row for a capitalised word.) Both are safe to repeat. Throws on any failure.
+ */
+export async function writeCustomWords(client: SupabaseClient, userId: string, ops: readonly CustomWordOp[]): Promise<void> {
+  const saved = ops.flatMap((op) => (op.kind === 'save' ? [{ user_id: userId, ...op.row }] : []))
+  if (saved.length > 0) {
+    const { error, status } = await client.from('user_words').upsert(saved, { onConflict: 'user_id,es_word' })
+    if (error) fail('user_words', error, status)
+  }
+  for (const op of ops) {
+    if (op.kind !== 'delete') continue
+    const { error, status } = await client.from('user_words').delete().eq('user_id', userId).eq('es_word', op.esWord)
+    if (error) fail('user_words', error, status)
+  }
+}

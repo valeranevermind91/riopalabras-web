@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
+import { createTombstoneClearer } from './data/customWords'
+import { enrichDepsFor, enrichWord } from './data/enrich'
 import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
 import { wordKey } from './data/words'
 import { createViewStore } from './data/wordList'
@@ -55,10 +57,15 @@ function App() {
   // The loaded settings, once there are any; until then writes that need them read the server's own copy.
   const [settingsSource] = useState(createSettingsSource)
   const readSettings = settingsSource.read
+  // Once custom-word deletes reached the server, their tombstones (pending_word_deletes) are cleared, as the Flutter app's sync does.
+  // The in-memory settings are updated too: every later settings write sends the whole blob.
+  const [tombstones] = useState(createTombstoneClearer)
+  const onWordsDeleted = tombstones.clear
   const queue = useMemo(
-    () => (client && userId ? createSupabaseWriteQueue(client, userId, readSettings, { recoverSession }) : null),
-    [client, userId, readSettings, recoverSession],
+    () => (client && userId ? createSupabaseWriteQueue(client, userId, readSettings, { recoverSession, onWordsDeleted }) : null),
+    [client, userId, readSettings, recoverSession, onWordsDeleted],
   )
+  const enrich = useMemo(() => (client ? (input: { word: string; pos: string | null }) => enrichWord(input, enrichDepsFor(client, recoverSession)) : undefined), [client, recoverSession])
 
   // Restore the queue saved by an earlier run and send it, and only then let the user's state load.
   const [restoredFor, setRestoredFor] = useState<string | null>(null)
@@ -80,6 +87,7 @@ function App() {
   const getSettings = readyData?.getSettings ?? null
   useEffect(() => {
     settingsSource.use(readyData?.getSettings ?? null)
+    tombstones.use(readyData ? { read: readyData.getSettings, apply: readyData.applySettings } : null)
   })
 
   // Writes still unsent after the restore are the user's latest state: show them over the copy the server returned,
@@ -279,8 +287,10 @@ function App() {
         savedView={wordsView.get()}
         onViewChange={wordsView.set}
         registerBack={registerBack}
-        onOpen={(key) => {
-          setOpen({ key, from: 'words' })
+        enrich={enrich}
+        onOpen={(esWord) => {
+          // The list hands over the word as stored; a word is found by its key (a word the user typed with a capital is not its own key).
+          setOpen({ key: wordKey(esWord), from: 'words' })
           setScreen('word')
         }}
         onBack={inPageBack}
@@ -290,7 +300,7 @@ function App() {
 
   const openedWord = screen === 'word' && open ? readyData?.words.find((w) => wordKey(w.esWord) === open.key) : undefined
   if (openedWord && readyData && queue) {
-    return <WordDetail word={openedWord} data={readyData} queue={queue} onBack={inPageBack} />
+    return <WordDetail word={openedWord} data={readyData} queue={queue} enrich={enrich} registerBack={registerBack} onDeleted={() => go(backTarget)} onBack={inPageBack} />
   }
 
   if (screen === 'cloze' && readyData && queue) {

@@ -1,5 +1,5 @@
 import type { DailyMetricsRow } from './metrics'
-import type { ProgressUpdate, SettingsPatch } from './types'
+import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch } from './types'
 
 /**
  * The write queue's pending contents on disk (localStorage), so that a webview killed with writes still unsent
@@ -37,6 +37,8 @@ export interface QueueSnapshot {
   /** The pending settings patch, with the queue time of each key (a key keeps the time of its latest value). */
   settings: { patch: SettingsPatch; at: Record<string, number> } | null
   metrics: Stamped<DailyMetricsRow>[]
+  /** Custom-word saves and deletes (user_words). */
+  words: Stamped<CustomWordOp>[]
 }
 
 export interface RestoreResult {
@@ -69,7 +71,7 @@ export function safeLocalStorage(): StorageLike | null {
   }
 }
 
-export const isEmptySnapshot = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.favorites.length === 0 && s.settings === null && s.metrics.length === 0
+export const isEmptySnapshot = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.favorites.length === 0 && s.settings === null && s.metrics.length === 0 && s.words.length === 0
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -87,6 +89,29 @@ function readMetrics(raw: unknown): DailyMetricsRow | null {
   const [dueAtStart, learnPool, dailyLimit] = [nullable(raw.dueAtStart), nullable(raw.learnPool), nullable(raw.dailyLimit)]
   if (!finite(raw.newWords) || !finite(raw.reviewsDone) || !finite(raw.reviewsLapsed) || dueAtStart === undefined || learnPool === undefined || dailyLimit === undefined) return null
   return { date: raw.date, newWords: raw.newWords, reviewsDone: raw.reviewsDone, reviewsLapsed: raw.reviewsLapsed, dueAtStart, learnPool, dailyLimit, active: raw.active }
+}
+
+const text = (v: unknown): v is string => typeof v === 'string'
+
+function readWordOp(raw: unknown): CustomWordOp | null {
+  if (!isObject(raw)) return null
+  if (raw.kind === 'delete') return text(raw.esWord) && raw.esWord && text(raw.tombstone) ? { kind: 'delete', esWord: raw.esWord, tombstone: raw.tombstone } : null
+  const r = raw.row
+  if (raw.kind !== 'save' || !isObject(r)) return null
+  if (!text(r.es_word) || !r.es_word || !text(r.en_translation) || !text(r.ru_translation) || !text(r.example_sentence) || !text(r.example_translation_en) || !text(r.example_translation_ru) || !text(r.pos) || typeof r.is_rioplatense_variant !== 'boolean') return null
+  if (r.es_rioplatense !== null && !text(r.es_rioplatense)) return null
+  const row: CustomWordRow = {
+    es_word: r.es_word,
+    es_rioplatense: r.es_rioplatense,
+    en_translation: r.en_translation,
+    ru_translation: r.ru_translation,
+    example_sentence: r.example_sentence,
+    example_translation_en: r.example_translation_en,
+    example_translation_ru: r.example_translation_ru,
+    is_rioplatense_variant: r.is_rioplatense_variant,
+    pos: r.pos,
+  }
+  return { kind: 'save', row }
 }
 
 function readHidden(raw: unknown): HiddenOpEntry | null {
@@ -139,6 +164,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
             favorites: snapshot.favorites,
             settings: snapshot.settings,
             metrics: snapshot.metrics,
+            words: snapshot.words,
           }),
         )
       } catch {
@@ -160,11 +186,11 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
       try {
         record = JSON.parse(text)
       } catch {
-        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [] }, droppedStale: 0, droppedUnreadable: 1 }
       }
       // Never another account's queue, even if it somehow sits under this key.
       if (!isObject(record) || record.v !== 1 || record.userId !== userId) {
-        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [] }, droppedStale: 0, droppedUnreadable: isObject(record) && record.userId !== userId ? 0 : 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [] }, droppedStale: 0, droppedUnreadable: isObject(record) && record.userId !== userId ? 0 : 1 }
       }
 
       const cutoff = now() - MAX_AGE_MS
@@ -173,6 +199,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
       const hidden = readList(record.hidden, readHidden, cutoff, tally)
       const favorites = readList(record.favorites, readFavorite, cutoff, tally)
       const metrics = readList(record.metrics, readMetrics, cutoff, tally)
+      const words = readList(record.words, readWordOp, cutoff, tally)
 
       let settings: QueueSnapshot['settings'] = null
       if (isObject(record.settings) && isObject(record.settings.patch) && isObject(record.settings.at)) {
@@ -192,7 +219,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
         tally.unreadable++
       }
 
-      return { snapshot: { progress, hidden, favorites, settings, metrics }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable }
+      return { snapshot: { progress, hidden, favorites, settings, metrics, words }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable }
     },
   }
 }

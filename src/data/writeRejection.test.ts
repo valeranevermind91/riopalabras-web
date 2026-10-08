@@ -162,7 +162,7 @@ describe('losing the session after sign-in', () => {
 describe('the app wires it up', () => {
   const app = readFileSync('src/App.tsx', 'utf8')
   it('builds its queue with a way to sign in again, and signs in again when the session is dropped', () => {
-    expect(app).toMatch(/createSupabaseWriteQueue\(client, userId, readSettings, \{ recoverSession \}\)/)
+    expect(app).toMatch(/createSupabaseWriteQueue\(client, userId, readSettings, \{ recoverSession, onWordsDeleted \}\)/)
     expect(app).toMatch(/ensureSession\(client, telegram\.initData, telegram\.user\?\.id \?\? null, \{ force: true \}\)/)
     expect(app).toMatch(/watchSessionLost\(client,/)
     expect(app).toMatch(/result\.userId === userId/) // never under a different user's session

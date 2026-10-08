@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { BottomSheet } from '../components/WordsSheets'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { WordForm, type SubmitResult } from '../components/WordForm'
+import { deleteCustomWord, editCustomWord, valuesOf, type WordValues } from '../data/customWords'
+import { noEnrichment, type EnrichResult } from '../data/enrich'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
@@ -31,6 +35,12 @@ interface WordDetailProps {
   word: Word
   data: UserData
   queue: WriteQueue
+  /** Fills in a typed word's translations (the proxy's /enrich), for editing a custom word. Without it every field is typed by hand. */
+  enrich?: (input: { word: string; pos: string | null }) => Promise<EnrichResult>
+  /** Lets the screen take Telegram's back button (or the in-page one) while the edit form or the delete question is open. */
+  registerBack?: (handler: (() => boolean) | null) => void
+  /** The word is gone (deleted): leave the screen, to where it was opened from. */
+  onDeleted?: () => void
   onBack?: () => void
 }
 
@@ -38,7 +48,7 @@ interface WordDetailProps {
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
  * scheduling numbers in a collapsed footnote, then what can be done with it: favourite it, or bring it back if it was marked as known.
  */
-export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
+export function WordDetail({ word, data, queue, enrich = noEnrichment, registerBack, onDeleted, onBack }: WordDetailProps) {
   const now = new Date()
   const state = wordState(word, now)
   const note = noteFor(word, state)
@@ -56,6 +66,36 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
     setSaid(result.done === 'queued' ? { esWord: word.esWord, text: t.queuedAt(result.position) } : result.done === 'refused' && result.reason === 'full' ? { esWord: word.esWord, text: t.queueFull(MAX_LEARN_PICKS) } : null)
   }
 
+  // The user's own words can be edited and deleted from here.
+  const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  // (The edit form handles Back itself: it asks before throwing away what was changed.)
+  useEffect(() => {
+    if (!confirming || !registerBack) return
+    registerBack(() => {
+      setConfirming(false)
+      return true
+    })
+    return () => registerBack(null)
+  }, [confirming, registerBack])
+  const customDeps = {
+    words: data.words,
+    getSettings: data.getSettings,
+    applySettings: data.applySettings,
+    upsertCustomWord: data.upsertCustomWord,
+    removeCustomWord: data.removeCustomWord,
+    queue,
+  }
+  const submitEdit = (values: WordValues): SubmitResult => {
+    const result = editCustomWord(word, values, customDeps)
+    return result.status === 'saved' ? { status: 'saved' } : result
+  }
+  const confirmDelete = () => {
+    haptic('tap')
+    setConfirming(false)
+    if (deleteCustomWord(word, customDeps)) onDeleted?.()
+  }
+
   const toggleFavourite = () => {
     haptic('select')
     data.applyFavorite([word.esWord], !word.isFavorite)
@@ -67,12 +107,36 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
     queue.enqueueHidden(word.esWord, false)
   }
 
+  if (editing && word.isCustom) {
+    return (
+      <main className="screen words-form">
+        <ScreenHeader title={t.form.editTitle} onBack={onBack} />
+        <WordForm
+          existing={word}
+          words={data.words}
+          initial={valuesOf(word)}
+          enrich={enrich}
+          onSubmit={submitEdit}
+          onDone={() => {
+            haptic('success')
+            setEditing(false)
+            setSaid({ esWord: word.esWord, text: t.saved })
+          }}
+          onCancel={() => setEditing(false)}
+          registerBack={registerBack}
+          onOpenExisting={() => setEditing(false)}
+        />
+      </main>
+    )
+  }
+
   return (
     <main className="screen word-detail">
       <ScreenHeader title={t.detailTitle} onBack={onBack} />
       <WordCard word={word} settings={data.settings} />
 
       <section className="state-block" aria-label={d.progress}>
+        {word.isCustom && <p className="custom-mark">{t.customMark}</p>}
         {note && <p className="state-note">{note}</p>}
         {/* The scheduler's numbers, as a footnote: closed on every open (a plain <details>, nothing remembers it). */}
         <details className="sched">
@@ -115,7 +179,34 @@ export function WordDetail({ word, data, queue, onBack }: WordDetailProps) {
             {t.bringBack}
           </button>
         )}
+        {word.isCustom && (
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>
+              {t.editWord}
+            </button>
+            <button type="button" className="btn btn-secondary btn-danger" onClick={() => setConfirming(true)}>
+              {t.deleteWord}
+            </button>
+          </>
+        )}
       </div>
+
+      {confirming && (
+        <BottomSheet label={t.deleteTitle(word.esWord)} onClose={() => setConfirming(false)}>
+          <div className="confirm-delete">
+            <h2>{t.deleteTitle(word.esWord)}</h2>
+            <p>{t.deleteBody}</p>
+            <div className="form-actions">
+              <button type="button" className="btn btn-secondary btn-danger" onClick={confirmDelete}>
+                {t.deleteConfirm}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirming(false)}>
+                {t.deleteCancel}
+              </button>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
     </main>
   )
 }

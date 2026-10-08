@@ -58,5 +58,26 @@ export interface ProgressUpdate {
   readonly nextReview: Date
 }
 
+/** The columns of a user_words row that the client writes (user_id is added by the writer; id, created_at and word_form_in_example are never sent). */
+export interface CustomWordRow {
+  /** Exactly as typed: the table's UNIQUE (user_id, es_word) is case-sensitive. */
+  es_word: string
+  es_rioplatense: string | null
+  en_translation: string
+  ru_translation: string
+  example_sentence: string
+  example_translation_en: string
+  example_translation_ru: string
+  is_rioplatense_variant: boolean
+  pos: string
+}
+
+/**
+ * One custom word's latest change, queued in its own lane: save it (an upsert on (user_id, es_word)), or delete it. A delete
+ * names the word in its STORED casing (what the row is matched by) and the lowercased key the tombstone in
+ * pending_word_deletes goes by.
+ */
+export type CustomWordOp = { kind: 'save'; row: CustomWordRow } | { kind: 'delete'; esWord: string; tombstone: string }
+
 /** Keys to merge into the user_settings blob (snake_case, exactly as stored). */
 export type SettingsPatch = Record<string, unknown>

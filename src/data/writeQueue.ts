@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
-import type { ProgressUpdate, SettingsPatch, UserSettings } from './types'
+import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch, UserSettings } from './types'
 import { isOffline } from '../lib/online'
 import { fetchSettings, fetchSettingsRow } from './overlay'
 import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
@@ -8,7 +8,7 @@ import { reconcileSettingsPatch } from './restoreRules'
 import { parseSettings } from './settings'
 import { createQueueStore, type FavoriteOpEntry, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
 import { wordKey } from './words'
-import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeFavoriteWords, writeHiddenWords, writeSettings } from './writes'
+import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeCustomWords, writeFavoriteWords, writeHiddenWords, writeSettings } from './writes'
 
 /** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
 export interface HiddenOp {
@@ -34,6 +34,11 @@ export interface QueueSender {
   sendHidden?: (ops: readonly HiddenOp[]) => Promise<void>
   /** Optional: without it favourite changes are not queued at all. Receives the latest state per word. */
   sendFavorites?: (ops: readonly FavoriteOp[]) => Promise<void>
+  /**
+   * Optional: without it custom-word changes are not queued at all. Receives the latest change per word: the saves go out
+   * before the settings, the deletes after them (the tombstone in pending_word_deletes has to be on the server first).
+   */
+  sendWords?: (ops: readonly CustomWordOp[]) => Promise<void>
   /** Optional: the best-effort metrics lane is simply off without it. */
   /** `restoredDates` is given only when some rows came back from storage after a restart (see restoreRules.ts / metrics merge). */
   sendMetrics?: (rows: readonly DailyMetricsRow[], restoredDates?: ReadonlySet<string>) => Promise<void>
@@ -52,6 +57,8 @@ export interface QueueStatus {
   pendingHidden: number
   /** Favourite changes (user_favorites) not yet sent. */
   pendingFavorites: number
+  /** Custom-word saves and deletes (user_words) not yet sent. */
+  pendingWords: number
   /** A request is in flight right now. */
   sending: boolean
   /** Automatic retries are exhausted: the UI shows a banner and waits for retry(). */
@@ -106,6 +113,7 @@ export interface PendingWrites {
   hidden: HiddenOpEntry[]
   favorites: FavoriteOpEntry[]
   settings: SettingsPatch | null
+  words: CustomWordOp[]
 }
 
 /** What enqueueBatch hands back: asks whether everything that batch queued has reached the server. */
@@ -126,6 +134,16 @@ export interface WriteQueue {
   enqueueHidden: (esWord: string, hidden: boolean) => void
   /** Favourites or un-favourites a word (user_favorites), the same way: the latest state per word wins. */
   enqueueFavorite: (esWord: string, favorite: boolean) => void
+  /**
+   * Saves a custom word (an upsert on (user_id, es_word) with the row exactly as given). The latest change per word wins:
+   * a save after a delete that has not been sent turns it into a plain save, and the other way round.
+   */
+  enqueueCustomWord: (row: CustomWordRow) => void
+  /**
+   * Deletes a custom word by its STORED casing; `tombstone` is the lowercased key that pending_word_deletes holds for it
+   * (the caller puts it in the settings patch, which goes out first; see WriteQueueOptions.onWordsDeleted for the clearing).
+   */
+  enqueueCustomDelete: (esWord: string) => void
   /**
    * A finished Learn batch: its words and its settings patch (streak, new-word counter) queued
    * together, in one step, so the drain never sees one without the other. Progress is always sent
@@ -176,6 +194,11 @@ export interface WriteQueueOptions {
   store?: QueueStore
   /** The clock used to stamp entries (epoch ms). */
   now?: () => number
+  /**
+   * Called after custom-word deletes reached the server, with their tombstone keys. Returns the settings patch that clears
+   * those tombstones (queued at once, behind the delete), or null when there is nothing to clear.
+   */
+  onWordsDeleted?: (tombstones: readonly string[]) => SettingsPatch | null
 }
 
 const DEFAULT_SEND_TIMEOUT_MS = 20_000
@@ -217,6 +240,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const metrics = new Map<string, DailyMetricsRow>()
   const hiddenOps = new Map<string, HiddenOp>()
   const favoriteOps = new Map<string, FavoriteOp>()
+  const wordOps = new Map<string, CustomWordOp>()
   // When each pending state was queued (the objects themselves are the keys), for the staleness rule on restore.
   const queuedAt = new WeakMap<object, number>()
   let settingsQueuedAt: Record<string, number> = {}
@@ -263,17 +287,18 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
   const listeners = new Set<() => void>()
 
-  const hasPending = () => progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || settings !== null
+  const hasPending = () => progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || wordOps.size > 0 || settings !== null
 
   const computeStatus = (): QueueStatus => ({
     pendingRatings: progress.size,
     pendingSettings: settings !== null,
     pendingHidden: hiddenOps.size,
     pendingFavorites: favoriteOps.size,
+    pendingWords: wordOps.size,
     sending,
     failed,
     error: lastError,
-    unsaved: progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || settings !== null || sending,
+    unsaved: progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || wordOps.size > 0 || settings !== null || sending,
     stuck,
     pendingMetrics: metrics.size,
     metricsError,
@@ -298,6 +323,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       favorites: [...favoriteOps.values()].map(stamped),
       settings: settings ? { patch: settings, at: { ...settingsQueuedAt } } : null,
       metrics: [...metrics.values()].map(stamped),
+      words: [...wordOps.values()].map(stamped),
     }
   }
   const persist = () => {
@@ -354,6 +380,14 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       notify()
     }
 
+    // Saves go before everything that may refer to the word (its tombstone clearing, its place in the Learn queue).
+    const saves = [...wordOps.values()].filter((op) => op.kind === 'save')
+    if (saves.length > 0) {
+      if (sender.sendWords) await within(sender.sendWords(saves))
+      forgetWordOps(saves)
+      notify()
+    }
+
     if (hiddenOps.size > 0) {
       const ops = [...hiddenOps.values()]
       if (sender.sendHidden) await within(sender.sendHidden(ops))
@@ -392,6 +426,28 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       }
       settingsSavedVersion = Math.max(settingsSavedVersion, sentVersion)
       notify()
+    }
+
+    // Deletes go after the settings: the tombstone that stops the Flutter app's pull from bringing the word back is queued
+    // with the delete, and has to be on the server before the row is gone. Once the rows are gone the tombstones are cleared.
+    const deletes = [...wordOps.values()].filter((op) => op.kind === 'delete')
+    if (deletes.length > 0) {
+      if (sender.sendWords) await within(sender.sendWords(deletes))
+      forgetWordOps(deletes)
+      const patch = options.onWordsDeleted?.(deletes.flatMap((op) => (op.kind === 'delete' ? [op.tombstone] : [])))
+      if (patch && Object.keys(patch).length > 0) putSettings(patch)
+      notify()
+    }
+  }
+
+  // Only forget what was actually sent: a newer change for the same word stays queued.
+  function forgetWordOps(sent: readonly CustomWordOp[]) {
+    for (const op of sent) {
+      const key = wordKey(op.kind === 'save' ? op.row.es_word : op.esWord)
+      if (wordOps.get(key) === op) {
+        wordOps.delete(key)
+        version++
+      }
     }
   }
 
@@ -605,6 +661,26 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       kick()
     },
 
+    enqueueCustomWord(row) {
+      if (!sender.sendWords) return
+      const op: CustomWordOp = { kind: 'save', row }
+      queuedAt.set(op, nowMs())
+      version++
+      wordOps.set(wordKey(row.es_word), op)
+      notify()
+      kick()
+    },
+
+    enqueueCustomDelete(esWord) {
+      if (!sender.sendWords) return
+      const op: CustomWordOp = { kind: 'delete', esWord, tombstone: wordKey(esWord) }
+      queuedAt.set(op, nowMs())
+      version++
+      wordOps.set(wordKey(esWord), op)
+      notify()
+      kick()
+    },
+
     enqueueBatch(updates, patch) {
       const state: TicketState = { updates: new Set(), settingsVersion: null }
       tickets.add(state) // registered first, so a word that appears twice in the batch hands its ticket to the newer state
@@ -684,6 +760,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         favoriteOps.set(wordKey(op.esWord), op)
         restored++
       }
+      for (const { value, at } of result.snapshot.words) {
+        const key = wordKey(value.kind === 'save' ? value.row.es_word : value.esWord)
+        if (wordOps.has(key)) continue
+        queuedAt.set(value, at)
+        wordOps.set(key, value)
+        restored++
+      }
       if (result.snapshot.settings) {
         const { patch, at } = result.snapshot.settings
         for (const key of Object.keys(patch)) {
@@ -719,6 +802,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       hidden: [...hiddenOps.values()].map(({ esWord, hidden }) => ({ esWord, hidden })),
       favorites: [...favoriteOps.values()].map(({ esWord, favorite }) => ({ esWord, favorite })),
       settings: settings ? { ...settings } : null,
+      words: [...wordOps.values()],
     }),
   }
 }
@@ -796,6 +880,7 @@ export function createSupabaseWriteQueue(
         }),
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
       sendFavorites: (ops) => signedIn(() => writeFavoriteWords(client, userId, ops)),
+      sendWords: (ops) => signedIn(() => writeCustomWords(client, userId, ops)),
       sendMetrics: (rows, restoredDates) =>
         signedIn(async () => {
           // A row from an earlier run may be behind what another device pushed for that day: merge, never overwrite.
