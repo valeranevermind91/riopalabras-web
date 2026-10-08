@@ -152,7 +152,7 @@ describe('the Settings screen', () => {
     })
 
     it('has the short paragraph about the app being in development', () => {
-      expect(render()).toContain('The app is in development and has no onboarding yet. You can learn words, and your progress is saved.')
+      expect(render()).toContain('The app is in development. You can learn and review words, and your progress is saved.')
     })
 
     it('links to the bot from the username: https://t.me/<username>', () => {

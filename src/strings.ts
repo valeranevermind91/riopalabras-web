@@ -226,8 +226,81 @@ export const strings = {
     about: 'About',
     version: 'Version',
     bot: 'Open the bot',
-    aboutText: 'The app is in development and has no onboarding yet. You can learn words, and your progress is saved.',
+    aboutText: 'The app is in development. You can learn and review words, and your progress is saved.',
+    howItWorks: 'How it works',
+    runIntro: 'Run the intro again',
     debug: 'Debug',
+  },
+
+  // The intro, shown once on a new account and again from Settings. English chrome; Spanish words are marked `es` (set in the display face).
+  onboarding: {
+    stepOf: (n: number, m: number) => `Step ${n} of ${m}`,
+    progress: 'Intro progress',
+    back: 'Back',
+    continue: 'Continue',
+    done: 'Done',
+    about: { sentence: 'The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.' },
+    inside: {
+      title: 'What is inside',
+      items: [
+        { id: 'learn', name: 'Learn', text: 'a few new words at a time', tone: 'learn' },
+        { id: 'review', name: 'Review', text: 'words that are due again', tone: 'learn' },
+        { id: 'matching', name: 'Matching', text: 'pair Spanish words with their translations', tone: 'practice' },
+        { id: 'cloze', name: 'Cloze', text: 'fill in the blank in a sentence', tone: 'practice' },
+        { id: 'words', name: 'Words', text: 'the full list, with search and filters', tone: 'learn' },
+        { id: 'own', name: 'Your own words', text: 'add, edit and delete words of your own', tone: 'learn' },
+      ] as const,
+    },
+    translation: {
+      title: 'Translation language',
+      text: 'Show Russian, English or both next to every word.',
+      names: { ru: 'Russian', en: 'English', both: 'Both' } as Record<string, string>,
+      note: 'It can be changed in Settings.',
+    },
+    // PLACEMENT TEST: this is the placeholder. The real step replaces src/screens/OnboardingPlacement.tsx; nothing else moves.
+    placement: { title: 'Placement test', text: 'A short test will go here.' },
+    goal: { title: 'Daily goal', text: 'New words per day' },
+    pronunciation: {
+      title: 'Pronunciation',
+      // each fact is a run of pieces; the Spanish ones are set in the display face
+      facts: [
+        [{ es: 'll' }, { text: ' and ' }, { es: 'y' }, { text: ' sound like the “sh” in “shoe”: ' }, { es: 'calle' }, { text: ', ' }, { es: 'yo' }, { text: '.' }],
+        [{ text: 'People say “' }, { es: 'vos tenés' }, { text: '” where a textbook says “' }, { es: 'tú tienes' }, { text: '”.' }],
+      ] as readonly (readonly { es?: string; text?: string }[])[],
+      link: 'How it works',
+    },
+  },
+
+  // The "How it works" screen (About in Settings, and the end of the intro). Plain paragraphs, in the words of the app's own buttons.
+  howItWorks: {
+    title: 'How it works',
+    sections: [
+      {
+        id: 'learn',
+        heading: 'Learn',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. Each card has the word, an example sentence and the translation. Finishing a batch puts its words on your schedule. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
+      },
+      {
+        id: 'review',
+        heading: 'Review',
+        text: 'Review shows the words that are due. Turn a card over, then say how well you knew it: Again, Hard, Good or Easy. That answer decides when the word comes back.',
+      },
+      {
+        id: 'matching',
+        heading: 'Matching',
+        text: 'Matching pairs Spanish words with their translations. It uses words you have already learned.',
+      },
+      {
+        id: 'cloze',
+        heading: 'Cloze',
+        text: 'Cloze shows a sentence with one word blanked out. You type the missing word. A hint and the answer are one tap away. It also uses words you have already learned.',
+      },
+      {
+        id: 'spaced',
+        heading: 'Why a word comes back',
+        text: 'Words come back on a schedule. A word you have just learned is due the next day. If you knew it, the next gap is a few days, then about a week, then weeks and months, each one longer than the last. A word is easiest to hold on to when it is seen just as it starts to fade, so every success pushes the next review further out. Again starts the word over, and it comes back soon. The small number on each rating button is the gap that answer gives.',
+      },
+    ],
   },
 
   learn: {

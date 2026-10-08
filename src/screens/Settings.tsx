@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
+import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { MAX_DAILY_LIMIT, MIN_DAILY_LIMIT, SESSIONS_NOTE_FROM, isLastLanguage, setLanguage, stepDailyLimit } from '../data/settingsActions'
+import { SESSIONS_NOTE_FROM, isLastLanguage, setLanguage, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
@@ -18,6 +19,10 @@ interface SettingsScreenProps {
   /** Whether this user may open Debug. When false the Debug section is not rendered at all. */
   debugAllowed: boolean
   onOpenDebug: () => void
+  /** Opens "How it works" (About). Without it the row is left out. */
+  onOpenHow?: () => void
+  /** Replays the intro from step 1 (About). Without it the row is left out. */
+  onRunIntro?: () => void
   /** VITE_BOT_USERNAME; no usable value (unset, empty, REPLACE_ME) leaves the link row out. */
   botUsername?: string
   /** Only passed where Telegram's native BackButton isn't available. */
@@ -29,7 +34,7 @@ interface SettingsScreenProps {
  * and meaning), the theme, a placeholder for reminders, About, and Debug for those allowed to see it. Changes apply at
  * once and go through the write queue like any other settings change.
  */
-export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -64,17 +69,7 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
               </span>
               <span className="setting-hint">{t.dailyGoalHint}</span>
             </div>
-            <div className="stepper">
-              <button type="button" className="stepper-btn" aria-label={t.decrease} disabled={goal <= MIN_DAILY_LIMIT} onClick={() => step(-1)}>
-                −
-              </button>
-              <output className="stepper-value" aria-labelledby="goal-label" aria-live="polite">
-                {goal}
-              </output>
-              <button type="button" className="stepper-btn" aria-label={t.increase} disabled={goal >= MAX_DAILY_LIMIT} onClick={() => step(1)}>
-                +
-              </button>
-            </div>
+            <GoalStepper goal={goal} onStep={step} labelledBy="goal-label" />
           </div>
           {goal >= SESSIONS_NOTE_FROM && <p className="setting-note">{t.sessionsNote}</p>}
 
@@ -165,6 +160,22 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
           {t.about}
         </h2>
         <div className="settings-group">
+          {onOpenHow && (
+            <button type="button" className="setting-row setting-nav" onClick={onOpenHow}>
+              <span className="setting-label">{t.howItWorks}</span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
+          {onRunIntro && (
+            <button type="button" className="setting-row setting-nav" onClick={onRunIntro}>
+              <span className="setting-label">{t.runIntro}</span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
           <div className="setting-row">
             <span className="setting-label">{t.version}</span>
             <span className="setting-value">{VERSION_LABEL}</span>

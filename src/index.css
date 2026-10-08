@@ -2356,3 +2356,168 @@ mark {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
 }
+
+/* ---- The intro: six steps with a progress bar, Back and Continue at the bottom. Teal is the learning path, lavender practice. ---- */
+
+.onboarding {
+  gap: 20px;
+}
+
+.intro-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intro-progress .bar {
+  flex: 1;
+}
+
+.onboarding .intro-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.intro-step {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 24px;
+}
+
+.intro-brand {
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.intro-text {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.intro-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.intro-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.intro-name {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intro-name.is-learn {
+  background: var(--teal-soft);
+  color: var(--teal-on-soft);
+}
+
+.intro-name.is-practice {
+  background: var(--lav-soft);
+  color: var(--lav-on-soft);
+}
+
+.intro-line {
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.intro-goal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.intro-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.intro-es {
+  /* Spanish words in the intro, in the display face. */
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.intro-link {
+  align-self: flex-start;
+  font-size: 15px;
+}
+
+.intro-link:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.intro-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ---- How it works ---- */
+
+.how-it-works {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.how-section h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.how-section p {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+
+.how-learn h2,
+.how-review h2 {
+  color: var(--teal);
+}
+
+.how-matching h2,
+.how-cloze h2 {
+  color: var(--lav);
+}

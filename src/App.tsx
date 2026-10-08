@@ -22,6 +22,9 @@ import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
 import { SettingsScreen } from './screens/Settings'
+import { HowItWorks } from './screens/HowItWorks'
+import { Onboarding } from './screens/Onboarding'
+import { needsOnboarding } from './data/onboarding'
 import { WordDetail } from './screens/WordDetail'
 import { WordsScreen } from './screens/Words'
 import { NotAvailable } from './screens/NotAvailable'
@@ -228,9 +231,18 @@ function App() {
         theme={{ choice: theme.choice, set: theme.set }}
         debugAllowed={debugAllowed}
         onOpenDebug={() => setScreen('debug')}
+        onOpenHow={() => setScreen('how')}
+        onRunIntro={() => setScreen('onboarding')}
         onBack={inPageBack}
       />
     )
+  }
+
+  if (screen === 'how') return <HowItWorks onBack={inPageBack} />
+
+  // "Run the intro again": from step 1, with the current values; finishing or leaving it goes back to Settings.
+  if (screen === 'onboarding' && readyData && queue) {
+    return <Onboarding data={readyData} queue={queue} mode="replay" onExit={() => setScreen('settings')} registerBack={registerBack} />
   }
 
   if (screen === 'debug') {
@@ -305,6 +317,11 @@ function App() {
 
   if (screen === 'cloze' && readyData && queue) {
     return <ClozeScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
+  }
+
+  // The first open of an account that has not finished the intro: it is shown instead of Home, and finishing it writes onboarding_done.
+  if (screen === 'home' && readyData && queue && needsOnboarding(readyData.settings)) {
+    return <Onboarding data={readyData} queue={queue} mode="first" registerBack={registerBack} />
   }
 
   return (

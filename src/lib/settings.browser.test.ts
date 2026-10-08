@@ -105,7 +105,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     const page = await open()
     await toSettings(page)
     expect(await page.$('#settings-debug')).toBeNull()
-    expect(await page.$('.setting-nav')).toBeNull()
+    expect(await page.$('#settings-debug ~ .settings-group .setting-nav')).toBeNull()
     expect(await page.evaluate(() => document.body.innerHTML.includes('Debug'))).toBe(false)
     await page.close()
   }, 60_000)
@@ -115,7 +115,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     await toSettings(page)
     expect(await page.$$eval('.settings-label', (els) => els.map((e) => e.textContent))).toEqual(['Learning', 'Appearance', 'Notifications', 'About', 'Debug'])
     expect(await page.$$eval('#settings-debug ~ .settings-group button', (els) => els.length)).toBe(1)
-    await page.click('.setting-nav')
+    await page.click('#settings-debug ~ .settings-group .setting-nav')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Debug')
 
     await back(page)
