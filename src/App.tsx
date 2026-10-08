@@ -300,7 +300,7 @@ function App() {
 
   const openedWord = screen === 'word' && open ? readyData?.words.find((w) => wordKey(w.esWord) === open.key) : undefined
   if (openedWord && readyData && queue) {
-    return <WordDetail word={openedWord} data={readyData} queue={queue} enrich={enrich} registerBack={registerBack} onDeleted={() => go(backTarget)} onBack={inPageBack} />
+    return <WordDetail word={openedWord} data={readyData} queue={queue} registerBack={registerBack} onDeleted={() => go(backTarget)} onBack={inPageBack} />
   }
 
   if (screen === 'cloze' && readyData && queue) {

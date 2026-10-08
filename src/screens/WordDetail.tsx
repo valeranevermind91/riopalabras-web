@@ -3,7 +3,6 @@ import { BottomSheet } from '../components/WordsSheets'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordForm, type SubmitResult } from '../components/WordForm'
 import { deleteCustomWord, editCustomWord, valuesOf, type WordValues } from '../data/customWords'
-import { noEnrichment, type EnrichResult } from '../data/enrich'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
@@ -35,8 +34,6 @@ interface WordDetailProps {
   word: Word
   data: UserData
   queue: WriteQueue
-  /** Fills in a typed word's translations (the proxy's /enrich), for editing a custom word. Without it every field is typed by hand. */
-  enrich?: (input: { word: string; pos: string | null }) => Promise<EnrichResult>
   /** Lets the screen take Telegram's back button (or the in-page one) while the edit form or the delete question is open. */
   registerBack?: (handler: (() => boolean) | null) => void
   /** The word is gone (deleted): leave the screen, to where it was opened from. */
@@ -48,7 +45,7 @@ interface WordDetailProps {
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
  * scheduling numbers in a collapsed footnote, then what can be done with it: favourite it, or bring it back if it was marked as known.
  */
-export function WordDetail({ word, data, queue, enrich = noEnrichment, registerBack, onDeleted, onBack }: WordDetailProps) {
+export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack }: WordDetailProps) {
   const now = new Date()
   const state = wordState(word, now)
   const note = noteFor(word, state)
@@ -115,7 +112,6 @@ export function WordDetail({ word, data, queue, enrich = noEnrichment, registerB
           existing={word}
           words={data.words}
           initial={valuesOf(word)}
-          enrich={enrich}
           onSubmit={submitEdit}
           onDone={() => {
             haptic('success')

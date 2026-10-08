@@ -866,7 +866,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 60_000)
 
-    it('edits a word from its detail (same key, progress untouched), can re-run the lookup and put back what it had, then deletes it behind a confirm', async () => {
+    it('edits a word from its detail by hand (same key, progress untouched), then deletes it behind a confirm', async () => {
       const page = await open()
       await addWord(page)
       await openByName(page, 'Zapallito')
@@ -882,19 +882,16 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       const afterEdit = await sentAll(page)
       expect(afterEdit.words.at(-1)).toMatchObject({ kind: 'save', row: { es_word: 'Zapallito', ru_translation: 'тыква', pos: 'n' } })
 
-      // re-run enrichment: refills the fields, which can be kept, edited or put back
+      // the edit form is for fixing fields by hand: no lookup in it, and an untouched form closes without a question
       await clickText(page, '.detail-actions .btn', 'Edit')
       await page.waitForSelector('.word-form')
-      await stub(page, { ok: true, value: { enTranslation: 'courgette', ruTranslation: 'цуккини', exampleSentence: 'Un zapallito.', exampleTranslationEn: 'A courgette.', exampleTranslationRu: 'Цуккини.', esRioplatense: 'zapallito', isRioplatenseVariant: true } })
-      await clickText(page, 'button', f.rerun)
-      await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in again'))
-      expect(await fieldValue(page, f.ru)).toBe('цуккини')
-      await clickText(page, 'button', f.putBack)
-      expect(await fieldValue(page, f.ru)).toBe('тыква')
-      await clickText(page, 'button', f.cancel) // back to exactly what the word has: nothing to lose, no question
+      expect(await page.$$eval('.word-form button', (els) => els.map((e) => e.textContent?.trim()).filter((t) => /re-run|enrichment|put back|look/i.test(t ?? '')))).toEqual([])
+      expect(await page.$$eval('.word-form button:not([role="radio"])', (els) => els.map((e) => e.textContent?.trim()))).toEqual([f.save, f.cancel])
+      await clickText(page, 'button', f.cancel)
       await page.waitForSelector('.word-detail')
       expect(await page.$('.sheet')).toBeNull()
       expect((await sentAll(page)).words.at(-1)).toEqual(afterEdit.words.at(-1)) // cancelling wrote nothing
+      expect(await enrichCalls(page)).toEqual([{ word: 'Zapallito', pos: 'n' }]) // only the lookup made when the word was added
 
       // delete: a confirm that names the word
       await clickText(page, '.detail-actions .btn', 'Delete')
@@ -952,7 +949,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 90_000)
 
-    it('the edit form has region and register selects with "Unknown", and a standard field; they round-trip, re-running the lookup refills them, and clearing one writes null', async () => {
+    it('the edit form has region and register selects with "Unknown", and a standard field; they round-trip by hand, and clearing one writes null', async () => {
       const page = await open()
       await addWord(page)
       await openByName(page, 'Zapallito')
@@ -971,15 +968,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.waitForSelector('.word-detail')
       expect((await sentAll(page)).words.at(-1)).toMatchObject({ kind: 'save', row: { es_word: 'Zapallito', region: 'ar', register: 'vulgar', es_standard: 'calabacín' } })
 
-      // back in the form they are as saved; re-running the lookup refills them like the other fields
+      // back in the form they are as saved
       await clickText(page, '.detail-actions .btn', 'Edit')
       await page.waitForSelector('.word-form')
-      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['ar', 'vulgar', 'calabacín'])
-      await stub(page, { ok: true, value: { enTranslation: 'squash', ruTranslation: 'кабачок', exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: null, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'zapallo' } })
-      await clickText(page, 'button', f.rerun)
-      await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in again'))
-      expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['uy', 'informal', 'zapallo'])
-      await clickText(page, 'button', f.putBack)
       expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['ar', 'vulgar', 'calabacín'])
 
       // clear each back to unknown: null is written

@@ -111,7 +111,7 @@ export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?:
   const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden, upsertCustomWord: upsertCustom, removeCustomWord: removeCustom } as never
 
   const opened = open ? words.find((w) => wordKey(w.esWord) === open) : undefined
-  if (opened) return <WordDetail word={opened} data={data} queue={queue} enrich={enrich} registerBack={registerBack} onDeleted={() => setOpen(null)} onBack={() => setOpen(null)} />
+  if (opened) return <WordDetail word={opened} data={data} queue={queue} registerBack={registerBack} onDeleted={() => setOpen(null)} onBack={() => setOpen(null)} />
   return <WordsScreen data={data} queue={queue} savedView={viewStore.get()} onViewChange={viewStore.set} registerBack={registerBack} enrich={enrich} onOpen={(esWord) => setOpen(wordKey(esWord))} />
 }
 

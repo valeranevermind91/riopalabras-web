@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CUSTOM_REGIONS, CUSTOM_REGISTERS, customRegion, customRegister } from '../data/customMarks'
 import { POS_CODES, checkSpanish, findDuplicate, type Duplicate, type PosCode, type WordValues } from '../data/customWords'
 import { BottomSheet } from './WordsSheets'
-import { enrichFailureMessage, type EnrichResult } from '../data/enrich'
+import { enrichFailureMessage, noEnrichment, type EnrichResult } from '../data/enrich'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 
@@ -16,7 +16,8 @@ interface WordFormProps {
   existing: Word | null
   words: readonly Word[]
   initial: WordValues
-  enrich: (input: { word: string; pos: string | null }) => Promise<EnrichResult>
+  /** The lookup that fills in a new word's translations. Only adding uses it: editing is for fixing fields by hand. */
+  enrich?: (input: { word: string; pos: string | null }) => Promise<EnrichResult>
   onSubmit: (values: WordValues) => SubmitResult
   onDone: (result: { status: 'added' | 'saved' }) => void
   /** Leave without saving (asked for only once something has been filled in). */
@@ -37,15 +38,13 @@ type Notice = { tone: 'error' | 'info'; text: string }
  * written on a hit), then a lookup of the translations that never waits longer than its timeout and never blocks typing them by
  * hand, then the details. Every field can be changed before saving; both translations are required.
  */
-export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, onCancel, onOpenExisting, registerBack }: WordFormProps) {
+export function WordForm({ existing, words, initial, enrich = noEnrichment, onSubmit, onDone, onCancel, onOpenExisting, registerBack }: WordFormProps) {
   const editing = existing !== null
   const [phase, setPhase] = useState<Phase>(editing ? 'details' : 'word')
   const [values, setValues] = useState<WordValues>(initial)
   const [notice, setNotice] = useState<Notice | null>(null)
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
   const [looking, setLooking] = useState(false)
-  // What the fields held before a re-run filled them in again, so the result can be thrown away.
-  const [before, setBefore] = useState<WordValues | null>(null)
   // Each lookup has a number; an answer that is no longer the latest (the user stopped waiting, left) is ignored.
   const lookup = useRef(0)
   useEffect(
@@ -91,7 +90,7 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
     </BottomSheet>
   )
 
-  const runLookup = async (current: WordValues, rerun: boolean) => {
+  const runLookup = async (current: WordValues) => {
     const id = ++lookup.current
     setLooking(true)
     setNotice(null)
@@ -100,9 +99,8 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
     setLooking(false)
     if (result.ok) {
       const { value } = result
-      setBefore(rerun ? current : null)
       setValues({ ...current, ...value })
-      setNotice({ tone: 'info', text: rerun ? f.refilled : f.filled })
+      setNotice({ tone: 'info', text: f.filled })
     } else {
       setNotice({ tone: 'error', text: enrichFailureMessage(result.failure) })
     }
@@ -127,7 +125,7 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
       return setDuplicate(found)
     }
     setDuplicate(null)
-    void runLookup({ ...values, esWord: spanish.word }, false)
+    void runLookup({ ...values, esWord: spanish.word })
   }
 
   const save = (e: { preventDefault: () => void }) => {
@@ -242,56 +240,42 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
           {notice.text}
         </p>
       )}
-      {before && !looking && (
-        <button
-          type="button"
-          className="link-btn"
-          onClick={() => {
-            setValues(before)
-            setBefore(null)
-            setNotice(null)
-          }}
-        >
-          {f.putBack}
-        </button>
-      )}
-
       <label className="form-field">
         <span className="form-label">{f.ru}</span>
-        <input className="form-input" lang="ru" value={values.ruTranslation} disabled={looking} onChange={(e) => set({ ruTranslation: e.target.value })} />
+        <input className="form-input" lang="ru" value={values.ruTranslation} onChange={(e) => set({ ruTranslation: e.target.value })} />
       </label>
       <label className="form-field">
         <span className="form-label">{f.en}</span>
-        <input className="form-input" lang="en" value={values.enTranslation} disabled={looking} onChange={(e) => set({ enTranslation: e.target.value })} />
+        <input className="form-input" lang="en" value={values.enTranslation} onChange={(e) => set({ enTranslation: e.target.value })} />
         <span className="form-hint">{f.translationsHint}</span>
       </label>
       <label className="form-field">
         <span className="form-label">{f.example}</span>
-        <textarea className="form-input" lang="es" rows={2} value={values.exampleSentence} disabled={looking} onChange={(e) => set({ exampleSentence: e.target.value })} />
+        <textarea className="form-input" lang="es" rows={2} value={values.exampleSentence} onChange={(e) => set({ exampleSentence: e.target.value })} />
       </label>
       <label className="form-field">
         <span className="form-label">{f.exampleEn}</span>
-        <textarea className="form-input" lang="en" rows={2} value={values.exampleTranslationEn} disabled={looking} onChange={(e) => set({ exampleTranslationEn: e.target.value })} />
+        <textarea className="form-input" lang="en" rows={2} value={values.exampleTranslationEn} onChange={(e) => set({ exampleTranslationEn: e.target.value })} />
       </label>
       <label className="form-field">
         <span className="form-label">{f.exampleRu}</span>
-        <textarea className="form-input" lang="ru" rows={2} value={values.exampleTranslationRu} disabled={looking} onChange={(e) => set({ exampleTranslationRu: e.target.value })} />
+        <textarea className="form-input" lang="ru" rows={2} value={values.exampleTranslationRu} onChange={(e) => set({ exampleTranslationRu: e.target.value })} />
       </label>
       <div className="form-field">
         <label className="form-check">
-          <input type="checkbox" checked={values.isRioplatenseVariant} disabled={looking} onChange={(e) => set({ isRioplatenseVariant: e.target.checked })} />
+          <input type="checkbox" checked={values.isRioplatenseVariant} onChange={(e) => set({ isRioplatenseVariant: e.target.checked })} />
           <span>{f.rioplatenseCheck}</span>
         </label>
         <span className="form-hint">{f.rioplatenseHint}</span>
       </div>
       <label className="form-field">
         <span className="form-label">{f.standard}</span>
-        <input className="form-input" lang="es" value={values.esStandard ?? ''} disabled={looking} onChange={(e) => set({ esStandard: e.target.value })} />
+        <input className="form-input" lang="es" value={values.esStandard ?? ''} onChange={(e) => set({ esStandard: e.target.value })} />
         <span className="form-hint">{f.standardHint}</span>
       </label>
       <label className="form-field">
         <span className="form-label">{f.region}</span>
-        <select className="form-input" value={values.region ?? ''} disabled={looking} onChange={(e) => set({ region: customRegion(e.target.value) })}>
+        <select className="form-input" value={values.region ?? ''} onChange={(e) => set({ region: customRegion(e.target.value) })}>
           <option value="">{f.unknown}</option>
           {CUSTOM_REGIONS.map((region) => (
             <option key={region} value={region}>
@@ -303,7 +287,7 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
       </label>
       <label className="form-field">
         <span className="form-label">{f.register}</span>
-        <select className="form-input" value={values.register ?? ''} disabled={looking} onChange={(e) => set({ register: customRegister(e.target.value) })}>
+        <select className="form-input" value={values.register ?? ''} onChange={(e) => set({ register: customRegister(e.target.value) })}>
           <option value="">{f.unknown}</option>
           {CUSTOM_REGISTERS.map((register) => (
             <option key={register} value={register}>
@@ -314,22 +298,8 @@ export function WordForm({ existing, words, initial, enrich, onSubmit, onDone, o
       </label>
       {values.esRioplatense && <p className="form-hint">{f.rioplatenseForm(values.esRioplatense)}</p>}
 
-      {editing &&
-        (looking ? (
-          <div className="form-note" role="status">
-            <p>{f.rerunning}</p>
-            <button type="button" className="link-btn" onClick={stopWaiting}>
-              {f.fillMyself}
-            </button>
-          </div>
-        ) : (
-          <button type="button" className="btn btn-secondary" onClick={() => void runLookup(values, true)}>
-            {f.rerun}
-          </button>
-        ))}
-
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary" disabled={looking}>
+        <button type="submit" className="btn btn-primary">
           {f.save}
         </button>
         <button type="button" className="btn btn-secondary" onClick={requestClose}>
