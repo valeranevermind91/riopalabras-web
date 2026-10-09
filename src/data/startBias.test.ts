@@ -340,6 +340,7 @@ describe('Debug data lists every settings key', () => {
           state: {
             status: 'ready',
             data: {
+              words: [],
               settings: parseSettings(raw),
               stats: { total: 0, learned: 0, reviewDue: 0, learnPool: 0, newToLearn: 0, favorites: 0, hidden: 0, custom: 0, streak: 0, dailyLimit: 10, remainingToday: 10 },
               diagnostics: { baseCount: 0, orphanProgress: 0, orphanFavorites: 0, orphanHidden: 0 },
@@ -349,7 +350,7 @@ describe('Debug data lists every settings key', () => {
         }),
       )
     expect(render({ start_rank: 2422 })).toContain('start_rank: 2422')
-    expect(render({ daily_new_word_limit: 10 })).not.toContain('start_rank: ')
+    expect(render({ daily_new_word_limit: 10 })).not.toMatch(/start_rank: \d/) // the batch preview says "none"; no stored key is listed
     expect(render({})).toContain('(none)')
   })
 })

@@ -329,4 +329,47 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await page.close()
     }, 90_000)
   })
+  describe('Debug previews the next Learn batch', () => {
+    const toDebug = async (page: Page) => {
+      await toSettings(page)
+      await clickText(page, '.setting-nav, button', 'Debug')
+      await page.waitForFunction(() => Array.from(document.querySelectorAll('dt')).some((d) => d.textContent?.startsWith('Next Learn batch')))
+    }
+    const preview = (page: Page) =>
+      page.evaluate(() => {
+        const dt = Array.from(document.querySelectorAll('dt')).find((d) => d.textContent?.startsWith('Next Learn batch'))
+        return Array.from(dt!.nextElementSibling!.querySelectorAll('span')).map((e) => e.textContent ?? '')
+      })
+
+    it('shows start_rank, then ten words with their rank and where each came from: 7 from the window, 3 from below', async () => {
+      const page = await open('ready=1&debug=1&goal=10&lang=en&start_rank=2422')
+      await toDebug(page)
+      const lines = await preview(page)
+      expect(lines[0]).toBe('start_rank: 2422')
+      const words = lines.slice(1).map((l) => /^(\d+)\s+\S+\s+\((.+)\)$/.exec(l)!)
+      expect(words).toHaveLength(10)
+      for (const [, rank, source] of words) expect(source).toBe(Number(rank) < 2422 ? 'below start_rank' : 'window (from start_rank)')
+      expect(words.filter((w) => w[2] === 'below start_rank')).toHaveLength(3)
+      await page.close()
+    }, 60_000)
+
+    it('says "none" without a start_rank, and everything is from the window', async () => {
+      const page = await open('ready=1&debug=1&goal=10&lang=en')
+      await toDebug(page)
+      const lines = await preview(page)
+      expect(lines[0]).toBe('start_rank: none')
+      expect(lines.slice(1)).toHaveLength(10)
+      expect(lines.slice(1).every((l) => l.endsWith('(window (from start_rank))'))).toBe(true)
+      await page.close()
+    }, 60_000)
+
+    it('is read-only: looking writes nothing, and the settings it shows are the stored ones', async () => {
+      const page = await open('ready=1&debug=1&goal=10&lang=en&start_rank=2422')
+      await toDebug(page)
+      await preview(page)
+      expect(await sent(page)).toEqual({ settings: [], hidden: [] })
+      expect(await page.evaluate(() => Array.from(document.querySelectorAll('.settings-key')).map((e) => e.textContent))).toContain('start_rank: 2422')
+      await page.close()
+    }, 60_000)
+  })
 })

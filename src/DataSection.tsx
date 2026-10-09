@@ -1,11 +1,29 @@
+import { useMemo } from 'react'
+import { previewLearnBatch, previewLine } from './data/learnPreview'
 import { settingsEntries } from './data/settingsEntries'
-import type { DataState } from './data/useUserData'
+import type { DataState, UserData } from './data/useUserData'
 
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
     <>
       <dt>{label}</dt>
       <dd>{value}</dd>
+    </>
+  )
+}
+
+function LearnBatchPreview({ words, settings }: { words: UserData['words']; settings: UserData['settings'] }) {
+  // Selecting a batch writes nothing and consumes nothing, so this is safe to run on every render of the Debug screen.
+  const preview = useMemo(() => previewLearnBatch(words, settings, new Date()), [words, settings])
+  return (
+    <>
+      <span className="settings-key">start_rank: {preview.startRank ?? 'none'}</span>
+      {preview.entries.map((entry) => (
+        <span key={entry.esWord} className="settings-key">
+          {previewLine(entry)}
+        </span>
+      ))}
+      {preview.entries.length === 0 && <span className="settings-key">(empty: nothing left to learn today, or nothing left in the pool)</span>}
     </>
   )
 }
@@ -47,6 +65,10 @@ export function DataSection({ state }: { state: DataState }) {
             <dt>Next in learn pool (rank order, from the first word; ignores start_rank)</dt>
             <dd className="mono">
               {state.data.learnPoolPreview.map((w) => `${w.rank}:${w.esWord}`).join('  ') || '(empty)'}
+            </dd>
+            <dt>Next Learn batch (the real selection, read-only)</dt>
+            <dd className="mono settings-keys">
+              <LearnBatchPreview words={state.data.words} settings={state.data.settings} />
             </dd>
             <dt>Settings keys stored ({Object.keys(state.data.settings.raw).length})</dt>
             <dd className="mono settings-keys">

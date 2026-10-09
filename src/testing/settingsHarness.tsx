@@ -11,6 +11,7 @@ import { parseDictionary } from '../data/dictionary'
 import { applyHiddenFlag, applySettingsPatch } from '../data/mutations'
 import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
+import { computeStats, getLearnPool } from '../data/stats'
 import { createWriteQueue } from '../data/writeQueue'
 import { makeWord } from './makeWord'
 import type { SettingsPatch, Word } from '../data/types'
@@ -127,8 +128,23 @@ export function Harness() {
         onBack={back}
       />
     )
+  // ready=1: Debug's Data section gets the loaded words and settings (stats and the pool preview computed as the app does).
+  const debugData =
+    loaded && params.get('ready') === '1'
+      ? ({
+          status: 'ready',
+          data: {
+            ...(data as object),
+            stats: computeStats(words, settings, new Date()),
+            diagnostics: { baseCount: words.length, orphanProgress: 0, orphanFavorites: 0, orphanHidden: 0 },
+            learnPoolPreview: getLearnPool(words).slice(0, 8),
+            degraded: [],
+            retryDegraded: () => {},
+          },
+        } as never)
+      : ({ status: 'loading' } as const)
   if (screen === 'debug')
-    return <DebugScreen telegram={{ user: null, initData: '', isMock: true }} auth={{ status: 'no-telegram' }} data={{ status: 'loading' }} queue={null} metrics={null} client={null} userId={null} onBack={back} />
+    return <DebugScreen telegram={{ user: null, initData: '', isMock: true }} auth={{ status: 'no-telegram' }} data={debugData} queue={null} metrics={null} client={null} userId={null} onBack={back} />
   if (loaded && needsOnboarding(settings)) return <Onboarding data={data} queue={queue} mode="first" registerBack={registerBack} />
   return (
     <HomeScreen
