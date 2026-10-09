@@ -27,20 +27,20 @@ describe('a custom word that is itself Rioplatense carries the marks a dictionar
   it('all of them: the "rioplatense" chip, the region chip, the register, and the "standard: …" line', () => {
     const html = card(custom({ isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'calabacín' }))
     expect(pill(html)).toBe(true)
-    expect(html).toContain(`>${strings.rio.en.pill}<`)
-    expect(tags(html)).toEqual([strings.rio.en.tag.uy])
+    expect(html).toContain(`>${strings.rio.pill}<`)
+    expect(tags(html)).toEqual([strings.rio.tag.uy])
     expect(register(html)).toEqual(['informal'])
     expect(standard(html)).toEqual(['calabacín'])
     expect(html).toContain('<h2 class="wc-headword">zapallito</h2>') // the typed word stays the headword
   })
 
   it('the region chip is the same one the dictionary uses, for each region', () => {
-    expect(tags(card(custom({ isRioplatenseVariant: true, region: 'ar' })))).toEqual([strings.rio.en.tag.ar])
-    expect(tags(card(custom({ isRioplatenseVariant: true, region: 'uy' })))).toEqual([strings.rio.en.tag.uy])
+    expect(tags(card(custom({ isRioplatenseVariant: true, region: 'ar' })))).toEqual([strings.rio.tag.ar])
+    expect(tags(card(custom({ isRioplatenseVariant: true, region: 'uy' })))).toEqual([strings.rio.tag.uy])
   })
 
   it('each register the dictionary labels is labelled the same way; neutral and unknown have no label', () => {
-    for (const r of ['informal', 'vulgar', 'offensive', 'pejorative'] as const) expect(register(card(custom({ isRioplatenseVariant: true, register: r })))).toEqual([strings.rio.en.register[r]])
+    for (const r of ['informal', 'vulgar', 'offensive', 'pejorative'] as const) expect(register(card(custom({ isRioplatenseVariant: true, register: r })))).toEqual([strings.rio.register[r]])
     expect(register(card(custom({ isRioplatenseVariant: true, register: 'neutral' })))).toEqual([])
     expect(register(card(custom({ isRioplatenseVariant: true, register: null })))).toEqual([])
   })
@@ -55,7 +55,7 @@ describe('a custom word that is itself Rioplatense carries the marks a dictionar
     expect([pill(onlyStandard), tags(onlyStandard), register(onlyStandard), standard(onlyStandard)]).toEqual([true, [], [], ['calabacín']])
 
     const onlyRegion = card(custom({ isRioplatenseVariant: true, region: 'ar' }))
-    expect([pill(onlyRegion), tags(onlyRegion), register(onlyRegion), standard(onlyRegion)]).toEqual([true, [strings.rio.en.tag.ar], [], []])
+    expect([pill(onlyRegion), tags(onlyRegion), register(onlyRegion), standard(onlyRegion)]).toEqual([true, [strings.rio.tag.ar], [], []])
   })
 
   it('the review card shows the same marks', () => {
@@ -63,7 +63,7 @@ describe('a custom word that is itself Rioplatense carries the marks a dictionar
     const html = renderToStaticMarkup(createElement(ReviewCard, { word, settings: BOTH, revealed: true } as never))
     expect(html).toContain('class="wc-rio"')
     // the review card repeats the headword row on both faces, as it does for a dictionary word
-    expect([...new Set(tags(html))]).toEqual([strings.rio.en.tag.ar])
+    expect([...new Set(tags(html))]).toEqual([strings.rio.tag.ar])
     expect([...new Set(register(html))]).toEqual(['vulgar'])
     expect([...new Set(standard(html))]).toEqual(['calabacín'])
   })
@@ -79,7 +79,7 @@ describe('the flag switches the marks on and off without losing them', () => {
       const html = card(word)
       return [pill(html), tags(html), register(html), standard(html)]
     }
-    expect(shown(on)).toEqual([true, [strings.rio.en.tag.ar], ['vulgar'], ['calabacín']])
+    expect(shown(on)).toEqual([true, [strings.rio.tag.ar], ['vulgar'], ['calabacín']])
     expect(shown(off)).toEqual([false, [], [], []])
     expect(off).toMatchObject(marks) // hidden, not cleared
     expect(shown({ ...off, isRioplatenseVariant: true })).toEqual(shown(on))

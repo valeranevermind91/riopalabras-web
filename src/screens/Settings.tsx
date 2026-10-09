@@ -1,10 +1,11 @@
 import type { MouseEvent } from 'react'
 import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { SESSIONS_NOTE_FROM, isLastLanguage, setLanguage, stepDailyLimit } from '../data/settingsActions'
+import { SESSIONS_NOTE_FROM, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
+import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
 import { VERSION_LABEL } from '../lib/buildInfo'
 import { getWebApp, haptic } from '../lib/telegram'
 import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
@@ -45,6 +46,13 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
   }
   const toggleLanguage = (which: 'ru' | 'en', on: boolean) => {
     if (setLanguage(which, on, deps)) haptic('select')
+  }
+  // The interface language (not the translations a word shows): saved like any setting; the app switches when the setting changes.
+  const uiLanguage = effectiveLanguage(settings.uiLanguage)
+  const chooseUiLanguage = (language: UiLanguage) => {
+    if (settings.uiLanguage === language) return
+    haptic('select')
+    saveSetting(languagePatch(language), deps)
   }
   const openLink = (e: MouseEvent<HTMLAnchorElement>) => {
     const open = getWebApp().webApp.openTelegramLink
@@ -109,6 +117,34 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
                 disabled={isLastLanguage(settings, 'en')}
                 onChange={(e) => toggleLanguage('en', e.target.checked)}
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="settings-language">
+        <h2 id="settings-language" className="settings-label">
+          {t.language}
+        </h2>
+        <div className="settings-group">
+          <div className="setting-row setting-row-stack">
+            <span id="ui-language-label" className="setting-label">
+              {t.uiLanguage}
+            </span>
+            <div className="segmented" role="radiogroup" aria-labelledby="ui-language-label">
+              {UI_LANGUAGES.map((language) => (
+                <button
+                  key={language}
+                  type="button"
+                  lang={language}
+                  className={uiLanguage === language ? 'segment is-active' : 'segment'}
+                  role="radio"
+                  aria-checked={uiLanguage === language}
+                  onClick={() => chooseUiLanguage(language)}
+                >
+                  {t.uiLanguageNames[language]}
+                </button>
+              ))}
             </div>
           </div>
         </div>

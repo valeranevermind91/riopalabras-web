@@ -4,8 +4,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
+import { effectiveLanguage, languagePatch } from '../lib/language'
 import { backTarget } from '../lib/nav'
-import { strings } from '../strings'
+import { en } from '../strings'
+import { ru } from '../strings.ru'
 import { HowItWorks } from './HowItWorks'
 import { Onboarding } from './Onboarding'
 import { STEPS, type StepProps } from './onboardingSteps'
@@ -24,16 +26,24 @@ const step = (id: string, raw: Record<string, unknown> = {}) => {
   return renderToStaticMarkup(createElement(entry.Body, props))
 }
 
-describe('the six steps', () => {
-  it('are, in order: what this is, what is inside, translation language, the placement test, the daily goal, pronunciation', () => {
-    expect(STEPS.map((s) => s.id)).toEqual(['about', 'inside', 'translation', 'placement', 'goal', 'pronunciation'])
+describe('the seven steps', () => {
+  it('are, in order: the language, what this is, what is inside, translations, the placement test, the daily goal, pronunciation', () => {
+    expect(STEPS.map((s) => s.id)).toEqual(['language', 'about', 'inside', 'translation', 'placement', 'goal', 'pronunciation'])
   })
 
-  it('open on step 1 with a progress indicator: "Step 1 of 6" and a progress bar', () => {
+  it('open on step 1 with a progress indicator: "Step 1 of 7" and a progress bar', () => {
     const html = shell('first')
-    expect(html).toContain('Step 1 of 6')
-    expect(html).toMatch(/role="progressbar"[^>]*aria-valuemin="1"[^>]*aria-valuemax="6"[^>]*aria-valuenow="1"/)
-    expect(html).toContain('style="width:16.666666666666664%"')
+    expect(html).toContain('Step 1 of 7')
+    expect(html).toMatch(/role="progressbar"[^>]*aria-valuemin="1"[^>]*aria-valuemax="7"[^>]*aria-valuenow="1"/)
+    expect(html).toContain('style="width:14.285714285714285%"')
+    expect(html).toContain('data-step="language"') // the first step is the language
+  })
+
+  it('1: the language: two large options, each in its own language, the one Telegram reports (here English) or the stored one selected', () => {
+    const options = (html: string) => [...html.matchAll(/lang="(\w+)" class="lang-option[^"]*" role="radio" aria-checked="(\w+)">([^<]+)</g)].map((m) => `${m[3]}:${m[2]}`)
+    expect(options(step('language'))).toEqual(['English:true', 'Русский:false'])
+    expect(options(step('language', { ui_language: 'ru' }))).toEqual(['English:false', 'Русский:true'])
+    expect(step('language')).toContain('role="radiogroup"')
   })
 
   it('1: what this is: the app name in the display face and one sentence', () => {
@@ -42,20 +52,18 @@ describe('the six steps', () => {
     expect(html).toContain('The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.')
   })
 
-  it('2: what is inside: one short line per thing, Learn, Review, Matching, Cloze, the list and your own words', () => {
+  it('2: what is inside: Learn, Review, Matching and Cloze, Words, each with what to expect (the given text)', () => {
     const html = step('inside')
-    expect([...html.matchAll(/<span class="intro-name is-(\w+)">([^<]+)<\/span><span class="intro-line">([^<]+)<\/span>/g)].map((m) => [m[2], m[1]])).toEqual([
-      ['Learn', 'learn'],
-      ['Review', 'learn'],
-      ['Matching', 'practice'],
-      ['Cloze', 'practice'],
-      ['Words', 'learn'],
-      ['Your own words', 'learn'],
+    expect([...html.matchAll(/<span class="intro-name is-(\w+)">([^<]+)<\/span><span class="intro-line">([^<]+)<\/span>/g)].map((m) => [m[2], m[1], m[3]])).toEqual([
+      ['Learn', 'learn', 'new words, each shown in a real sentence rather than a bare list.'],
+      ['Review', 'learn', 'self-check cards: you say whether you remembered, and the app decides when the word comes back.'],
+      ['Matching and Cloze', 'practice', 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.'],
+      ['Words', 'learn', 'the whole dictionary, with search, filters, favourites, and words you add yourself.'],
     ])
-    expect(html.match(/<li>/g)).toHaveLength(6)
+    expect(html.match(/<li>/g)).toHaveLength(4)
   })
 
-  it('3: translation language: Russian, English or both, on what is set (both by default)', () => {
+  it('3: translations: Russian, English or both, on what is set (both by default)', () => {
     const checked = (html: string) => [...html.matchAll(/role="radio" aria-checked="(\w+)">([^<]+)</g)].map((m) => `${m[2]}:${m[1]}`)
     expect(checked(step('translation'))).toEqual(['Russian:false', 'English:false', 'Both:true'])
     expect(checked(step('translation', { show_en_translation: false }))).toEqual(['Russian:true', 'English:false', 'Both:false'])
@@ -98,7 +106,35 @@ describe('the six steps', () => {
   it('the shell is the same around any step: a step added or replaced does not change the flow', () => {
     // the steps are a list of { id, Body, canContinue? }; the placement test replaces the fourth Body and nothing else
     expect(STEPS.every((s) => typeof s.Body === 'function')).toBe(true)
-    expect(STEPS[3].id).toBe('placement')
+    expect(STEPS[4].id).toBe('placement')
+  })
+})
+
+describe('Continue on the language step', () => {
+  const first = STEPS[0]
+  const run = (raw: Record<string, unknown>) => {
+    const written: Record<string, unknown>[] = []
+    first.onContinue!({ settings: parseSettings(raw), saveSetting: (patch) => void written.push(patch), stepGoal: noop, onHow: noop })
+    return written
+  }
+
+  it('is the first step, and has something to do on Continue', () => {
+    expect(first.id).toBe('language')
+    expect(typeof first.onContinue).toBe('function')
+    expect(STEPS.slice(1).some((s) => s.onContinue)).toBe(false) // no other step writes just by being left
+  })
+
+  it('writes ui_language with the preselected language when none is stored (here English: no Telegram)', () => {
+    expect(run({})).toEqual([{ ui_language: 'en' }])
+  })
+
+  it('writes nothing when a language is stored already', () => {
+    expect(run({ ui_language: 'ru' })).toEqual([])
+    expect(run({ ui_language: 'en' })).toEqual([])
+  })
+
+  it('is the same patch the option writes', () => {
+    expect(run({})[0]).toEqual(languagePatch(effectiveLanguage(null)))
   })
 })
 
@@ -119,10 +155,10 @@ describe('Back on the first step', () => {
 })
 
 describe('the tone: these screens inform, they do not instruct', () => {
-  const copy = JSON.stringify([strings.onboarding, strings.howItWorks])
-  it('has no exclamation marks, no "remember", no "don\'t worry"', () => {
+  const copy = JSON.stringify([en.onboarding, en.howItWorks, ru.onboarding, ru.howItWorks])
+  it('has no exclamation marks, no "remember", no "don\'t worry", in either language', () => {
     expect(copy).not.toContain('!')
-    expect(copy.toLowerCase()).not.toMatch(/remember|don't worry|do not worry|don’t worry|make sure|you should|you must|try to/)
+    expect(copy.toLowerCase()).not.toMatch(/\bremember\b|don't worry|do not worry|don’t worry|make sure|you should|you must|try to|не забывайте|не волнуйтесь|не переживайте|убедитесь|обязательно/)
   })
 })
 

@@ -1,3 +1,4 @@
+import { LANGUAGE_SETTING_KEY, parseUiLanguage } from '../lib/language'
 import { THEME_SETTING_KEY, parseThemeChoice } from '../lib/theme'
 import type { UserSettings } from './types'
 
@@ -29,6 +30,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     // Absent means on: both languages, as the cards always showed. An explicit false (set from the Flutter app) stays off.
     showEnTranslation: bool(raw.show_en_translation, true),
     themeChoice: parseThemeChoice(raw[THEME_SETTING_KEY]),
+    uiLanguage: parseUiLanguage(raw[LANGUAGE_SETTING_KEY]),
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
     raw,

@@ -34,7 +34,7 @@ const newRound = (data: UserData): MatchingState | null => {
 }
 
 export function MatchingScreen({ data, queue, metrics, onHome, onBack }: MatchingScreenProps) {
-  const t = strings.practice.en // chrome: English
+  const t = strings.practice 
   const [round, setRound] = useState(() => newRound(data))
   const latest = useRef(round)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

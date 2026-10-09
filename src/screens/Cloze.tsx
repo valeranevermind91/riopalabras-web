@@ -30,7 +30,7 @@ interface ClozeScreenProps {
 }
 
 export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScreenProps) {
-  const t = strings.practice.en
+  const t = strings.practice
   const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(data.words))
   const [progress, setProgress] = useState<ClozeProgress>(startCloze)
   const { index, results, done } = progress

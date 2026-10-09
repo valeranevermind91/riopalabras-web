@@ -1,5 +1,6 @@
 import { GoalStepper } from '../components/GoalStepper'
 import { LANGUAGE_CHOICES, languageChoiceOf, languageChoicePatch, type LanguageChoice } from '../data/onboarding'
+import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
 import { SESSIONS_NOTE_FROM } from '../data/settingsActions'
 import type { SettingsPatch, UserSettings } from '../data/types'
 import { haptic } from '../lib/telegram'
@@ -15,6 +16,32 @@ export interface StepProps {
   stepGoal: (delta: 1 | -1) => void
   /** Opens "How it works" (the last step links to it). */
   onHow: () => void
+}
+
+/** The first step: the interface language, two large options, the one Telegram reports (or the one already chosen) selected. Choosing switches everything at once. */
+export function LanguageStep({ settings, saveSetting }: StepProps) {
+  const current = effectiveLanguage(settings.uiLanguage)
+  const choose = (language: UiLanguage) => {
+    // The preselected one is a default, not yet a choice: tapping it makes it one.
+    if (settings.uiLanguage === language) return
+    haptic('select')
+    saveSetting(languagePatch(language))
+  }
+  return (
+    <div className="intro-step" data-step="language">
+      <h1 className="intro-title" id="intro-language">
+        {t.language.title}
+      </h1>
+      <p className="intro-text">{t.language.text}</p>
+      <div className="lang-options" role="radiogroup" aria-labelledby="intro-language">
+        {UI_LANGUAGES.map((language) => (
+          <button key={language} type="button" lang={language} className={current === language ? 'lang-option is-active' : 'lang-option'} role="radio" aria-checked={current === language} onClick={() => choose(language)}>
+            {strings.settings.uiLanguageNames[language]}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function AboutStep() {

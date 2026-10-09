@@ -12,7 +12,7 @@ export interface ClozeFeedback {
  * "in this sentence" nudge is word content, so it follows the translation language (`lang`).
  */
 export function clozeFeedback(kind: ClozeKind | 'gaveUp', target: string, lang: Lang): ClozeFeedback {
-  const t = strings.practice.en
+  const t = strings.practice
   switch (kind) {
     case 'exact':
       return { text: t.correct, tone: 'ok' }

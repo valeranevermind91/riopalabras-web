@@ -1,3 +1,4 @@
+import type { UiLanguage } from '../lib/language'
 import type { ThemeChoice } from '../lib/theme'
 import type { RioExample, RioInfo, RioRegion } from './rio'
 
@@ -48,6 +49,8 @@ export interface UserSettings {
   readonly showEnTranslation: boolean
   /** The synced theme choice (system / light / dark); null until the user has picked one on any device. */
   readonly themeChoice: ThemeChoice | null
+  /** The interface language chosen by the user ('en' or 'ru'); null until they choose (it then follows Telegram's language). */
+  readonly uiLanguage: UiLanguage | null
   readonly learnPicks: readonly string[]
   readonly pendingWordDeletes: readonly string[]
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

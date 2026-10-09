@@ -29,16 +29,16 @@ const render = (raw: Record<string, unknown> = {}, props: Partial<Parameters<typ
 const labels = (html: string) => [...html.matchAll(/<h2 id="settings-[a-z]+" class="settings-label">([^<]+)<\/h2>/g)].map((m) => m[1])
 
 describe('the Settings screen', () => {
-  it('has the header with a back button and the title, and the sections in this order: Learning, Appearance, Notifications, About', () => {
+  it('has the header with a back button and the title, and the sections in this order: Learning, Language, Appearance, Notifications, About', () => {
     const html = render({}, { onBack: noop })
     expect(html).toContain('<h1>Settings</h1>')
     expect(html).toContain('class="back-link"')
-    expect(labels(html)).toEqual(['Learning', 'Appearance', 'Notifications', 'About'])
+    expect(labels(html)).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About'])
     expect(html).toMatch(/class="settings-label"/)
   })
 
   it('Debug is the fifth section, after About, for someone allowed', () => {
-    expect(labels(render({}, { debugAllowed: true }))).toEqual(['Learning', 'Appearance', 'Notifications', 'About', 'Debug'])
+    expect(labels(render({}, { debugAllowed: true }))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About', 'Debug'])
   })
 
   describe('the daily goal', () => {

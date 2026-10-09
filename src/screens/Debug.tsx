@@ -11,7 +11,7 @@ import type { WriteQueue } from '../data/writeQueue'
 import type { DataState } from '../data/useUserData'
 import type { AuthState } from '../lib/auth'
 import type { TelegramUser } from '../lib/telegram'
-import { strings } from '../strings'
+import { en, strings } from '../strings'
 
 export interface TelegramInfo {
   user: TelegramUser | null
@@ -33,7 +33,7 @@ interface DebugScreenProps {
 export function DebugScreen({ telegram, auth, data, onBack, queue, metrics, client, userId }: DebugScreenProps) {
   return (
     <main className="screen">
-      <ScreenHeader title={strings.debug.title} onBack={onBack} />
+      <ScreenHeader title={strings.debug.title} onBack={onBack} backLabel={en.common.back} />
 
       {telegram.isMock ? (
         <p className="badge badge-mock">Using mock Telegram data (dev only)</p>
@@ -59,7 +59,7 @@ export function DebugScreen({ telegram, auth, data, onBack, queue, metrics, clie
           </>
         )}
 
-        {auth.status === 'no-telegram' && <p>{strings.common.signInPrompt}</p>}
+        {auth.status === 'no-telegram' && <p>{en.common.signInPrompt}</p>}
 
         {auth.status === 'error' && <p className="error">{strings.debug.signInFailed(auth.message)}</p>}
       </section>

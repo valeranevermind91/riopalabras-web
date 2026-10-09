@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { lastDays } from './metrics'
-import { WEEKDAY_LETTERS, activityDots, weekdayLetter } from './streakDots'
+import { activityDots, weekdayLetter } from './streakDots'
+import { strings } from '../strings'
 
 const MON = new Date(2026, 9, 5, 12) // Monday 5 October 2026
 
 describe('weekday letters (week starts Monday, taken from the date)', () => {
   it('Mon..Sun are M T W T F S S', () => {
-    expect(WEEKDAY_LETTERS.join('')).toBe('MTWTFSS')
+    expect(strings.home.weekdays.join('')).toBe('MTWTFSS')
     const week = ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-10', '2026-10-11']
     expect(week.map(weekdayLetter).join('')).toBe('MTWTFSS')
   })
@@ -43,6 +44,6 @@ describe('the dots', () => {
 describe('the dots are not a streak', () => {
   it('the module no longer computes a streak from them: the number is the stored one (computeStreak)', async () => {
     const mod = await import('./streakDots')
-    expect(Object.keys(mod).sort()).toEqual(['DOT_COUNT', 'WEEKDAY_LETTERS', 'activityDots', 'weekdayLetter'])
+    expect(Object.keys(mod).sort()).toEqual(['DOT_COUNT', 'activityDots', 'weekdayLetter'])
   })
 })

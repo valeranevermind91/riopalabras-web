@@ -12,6 +12,7 @@ import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
 import { hasHistory, wordState, type WordState } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
+import { getLanguage } from '../lib/language'
 import { haptic } from '../lib/telegram'
 import { formatInterval } from '../sm2/sm2'
 import { hasTranslations } from '../data/words'
@@ -20,7 +21,7 @@ import { strings } from '../strings'
 const t = strings.words
 const d = t.detail
 
-const date = (when: Date) => when.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+const date = (when: Date) => when.toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** What the state block says beyond the numbers: why a word reads the way it does, when that is not obvious. */
 function noteFor(word: Word, state: WordState): string | null {

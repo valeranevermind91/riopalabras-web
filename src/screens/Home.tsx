@@ -195,7 +195,7 @@ function buildTiles(
   on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void },
 ): Tile[] {
   const t = strings.home.tiles
-  const need = strings.practice.en.needWords
+  const need = strings.practice.needWords
   return [
     {
       id: 'learn',

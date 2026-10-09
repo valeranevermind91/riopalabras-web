@@ -69,11 +69,11 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
 
     await toSettings(page)
     expect(await title(page)).toBe('Settings')
-    expect(await page.$$eval('[role="radio"]', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['System:true', 'Light:false', 'Dark:false'])
+    expect(await page.$$eval('[aria-labelledby="theme-label"] [role="radio"]', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['System:true', 'Light:false', 'Dark:false'])
 
-    await press(page, '[role="radio"]', 'Dark')
+    await press(page, '[aria-labelledby="theme-label"] [role="radio"]', 'Dark')
     await page.waitForFunction(() => document.documentElement.getAttribute('data-theme') === 'dark')
-    expect(await page.$$eval('[role="radio"]', (els) => els.map((e) => e.getAttribute('aria-checked')))).toEqual(['false', 'false', 'true'])
+    expect(await page.$$eval('[aria-labelledby="theme-label"] [role="radio"]', (els) => els.map((e) => e.getAttribute('aria-checked')))).toEqual(['false', 'false', 'true'])
     const dark = await pageColour(page)
     expect(dark).not.toBe(before.colour) // the screen really changed
 
@@ -83,14 +83,14 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     expect(await pageColour(page)).toBe(dark)
 
     await toSettings(page) // and Settings still shows it
-    expect(await page.$eval('[role="radio"][aria-checked="true"]', (e) => e.textContent)).toBe('Dark')
+    expect(await page.$eval('[aria-labelledby="theme-label"] [role="radio"][aria-checked="true"]', (e) => e.textContent)).toBe('Dark')
     await page.close()
   }, 60_000)
 
   it('the choice is saved: sent through the settings lane as theme_preference, and kept in localStorage', async () => {
     const page = await open()
     await toSettings(page)
-    await press(page, '[role="radio"]', 'Dark')
+    await press(page, '[aria-labelledby="theme-label"] [role="radio"]', 'Dark')
     await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
     expect((await sent(page)).at(-1)).toEqual({ theme_preference: 'dark' })
     expect(await page.evaluate(() => localStorage.getItem('riopalabras.theme.v1'))).toBe('dark')
@@ -113,7 +113,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
   it('Home → Settings → Debug → Back lands on Settings (and Back again on Home)', async () => {
     const page = await open('debug=1')
     await toSettings(page)
-    expect(await page.$$eval('.settings-label', (els) => els.map((e) => e.textContent))).toEqual(['Learning', 'Appearance', 'Notifications', 'About', 'Debug'])
+    expect(await page.$$eval('.settings-label', (els) => els.map((e) => e.textContent))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About', 'Debug'])
     expect(await page.$$eval('#settings-debug ~ .settings-group button', (els) => els.length)).toBe(1)
     await page.click('#settings-debug ~ .settings-group .setting-nav')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Debug')
@@ -137,7 +137,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     expect(await page.$$eval('.stepper-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Decrease the daily goal', 'Increase the daily goal'])
     expect(await page.$eval('output.stepper-value', (e) => document.getElementById(e.getAttribute('aria-labelledby')!)?.textContent)).toBe('Daily goal')
     // the theme control: a radio group named by its label
-    expect(await page.$eval('[role="radiogroup"]', (e) => document.getElementById(e.getAttribute('aria-labelledby')!)?.textContent)).toBe('Theme')
+    expect(await page.$$eval('[role="radiogroup"]', (els) => els.map((e) => document.getElementById(e.getAttribute('aria-labelledby')!)?.textContent))).toEqual(['App language', 'Theme'])
     // the reminders row has nothing to focus
     expect(await page.$$eval('.setting-row.is-disabled button, .setting-row.is-disabled input, .setting-row.is-disabled a, .setting-row.is-disabled [tabindex]', (els) => els.length)).toBe(0)
     await page.close()

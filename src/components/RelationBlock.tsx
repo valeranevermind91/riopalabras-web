@@ -5,7 +5,7 @@ import { strings } from '../strings'
 import { RegionTag } from './RegionTag'
 
 function prepare(relation: Relation, settings: TranslationFlags) {
-  const t = strings.rio.en // labels are UI chrome: English; the note and standard-meaning TEXT follow the translation flags
+  const t = strings.rio // labels are interface text; the note and standard-meaning TEXT follow the translation flags
   // Both are blocks with room for every enabled language: one paragraph each, RU first (a standard meaning is cut to its first gloss).
   const notes = relation ? pickLocalizedAll(relation.note ?? null, settings) : []
   const stdMeanings = (relation ? pickLocalizedAll(relation.stdMeaning ?? null, settings) : []).map(firstGloss)

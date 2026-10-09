@@ -1,3 +1,5 @@
+import { strings } from '../strings'
+
 // Port of Word.applyReview / previewIntervalDays and the Learn "first interval" rule from the
 // Flutter app. Pure: callers pass `now`, nothing here reads the clock.
 
@@ -58,11 +60,11 @@ export function previewInterval(card: Sm2Card, quality: Quality): number {
 }
 
 export function formatInterval(days: number): string {
-  if (days <= 0) return '<1m'
-  if (days === 1) return '1d'
-  if (days < 30) return `${days}d`
-  if (days < 365) return `${Math.round(days / 30)}mo`
-  return `${Math.round(days / 365)}y`
+  const t = strings.interval
+  if (days <= 0) return t.lessThanMinute
+  if (days < 30) return t.days(days)
+  if (days < 365) return t.months(Math.round(days / 30))
+  return t.years(Math.round(days / 365))
 }
 
 /**

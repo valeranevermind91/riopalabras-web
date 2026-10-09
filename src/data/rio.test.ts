@@ -5,7 +5,8 @@ import { effectiveExample, headword, headwordDecision, highlightTarget } from '.
 import { headwordRegion, relationFor, translationsFor } from './relation'
 import { findFormRange, firstGloss, inflectionOf, parseFallbackExamples, parseRioOverlay, type RioInfo } from './rio'
 import { pickLocalizedAll, type TranslationFlags } from './translations'
-import { strings } from '../strings'
+import { en, strings } from '../strings'
+import { ru } from '../strings.ru'
 import { makeWord } from '../testing/makeWord'
 import type { Word } from './types'
 import { EN_ONLY, RU_ONLY } from '../testing/translationFlags'
@@ -361,9 +362,9 @@ describe('notes, alternatives and translations', () => {
   })
 
   it('has every label in both languages', () => {
-    expect(Object.keys(strings.rio.en).sort()).toEqual(Object.keys(strings.rio.ru).sort())
-    expect(Object.keys(strings.rio.en.tag)).toEqual(['uy', 'ar'])
-    expect(Object.keys(strings.rio.ru.tagTitle)).toEqual(['uy', 'ar'])
+    expect(Object.keys(en.rio).sort()).toEqual(Object.keys(ru.rio).sort())
+    expect(Object.keys(en.rio.tag)).toEqual(['uy', 'ar'])
+    expect(Object.keys(ru.rio.tagTitle)).toEqual(['uy', 'ar'])
   })
 })
 
@@ -639,16 +640,16 @@ describe('std_usage (is the standard word used in everyday speech?)', () => {
   })
 
   it('has the labels in both languages, no Spanish word as UI chrome and no geography claim', () => {
-    for (const lang of ['en', 'ru'] as const) {
-      expect(strings.rio[lang].standard.length).toBeGreaterThan(0)
-      expect(strings.rio[lang].also.length).toBeGreaterThan(0)
-      expect(strings.rio[lang].pill.length).toBeGreaterThan(0)
+    for (const half of [en.rio, ru.rio]) {
+      expect(half.standard.length).toBeGreaterThan(0)
+      expect(half.also.length).toBeGreaterThan(0)
+      expect(half.pill.length).toBeGreaterThan(0)
     }
-    expect(strings.rio.en.standard).toBe('standard')
-    expect(strings.rio.ru.standard).toBe('стандарт')
-    expect(strings.rio.en.stdUsageHint).toEqual({ equally_used: 'also common', less_common: null, not_used: 'rarely used here' })
-    expect(strings.rio.ru.stdUsageHint).toEqual({ equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' })
-    expect(strings.rio.en).not.toHaveProperty('inSpain')
+    expect(en.rio.standard).toBe('standard')
+    expect(ru.rio.standard).toBe('стандарт')
+    expect(en.rio.stdUsageHint).toEqual({ equally_used: 'also common', less_common: null, not_used: 'rarely used here' })
+    expect(ru.rio.stdUsageHint).toEqual({ equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' })
+    expect(strings.rio).not.toHaveProperty('inSpain')
     expect(JSON.stringify(strings.card)).not.toMatch(/estándar|rioplatense/i)
     expect(JSON.stringify(strings.rio)).not.toMatch(/estándar/i)
   })

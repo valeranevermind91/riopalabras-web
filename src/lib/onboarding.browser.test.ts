@@ -49,7 +49,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
   const goTo = async (page: Page, stepNumber: number) => {
     const current = Number((await stepText(page))?.match(/Step (\d+)/)?.[1])
     for (let n = current; n < stepNumber; n++) await next(page)
-    await page.waitForFunction((n) => document.querySelector('.intro-progress span')?.textContent === `Step ${n} of 6`, {}, stepNumber)
+    await page.waitForFunction((n) => document.querySelector('.intro-progress span')?.textContent === `Step ${n} of 7`, {}, stepNumber)
   }
   const toSettings = async (page: Page) => {
     await page.click('button[aria-label="Settings"]')
@@ -63,9 +63,9 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       const page = await open('fresh=1&goal=default')
       expect(await page.$('.onboarding')).not.toBeNull()
       expect(await page.$('.home')).toBeNull()
-      expect(await stepText(page)).toBe('Step 1 of 6')
-      expect(await title(page)).toBe('Riopalabras')
-      expect(await page.$eval('h1', (e) => getComputedStyle(e).fontFamily)).toMatch(/Fraunces/) // the app name in the display face
+      expect(await stepText(page)).toBe('Step 1 of 7')
+      expect(await title(page)).toBe('App language')
+      expect(await page.$$eval('.lang-option', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['English:true', 'Русский:false']) // preselected from Telegram's language (none here: English)
       expect(await sent(page)).toEqual([]) // looking at it writes nothing
       await page.close()
     }, 60_000)
@@ -84,58 +84,58 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       const page = await open('fresh=1&goal=default')
       const titles: (string | null)[] = []
       const progress: (string | null)[] = []
-      for (let n = 1; n <= 6; n++) {
+      for (let n = 1; n <= 7; n++) {
         titles.push(await title(page))
         progress.push(await page.$eval('[role="progressbar"]', (e) => e.getAttribute('aria-valuenow')))
-        if (n < 6) await next(page)
+        if (n < 7) await next(page)
       }
-      expect(titles).toEqual(['Riopalabras', 'What is inside', 'Translation language', 'Placement test', 'Daily goal', 'Pronunciation'])
-      expect(progress).toEqual(['1', '2', '3', '4', '5', '6'])
+      expect(titles).toEqual(['App language', 'Riopalabras', 'What is inside', 'Translations', 'Placement test', 'Daily goal', 'Pronunciation'])
+      expect(progress).toEqual(['1', '2', '3', '4', '5', '6', '7'])
       expect(await buttons(page)).toEqual(['Back', 'Done']) // the last step ends in Done
 
       // and back again, step by step
-      for (let n = 6; n > 1; n--) {
+      for (let n = 7; n > 1; n--) {
         await clickText(page, '.intro-footer .btn', 'Back')
-        await page.waitForFunction((m) => document.querySelector('.intro-progress span')?.textContent === `Step ${m} of 6`, {}, n - 1)
+        await page.waitForFunction((m) => document.querySelector('.intro-progress span')?.textContent === `Step ${m} of 7`, {}, n - 1)
       }
-      expect(await title(page)).toBe('Riopalabras')
+      expect(await title(page)).toBe('App language')
       await page.close()
     }, 90_000)
 
-    it('Back from the first step does nothing destructive: no button, Telegram\'s back is swallowed, nothing is written', async () => {
+    it('Back from the first step does nothing destructive: no button, Telegram\'s back is swallowed, and the language is written only when Continue is tapped', async () => {
       const page = await open('fresh=1&goal=default')
       expect(await buttons(page)).toEqual(['Continue']) // no Back button
       expect(await pressBack(page)).toBe('handled')
-      expect(await stepText(page)).toBe('Step 1 of 6')
+      expect(await stepText(page)).toBe('Step 1 of 7')
       expect(await page.$('.onboarding')).not.toBeNull()
       expect(await sent(page)).toEqual([])
       // from step 3, Back steps back, and never past step 1
       await goTo(page, 3)
       expect(await pressBack(page)).toBe('handled')
-      expect(await stepText(page)).toBe('Step 2 of 6')
+      expect(await stepText(page)).toBe('Step 2 of 7')
       await pressBack(page)
       await pressBack(page)
       await pressBack(page)
-      expect(await stepText(page)).toBe('Step 1 of 6')
-      expect(await sent(page)).toEqual([])
+      expect(await stepText(page)).toBe('Step 1 of 7')
+      expect(await sent(page)).toEqual([{ ui_language: 'en' }]) // going on from step 1 chose the preselected language; nothing else was written
       await page.close()
     }, 60_000)
 
     it('the placement step is a placeholder: one screen with Continue', async () => {
       const page = await open('fresh=1&goal=default')
-      await goTo(page, 4)
+      await goTo(page, 5)
       expect(await title(page)).toBe('Placement test')
       expect(await page.$eval('.intro-text', (e) => e.textContent)).toBe('A short test will go here.')
       expect(await buttons(page)).toEqual(['Back', 'Continue'])
       await next(page)
-      expect(await stepText(page)).toBe('Step 5 of 6')
-      expect(await sent(page)).toEqual([])
+      expect(await stepText(page)).toBe('Step 6 of 7')
+      expect(await sent(page)).toEqual([{ ui_language: 'en' }])
       await page.close()
     }, 60_000)
 
     it('Done writes onboarding_done: true once, and shows Home; it is not shown again', async () => {
       const page = await open('fresh=1&goal=default')
-      await goTo(page, 6)
+      await goTo(page, 7)
       await page.evaluate(() => {
         // two taps in the same tick: the second must find the key already there
         const done = Array.from(document.querySelectorAll('.intro-footer .btn')).find((b) => b.textContent === 'Done') as HTMLElement
@@ -151,21 +151,21 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
 
     it('the last step links to "How it works", and Back from there returns to the same step', async () => {
       const page = await open('fresh=1&goal=default')
-      await goTo(page, 6)
+      await goTo(page, 7)
       expect(await page.$$eval('.intro-es', (els) => els.map((e) => e.textContent))).toEqual(['ll', 'y', 'calle', 'yo', 'vos tenés', 'tú tienes'])
       await clickText(page, '.intro-link', 'How it works')
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'How it works')
       expect(await page.$$eval('.how-section h2', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'Why a word comes back'])
       await page.click('.back-link')
-      await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 6 of 6')
+      await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 7 of 7')
       expect(await title(page)).toBe('Pronunciation')
       // Telegram's back does the same
       await clickText(page, '.intro-link', 'How it works')
       await page.waitForSelector('.how-it-works')
       expect(await pressBack(page)).toBe('handled')
       await page.waitForSelector('.onboarding')
-      expect(await stepText(page)).toBe('Step 6 of 6')
-      expect(await sent(page)).toEqual([])
+      expect(await stepText(page)).toBe('Step 7 of 7')
+      expect(await sent(page)).toEqual([{ ui_language: 'en' }])
       await page.close()
     }, 60_000)
   })
@@ -173,7 +173,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
   describe('each step writes to the same key its Settings control writes', () => {
     it('translation: the same two keys as the switches, written together', async () => {
       const intro = await open('fresh=1&goal=default')
-      await goTo(intro, 3)
+      await goTo(intro, 4)
       expect(await intro.$$eval('[role="radio"]', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['Russian:false', 'English:false', 'Both:true']) // both by default
       await clickText(intro, '[role="radio"]', 'Russian')
       await clickText(intro, '[role="radio"]', 'English')
@@ -181,6 +181,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await clickText(intro, '[role="radio"]', 'Both') // already chosen: nothing is written
       const introWrites = await sent(intro)
       expect(introWrites).toEqual([
+        { ui_language: 'en' }, // Continue on step 1 chose the preselected language
         { show_ru_translation: true, show_en_translation: false },
         { show_ru_translation: false, show_en_translation: true },
         { show_ru_translation: true, show_en_translation: true },
@@ -198,12 +199,12 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
 
     it('daily goal: daily_new_word_limit, one step each, from 10 when nothing is stored, like the Settings stepper', async () => {
       const intro = await open('fresh=1&goal=default')
-      await goTo(intro, 5)
+      await goTo(intro, 6)
       expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('10')
       await intro.click('.stepper-btn[aria-label="Increase the daily goal"]')
       await intro.click('.stepper-btn[aria-label="Increase the daily goal"]')
       await intro.click('.stepper-btn[aria-label="Decrease the daily goal"]')
-      expect(await sent(intro)).toEqual([{ daily_new_word_limit: 11 }, { daily_new_word_limit: 12 }, { daily_new_word_limit: 11 }])
+      expect(await sent(intro)).toEqual([{ ui_language: 'en' }, { daily_new_word_limit: 11 }, { daily_new_word_limit: 12 }, { daily_new_word_limit: 11 }])
       expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('11')
       await intro.close()
 
@@ -216,7 +217,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
 
     it('the stepper in the intro is the Settings one: the same markup and the same limits', async () => {
       const intro = await open('fresh=1&goal=20')
-      await goTo(intro, 5)
+      await goTo(intro, 6)
       const introMarkup = await intro.$eval('.stepper', (e) => e.outerHTML.replace(/aria-labelledby="[^"]*"/, ''))
       expect(await intro.$eval('.stepper-btn[aria-label="Increase the daily goal"]', (e) => (e as HTMLButtonElement).disabled)).toBe(true) // stops at 20
       await intro.close()
@@ -237,16 +238,16 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
     }, 60_000)
 
     it('opens from step 1 on the current values (language and goal as set), and Done returns to Settings, writing nothing', async () => {
-      const page = await open('goal=12&ru=1&en=0')
+      const page = await open('goal=12&ru=1&en=0&lang=en')
       await toSettings(page)
       await aboutRow(page, 'Run the intro again')
       await page.waitForSelector('.onboarding')
-      expect(await stepText(page)).toBe('Step 1 of 6')
+      expect(await stepText(page)).toBe('Step 1 of 7')
       expect(await page.$eval('.onboarding', (e) => e.getAttribute('data-mode'))).toBe('replay')
 
-      await goTo(page, 3)
+      await goTo(page, 4)
       expect(await page.$$eval('[role="radio"]', (els) => els.map((e) => `${e.textContent}:${e.getAttribute('aria-checked')}`))).toEqual(['Russian:true', 'English:false', 'Both:false']) // as set, not the defaults
-      await goTo(page, 3 + 2)
+      await goTo(page, 6)
       expect(await page.$eval('output.stepper-value', (e) => e.textContent)).toBe('12') // not 10
       await next(page)
       await clickText(page, '.intro-footer .btn', 'Done')
@@ -260,7 +261,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
     }, 90_000)
 
     it('Back from step 1 leaves to Settings; Telegram\'s back steps back first and leaves from step 1', async () => {
-      const page = await open('goal=12')
+      const page = await open('goal=12&lang=en')
       await toSettings(page)
       await aboutRow(page, 'Run the intro again')
       await page.waitForSelector('.onboarding')
@@ -273,9 +274,9 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await page.waitForSelector('.onboarding')
       await goTo(page, 3)
       expect(await pressBack(page)).toBe('handled')
-      expect(await stepText(page)).toBe('Step 2 of 6')
+      expect(await stepText(page)).toBe('Step 2 of 7')
       await pressBack(page)
-      expect(await stepText(page)).toBe('Step 1 of 6')
+      expect(await stepText(page)).toBe('Step 1 of 7')
       expect(await pressBack(page)).toBe('left') // from step 1 it goes where Back goes: Settings
       await page.waitForSelector('.settings')
       expect(await sent(page)).toEqual([])
@@ -283,13 +284,13 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
     }, 90_000)
 
     it('changes made while replaying are written, as in Settings, and a replay still writes no onboarding_done', async () => {
-      const page = await open('goal=12&ru=1&en=1')
+      const page = await open('goal=12&ru=1&en=1&lang=en')
       await toSettings(page)
       await aboutRow(page, 'Run the intro again')
       await page.waitForSelector('.onboarding')
-      await goTo(page, 3)
+      await goTo(page, 4)
       await clickText(page, '[role="radio"]', 'English')
-      await goTo(page, 6)
+      await goTo(page, 7)
       await clickText(page, '.intro-footer .btn', 'Done')
       await page.waitForSelector('.settings')
       expect(await sent(page)).toEqual([{ show_ru_translation: false, show_en_translation: true }])

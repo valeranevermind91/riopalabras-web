@@ -3,6 +3,7 @@
 // senders just record what they are given (window.__sent). The list and the detail swap the way App swaps them.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { effectiveLanguage, setLanguage, useLanguage } from '../lib/language'
 import '../index.css'
 import { parseDictionary } from '../data/dictionary'
 import { createTombstoneClearer } from '../data/customWords'
@@ -82,6 +83,7 @@ async function boot() {
 }
 
 export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?: readonly string[] }) {
+  useLanguage() // as App does: everything below re-renders when the language changes
   const [words, setWords] = useState(start)
   const [open, setOpen] = useState<string | null>(null)
   const [viewStore] = useState(createViewStore)
@@ -93,7 +95,10 @@ export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?:
   useEffect(() => {
     ;(window as never as { __pressBack: () => string }).__pressBack = () => (backInterceptor.current?.() ? 'closed-sheet' : 'left')
   }, [])
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, ...(picks.length > 0 ? { learn_picks: picks } : {}), a_future_key: { kept: true } }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, ...(picks.length > 0 ? { learn_picks: picks } : {}), a_future_key: { kept: true }, ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
+  useEffect(() => {
+    setLanguage(effectiveLanguage(settings.uiLanguage))
+  }, [settings.uiLanguage])
   const latestSettings = useRef(settings)
   const getSettings = useCallback(() => latestSettings.current, [])
   const applySettings = useCallback((patch: Record<string, unknown>) => {

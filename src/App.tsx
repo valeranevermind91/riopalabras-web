@@ -10,6 +10,7 @@ import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
 import { useDebugAccess } from './lib/useDebugAccess'
+import { effectiveLanguage, setLanguage, useLanguage } from './lib/language'
 import { getSupabase } from './lib/supabase'
 import { backTarget as backTargetFor, type Screen } from './lib/nav'
 import { getWebApp, nativeBackButton } from './lib/telegram'
@@ -40,6 +41,8 @@ function readTelegramInfo(): TelegramInfo {
 }
 
 function App() {
+  // The interface language: everything below is drawn by this component, so it re-renders (and every string is read again) when it changes.
+  useLanguage()
   const [telegram] = useState(readTelegramInfo)
   const [asyncAuth, setAuth] = useState<AuthState>({ status: 'loading' })
   const { client, error: clientError } = getSupabase()
@@ -88,6 +91,11 @@ function App() {
   const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
   const readyData = data.status === 'ready' ? data.data : null
   const getSettings = readyData?.getSettings ?? null
+  // The chosen language once the settings are there (until then the one this device used last); with none chosen, Telegram's.
+  const storedLanguage = readyData ? readyData.settings.uiLanguage : undefined
+  useEffect(() => {
+    if (storedLanguage !== undefined) setLanguage(effectiveLanguage(storedLanguage))
+  }, [storedLanguage])
   useEffect(() => {
     settingsSource.use(readyData?.getSettings ?? null)
     tombstones.use(readyData ? { read: readyData.getSettings, apply: readyData.applySettings } : null)

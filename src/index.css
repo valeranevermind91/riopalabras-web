@@ -2521,3 +2521,36 @@ mark {
 .how-cloze h2 {
   color: var(--lav);
 }
+
+/* The intro's language step: two large options, the selected one in the learning colour. */
+.lang-options {
+  display: grid;
+  gap: 12px;
+}
+
+.lang-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 76px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-option.is-active {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal-on-soft);
+}
+
+.lang-option:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}

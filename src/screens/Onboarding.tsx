@@ -41,7 +41,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
     },
     onHow: () => setShowHow(true),
   }
-  const { Body, canContinue } = STEPS[step]
+  const { Body, canContinue, onContinue } = STEPS[step]
   const canNext = canContinue ? canContinue(props) : true
 
   const back = () => {
@@ -50,6 +50,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
   }
   const next = () => {
     if (!canNext) return
+    onContinue?.({ ...props, settings: data.getSettings() }) // the latest settings: a second tap finds what the first one wrote
     if (!last) {
       haptic('tap')
       setStep(step + 1)

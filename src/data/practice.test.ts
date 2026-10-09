@@ -43,7 +43,8 @@ import { parseFallbackExamples, parseRioOverlay } from './rio'
 import { parseSettings } from './settings'
 import type { Word } from './types'
 import { createSupabaseWriteQueue } from './writeQueue'
-import { strings } from '../strings'
+import { en, strings } from '../strings'
+import { ru } from '../strings.ru'
 import { clozeFeedback } from './clozeFeedback'
 import { RU_ONLY } from '../testing/translationFlags'
 
@@ -392,9 +393,8 @@ describe('Cloze: checking answers', () => {
     expect(clozeFeedback('headword', 'tenés', 'ru').text).toBe('Correct! в этом предложении: tenés')
   })
 
-  it('the Russian chrome strings are kept for a future UI-language setting', () => {
-    for (const lang of ['en', 'ru'] as const) {
-      const t = strings.practice[lang]
+  it('the chrome strings exist in both interface languages and take the word', () => {
+    for (const t of [en.practice, ru.practice]) {
       expect(t.accentNudge('está')).toContain('está')
       expect(t.wrong('está')).toContain('está')
       expect(t.gaveUp('está')).toContain('está')

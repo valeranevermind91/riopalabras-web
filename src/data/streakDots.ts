@@ -1,16 +1,14 @@
+import { strings } from '../strings'
 import { lastDays } from './metrics'
 
 // Home's week of dots: which of the last days user_daily_metrics says were active. (The streak NUMBER is not derived from
 // these: it is the stored streak in the settings, see computeStreak.)
 
-/** One letter per weekday, Monday first (Mon..Sun). */
-export const WEEKDAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const
-
 /** The weekday letter of a local `YYYY-MM-DD` date (taken from the date itself, never from "today"). */
 export function weekdayLetter(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number)
   const jsDay = new Date(y, m - 1, d).getDay() // 0 = Sunday
-  return WEEKDAY_LETTERS[(jsDay + 6) % 7]
+  return strings.home.weekdays[(jsDay + 6) % 7] // one letter per weekday, Monday first, in the interface language
 }
 
 export interface Dot {

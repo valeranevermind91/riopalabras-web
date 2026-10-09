@@ -1,7 +1,9 @@
 // A page for the real-browser Settings test (src/lib/settings.browser.test.ts): the real Home header, Settings and Debug
 // screens, the real theme hook, and Back going where App sends it (lib/nav). The write queue's sender just records the
 // settings it is given (window.__sent.settings). Query: debug=1 (allowed to open Debug), goal=18 (or goal=default: no stored goal),
-// ru=1, en=0, fresh=1 (an account that has not finished the intro: it is shown instead of Home, as App does).
+// ru=1, en=0, fresh=1 (an account that has not finished the intro: it is shown instead of Home, as App does), lang=ru (a stored
+// interface language; without it the language follows Telegram, which here means English), ready=1 (Home with a few words, so its
+// tiles and status show), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -9,7 +11,9 @@ import { applySettingsPatch } from '../data/mutations'
 import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
+import { makeWord } from './makeWord'
 import type { SettingsPatch } from '../data/types'
+import { effectiveLanguage, setLanguage, useLanguage } from '../lib/language'
 import { backTarget, type Screen } from '../lib/nav'
 import { themePatch, type ThemeChoice } from '../lib/theme'
 import { useTheme } from '../lib/useTheme'
@@ -24,8 +28,21 @@ const sent: { settings: SettingsPatch[] } = { settings: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
 const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch) }, { retryDelaysMs: [1], sleep: async () => {} })
 
+const HOME_WORDS = [
+  ...Array.from({ length: 8 }, (_, i) =>
+    makeWord(`palabra${i}`, { repetitions: 1, nextReview: new Date('2026-10-01T03:00:00.000Z'), rank: i + 1, ruTranslation: `слово${'абвгдежз'[i]}`, enTranslation: `word${i}`, exampleSentence: `Esta es la palabra${i} del día.`, wordFormInExample: `palabra${i}` }),
+  ),
+  ...Array.from({ length: 10 }, (_, i) => makeWord(`nueva${i}`, { rank: 100 + i, ruTranslation: `новое${i}`, enTranslation: `new${i}` })),
+]
+
 export function Harness() {
+  useLanguage() // as App does: everything below re-renders when the language changes
   const [screen, setScreen] = useState<Screen>('home')
+  // late=1: the settings are not there yet (the language is whatever the device last used), until the page says so.
+  const [loaded, setLoaded] = useState(() => params.get('late') !== '1')
+  useEffect(() => {
+    ;(window as never as { __loadSettings: () => void }).__loadSettings = () => setLoaded(true)
+  }, [])
   const [settings, setSettings] = useState(() =>
     parseSettings({
       ...(params.get('goal') === 'default' ? {} : { daily_new_word_limit: Number(params.get('goal') ?? 18) }),
@@ -33,6 +50,7 @@ export function Harness() {
       ...(params.get('fresh') === '1' && !params.has('ru') ? {} : { show_ru_translation: params.get('ru') !== '0' }),
       ...(params.get('fresh') === '1' && !params.has('en') ? {} : { show_en_translation: params.get('en') === '1' }),
       ...(params.get('fresh') === '1' ? {} : { onboarding_done: true }),
+      ...(params.get('lang') ? { ui_language: params.get('lang') } : {}),
     }),
   )
   // The latest settings, updated at once (as useUserData does), so two taps before a render both see the first.
@@ -50,6 +68,10 @@ export function Harness() {
     [applySettings],
   )
   const theme = useTheme(settings, persist)
+  // The chosen language once the settings are there; with none chosen, Telegram's.
+  useEffect(() => {
+    if (loaded) setLanguage(effectiveLanguage(settings.uiLanguage))
+  }, [loaded, settings.uiLanguage])
   // Back as App does it: a screen with something open takes it first (the intro steps back), else it goes where lib/nav says.
   const interceptor = useRef<(() => boolean) | null>(null)
   const registerBack = useCallback((handler: (() => boolean) | null) => {
@@ -82,11 +104,11 @@ export function Harness() {
     )
   if (screen === 'debug')
     return <DebugScreen telegram={{ user: null, initData: '', isMock: true }} auth={{ status: 'no-telegram' }} data={{ status: 'loading' }} queue={null} metrics={null} client={null} userId={null} onBack={back} />
-  if (needsOnboarding(settings)) return <Onboarding data={data} queue={queue} mode="first" registerBack={registerBack} />
+  if (loaded && needsOnboarding(settings)) return <Onboarding data={data} queue={queue} mode="first" registerBack={registerBack} />
   return (
     <HomeScreen
       auth={{ status: 'no-telegram' }}
-      data={{ status: 'loading' }}
+      data={loaded && params.get('ready') === '1' ? ({ status: 'ready', data: { ...(data as object), words: HOME_WORDS, degraded: [], retryDegraded: () => {} } } as never) : { status: 'loading' }}
       onLearn={() => {}}
       onReview={() => {}}
       onMatching={() => {}}

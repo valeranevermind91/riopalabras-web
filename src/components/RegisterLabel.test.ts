@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { parseDictionary } from '../data/dictionary'
 import { headwordRegister, relationFor } from '../data/relation'
 import { parseRioOverlay, type Lang } from '../data/rio'
-import { strings } from '../strings'
+import { en } from '../strings'
+import { ru } from '../strings.ru'
 import { RelationBlock } from './RelationBlock'
 import { RegisterLabel } from './RegisterLabel'
 import { ReviewCard } from './ReviewCard'
@@ -57,7 +58,7 @@ describe('register label next to the headword', () => {
     const used = new Set<string>(rawOverlay.map((e: { register: string }) => e.register))
     for (const r of used) {
       if (r === 'neutral') continue
-      for (const lang of ['en', 'ru'] as const) expect(strings.rio[lang].register[r], `${r} ${lang}`).toBeTruthy()
+      for (const [lang, map] of [['en', en], ['ru', ru]] as const) expect(map.rio.register[r], `${r} ${lang}`).toBeTruthy()
     }
     expect(renderToStaticMarkup(createElement(RegisterLabel, { register: 'neutral' }))).toBe('')
     expect(renderToStaticMarkup(createElement(RegisterLabel, { register: null }))).toBe('')

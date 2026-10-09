@@ -56,7 +56,7 @@ export function WordCard({ word, settings }: { word: Word; settings: Translation
   return (
     <article className="word-card">
       <div className="wc-meta">
-        {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+        {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.pill}</span>}
         <RegionTag region={headwordRegion(word)} />
         {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         <RegisterLabel register={headwordRegister(word)} />

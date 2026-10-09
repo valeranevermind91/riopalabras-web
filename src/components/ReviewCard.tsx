@@ -46,7 +46,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
         <div className="flip-face flip-front word-card" aria-hidden={revealed}>
           <div className="rf-center">
             <div className="wc-meta">
-              {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+              {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.pill}</span>}
               <RegionTag region={region} />
               <RegisterLabel register={register} />
             </div>
@@ -57,7 +57,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
 
         <div className="flip-face flip-back word-card" aria-hidden={!revealed} inert={!revealed}>
           <div className="wc-meta">
-            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.en.pill}</span>}
+            {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.pill}</span>}
             <RegionTag region={region} />
             <RegisterLabel register={register} />
           </div>

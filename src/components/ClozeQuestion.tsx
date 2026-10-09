@@ -26,7 +26,7 @@ type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 
 /** One fill-in-the-blank question. Every element stays mounted in the same place, so nothing shifts when a hint or the feedback appears. */
 export function ClozeQuestion({ item, settings, onAnswered }: ClozeQuestionProps) {
-  const t = strings.practice.en // chrome: English
+  const t = strings.practice 
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
   const [answer, setAnswer] = useState<Answer | null>(null)
