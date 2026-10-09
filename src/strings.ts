@@ -207,13 +207,12 @@ export const en = {
       noteReference: (why: string) => `Reference only: ${why}, so it is never in Learn or Review.`,
       reasonPos: 'this kind of word is not drilled',
       reasonNoTranslation: 'it has no translation yet',
-      noteLapsed: (ease: string, last: string) => `You learned this word before. An “Again” rating set it back to new (ease ${ease}, last scheduled ${last}), so it is in the Learn pool again.`,
     },
   },
 
   // The gap before a word comes back, as the rating buttons and the word detail abbreviate it ("3d", "2mo").
   interval: {
-    lessThanMinute: '<1m',
+    minutes: (n: number) => `${n} min`,
     days: (n: number) => `${n}d`,
     months: (n: number) => `${n}mo`,
     years: (n: number) => `${n}y`,

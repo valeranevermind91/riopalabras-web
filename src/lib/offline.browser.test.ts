@@ -126,4 +126,74 @@ describe.skipIf(!CHROME)('with the network gone', () => {
       }, 60_000)
     })
   }
+
+  describe('Again in Review', () => {
+    const counter = (page: Page) => page.$eval('.review-count', (e) => e.textContent ?? '')
+    const headword = (page: Page) => page.$eval('.flip-front .wc-headword', (e) => e.textContent ?? '')
+    /** Reveals the card and rates it; resolves once the next card (or the end) is on screen. */
+    async function rate(page: Page, tone: 'again' | 'hard' | 'good' | 'easy') {
+      const before = await counter(page)
+      await page.click('.flip')
+      await page.waitForSelector(`.rating:not(.is-hidden) .rate-${tone}`)
+      await page.click(`.rate-${tone}`)
+      await page.waitForFunction((b) => !document.querySelector('.review-count') || document.querySelector('.review-count')!.textContent !== b, { timeout: 10_000 }, before)
+    }
+    /** The state the queue holds for a word, as the rating wrote it (nextReview as a timestamp: a Date does not cross from the page). */
+    const progressOf = (page: Page, word: string) =>
+      page.evaluate((w) => {
+        const rows = (window as never as { __queue: { pending: () => { progress: { esWord: string; interval: number; repetitions: number; easeFactor: number; nextReview: Date }[] } } }).__queue.pending().progress
+        const row = rows.find((p) => p.esWord === w)!
+        return { interval: row.interval, repetitions: row.repetitions, easeFactor: row.easeFactor, nextReview: row.nextReview.getTime() }
+      }, word)
+
+    it('the button says 10 min, and the word comes back at the end of the same session, once, however often it is Again', async () => {
+      const { page } = await open('review', false) // the network is down: every write waits in the queue, where it can be read
+      await page.waitForSelector('.flip')
+      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '4d', '8d', '10d']) // the others preview from interval 3, ease 2.5
+      expect(await counter(page)).toBe('1 / 6')
+      const word = await headword(page)
+
+      await rate(page, 'again')
+      expect(await counter(page)).toBe('2 / 7') // the session is one card longer: the word is queued behind the rest
+      const first = await progressOf(page, word)
+      expect(first).toMatchObject({ interval: 0, repetitions: 1 })
+      expect(first.easeFactor).toBeCloseTo(2.18, 10)
+      const wait = first.nextReview - Date.now()
+      expect(wait).toBeGreaterThan(9 * 60 * 1000)
+      expect(wait).toBeLessThanOrEqual(10 * 60 * 1000)
+
+      for (let i = 0; i < 5; i++) {
+        expect(await headword(page)).not.toBe(word) // the other five come first
+        await rate(page, 'good')
+      }
+      expect(await counter(page)).toBe('7 / 7')
+      expect(await headword(page)).toBe(word) // and then it is back, last
+
+      await rate(page, 'again') // Again again: to the end again, not a second copy
+      expect(await counter(page)).toBe('8 / 8')
+      expect(await headword(page)).toBe(word)
+      const second = await progressOf(page, word)
+      expect(second).toMatchObject({ interval: 0, repetitions: 1 })
+      expect(second.easeFactor).toBeLessThan(first.easeFactor) // it keeps dropping from the lowered value, not from the snapshot's 2.5
+      expect(second.easeFactor).toBeCloseTo(1.86, 2) // 2.5 → 2.18 → 1.86
+
+      // this time its buttons preview from repetitions 1 at the lowered ease
+      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '1d', '2d', '3d'])
+      await rate(page, 'good')
+      await page.waitForSelector('.post-batch') // the session ends only once the word has been rated something else
+      const done = await progressOf(page, word)
+      expect(done).toMatchObject({ interval: 2, repetitions: 2 })
+      await page.close()
+    }, 60_000)
+
+    it('the Russian label says 10 мин', async () => {
+      const { page } = await open('review', false)
+      await page.waitForSelector('.flip')
+      await page.evaluate(() => localStorage.setItem('riopalabras.language.v1', 'ru'))
+      await page.reload({ waitUntil: 'networkidle0' })
+      await page.waitForSelector('.flip')
+      expect((await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent)))[0]).toBe('10 мин')
+      await page.close()
+    }, 60_000)
+  })
 })

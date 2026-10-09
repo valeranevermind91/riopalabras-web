@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyReview, formatInterval, learnedState, previewInterval, type Sm2Card } from './sm2'
+import { RELEARN_MINUTES, RELEARN_MS, applyReview, formatInterval, isAgain, learnedState, previewInterval, type Sm2Card } from './sm2'
 
 const NOW = new Date('2026-10-02T15:00:00.000Z')
 const JUST_LEARNED: Sm2Card = { easeFactor: 2.5, interval: 0, repetitions: 1 }
@@ -12,9 +12,9 @@ describe('test environment', () => {
 })
 
 describe('first review of a just-learned word', () => {
-  it('previews Again <1m, Hard 1d, Good 3d, Easy 3d', () => {
+  it('previews Again 10 min, Hard 1d, Good 3d, Easy 3d', () => {
     const labels = [1, 2, 3, 4].map((q) => formatInterval(previewInterval(JUST_LEARNED, q)))
-    expect(labels).toEqual(['<1m', '1d', '3d', '3d'])
+    expect(labels).toEqual(['10 min', '1d', '3d', '3d'])
   })
 
   it('computes the exact ease factors (Again 2.18, Hard 2.36, Good 2.5, Easy 2.6)', () => {
@@ -33,13 +33,49 @@ describe('applyReview', () => {
     }
   })
 
-  it('a lapse (Again) resets interval and repetitions to 0 and is due immediately', () => {
+  it('Again (a relearning step): one repetition, interval 0, due in ten minutes, the ease factor lowered as before', () => {
     const mature: Sm2Card = { easeFactor: 2.5, interval: 40, repetitions: 7 }
     const next = applyReview(mature, 1, NOW)
     expect(next.interval).toBe(0)
-    expect(next.repetitions).toBe(0)
+    expect(next.repetitions).toBe(1) // not 0: the word does not go back to new, so it does not go back to Learn
     expect(next.easeFactor).toBeCloseTo(2.18, 10)
-    expect(next.nextReview.getTime()).toBe(NOW.getTime())
+    expect(RELEARN_MINUTES).toBe(10)
+    expect(next.nextReview.getTime()).toBe(NOW.getTime() + 10 * 60 * 1000)
+    expect(next.nextReview.getTime() - NOW.getTime()).toBe(RELEARN_MS)
+  })
+
+  it('the lowered ease factor survives: a later rating starts from it (nothing resets it to 2.5)', () => {
+    const lapsed = applyReview({ easeFactor: 2.5, interval: 40, repetitions: 7 }, 1, NOW)
+    const good = applyReview(lapsed, 3, NOW)
+    expect(good.easeFactor).toBeCloseTo(2.18, 10) // Good leaves the ease where it is: the lowered 2.18, not a reset to 2.5
+    expect(good.interval).toBe(2) // from the one-day base: 1 × 2.18, rounded
+    expect(applyReview(lapsed, 4, NOW).easeFactor).toBeCloseTo(2.28, 10) // Easy raises it from there
+  })
+
+  it('a second Again keeps dropping the ease factor, floored at 1.3, and stays a relearning step', () => {
+    let card: Sm2Card = { easeFactor: 2.5, interval: 40, repetitions: 7 }
+    const seen: number[] = []
+    for (let i = 0; i < 8; i++) {
+      const next = applyReview(card, 1, NOW)
+      expect(next).toMatchObject({ interval: 0, repetitions: 1 })
+      seen.push(next.easeFactor)
+      card = next
+    }
+    expect(seen[1]).toBeLessThan(seen[0])
+    expect(seen.every((e, i) => i === 0 || e <= seen[i - 1])).toBe(true)
+    expect(seen[seen.length - 1]).toBe(1.3)
+  })
+
+  it('Hard, Good and Easy from a word that was just rated Again (repetitions 1, interval 0) preview from the one-day base', () => {
+    const lapsed = applyReview({ easeFactor: 2.5, interval: 40, repetitions: 7 }, 1, NOW) // ease 2.18
+    expect(lapsed).toMatchObject({ interval: 0, repetitions: 1 })
+    expect([2, 3, 4].map((q) => previewInterval(lapsed, q))).toEqual([1, 2, 3]) // 1×1.2, 1×2.18, 1×2.28×1.3 (Easy raises the ease to 2.28 first)
+    expect([1, 2, 3, 4].map((q) => formatInterval(previewInterval(lapsed, q)))).toEqual(['10 min', '1d', '2d', '3d'])
+    expect([2, 3, 4].map((q) => applyReview(lapsed, q, NOW).repetitions)).toEqual([2, 2, 2])
+  })
+
+  it('isAgain: only a rating of 1 (or below)', () => {
+    expect([0, 1, 2, 3, 4].map(isAgain)).toEqual([true, true, false, false, false])
   })
 
   it('uses the multipliers: Hard ×1.2, Good ×ease, Easy ×ease×1.3 (rounded)', () => {
@@ -93,8 +129,8 @@ describe('applyReview', () => {
 
 describe('formatInterval', () => {
   it.each([
-    [0, '<1m'],
-    [-3, '<1m'],
+    [0, '10 min'],
+    [-3, '10 min'],
     [1, '1d'],
     [2, '2d'],
     [29, '29d'],

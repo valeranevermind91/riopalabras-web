@@ -305,11 +305,25 @@ describe('the word detail', () => {
     expect(html).toContain('· due now')
   })
 
-  it('a lapsed word reads as not started and shows its history, so it is not confusing', () => {
+  it('a word rated Again reads as in progress, with the lowered ease, and nothing claims it went back to Learn', () => {
+    const html = detail({ ...base, repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(NOWISH + 10 * 60 * 1000) })
+    expect(html).toContain('<dt>State</dt><dd>In progress</dd>')
+    expect(html).toContain('2.18')
+    expect(html).not.toContain('Not started')
+    expect(html).not.toContain('Learn pool')
+    expect(html).not.toContain('set it back to new')
+  })
+
+  it('once its ten minutes are up it is due', () => {
+    const html = detail({ ...base, repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(NOWISH - 1000) })
+    expect(html).toContain('<dt>State</dt><dd>Due now</dd>')
+  })
+
+  it('a word an earlier version sent back to new still reads as not started, and says nothing about Learn', () => {
     const html = detail({ ...base, repetitions: 0, interval: 0, easeFactor: 2.18, nextReview: new Date(NOWISH - day) })
     expect(html).toContain('<dd>Not started</dd>')
-    expect(html).toContain('You learned this word before. An “Again” rating set it back to new (ease 2.18')
-    expect(html).toContain('so it is in the Learn pool again')
+    expect(html).not.toContain('Learn pool')
+    expect(html).not.toContain('Again')
   })
 
   it('a hidden word explains that its progress is kept, and offers "Bring back"; a favourite offers to remove the star', () => {

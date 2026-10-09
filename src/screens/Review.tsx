@@ -3,12 +3,13 @@ import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { UnsavedNotice } from '../components/UnsavedNotice'
-import { buildReviewSession, createRater } from '../data/review'
+import { buildReviewSession, createRater, requeueAgain, withUpdate } from '../data/review'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
+import { isAgain } from '../sm2/sm2'
 import { strings } from '../strings'
 
 interface ReviewScreenProps {
@@ -51,9 +52,17 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     ratedIndex.current = index
     haptic('select')
 
-    rate(session[index], quality)
+    const update = rate(session[index], quality)
 
-    if (index >= session.length - 1) {
+    // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease).
+    // The end is then one card further on, so the session cannot finish with the word still owed.
+    let cards = session
+    if (isAgain(quality)) {
+      cards = requeueAgain(session, index, withUpdate(session[index], update))
+      setSession(cards)
+    }
+
+    if (index >= cards.length - 1) {
       setCompleted(true)
       // Ask the queue to send what is still waiting. Nothing here waits for it: the ratings are already applied in memory,
       // and if the network is gone they stay queued (and saved on the device) until it can be sent.

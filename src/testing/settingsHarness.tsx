@@ -11,7 +11,7 @@ import { parseDictionary } from '../data/dictionary'
 import { applyHiddenFlag, applySettingsPatch } from '../data/mutations'
 import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
-import { computeStats, getLearnPool } from '../data/stats'
+import { computeStats } from '../data/stats'
 import { createWriteQueue } from '../data/writeQueue'
 import { makeWord } from './makeWord'
 import type { SettingsPatch, Word } from '../data/types'
@@ -35,6 +35,8 @@ const queue = createWriteQueue(
   { retryDelaysMs: [1], sleep: async () => {} },
 )
 
+// relearn=N: one more word that was rated Again just now: one repetition, interval 0, due again in N seconds (the real wait is ten minutes).
+const relearnSeconds = Number(params.get('relearn') ?? 0)
 const HOME_WORDS = [
   ...Array.from({ length: 8 }, (_, i) =>
     makeWord(`palabra${i}`, { repetitions: 1, nextReview: new Date('2026-10-01T03:00:00.000Z'), rank: i + 1, ruTranslation: `слово${'абвгдежз'[i]}`, enTranslation: `word${i}`, exampleSentence: `Esta es la palabra${i} del día.`, wordFormInExample: `palabra${i}` }),
@@ -42,11 +44,14 @@ const HOME_WORDS = [
   ...Array.from({ length: 10 }, (_, i) => makeWord(`nueva${i}`, { rank: 100 + i, ruTranslation: `новое${i}`, enTranslation: `new${i}` })),
 ]
 
+const HOME_WORDS_WITH_RELEARN: readonly Word[] =
+  relearnSeconds > 0 ? [...HOME_WORDS, makeWord('repasada', { repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(Date.now() + relearnSeconds * 1000), rank: 50 })] : HOME_WORDS
+
 export function Harness() {
   useLanguage() // as App does: everything below re-renders when the language changes
   const [screen, setScreen] = useState<Screen>('home')
   // The words: a few for Home, or (dict=1) the real dictionary once it has been fetched.
-  const [words, setWords] = useState<readonly Word[]>(HOME_WORDS)
+  const [words, setWords] = useState<readonly Word[]>(HOME_WORDS_WITH_RELEARN)
   useEffect(() => {
     if (params.get('dict') !== '1') return
     let cancelled = false
@@ -137,7 +142,6 @@ export function Harness() {
             ...(data as object),
             stats: computeStats(words, settings, new Date()),
             diagnostics: { baseCount: words.length, orphanProgress: 0, orphanFavorites: 0, orphanHidden: 0 },
-            learnPoolPreview: getLearnPool(words).slice(0, 8),
             degraded: [],
             retryDegraded: () => {},
           },

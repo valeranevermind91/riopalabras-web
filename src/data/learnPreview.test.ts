@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DataSection } from '../DataSection'
 import { makeWord } from '../testing/makeWord'
 import { selectLearnBatch } from './learn'
-import { previewLearnBatch, previewLine } from './learnPreview'
+import { emptyMessage, previewLearnBatch, previewLine } from './learnPreview'
 import { parseSettings } from './settings'
 import type { Word } from './types'
 
@@ -77,17 +77,16 @@ describe('the Debug preview of the next Learn batch', () => {
 })
 
 describe('the Debug Data section shows it', () => {
-  const render = (raw: Record<string, unknown>) =>
+  const render = (raw: Record<string, unknown>, shown: Word[] = words) =>
     renderToStaticMarkup(
       createElement(DataSection, {
         state: {
           status: 'ready',
           data: {
-            words,
+            words: shown,
             settings: parseSettings(raw),
             stats: { total: 0, learned: 0, reviewDue: 0, learnPool: 0, newToLearn: 0, favorites: 0, hidden: 0, custom: 0, streak: 0, dailyLimit: 10, remainingToday: 10 },
             diagnostics: { baseCount: 0, orphanProgress: 0, orphanFavorites: 0, orphanHidden: 0 },
-            learnPoolPreview: [],
           } as never,
         },
       }),
@@ -105,9 +104,68 @@ describe('the Debug Data section shows it', () => {
     expect(lines.slice(at + 2, at + 12)).toEqual(expected)
   })
 
-  it('"none" without a start_rank, and a plain note when the day has nothing to hand out', () => {
+  it('"none" without a start_rank', () => {
     const none = text(render({ daily_new_word_limit: 10 }))
     expect(none[none.indexOf('Next Learn batch (the real selection, read-only)') + 1]).toBe('start_rank: none')
-    expect(text(render({ daily_new_word_limit: 10, new_words_learned_today_count: 10, new_words_learned_today_date: '2026-10-08' }))).toContain('(empty: nothing left to learn today, or nothing left in the pool)')
+  })
+
+  it('an empty batch says which of the three situations it is, in the Data section too', () => {
+    const used = { daily_new_word_limit: 10, new_words_learned_today_count: 10, new_words_learned_today_date: '2026-10-08' }
+    expect(text(render(used))).toContain('(empty: the daily limit is reached, 10 new words a day)')
+    expect(text(render({ daily_new_word_limit: 10 }, []))).toContain('(empty: nothing is left in the pool at all)')
+    expect(text(render({ daily_new_word_limit: 10, start_rank: 1000 }, []))).toContain('(empty: nothing is left from start_rank 1000 on, and nothing below it either)')
+  })
+
+  it('the old pool row is gone: nothing in the Data section shows the pool from the first word', () => {
+    const html = render({ daily_new_word_limit: 10, start_rank: 1000 })
+    expect(html).not.toContain('Next in learn pool')
+    expect(html).not.toContain('ignores start_rank')
+    expect(html).not.toContain('0001:w0001') // the old row listed "rank:word" pairs from rank 1
+  })
+})
+
+describe('why an empty batch is empty', () => {
+  const day = { daily_new_word_limit: 10 }
+  const reason = (raw: Record<string, unknown>, shown: Word[] = words) => previewLearnBatch(shown, parseSettings(raw), NOW).empty
+
+  it('a batch with words has no reason', () => {
+    expect(reason(day)).toBeNull()
+  })
+
+  it('the daily limit is reached: the limit is named (the common case, whatever is left in the pool)', () => {
+    const used = { new_words_learned_today_count: 10, new_words_learned_today_date: '2026-10-08' }
+    expect(reason({ ...day, ...used })).toEqual({ kind: 'limit', limit: 10 })
+    expect(reason({ daily_new_word_limit: 1, new_words_learned_today_count: 1, new_words_learned_today_date: '2026-10-08' })).toEqual({ kind: 'limit', limit: 1 })
+    expect(emptyMessage({ kind: 'limit', limit: 1 })).toBe('(empty: the daily limit is reached, 1 new word a day)')
+    expect(reason({ ...day, ...used }, [])).toEqual({ kind: 'limit', limit: 10 }) // the limit is reported first, even with nothing in the pool
+  })
+
+  it("yesterday's count is not today's: a new day is not 'limit reached'", () => {
+    expect(reason({ ...day, new_words_learned_today_count: 10, new_words_learned_today_date: '2026-10-07' })).toBeNull()
+  })
+
+  it('nothing in the pool at all (no start_rank)', () => {
+    expect(reason(day, [])).toEqual({ kind: 'pool' })
+    const learned = words.map((w) => ({ ...w, repetitions: 1 }))
+    expect(reason(day, learned)).toEqual({ kind: 'pool' })
+    const hidden = words.map((w) => ({ ...w, isHidden: true }))
+    expect(reason(day, hidden)).toEqual({ kind: 'pool' })
+    expect(emptyMessage({ kind: 'pool' })).toBe('(empty: nothing is left in the pool at all)')
+  })
+
+  it('nothing from start_rank on and nothing below it either (a start_rank is set)', () => {
+    expect(reason({ ...day, start_rank: 1000 }, [])).toEqual({ kind: 'beyondStart', startRank: 1000 })
+    expect(emptyMessage({ kind: 'beyondStart', startRank: 1000 })).toBe('(empty: nothing is left from start_rank 1000 on, and nothing below it either)')
+  })
+
+  it('words only below start_rank are not an empty batch: Learn falls back to them', () => {
+    const lowOnly = dictionary(50)
+    const batch = previewLearnBatch(lowOnly, parseSettings({ ...day, start_rank: 1000 }), NOW)
+    expect(batch.empty).toBeNull()
+    expect(batch.entries).toHaveLength(10)
+  })
+
+  it('the unrecognised case says so, rather than naming a wrong reason', () => {
+    expect(emptyMessage({ kind: 'unknown' })).toContain('no reason was found')
   })
 })

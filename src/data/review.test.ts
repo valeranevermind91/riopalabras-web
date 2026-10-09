@@ -4,9 +4,10 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
-import { buildReviewSession, createRater, rateWord, shuffle } from './review'
+import { buildReviewSession, createRater, rateWord, requeueAgain, shuffle, withUpdate } from './review'
+import { selectLearnBatch } from './learn'
 import { parseSettings } from './settings'
-import { getLearnPool, isReviewDue } from './stats'
+import { computeRemainingToday, computeStats, getLearnPool, isReviewDue, nextDueWithin } from './stats'
 import type { ProgressUpdate, SettingsPatch, Word } from './types'
 import { createSupabaseWriteQueue, createWriteQueue } from './writeQueue'
 
@@ -92,7 +93,7 @@ describe('buildReviewSession: snapshot', () => {
 
     expect(session.map((w) => `${w.esWord}:${w.repetitions}`)).toEqual(before)
     expect(session).toHaveLength(3)
-    expect(after.find((w) => w.esWord === 'a')?.repetitions).toBe(0)
+    expect(after.find((w) => w.esWord === 'a')?.repetitions).toBe(1) // rated Again: relearning, not back to new
     expect(buildReviewSession(after, NOW)).not.toHaveLength(3) // a fresh build ("Refresh") does see the change
   })
 
@@ -109,11 +110,11 @@ describe('rateWord: exact result of each rating on a just-learned word', () => {
   const justLearned = learned('Hacienda', { easeFactor: 2.5, interval: 0, repetitions: 1, nextReview: past })
   const day = 24 * 60 * 60 * 1000
 
-  it('Again: repetitions 0, interval 0, ease lowered, due right now', () => {
+  it('Again: repetitions 1, interval 0, ease lowered, due in ten minutes', () => {
     const u = rateWord(justLearned, 1, NOW)
-    expect(u).toMatchObject({ esWord: 'Hacienda', interval: 0, repetitions: 0 })
+    expect(u).toMatchObject({ esWord: 'Hacienda', interval: 0, repetitions: 1 })
     expect(u.easeFactor).toBeCloseTo(2.18, 10)
-    expect(u.nextReview.getTime()).toBe(NOW.getTime())
+    expect(u.nextReview.getTime()).toBe(NOW.getTime() + 10 * 60 * 1000)
   })
 
   it('Hard: 1 day', () => {
@@ -139,18 +140,21 @@ describe('rateWord: exact result of each rating on a just-learned word', () => {
   it('Again floors the ease factor at 1.3', () => {
     const u = rateWord(learned('x', { easeFactor: 1.3, interval: 20, repetitions: 6 }), 1, NOW)
     expect(u.easeFactor).toBe(1.3)
-    expect(u).toMatchObject({ interval: 0, repetitions: 0 })
+    expect(u).toMatchObject({ interval: 0, repetitions: 1 })
   })
 
   it('keeps the word\'s original dictionary casing', () => {
     expect(rateWord(learned('Hacienda'), 3, NOW).esWord).toBe('Hacienda')
   })
 
-  it('"Again" moves the word out of the due set and back into the Learn pool as new', () => {
+  it('"Again" keeps the word out of the Learn pool: not due for ten minutes, due after, and never new', () => {
     const word = learned('a')
     const [after] = applyProgressUpdates([word], [rateWord(word, 1, NOW)])
     expect(isReviewDue(after, NOW)).toBe(false)
-    expect(getLearnPool([after]).map((w) => w.esWord)).toEqual(['a'])
+    expect(isReviewDue(after, new Date(NOW.getTime() + 10 * 60 * 1000 - 1))).toBe(false)
+    expect(isReviewDue(after, new Date(NOW.getTime() + 10 * 60 * 1000))).toBe(true) // due again at ten minutes
+    expect(getLearnPool([after])).toHaveLength(0)
+    expect(after.repetitions).toBe(1)
   })
 
   it('Good/Easy/Hard keep the word learned and schedule it into the future', () => {
@@ -175,7 +179,7 @@ describe('the exact user_progress rows the four ratings send', () => {
 
   it('writes the documented columns, original casing and UTC timestamps for each rating', async () => {
     const expected: Record<number, { ease: number; interval: number; reps: number; next: string }> = {
-      1: { ease: 2.18, interval: 0, reps: 0, next: '2026-10-05T15:00:00.000Z' },
+      1: { ease: 2.18, interval: 0, reps: 1, next: '2026-10-05T15:10:00.000Z' },
       2: { ease: 2.36, interval: 1, reps: 2, next: '2026-10-06T15:00:00.000Z' },
       3: { ease: 2.5, interval: 3, reps: 2, next: '2026-10-08T15:00:00.000Z' },
       4: { ease: 2.6, interval: 3, reps: 2, next: '2026-10-08T15:00:00.000Z' },
@@ -338,3 +342,137 @@ function localDay(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
+
+describe('an Again re-queues the word at the end of the session', () => {
+  const cards = (...names: string[]) => names.map((n) => learned(n))
+  const order = (session: readonly Word[]) => session.map((w) => w.esWord)
+  const rated = (word: Word, quality = 1) => withUpdate(word, rateWord(word, quality, NOW))
+
+  it('the word, as the rating left it, goes to the very end', () => {
+    const session = cards('a', 'b', 'c', 'd', 'e')
+    const next = requeueAgain(session, 1, rated(session[1])) // Again on b
+    expect(order(next)).toEqual(['a', 'b', 'c', 'd', 'e', 'b'])
+    const copy = next[next.length - 1]
+    expect(copy).toMatchObject({ repetitions: 1, interval: 0 }) // the state the rating wrote
+    expect(copy.easeFactor).toBeCloseTo(2.18, 10) // and its lowered ease, not the snapshot's 2.5
+    expect(copy.nextReview?.getTime()).toBe(NOW.getTime() + 10 * 60 * 1000)
+    expect(order(session)).toEqual(['a', 'b', 'c', 'd', 'e']) // the session it was given is untouched
+    expect(Object.isFrozen(next)).toBe(true)
+  })
+
+  it('with fewer than three cards left (or none) it is last anyway', () => {
+    const session = cards('a', 'b', 'c', 'd')
+    expect(order(requeueAgain(session, 3, rated(session[3])))).toEqual(['a', 'b', 'c', 'd', 'd']) // the last card: the session goes on
+    expect(order(requeueAgain(session, 2, rated(session[2])))).toEqual(['a', 'b', 'c', 'd', 'c']) // one card left
+    expect(order(requeueAgain(cards('only'), 0, rated(learned('only'))))).toEqual(['only', 'only'])
+  })
+
+  it('a second Again on the copy sends it to the end again: it is never in the queue twice', () => {
+    const session = cards('a', 'b', 'c')
+    let now = requeueAgain(session, 0, rated(session[0])) // a b c a'
+    expect(order(now)).toEqual(['a', 'b', 'c', 'a'])
+    // b and c are rated Good, nothing is re-queued; then the copy is rated Again
+    now = requeueAgain(now, 3, rated(now[3]))
+    expect(order(now)).toEqual(['a', 'b', 'c', 'a', 'a']) // the copy at 3 was consumed, one new copy is waiting after it
+    expect(order(now).slice(4).filter((n) => n === 'a')).toHaveLength(1) // exactly one copy still to come
+    // and the ease keeps dropping from the lowered value, not from the snapshot's
+    expect(now[4].easeFactor).toBeLessThan(now[3].easeFactor)
+    expect(now[3].easeFactor).toBeLessThan(2.5)
+  })
+
+  it('a copy still waiting behind the card is dropped first, so copies cannot pile up', () => {
+    const session = [...cards('a', 'b'), learned('a')] // a stray later copy of a
+    const next = requeueAgain(session, 0, rated(session[0]))
+    expect(order(next)).toEqual(['a', 'b', 'a']) // the stray one went; one new copy at the end
+  })
+
+  it('the ease floors at 1.3 however often it is Again', () => {
+    let session: readonly Word[] = cards('a', 'b')
+    let index = 0
+    for (let i = 0; i < 12; i++) {
+      session = requeueAgain(session, index, rated(session[index]))
+      index = session.length - 1 // the copy is the next card that matters
+    }
+    expect(session[session.length - 1].easeFactor).toBe(1.3)
+    expect(session.filter((w) => w.esWord === 'a').length).toBeGreaterThan(1) // earlier copies are behind us, one is ahead
+  })
+
+  it('only Again re-queues: nothing here is called for the other ratings', () => {
+    // the screen asks isAgain first; the helper itself always re-queues, so this is the contract: Hard/Good/Easy leave the word in the past
+    for (const q of [2, 3, 4]) expect(rateWord(learned('a'), q, NOW).repetitions).toBe(2)
+  })
+})
+
+describe('a word rated Again stays out of Learn and takes no new-word slot', () => {
+  const pool = Array.from({ length: 30 }, (_, i) => makeWord(`palabra${String(i + 1).padStart(2, '0')}`, { rank: i + 1 }))
+  const due = learned('vieja', { rank: 99, easeFactor: 2.5, interval: 5, repetitions: 3 })
+  const settings = parseSettings({ daily_new_word_limit: 10 })
+
+  function rateAgain(words: readonly Word[], word: Word) {
+    const patches: SettingsPatch[] = []
+    const queued: ProgressUpdate[] = []
+    let current = words
+    const rate = createRater({
+      applyProgress: (updates) => void (current = applyProgressUpdates(current, updates)),
+      applySettings: (p) => void patches.push(p),
+      getSettings: () => settings,
+      queue: { enqueueProgress: (u) => void queued.push(u), enqueueSettings: (p) => void patches.push(p) },
+    })
+    const update = rate(word, 1, NOW)
+    return { words: current, update, patches, queued }
+  }
+
+  it('it writes the new triple through the rater: repetitions 1, interval 0, due in ten minutes, the lowered ease', () => {
+    const { update, queued } = rateAgain([...pool, due], due)
+    expect(update).toMatchObject({ esWord: 'vieja', interval: 0, repetitions: 1 })
+    expect(update.easeFactor).toBeCloseTo(2.18, 10)
+    expect(update.nextReview.getTime()).toBe(NOW.getTime() + 10 * 60 * 1000)
+    expect(queued).toEqual([update])
+  })
+
+  it('it is not in the Learn pool afterwards, and the pool is the size it was', () => {
+    const before = [...pool, due]
+    const { words } = rateAgain(before, due)
+    expect(getLearnPool(words).map((w) => w.esWord)).not.toContain('vieja')
+    expect(getLearnPool(words)).toHaveLength(getLearnPool(before).length)
+    expect(computeStats(words, settings, NOW).learnPool).toBe(30)
+  })
+
+  it('it takes no slot of the day: the rating writes nothing to the new-word counter, and Learn offers the same ten', () => {
+    const before = [...pool, due]
+    const { words, patches } = rateAgain(before, due)
+    for (const patch of patches) expect(Object.keys(patch).some((k) => k.startsWith('new_words'))).toBe(false)
+    expect(computeRemainingToday(settings, NOW)).toBe(10)
+    const batch = selectLearnBatch(words, settings, NOW)
+    expect(batch.words).toHaveLength(10)
+    expect(batch.words.map((w) => w.esWord)).not.toContain('vieja')
+    expect(batch.newCount).toBe(10) // all ten are new words; the lapsed one is not among them
+  })
+
+  it('and it is due again after ten minutes, in Review', () => {
+    const { words } = rateAgain([...pool, due], due)
+    const later = new Date(NOW.getTime() + 10 * 60 * 1000)
+    expect(buildReviewSession(words, NOW).map((w) => w.esWord)).not.toContain('vieja')
+    expect(buildReviewSession(words, later).map((w) => w.esWord)).toEqual(['vieja'])
+  })
+})
+
+describe('when the next word comes due', () => {
+  const minutes = (m: number) => new Date(NOW.getTime() + m * 60 * 1000)
+  const words = [learned('now', { nextReview: NOW }), learned('soon', { nextReview: minutes(4) }), learned('later', { nextReview: minutes(8) }), learned('far', { nextReview: minutes(60) }), learned('hidden', { nextReview: minutes(1), isHidden: true }), makeWord('new', { repetitions: 0, nextReview: minutes(2) })]
+
+  it('is the earliest word that is not due yet and is within the window', () => {
+    expect(nextDueWithin(words, NOW, 10 * 60 * 1000)).toEqual(minutes(4)) // not the due one, the far one, the hidden one or the never-learned one
+  })
+
+  it('is null when nothing is that close', () => {
+    expect(nextDueWithin([learned('far', { nextReview: minutes(60) })], NOW, 10 * 60 * 1000)).toBeNull()
+    expect(nextDueWithin([], NOW, 10 * 60 * 1000)).toBeNull()
+  })
+
+  it('the Review count does not hold a word until it is due, and counts it from that moment', () => {
+    const lapsed = learned('a', { interval: 0, repetitions: 1, nextReview: minutes(10) })
+    expect(computeStats([lapsed], parseSettings({}), NOW).reviewDue).toBe(0)
+    expect(computeStats([lapsed], parseSettings({}), minutes(10)).reviewDue).toBe(1)
+  })
+})

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
-import { computeStats, type Stats } from '../data/stats'
+import { computeStats, nextDueWithin, type Stats } from '../data/stats'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
@@ -12,6 +12,7 @@ import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
+import { RELEARN_MS } from '../sm2/sm2'
 import { strings } from '../strings'
 
 interface HomeScreenProps {
@@ -36,11 +37,18 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
-  // Recomputed each time Home is shown (it remounts on navigation), so "due" and "today" are never stale.
-  const stats = useMemo(
-    () => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, nowProp ?? new Date()) : null),
-    [data, nowProp],
-  )
+  // The time the counts are taken at: when Home is shown (it remounts on navigation), so "due" and "today" are never stale. A word rated Again is
+  // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
+  // was while Home stays open, the counts are taken again the moment the next such word comes due.
+  const [asOf, setAsOf] = useState(() => new Date())
+  const at = nowProp ?? asOf
+  const stats = useMemo(() => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, at) : null), [data, at])
+  const comesDueAt = useMemo(() => (data.status === 'ready' && !nowProp ? nextDueWithin(data.data.words, at, RELEARN_MS)?.getTime() ?? null : null), [data, nowProp, at])
+  useEffect(() => {
+    if (comesDueAt === null) return
+    const timer = setTimeout(() => setAsOf(new Date()), Math.max(0, comesDueAt - Date.now()) + 250)
+    return () => clearTimeout(timer)
+  }, [comesDueAt])
 
   // How many words each practice exercise can use, and today's word.
   const extras = useMemo(() => {

@@ -81,10 +81,9 @@ describe('the two maps', () => {
       ['queueFull', () => ru.words.queueFull(50)],
       ['dailyQuota', () => ru.words.enrich.dailyQuota(99, 100)],
       ['other', () => ru.words.enrich.other(500)],
-      ['noteLapsed', () => ru.words.detail.noteLapsed('2.50', '5 окт. 2026 г.')],
       ['practice.wrong', () => ru.practice.wrong('x')],
       ['duplicate', () => ru.words.form.duplicate('a', 'b', 'overlay')],
-      ['interval', () => `${ru.interval.days(3)} ${ru.interval.months(2)} ${ru.interval.years(1)}`],
+      ['interval', () => `${ru.interval.minutes(10)} ${ru.interval.days(3)} ${ru.interval.months(2)} ${ru.interval.years(1)}`],
     ]
     setLanguage('ru')
     for (const [name, call] of calls) for (const word of call().match(/\p{Script=Latin}{3,}/gu) ?? []) if (!allowed.has(word)) leftovers.push(`${name}(): ${word}`)

@@ -6,7 +6,7 @@ import { applyFavoriteFlag, applyFlagLists, applyHiddenFlag, applyProgressUpdate
 import { loadOverlay, recoverTables, type NonCriticalTable } from './overlay'
 import { createBackgroundRetrier, type Retrier } from './recovery'
 import { parseSettings } from './settings'
-import { computeStats, getLearnPool, type Stats } from './stats'
+import { computeStats, type Stats } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import { mergeWords, type MergeDiagnostics } from './words'
 
@@ -15,8 +15,6 @@ export interface UserData {
   settings: UserSettings
   stats: Stats
   diagnostics: MergeDiagnostics
-  /** First few learn-pool words in serving order, as visible proof of the rank sort. */
-  learnPoolPreview: readonly Word[]
   /** The latest in-memory settings, for code that outlives a render (e.g. a write that retries). */
   getSettings: () => UserSettings
   /** Mirror a successful progress write into the in-memory words. */
@@ -197,7 +195,6 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
         settings: loaded.settings,
         stats: computeStats(loaded.words, loaded.settings, new Date()),
         diagnostics: loaded.diagnostics,
-        learnPoolPreview: getLearnPool(loaded.words).slice(0, 8),
         getSettings,
         applyProgress,
         applySettings,

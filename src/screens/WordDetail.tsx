@@ -10,7 +10,7 @@ import { MAX_LEARN_PICKS, isQueueable, livePicks, queuePosition, toggleQueued } 
 import { computeRemainingToday } from '../data/stats'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
-import { hasHistory, wordState, type WordState } from '../data/wordState'
+import { wordState, type WordState } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
 import { getLanguage } from '../lib/language'
 import { haptic } from '../lib/telegram'
@@ -27,7 +27,6 @@ const date = (when: Date) => when.toLocaleDateString(getLanguage(), { day: 'nume
 function noteFor(word: Word, state: WordState): string | null {
   if (state === 'hidden') return d.noteHidden
   if (state === 'reference') return d.noteReference(hasTranslations(word) ? d.reasonPos : d.reasonNoTranslation)
-  if (hasHistory(word)) return d.noteLapsed(word.easeFactor.toFixed(2), word.nextReview ? date(word.nextReview) : '—')
   return null
 }
 

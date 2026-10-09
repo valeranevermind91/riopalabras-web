@@ -1,12 +1,14 @@
 import type { Word } from './types'
 import { isReviewDue } from './stats'
+import { RELEARN_MS } from '../sm2/sm2'
 import { hasTranslations, isReviewablePos } from './words'
 
 /**
  * Where a word stands, in this precedence: hidden (marked as known or removed); reference-only (it can never enter Learn
  * or Review: a non-reviewable part of speech such as a preposition, or a missing translation); due; established
- * (two or more successful repetitions); learning (one); new (none). A word that lapsed (rated Again after being learned)
- * has no repetitions and reads as new, which is right: it is back in the learn pool. See `hasHistory`.
+ * (two or more successful repetitions); learning (one); new (none). A word rated Again keeps one repetition, so it reads as learning ("In
+ * progress") while it waits out its ten minutes and as due after: it never goes back to new. (Words an earlier version lapsed to
+ * repetitions 0 still read as new, and are in the learn pool: see `hasHistory`.)
  */
 export type WordState = 'hidden' | 'reference' | 'due' | 'established' | 'learning' | 'new'
 
@@ -31,8 +33,9 @@ export function wordStage(word: Word): WordStage {
 }
 
 /**
- * A word that reads as new but was learned before: an "Again" rating set its repetitions back to 0 and left a stored
- * schedule (next_review) behind, which a word that was never touched does not have. The detail screen explains it.
+ * A word that reads as new but was learned before: an "Again" rating under the old rule set its repetitions back to 0 and left a stored
+ * schedule (next_review) behind, which a word that was never touched does not have. (Today's Again keeps one repetition, so no new word
+ * gets here; the ones that did stay as they are, and in the Learned list.)
  */
 export function hasHistory(word: Word): boolean {
   return word.repetitions === 0 && word.nextReview !== null
@@ -46,21 +49,24 @@ export function hasProgress(word: Word): boolean {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
- * When the word is next due, for sorting: only a word that is in the schedule has one. A word that lapsed (back to new)
- * and one never learned have none, even though a lapsed word still carries the time of its last rating.
+ * When the word is next due, for sorting: only a word that is in the schedule has one (a word rated Again is, in ten minutes). A word an
+ * earlier version lapsed back to new and one never learned have none, even though the first still carries the time of its last rating.
  */
 export function dueDate(word: Word): Date | null {
   return word.repetitions > 0 ? word.nextReview : null
 }
 
+const isStartOfDay = (when: Date) => when.getHours() === 0 && when.getMinutes() === 0 && when.getSeconds() === 0 && when.getMilliseconds() === 0
+
 /**
  * When the word was last reviewed, as far as it can be told: the review time is not stored, but the schedule is
- * (next_review = the review time + the interval), so it is worked back from it. A word just learned (repetitions 1,
- * interval 0) is due at the start of the next day, so it was learned the day before that. A lapsed word was due the moment
- * it lapsed. Null for a word never reviewed.
+ * (next_review = the review time + the interval), so it is worked back from it. A word at interval 0 is one of two things: just learned
+ * (due at the start of the next day, so learned the day before that) or rated Again (due RELEARN_MINUTES after the rating). The first
+ * is told by its due time falling exactly on a day boundary. A word whose old-rule lapse left repetitions 0 was due the moment it lapsed.
+ * Null for a word never reviewed.
  */
 export function lastReviewedAt(word: Word): Date | null {
   if (!word.nextReview) return null
-  if (word.repetitions > 0 && word.interval === 0) return new Date(word.nextReview.getTime() - DAY_MS)
+  if (word.repetitions > 0 && word.interval === 0) return new Date(word.nextReview.getTime() - (isStartOfDay(word.nextReview) ? DAY_MS : RELEARN_MS))
   return new Date(word.nextReview.getTime() - word.interval * DAY_MS)
 }

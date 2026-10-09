@@ -310,3 +310,21 @@ describe('the list view store', () => {
     expect(store.get()).toEqual(saved)
   })
 })
+
+describe('a word rated Again', () => {
+  const again = w('otra', { rank: 13, repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(NOW.getTime() + 10 * 60 * 1000) })
+  const list = [w('uno', { rank: 1 }), again]
+
+  it('is in the Learned list and under "In progress" (learning), and not under "Not started" (new)', () => {
+    expect(names(list, { segment: 'learned' })).toEqual(['otra'])
+    expect(names(list, { segment: 'learned', filters: { ...NO_FILTERS, state: 'learning' } })).toEqual(['otra'])
+    expect(names(list, { segment: 'learned', filters: { ...NO_FILTERS, state: 'new' } })).toEqual([])
+    expect(names(list, { segment: 'all', filters: { ...NO_FILTERS, state: 'new' } })).toEqual(['uno'])
+  })
+
+  it('shows as in progress on its row, and as due once the ten minutes are up', () => {
+    const state = (at: Date) => buildWordList(list, view({ segment: 'learned' }), at).rows[0].state
+    expect(state(NOW)).toBe('learning')
+    expect(state(new Date(NOW.getTime() + 10 * 60 * 1000))).toBe('due')
+  })
+})

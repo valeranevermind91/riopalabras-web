@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { previewLearnBatch, previewLine } from './data/learnPreview'
+import { emptyMessage, previewLearnBatch, previewLine } from './data/learnPreview'
 import { settingsEntries } from './data/settingsEntries'
 import type { DataState, UserData } from './data/useUserData'
 
@@ -23,7 +23,7 @@ function LearnBatchPreview({ words, settings }: { words: UserData['words']; sett
           {previewLine(entry)}
         </span>
       ))}
-      {preview.entries.length === 0 && <span className="settings-key">(empty: nothing left to learn today, or nothing left in the pool)</span>}
+      {preview.empty && <span className="settings-key">{emptyMessage(preview.empty)}</span>}
     </>
   )
 }
@@ -62,10 +62,6 @@ export function DataSection({ state }: { state: DataState }) {
           </dl>
 
           <dl>
-            <dt>Next in learn pool (rank order, from the first word; ignores start_rank)</dt>
-            <dd className="mono">
-              {state.data.learnPoolPreview.map((w) => `${w.rank}:${w.esWord}`).join('  ') || '(empty)'}
-            </dd>
             <dt>Next Learn batch (the real selection, read-only)</dt>
             <dd className="mono settings-keys">
               <LearnBatchPreview words={state.data.words} settings={state.data.settings} />

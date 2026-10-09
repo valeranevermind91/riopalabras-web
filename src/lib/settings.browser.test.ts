@@ -192,4 +192,14 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     expect((await sent(page)).at(-1)).toEqual({ show_ru_translation: false, show_en_translation: true })
     await page.close()
   }, 60_000)
+
+  it("Home's Review count does not hold a word rated Again until its time, and counts it by itself when it comes due", async () => {
+    const page = await open('ready=1&relearn=3')
+    await page.waitForSelector('[data-tile="review"] .tile-count')
+    const count = () => page.$eval('[data-tile="review"] .tile-count', (e) => Number(e.textContent))
+    expect(await count()).toBe(8) // the eight due words; the one rated Again a moment ago is not due yet, so Review would not hand it out
+    await page.waitForFunction(() => Number(document.querySelector('[data-tile="review"] .tile-count')?.textContent) === 9, { timeout: 10_000 }) // no tap, no navigation: the count is taken again when it comes due
+    expect(await count()).toBe(9)
+    await page.close()
+  }, 60_000)
 })

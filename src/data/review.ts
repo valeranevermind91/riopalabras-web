@@ -3,6 +3,7 @@ import { localDateKey } from './dates'
 import { streakPatch } from './daily'
 import type { MetricsRecorder } from './metrics'
 import { isReviewDue } from './stats'
+import { wordKey } from './words'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 
 /** Fisher–Yates. `random` is injectable so tests can pin the order. */
@@ -21,6 +22,21 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
  */
 export function buildReviewSession(words: readonly Word[], now: Date, random?: () => number): readonly Word[] {
   return Object.freeze(shuffle(words.filter((w) => isReviewDue(w, now)), random))
+}
+
+/** The word as the rating left it (what the store holds right after): the card a re-queued copy shows is this, not the snapshot taken at the start. */
+export function withUpdate(word: Word, update: ProgressUpdate): Word {
+  return Object.freeze({ ...word, easeFactor: update.easeFactor, interval: update.interval, repetitions: update.repetitions, nextReview: update.nextReview })
+}
+
+/**
+ * The session after an Again on the card at `index`: the word, as the rating left it, goes to the very end, so it comes back in the same
+ * sitting (however few cards are left, it is last). It is never in the queue twice: a copy still waiting behind `index` is dropped first, so
+ * an Again on the copy sends it to the end again instead of piling up. The cards before and at `index` stay as they were.
+ */
+export function requeueAgain(session: readonly Word[], index: number, updated: Word): readonly Word[] {
+  const key = wordKey(updated.esWord)
+  return Object.freeze([...session.filter((w, i) => i <= index || wordKey(w.esWord) !== key), updated])
 }
 
 /** The SM-2 result of rating a word, shaped for the store and for user_progress. */

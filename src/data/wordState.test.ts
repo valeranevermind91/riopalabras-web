@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makeWord } from '../testing/makeWord'
-import { hasHistory, hasProgress, isReferenceOnly, wordStage, wordState } from './wordState'
+import { hasHistory, hasProgress, isReferenceOnly, lastReviewedAt, wordStage, wordState } from './wordState'
 
 const NOW = new Date('2026-10-06T15:00:00Z')
 const past = new Date('2026-10-05T03:00:00Z')
@@ -34,12 +34,31 @@ describe('wordState: hidden, reference-only, due, established, learning, new —
     expect(wordStage(word())).toBe('new')
   })
 
-  it('a lapsed word reads as new — and carries its history, so the detail can say why', () => {
+  it('a word rated Again is in progress while it waits its ten minutes, then due: it never reads as new', () => {
+    const tenMinutes = 10 * 60 * 1000
+    const rated = word({ repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(NOW.getTime() + tenMinutes) })
+    expect(wordState(rated, NOW)).toBe('learning') // "In progress"
+    expect(wordStage(rated)).toBe('learning')
+    expect(wordState(rated, new Date(NOW.getTime() + tenMinutes - 1))).toBe('learning')
+    expect(wordState(rated, new Date(NOW.getTime() + tenMinutes))).toBe('due')
+    expect(hasProgress(rated)).toBe(true) // in the Learned list
+    expect(hasHistory(rated)).toBe(false)
+  })
+
+  it('a word an earlier version sent back to new (repetitions 0, a schedule left behind) still reads as new, with its history', () => {
     const lapsed = word({ repetitions: 0, interval: 0, easeFactor: 2.18, nextReview: past })
     expect(wordState(lapsed, NOW)).toBe('new') // not due: due needs repetitions
     expect(hasHistory(lapsed)).toBe(true)
     expect(hasProgress(lapsed)).toBe(true) // so it is in the Learned list
     expect(hasHistory(word({ repetitions: 1, nextReview: past }))).toBe(false) // a learned word has progress, not a lapse
+  })
+
+  it('last reviewed: a word rated Again was rated ten minutes before it is due; a word just learned, the day before its due midnight', () => {
+    const due = new Date(2026, 9, 6, 15, 10) // not on a day boundary: an Again's ten minutes
+    expect(lastReviewedAt(word({ repetitions: 1, interval: 0, nextReview: due }))).toEqual(new Date(2026, 9, 6, 15, 0))
+    const midnight = new Date(2026, 9, 7) // start of the next day: what finishing Learn leaves
+    expect(lastReviewedAt(word({ repetitions: 1, interval: 0, nextReview: midnight }))).toEqual(new Date(2026, 9, 6))
+    expect(lastReviewedAt(word({ repetitions: 2, interval: 3, nextReview: new Date(2026, 9, 9, 12) }))).toEqual(new Date(2026, 9, 6, 12))
   })
 
   describe('reference-only: it can never enter Learn or Review', () => {

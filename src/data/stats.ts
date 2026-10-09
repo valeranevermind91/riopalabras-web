@@ -24,6 +24,20 @@ export function isReviewDue(word: Word, now: Date): boolean {
   return word.nextReview === null || word.nextReview.getTime() <= now.getTime()
 }
 
+/**
+ * When the first learned word that is not due yet comes due, if that is within `withinMs`: a word rated Again waits ten minutes, and the counts
+ * (computed from the time they were asked) would otherwise stay as they were until something else changed them. Null when nothing is that close.
+ */
+export function nextDueWithin(words: readonly Word[], now: Date, withinMs: number): Date | null {
+  let soonest: Date | null = null
+  for (const word of words) {
+    if (word.isHidden || word.repetitions <= 0 || word.nextReview === null) continue
+    if (isReviewDue(word, now) || word.nextReview.getTime() - now.getTime() > withinMs) continue
+    if (soonest === null || word.nextReview < soonest) soonest = word.nextReview
+  }
+  return soonest
+}
+
 export function isInLearnPool(word: Word): boolean {
   return (
     !word.isHidden &&

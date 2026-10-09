@@ -65,10 +65,10 @@ async function boot() {
   // Progress for the 40 most common reviewable words: some due, some established, some just learned.
   const learned = base.filter((w) => !isReferenceOnly(w)).slice(0, 40)
   const updates = learned.map((w, i) => ({ esWord: w.esWord, easeFactor: 2.5, interval: i % 3 === 0 ? 0 : 5, repetitions: i % 3 === 0 ? 1 : i % 3 === 1 ? 3 : 2, nextReview: new Date(now + (i % 4 === 0 ? -day : (i + 1) * day)) }))
-  // One lapsed word: learned once, rated Again, so it reads as new again but keeps a stored schedule.
+  // One lapsed word: rated Again a moment ago, so it is in progress (one repetition, interval 0) and due again in ten minutes.
   const reviewable = base.filter((w) => !isReferenceOnly(w))
   const lapsed = reviewable[60]
-  updates.push({ esWord: lapsed.esWord, easeFactor: 2.18, interval: 0, repetitions: 0, nextReview: new Date(now - day) })
+  updates.push({ esWord: lapsed.esWord, easeFactor: 2.18, interval: 0, repetitions: 1, nextReview: new Date(now + 10 * 60 * 1000) })
   // Two words that read alike on the cards: cigarro and cigarrillo are both "pucho".
   for (const esWord of ['cigarro', 'cigarrillo']) updates.push({ esWord, easeFactor: 2.5, interval: 6, repetitions: 2, nextReview: new Date(now + 3 * day) })
   const withProgress = applyProgressUpdates(base, updates)

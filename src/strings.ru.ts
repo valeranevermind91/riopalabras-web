@@ -182,12 +182,11 @@ export const ru: Strings = {
       noteReference: (why) => `Только для справки: ${why}, поэтому слово не попадает ни в Learn, ни в Review.`,
       reasonPos: 'слова такого типа не заучивают',
       reasonNoTranslation: 'у слова пока нет перевода',
-      noteLapsed: (ease, last) => `Вы уже учили это слово. Ответ «Снова» вернул его в состояние «Не начато» (коэффициент ${ease}, последний раз был запланирован на ${last}), поэтому оно опять в пуле Learn.`,
     },
   },
 
   interval: {
-    lessThanMinute: '<1 мин',
+    minutes: (n) => `${n} мин`,
     days: (n) => `${n} д`,
     months: (n) => `${n} мес`,
     years: (n) => `${n} г`,

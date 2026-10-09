@@ -274,27 +274,27 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 60_000)
 
-    it('the explanation for a lapsed, hidden or reference word stays visible, outside the footnote', async () => {
+    it('the explanation for a hidden or reference word stays visible, outside the footnote', async () => {
       const page = await open()
       const fx = await fixture(page)
-      await search(page, fx.lapsed)
+      await search(page, fx.hidden[0])
       await page.waitForSelector('.word-row')
       await openRow(page, 0)
-      expect(await inTree(page, 'Again')).toBe(true) // the note is in the tree with the disclosure closed
+      expect(await inTree(page, 'Marked as known')).toBe(true) // the note is in the tree with the disclosure closed
       await page.close()
     }, 60_000)
   })
 
-  it('the detail of a lapsed word shows that it reads as new and why', async () => {
+  it('the detail of a word rated Again reads as in progress, and says nothing about Learn', async () => {
     const page = await open()
     const fx = await fixture(page)
     await search(page, fx.lapsed)
     await page.waitForSelector('.word-row')
     await openRow(page, 0)
     const text = await page.$eval('.state-block', (e) => e.textContent ?? '')
-    expect(text).toContain('Not started')
-    expect(text).toContain('Again')
-    expect(text).toContain('Learn pool')
+    expect(text).toContain('In progress')
+    expect(text).not.toContain('Not started')
+    expect(text).not.toContain('Learn pool')
     await page.close()
   }, 60_000)
 

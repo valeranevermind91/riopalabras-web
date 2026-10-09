@@ -1,4 +1,5 @@
 import { selectLearnBatch } from './learn'
+import { getLearnPool, computeRemainingToday } from './stats'
 import { QUEUED, isLowerStratum } from './learnPick'
 import type { UserSettings, Word } from './types'
 
@@ -11,9 +12,21 @@ export interface PreviewEntry {
   source: PreviewSource
 }
 
+/**
+ * Why a batch is empty. The first match wins, in this order: the day's limit is used up (the common case, whatever is in the pool); the pool
+ * has nothing in it; nothing is left from start_rank on and nothing below it either (the pool is empty and a start_rank is set).
+ */
+export type EmptyReason =
+  | { kind: 'limit'; limit: number }
+  | { kind: 'pool' }
+  | { kind: 'beyondStart'; startRank: number }
+  | { kind: 'unknown' }
+
 export interface LearnPreview {
   startRank: number | null
   entries: PreviewEntry[]
+  /** Null when the batch has words. */
+  empty: EmptyReason | null
 }
 
 /**
@@ -25,11 +38,32 @@ export function previewLearnBatch(words: readonly Word[], settings: UserSettings
   const batch = selectLearnBatch(words, settings, now)
   return {
     startRank: settings.startRank,
+    empty: batch.words.length > 0 ? null : emptyReason(words, settings, now),
     entries: batch.words.map((word, i) => ({
       esWord: word.esWord,
       rank: word.rank,
       source: batch.strata[i] === QUEUED ? 'queued' : isLowerStratum(batch.strata[i]) ? 'below' : 'window',
     })),
+  }
+}
+
+function emptyReason(words: readonly Word[], settings: UserSettings, now: Date): EmptyReason {
+  if (computeRemainingToday(settings, now) <= 0) return { kind: 'limit', limit: settings.dailyNewWordLimit }
+  if (getLearnPool(words).length === 0) return settings.startRank === null ? { kind: 'pool' } : { kind: 'beyondStart', startRank: settings.startRank }
+  return { kind: 'unknown' } // a batch can only be empty for the reasons above: if this shows, the selection and this explanation disagree
+}
+
+/** The line shown instead of the list when the batch is empty. */
+export function emptyMessage(reason: EmptyReason): string {
+  switch (reason.kind) {
+    case 'limit':
+      return `(empty: the daily limit is reached, ${reason.limit} new ${reason.limit === 1 ? 'word' : 'words'} a day)`
+    case 'pool':
+      return '(empty: nothing is left in the pool at all)'
+    case 'beyondStart':
+      return `(empty: nothing is left from start_rank ${reason.startRank} on, and nothing below it either)`
+    case 'unknown':
+      return '(empty, and no reason was found: the selection and this explanation disagree)'
   }
 }
 
