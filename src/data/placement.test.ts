@@ -279,14 +279,14 @@ describe('Learn starts from start_rank', () => {
     expect(Math.min(...batchRanks({}))).toBeLessThan(40)
   })
 
-  it('with it, every word of the batch is from start_rank on, and the 150-word window starts there', () => {
+  it('with it, most of the batch is from start_rank on (the 150-word window starts there) and a few words are from below it (see startBias.test.ts)', () => {
     for (let day = 0; day < 30; day++) {
       const ranks = batchRanks({ start_rank: 200 }, new Date(2026, 9, 1 + day, 9, 0))
       expect(ranks).toHaveLength(10)
-      for (const r of ranks) {
-        expect(r).toBeGreaterThanOrEqual(200)
-        expect(r).toBeLessThanOrEqual(349) // 150 words from rank 200
-      }
+      const up = ranks.filter((r) => r >= 200)
+      expect(up).toHaveLength(7)
+      for (const r of up) expect(r).toBeLessThanOrEqual(349) // 150 words from rank 200
+      for (const r of ranks.filter((r) => r < 200)) expect(r).toBeGreaterThanOrEqual(1)
     }
   })
 
@@ -295,17 +295,18 @@ describe('Learn starts from start_rank', () => {
     const ranks = selectLearnBatch(learned, parseSettings({ daily_new_word_limit: 10, start_rank: 200 }), DAY).words.map((w) => w.rank!)
     expect(Math.min(...ranks)).toBeGreaterThanOrEqual(301) // the first unlearned is 301, later than 200
     const ahead = selectLearnBatch(learned, parseSettings({ daily_new_word_limit: 10, start_rank: 350 }), DAY).words.map((w) => w.rank!)
-    expect(Math.min(...ahead)).toBeGreaterThanOrEqual(350) // start_rank is later than 301
+    expect(ahead.filter((r) => r >= 350)).toHaveLength(7) // start_rank is later than 301: the window starts there
+    expect(ahead.filter((r) => r < 350 && r >= 301)).toHaveLength(3) // and the unlearned words between are the range below it
   })
 
-  it('the Rioplatense guarantee holds inside the window: a Rioplatense word from start_rank on is in the batch, one below it is not forced in', () => {
+  it('the Rioplatense guarantee holds for the batch as a whole: a Rioplatense word from start_rank on, or one below it, is in the batch', () => {
     const rio = { type: 'regional_only', form: 'x', altForm: null, altRegion: null, region: 'uy', register: 'neutral', notes: null, stdMeaning: null, translation: null, stdUsage: null, example: null, confidence: 'high' } as never
-    const dict = dictionary(400, (rank) => (rank === 250 || rank === 20 ? { rio } : {}))
-    for (let day = 0; day < 20; day++) {
-      const batch = selectLearnBatch(dict, parseSettings({ daily_new_word_limit: 10, start_rank: 200 }), new Date(2026, 9, 1 + day, 9, 0))
-      expect(batch.words.some((w) => w.rio !== null), `day ${day}`).toBe(true)
-      expect(batch.words.map((w) => w.rank)).toContain(250)
-      expect(batch.words.map((w) => w.rank)).not.toContain(20)
+    for (const [label, rank] of [['inside the window', 250], ['below the start rank', 20]] as const) {
+      const dict = dictionary(400, (r) => (r === rank ? { rio } : {}))
+      for (let day = 0; day < 20; day++) {
+        const batch = selectLearnBatch(dict, parseSettings({ daily_new_word_limit: 10, start_rank: 200 }), new Date(2026, 9, 1 + day, 9, 0))
+        expect(batch.words.map((w) => w.rank), `${label}, day ${day}`).toContain(rank)
+      }
     }
   })
 

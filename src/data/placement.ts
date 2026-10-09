@@ -111,11 +111,18 @@ export function savePlacement(result: PlacementResult, deps: PlacementDeps): voi
 }
 
 /**
- * The words Learn picks its batch from: the pool from the start rank on. Words below it are taken as known (the person said so), and
- * custom words, which have no rank, stay. If nothing is left from the start rank on, the whole pool is used rather than leaving Learn empty.
+ * The pool split at the start rank: `window` is what Learn mostly draws from (the pool from the start rank on; custom words, which have no
+ * rank, stay in it), `below` the skipped range (unlearned, not hidden, not custom) that a share of every batch is still drawn from, since 25
+ * words are a crude test. If nothing is left from the start rank on, the whole pool is the window and nothing is below.
  */
+export function splitAtStartRank(pool: readonly Word[], startRank: number | null): { window: readonly Word[]; below: readonly Word[] } {
+  if (startRank === null) return { window: pool, below: [] }
+  const isBelow = (w: Word) => !w.isCustom && w.rank !== null && w.rank < startRank
+  const window = pool.filter((w) => !isBelow(w))
+  return window.length > 0 ? { window, below: pool.filter(isBelow) } : { window: pool, below: [] }
+}
+
+/** The pool from the start rank on (see splitAtStartRank). */
 export function fromStartRank(pool: readonly Word[], startRank: number | null): readonly Word[] {
-  if (startRank === null) return pool
-  const kept = pool.filter((w) => w.rank === null || w.rank >= startRank)
-  return kept.length > 0 ? kept : pool
+  return startRank === null ? pool : splitAtStartRank(pool, startRank).window
 }

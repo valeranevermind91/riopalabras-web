@@ -1,3 +1,4 @@
+import { settingsEntries } from './data/settingsEntries'
 import type { DataState } from './data/useUserData'
 
 function Row({ label, value }: { label: string; value: string | number }) {
@@ -43,9 +44,18 @@ export function DataSection({ state }: { state: DataState }) {
           </dl>
 
           <dl>
-            <dt>Next in learn pool (rank order)</dt>
+            <dt>Next in learn pool (rank order, from the first word; ignores start_rank)</dt>
             <dd className="mono">
               {state.data.learnPoolPreview.map((w) => `${w.rank}:${w.esWord}`).join('  ') || '(empty)'}
+            </dd>
+            <dt>Settings keys stored ({Object.keys(state.data.settings.raw).length})</dt>
+            <dd className="mono settings-keys">
+              {settingsEntries(state.data.settings.raw).map(([key, value]) => (
+                <span key={key} className="settings-key">
+                  {key}: {value}
+                </span>
+              ))}
+              {Object.keys(state.data.settings.raw).length === 0 && '(none)'}
             </dd>
             <dt>Orphan rows ignored (progress / favorites / hidden)</dt>
             <dd>

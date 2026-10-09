@@ -2629,3 +2629,7 @@ mark {
   padding: 12px 0 4px;
   background: var(--page);
 }
+
+.settings-key {
+  display: block;
+}

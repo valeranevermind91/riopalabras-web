@@ -252,7 +252,7 @@ export const en = {
     aboutText: 'The app is in development. You can learn and review words, and your progress is saved.',
     placementTest: 'Take the placement test',
     placementNone: 'Learn starts with the most common words.',
-    placementAt: (rank: number) => `Learn starts from word ${rank} of the frequency list.`,
+    placementAt: (rank: number) => `Learn will draw mostly from word ${rank} onwards, but not only.`,
     howItWorks: 'How it works',
     runIntro: 'Run the intro again',
     debug: 'Debug',

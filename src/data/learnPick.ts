@@ -11,6 +11,13 @@ import { hashString } from './wordOfDay'
 /** How many of the next unlearned, eligible words (by rank) a batch is drawn from. */
 export const WINDOW_SIZE = 150
 
+/**
+ * With a start rank (the placement test), roughly this share of the batch comes from the words below it instead: the test is crude, so
+ * the start is a bias, not a wall. Rounded so a batch of 10 takes 3 and a batch of 3 takes 1.
+ */
+export const LOWER_SHARE = 0.3
+export const lowerShare = (slots: number) => Math.round(slots * LOWER_SHARE)
+
 export interface KnownRecord {
   /** The word that was marked as known (with its place in the batch, for Undo). */
   word: Word
@@ -39,12 +46,23 @@ export interface BatchPick {
   readonly known: readonly KnownRecord[]
   /** The local date the picks are seeded with. */
   readonly dayKey: string
-  /** The number of strata (the batch size the day asked for). */
+  /** The number of strata of the window (the filler the day asked for, less the words taken from below the start rank). */
   readonly size: number
+  /** With a start rank: every candidate below it, in rank order, one card per headword (empty when the batch takes none from there). */
+  readonly lowWindow: readonly Word[]
+  /** The stratum of each lowWindow word: equal slices of the whole skipped range, not of its start. */
+  readonly lowStrata: readonly number[]
+  /** The number of strata of lowWindow: the words the batch takes from below the start rank. */
+  readonly lowSize: number
 }
 
 /** The "stratum" of a word that leads the batch because the user queued it: it was not drawn from the window. */
 export const QUEUED = -1
+
+// A word drawn from below the start rank carries -2 - (its stratum in lowWindow), so it can't be mistaken for a window stratum or QUEUED.
+export const lowerStratum = (s: number) => -2 - s
+export const isLowerStratum = (stratum: number) => stratum <= -2
+const lowerIndex = (stratum: number) => -2 - stratum
 
 const keyOf = (word: Word) => headword(word).text.toLowerCase()
 const isRioplatense = (word: Word) => word.rio !== null
@@ -96,44 +114,57 @@ function uniqueByHeadword(pool: readonly Word[]): Word[] {
  * sits in. If the window has none, the search is widened for that single slot only: the nearest overlay word after the window (in
  * rank order) takes the slot of the last stratum. A batch made only of queued words is the user's own choice and is left alone.
  */
-export function pickBatch(pool: readonly Word[], size: number, now: Date, queued: readonly Word[] = []): BatchPick {
+export function pickBatch(pool: readonly Word[], size: number, now: Date, queued: readonly Word[] = [], below: readonly Word[] = []): BatchPick {
   const dayKey = localDateKey(now)
   const line = uniqueByHeadword(queued)
   const lead = line.slice(0, Math.max(0, size))
   const overflow = line.slice(lead.length)
   const queuedKeys = new Set(line.map((w) => w.esWord.toLowerCase()))
   const leadHeadwords = new Set(lead.map(keyOf))
-  const candidates = uniqueByHeadword(queuedKeys.size === 0 ? pool : pool.filter((w) => !queuedKeys.has(w.esWord.toLowerCase()) && !leadHeadwords.has(keyOf(w))))
+  const unqueued = (list: readonly Word[]) => uniqueByHeadword(queuedKeys.size === 0 ? list : list.filter((w) => !queuedKeys.has(w.esWord.toLowerCase()) && !leadHeadwords.has(keyOf(w))))
+  const allCandidates = unqueued(pool)
+  const slots = Math.max(0, size - lead.length)
+
+  // Below the start rank: its share of the filler, spread over the whole skipped range. A range with less in it than the share (or none) gives
+  // what it has, and the window fills the rest; a window with less in it than the slots left asks the range for more.
+  const lowAll = below.length > 0 ? unqueued(below) : []
+  const m = Math.min(lowAll.length, Math.max(lowerShare(slots), slots - allCandidates.length))
+  const lowPicks = pickPerStratum(lowAll, m, dayKey)
+  const lowStrata = lowAll.map((_, i) => stratumOf(i, lowAll.length, Math.max(m, 1)))
+  const lowKeys = new Set(lowPicks.map((w) => keyOf(w!)))
+  const candidates = lowKeys.size === 0 ? allCandidates : allCandidates.filter((w) => !lowKeys.has(keyOf(w)))
+
   const window = candidates.slice(0, WINDOW_SIZE)
   const reserve = candidates.slice(WINDOW_SIZE)
-  const n = Math.min(size - lead.length, window.length)
+  const n = Math.min(slots - m, window.length)
   const windowStrata = window.map((_, i) => stratumOf(i, window.length, Math.max(n, 1)))
+  const picks = pickPerStratum(window, n, dayKey)
 
-  const picks: (Word | null)[] = []
-  for (const [start, end] of strataBounds(window.length, n)) {
-    let best: Word | null = null
-    for (let i = start; i < end; i++) {
-      if (!best || rankHash(dayKey, window[i]) < rankHash(dayKey, best)) best = window[i]
-    }
-    picks.push(best)
-  }
-
-  if (n > 0 && !lead.some(isRioplatense) && !picks.some((w) => w && isRioplatense(w))) {
+  if (n + m > 0 && !lead.some(isRioplatense) && !picks.some((w) => w && isRioplatense(w)) && !lowPicks.some((w) => w && isRioplatense(w))) {
+    const lowestHash = (list: { w: Word; i: number }[]) => list.reduce((a, b) => (rankHash(dayKey, b.w) < rankHash(dayKey, a.w) ? b : a))
     const inWindow = window.map((w, i) => ({ w, i })).filter(({ w }) => isRioplatense(w))
-    if (inWindow.length > 0) {
-      const { w, i } = inWindow.reduce((a, b) => (rankHash(dayKey, b.w) < rankHash(dayKey, a.w) ? b : a))
+    const inLow = m > 0 ? lowAll.map((w, i) => ({ w, i })).filter(({ w }) => isRioplatense(w)) : []
+    if (inWindow.length > 0 && n > 0) {
+      const { w, i } = lowestHash(inWindow)
       picks[windowStrata[i]] = w
+    } else if (inLow.length > 0) {
+      const { w, i } = lowestHash(inLow)
+      lowPicks[lowStrata[i]] = w
     } else {
       const widened = reserve.find(isRioplatense)
-      if (widened) picks[n - 1] = widened
+      if (widened && n > 0) picks[n - 1] = widened
     }
   }
 
-  // The filler is shown in a day-seeded mixed order, so the most common word is not always the first card; queued words lead it, in queue order.
-  const order = picks.map((word, stratum) => ({ word: word!, stratum })).sort((a, b) => rankHash(dayKey, a.word) - rankHash(dayKey, b.word))
+  // The filler is shown in a day-seeded mixed order, so the most common word is not always the first card (and the easy ones are not
+  // bunched); queued words lead it, in queue order.
+  const filler = [
+    ...picks.map((word, stratum) => ({ word: word!, stratum })),
+    ...lowPicks.map((word, stratum) => ({ word: word!, stratum: lowerStratum(stratum) })),
+  ].sort((a, b) => rankHash(dayKey, a.word) - rankHash(dayKey, b.word))
   return {
-    words: [...lead, ...order.map((o) => o.word)],
-    strata: [...lead.map(() => QUEUED), ...order.map((o) => o.stratum)],
+    words: [...lead, ...filler.map((o) => o.word)],
+    strata: [...lead.map(() => QUEUED), ...filler.map((o) => o.stratum)],
     window,
     windowStrata,
     reserve,
@@ -141,7 +172,23 @@ export function pickBatch(pool: readonly Word[], size: number, now: Date, queued
     known: [],
     dayKey,
     size: n,
+    lowWindow: m > 0 ? lowAll : [],
+    lowStrata: m > 0 ? lowStrata : [],
+    lowSize: m,
   }
+}
+
+/** One word per stratum of `list` cut into `count` equal slices: the one with the lowest hash of (local date, word). */
+function pickPerStratum(list: readonly Word[], count: number, dayKey: string): (Word | null)[] {
+  const picks: (Word | null)[] = []
+  for (const [start, end] of strataBounds(list.length, count)) {
+    let best: Word | null = null
+    for (let i = start; i < end; i++) {
+      if (!best || rankHash(dayKey, list[i]) < rankHash(dayKey, best)) best = list[i]
+    }
+    picks.push(best)
+  }
+  return picks
 }
 
 /**
@@ -164,33 +211,39 @@ export function replaceKnown(batch: BatchPick, index: number): BatchPick {
   const used = new Set(batch.words.filter((_, i) => i !== index).map(keyOf))
   const free = (w: Word) => !taken.has(w.esWord.toLowerCase()) && !used.has(keyOf(w))
 
-  // A queued word has no stratum to keep: every filler candidate is equally near (then the lowest hash wins).
-  const distanceTo = (s: number) => (wasQueued ? 0 : Math.abs(s - stratum))
+  // A queued word has no stratum to keep: every filler candidate is equally near (then the lowest hash wins). A word from below the start rank is
+  // replaced from there first (the stratum is its slice of the skipped range), and from the window when that range has nothing left.
+  const wasLower = isLowerStratum(stratum)
   const needRio = !batch.words.some((w, i) => i !== index && isRioplatense(w))
   const fromOverflow = (rioOnly: boolean): { w: Word; s: number } | null => {
     const w = wasQueued ? batch.overflow.find((c) => free(c) && (!rioOnly || isRioplatense(c))) : undefined
     return w ? { w, s: QUEUED } : null
   }
-  const fromWindow = (rioOnly: boolean): { w: Word; s: number } | null => {
+  // The best unused candidate of one list: nearest stratum to `near` (null: no preference), then the lowest hash.
+  const nearest = (list: readonly Word[], listStrata: readonly number[], encode: (s: number) => number, near: number | null, rioOnly: boolean): { w: Word; s: number } | null => {
     let best: { w: Word; s: number; distance: number } | null = null
-    for (let i = 0; i < batch.window.length; i++) {
-      const w = batch.window[i]
+    for (let i = 0; i < list.length; i++) {
+      const w = list[i]
       if (!free(w) || (rioOnly && !isRioplatense(w))) continue
-      const s = batch.windowStrata[i]
-      const distance = distanceTo(s)
+      const s = listStrata[i]
+      const distance = near === null ? 0 : Math.abs(s - near)
       if (best === null || distance < best.distance || (distance === best.distance && rankHash(batch.dayKey, w) < rankHash(batch.dayKey, best.w))) best = { w, s, distance }
     }
-    return best === null ? null : { w: best.w, s: best.s }
+    return best === null ? null : { w: best.w, s: encode(best.s) }
   }
+  const fromWindow = (rioOnly: boolean): { w: Word; s: number } | null =>
+    nearest(batch.window, batch.windowStrata, (s) => s, wasQueued || wasLower ? null : stratum, rioOnly)
+  const fromLower = (rioOnly: boolean): { w: Word; s: number } | null =>
+    nearest(batch.lowWindow, batch.lowStrata, lowerStratum, wasLower ? lowerIndex(stratum) : null, rioOnly)
   const fromReserve = (rioOnly: boolean): { w: Word; s: number } | null => {
     const w = batch.reserve.find((c) => free(c) && (!rioOnly || isRioplatense(c)))
-    return w ? { w, s: stratum } : null
+    return w ? { w, s: wasLower ? Math.max(0, batch.size - 1) : stratum } : null
   }
 
   // The next queued word first, but a batch that would be left without a Rioplatense word takes one before anything else.
   let chosen: { w: Word; s: number } | null = null
-  if (needRio) chosen = fromOverflow(true) ?? fromWindow(true) ?? fromReserve(true)
-  chosen ??= fromOverflow(false) ?? fromWindow(false) ?? fromReserve(false)
+  if (needRio) chosen = fromOverflow(true) ?? (wasLower ? fromLower(true) ?? fromWindow(true) : fromWindow(true) ?? fromLower(true)) ?? fromReserve(true)
+  chosen ??= fromOverflow(false) ?? (wasLower ? fromLower(false) ?? fromWindow(false) : fromWindow(false)) ?? fromReserve(false)
 
   const record: KnownRecord = { word, index, stratum, replacement: chosen?.w ?? null, queuedAt: null }
   const words = [...batch.words]

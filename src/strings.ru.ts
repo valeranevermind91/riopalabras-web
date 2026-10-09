@@ -223,7 +223,7 @@ export const ru: Strings = {
     aboutText: 'Приложение в разработке. Слова можно учить и повторять, прогресс сохраняется.',
     placementTest: 'Пройти входной тест',
     placementNone: 'Learn начнёт с самых частых слов.',
-    placementAt: (rank) => `Learn начнёт со слова №${rank} в списке по частоте.`,
+    placementAt: (rank) => `Learn будет брать слова в основном начиная с №${rank} по частотности, но не только.`,
     howItWorks: 'Как это работает',
     runIntro: 'Показать введение снова',
     debug: 'Debug',

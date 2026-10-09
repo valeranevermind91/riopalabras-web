@@ -248,7 +248,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       expect(await page.$eval('h1', (e) => e.textContent)).toBe('Settings')
       expect(await startRanks(page)).toEqual([BAND_STARTS[3]])
       expect((await sent(page)).hidden).toHaveLength(1)
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe(`Learn starts from word ${BAND_STARTS[3]} of the frequency list.`)
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe(`Learn will draw mostly from word ${BAND_STARTS[3]} onwards, but not only.`)
       await page.close()
     }, 90_000)
 
@@ -286,7 +286,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
     it('a retake that finds a beginner clears start_rank (the key is removed), and Settings says Learn starts at the beginning again', async () => {
       const page = await open('goal=12&lang=en&start_rank=2000')
       await toSettings(page)
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts from word 2000 of the frequency list.')
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn will draw mostly from word 2000 onwards, but not only.')
       await clickText(page, '#settings-learning ~ .settings-group .setting-nav', 'Take the placement test')
       await page.waitForSelector('.place')
       await takeTest(page, [2, 5, 5, 5, 5])
