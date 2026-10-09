@@ -2,7 +2,8 @@ import { GoalStepper } from '../components/GoalStepper'
 import { LANGUAGE_CHOICES, languageChoiceOf, languageChoicePatch, type LanguageChoice } from '../data/onboarding'
 import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
 import { SESSIONS_NOTE_FROM } from '../data/settingsActions'
-import type { SettingsPatch, UserSettings } from '../data/types'
+import type { PlacementResult } from '../data/placement'
+import type { SettingsPatch, UserSettings, Word } from '../data/types'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
 
@@ -16,6 +17,15 @@ export interface StepProps {
   stepGoal: (delta: 1 | -1) => void
   /** Opens "How it works" (the last step links to it). */
   onHow: () => void
+  /** The dictionary's words, for the placement test. */
+  words: readonly Word[]
+  /** Keeps a placement result (start_rank, and the marked words hidden in one batch). */
+  savePlacement: (result: PlacementResult) => void
+  /** Moves on from this step (or finishes, from the last), and back, for a step that draws its own buttons. */
+  advance: () => void
+  retreat: () => void
+  /** A step with something of its own to step back through (the placement test's sets) takes the back button first. */
+  interceptBack: (handler: (() => boolean) | null) => void
 }
 
 /** The first step: the interface language, two large options, the one Telegram reports (or the one already chosen) selected. Choosing switches everything at once. */

@@ -20,6 +20,8 @@ interface SettingsScreenProps {
   /** Whether this user may open Debug. When false the Debug section is not rendered at all. */
   debugAllowed: boolean
   onOpenDebug: () => void
+  /** Runs the placement test on its own (Learning). Without it the row is left out. */
+  onTakePlacement?: () => void
   /** Opens "How it works" (About). Without it the row is left out. */
   onOpenHow?: () => void
   /** Replays the intro from step 1 (About). Without it the row is left out. */
@@ -35,7 +37,7 @@ interface SettingsScreenProps {
  * and meaning), the theme, a placeholder for reminders, About, and Debug for those allowed to see it. Changes apply at
  * once and go through the write queue like any other settings change.
  */
-export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -119,6 +121,18 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
               />
             </div>
           </div>
+
+          {onTakePlacement && (
+            <button type="button" className="setting-row setting-nav" onClick={onTakePlacement}>
+              <span className="setting-text">
+                <span className="setting-label">{t.placementTest}</span>
+                <span className="setting-hint">{settings.startRank === null ? t.placementNone : t.placementAt(settings.startRank)}</span>
+              </span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
         </div>
       </section>
 

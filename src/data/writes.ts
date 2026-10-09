@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
+import { mergeSettingsRaw } from './settings'
 import type { CustomWordOp, ProgressUpdate, SettingsPatch, UserSettings } from './types'
 
 /** A failed write, with what the server said, so the queue can tell "try again" from "this request will never be accepted". */
@@ -67,7 +68,7 @@ export async function upsertProgress(
 
 /**
  * Writes `patch` over the user's WHOLE settings blob, merged from the in-memory copy so keys this
- * client doesn't own (learn_picks, pending_word_deletes, …) are preserved. Returns the blob written.
+ * client doesn't own (learn_picks, pending_word_deletes, …) are preserved, and a key patched to null is removed. Returns the blob written.
  */
 export async function writeSettings(
   client: SupabaseClient,
@@ -76,7 +77,7 @@ export async function writeSettings(
   patch: SettingsPatch,
   now: Date = new Date(),
 ): Promise<Record<string, unknown>> {
-  const merged = { ...current.raw, ...patch }
+  const merged = mergeSettingsRaw(current.raw, patch)
   const { error, status } = await client
     .from('user_settings')
     .upsert({ user_id: userId, settings: merged, updated_at: now.toISOString() }, { onConflict: 'user_id' })

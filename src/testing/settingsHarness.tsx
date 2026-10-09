@@ -3,16 +3,17 @@
 // settings it is given (window.__sent.settings). Query: debug=1 (allowed to open Debug), goal=18 (or goal=default: no stored goal),
 // ru=1, en=0, fresh=1 (an account that has not finished the intro: it is shown instead of Home, as App does), lang=ru (a stored
 // interface language; without it the language follows Telegram, which here means English), ready=1 (Home with a few words, so its
-// tiles and status show), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
+// tiles and status show), dict=1 (the real dictionary, loaded from the page: enough words for the placement test), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
-import { applySettingsPatch } from '../data/mutations'
+import { parseDictionary } from '../data/dictionary'
+import { applyHiddenFlag, applySettingsPatch } from '../data/mutations'
 import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
 import { makeWord } from './makeWord'
-import type { SettingsPatch } from '../data/types'
+import type { SettingsPatch, Word } from '../data/types'
 import { effectiveLanguage, setLanguage, useLanguage } from '../lib/language'
 import { backTarget, type Screen } from '../lib/nav'
 import { themePatch, type ThemeChoice } from '../lib/theme'
@@ -21,12 +22,17 @@ import { DebugScreen } from '../screens/Debug'
 import { HomeScreen } from '../screens/Home'
 import { HowItWorks } from '../screens/HowItWorks'
 import { Onboarding } from '../screens/Onboarding'
+import { PlacementScreen } from '../screens/PlacementScreen'
 import { SettingsScreen } from '../screens/Settings'
 
 const params = new URLSearchParams(location.search)
-const sent: { settings: SettingsPatch[] } = { settings: [] }
+// `hidden` holds one entry per request the hidden lane makes (the es_words in it), so a test can see that a batch left in one request.
+const sent: { settings: SettingsPatch[]; hidden: string[][] } = { settings: [], hidden: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
-const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch) }, { retryDelaysMs: [1], sleep: async () => {} })
+const queue = createWriteQueue(
+  { sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch), sendHidden: async (ops) => void sent.hidden.push(ops.map((o) => `${o.hidden ? '' : '-'}${o.esWord}`)) },
+  { retryDelaysMs: [1], sleep: async () => {} },
+)
 
 const HOME_WORDS = [
   ...Array.from({ length: 8 }, (_, i) =>
@@ -38,6 +44,22 @@ const HOME_WORDS = [
 export function Harness() {
   useLanguage() // as App does: everything below re-renders when the language changes
   const [screen, setScreen] = useState<Screen>('home')
+  // The words: a few for Home, or (dict=1) the real dictionary once it has been fetched.
+  const [words, setWords] = useState<readonly Word[]>(HOME_WORDS)
+  useEffect(() => {
+    if (params.get('dict') !== '1') return
+    let cancelled = false
+    void fetch('/words_enriched.json')
+      .then((r) => r.json())
+      .then((raw) => {
+        if (!cancelled) setWords(parseDictionary(raw))
+        ;(window as never as { __dictionary: boolean }).__dictionary = true
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => setWords((w) => applyHiddenFlag(w, esWords, hidden)), [])
   // late=1: the settings are not there yet (the language is whatever the device last used), until the page says so.
   const [loaded, setLoaded] = useState(() => params.get('late') !== '1')
   useEffect(() => {
@@ -51,6 +73,7 @@ export function Harness() {
       ...(params.get('fresh') === '1' && !params.has('en') ? {} : { show_en_translation: params.get('en') === '1' }),
       ...(params.get('fresh') === '1' ? {} : { onboarding_done: true }),
       ...(params.get('lang') ? { ui_language: params.get('lang') } : {}),
+      ...(params.get('start_rank') ? { start_rank: Number(params.get('start_rank')) } : {}),
     }),
   )
   // The latest settings, updated at once (as useUserData does), so two taps before a render both see the first.
@@ -59,7 +82,7 @@ export function Harness() {
     latest.current = applySettingsPatch(latest.current, patch)
     setSettings(latest.current)
   }, [])
-  const data = useMemo(() => ({ settings, getSettings: () => latest.current, applySettings }) as never, [settings, applySettings])
+  const data = useMemo(() => ({ settings, getSettings: () => latest.current, applySettings, words, applyHidden }) as never, [settings, applySettings, words, applyHidden])
   const persist = useCallback(
     (choice: ThemeChoice) => {
       applySettings(themePatch(choice))
@@ -88,6 +111,7 @@ export function Harness() {
   const back = () => void goBack()
 
   if (screen === 'how') return <HowItWorks onBack={back} />
+  if (screen === 'placement') return <PlacementScreen data={data} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={back} />
   if (screen === 'onboarding') return <Onboarding data={data} queue={queue} mode="replay" onExit={() => setScreen('settings')} registerBack={registerBack} />
   if (screen === 'settings')
     return (
@@ -97,6 +121,7 @@ export function Harness() {
         theme={{ choice: theme.choice, set: theme.set }}
         debugAllowed={params.get('debug') === '1'}
         onOpenDebug={() => setScreen('debug')}
+        onTakePlacement={() => setScreen('placement')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
         onBack={back}
@@ -108,7 +133,7 @@ export function Harness() {
   return (
     <HomeScreen
       auth={{ status: 'no-telegram' }}
-      data={loaded && params.get('ready') === '1' ? ({ status: 'ready', data: { ...(data as object), words: HOME_WORDS, degraded: [], retryDegraded: () => {} } } as never) : { status: 'loading' }}
+      data={loaded && params.get('ready') === '1' ? ({ status: 'ready', data: { ...(data as object), words, degraded: [], retryDegraded: () => {} } } as never) : { status: 'loading' }}
       onLearn={() => {}}
       onReview={() => {}}
       onMatching={() => {}}

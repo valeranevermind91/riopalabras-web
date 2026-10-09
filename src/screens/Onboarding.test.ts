@@ -21,7 +21,7 @@ const shell = (mode: 'first' | 'replay', raw: Record<string, unknown> = {}) =>
 
 const step = (id: string, raw: Record<string, unknown> = {}) => {
   const settings = parseSettings(raw)
-  const props: StepProps = { settings, saveSetting: noop, stepGoal: noop, onHow: noop }
+  const props: StepProps = { settings, saveSetting: noop, stepGoal: noop, onHow: noop, words: [], savePlacement: noop, advance: noop, retreat: noop, interceptBack: noop }
   const entry = STEPS.find((s) => s.id === id)!
   return renderToStaticMarkup(createElement(entry.Body, props))
 }
@@ -70,12 +70,15 @@ describe('the seven steps', () => {
     expect(checked(step('translation', { show_ru_translation: false }))).toEqual(['Russian:false', 'English:true', 'Both:false'])
   })
 
-  it('4: the placement test is a marked placeholder: one screen saying a short test will go here', () => {
+  it('4: the placement test is the real step: its own screen (here without enough words, so it says so), drawing its own buttons', () => {
     const html = step('placement')
     expect(html).toContain('data-step="placement"')
-    expect(html).toContain('A short test will go here.')
-    expect(readFileSync('src/screens/OnboardingPlacement.tsx', 'utf8')).toMatch(/PLACEMENT TEST/)
-    expect(readFileSync('src/screens/onboardingSteps.ts', 'utf8')).toMatch(/PLACEMENT TEST GOES HERE/)
+    expect(html).toContain('There are not enough new words left for a placement test.')
+    expect(html).not.toContain('A short test will go here')
+    const entry = STEPS.find((s) => s.id === 'placement')!
+    expect(entry.ownsFooter).toBe(true)
+    expect(STEPS.filter((s) => s.ownsFooter).map((s) => s.id)).toEqual(['placement'])
+    expect(readFileSync('src/screens/OnboardingPlacement.tsx', 'utf8')).not.toMatch(/PLACEHOLDER/)
   })
 
   it('5: the daily goal: the shared stepper on the current value, 10 when nothing is stored', () => {
@@ -104,7 +107,7 @@ describe('the seven steps', () => {
   })
 
   it('the shell is the same around any step: a step added or replaced does not change the flow', () => {
-    // the steps are a list of { id, Body, canContinue? }; the placement test replaces the fourth Body and nothing else
+    // the steps are a list of { id, Body, canContinue?, ownsFooter?, onContinue? }
     expect(STEPS.every((s) => typeof s.Body === 'function')).toBe(true)
     expect(STEPS[4].id).toBe('placement')
   })
@@ -114,7 +117,7 @@ describe('Continue on the language step', () => {
   const first = STEPS[0]
   const run = (raw: Record<string, unknown>) => {
     const written: Record<string, unknown>[] = []
-    first.onContinue!({ settings: parseSettings(raw), saveSetting: (patch) => void written.push(patch), stepGoal: noop, onHow: noop })
+    first.onContinue!({ settings: parseSettings(raw), saveSetting: (patch) => void written.push(patch), stepGoal: noop, onHow: noop, words: [], savePlacement: noop, advance: noop, retreat: noop, interceptBack: noop })
     return written
   }
 

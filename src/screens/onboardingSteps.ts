@@ -10,13 +10,15 @@ export interface OnboardingStep {
   Body: ComponentType<StepProps>
   /** Whether Continue is available; a step with nothing to finish leaves it out. */
   canContinue?: (props: StepProps) => boolean
+  /** The step draws its own Back / Continue (the placement test, which has sets of its own): the shell leaves its footer out. */
+  ownsFooter?: boolean
   /** Runs when Continue is tapped, before the next step shows (with the latest settings). */
   onContinue?: (props: StepProps) => void
 }
 
 /**
- * The intro's seven steps, in order: the language first, so everything after it is in that language. Adding the placement test is a change to ONE entry here: the `placement` entry's body (see
- * OnboardingPlacement.tsx, the marked placeholder). The shell (Onboarding.tsx) does the rest: progress, Back, Continue and the final write.
+ * The intro's seven steps, in order: the language first, so everything after it is in that language. The shell (Onboarding.tsx) draws the
+ * progress, Back, Continue and the final write around them; the placement test draws its own buttons (`ownsFooter`).
  */
 export const STEPS: readonly OnboardingStep[] = [
   {
@@ -31,7 +33,7 @@ export const STEPS: readonly OnboardingStep[] = [
   { id: 'about', Body: AboutStep },
   { id: 'inside', Body: InsideStep },
   { id: 'translation', Body: TranslationStep },
-  { id: 'placement', Body: OnboardingPlacement }, // PLACEMENT TEST GOES HERE
+  { id: 'placement', Body: OnboardingPlacement, ownsFooter: true },
   { id: 'goal', Body: GoalStep },
   { id: 'pronunciation', Body: PronunciationStep },
 ]

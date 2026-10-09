@@ -17,6 +17,7 @@ import { LearnScreen } from './Learn'
 import { MatchingScreen } from './Matching'
 import { Onboarding } from './Onboarding'
 import { STEPS, type StepProps } from './onboardingSteps'
+import { PlacementScreen } from './PlacementScreen'
 import { ReviewScreen } from './Review'
 import { SettingsScreen } from './Settings'
 import { WordDetail } from './WordDetail'
@@ -77,7 +78,7 @@ const screens: [string, () => string][] = [
   ['Intro, replay', () => renderToStaticMarkup(createElement(Onboarding, { data: dataFor([], settingsRaw), queue, mode: 'replay' } as never))],
   ...STEPS.map((s): [string, () => string] => [
     `Intro step: ${s.id}`,
-    () => renderToStaticMarkup(createElement(s.Body, { settings: parseSettings({ daily_new_word_limit: 18 }), saveSetting: noop, stepGoal: noop, onHow: noop } satisfies StepProps)),
+    () => renderToStaticMarkup(createElement(s.Body, { settings: parseSettings({ daily_new_word_limit: 18 }), saveSetting: noop, stepGoal: noop, onHow: noop, words: [], savePlacement: noop, advance: noop, retreat: noop, interceptBack: noop } satisfies StepProps)),
   ]),
   ['Words', () => renderToStaticMarkup(createElement(WordsScreen, { data: dataFor([...learned(5), ...unlearned(5)]), queue, savedView: null, onViewChange: noop, onOpen: noop, onBack: noop } as never))],
   ['Words, nothing found', () => renderToStaticMarkup(createElement(WordsScreen, { data: dataFor([]), queue, savedView: null, onViewChange: noop, onOpen: noop } as never))],
@@ -89,6 +90,8 @@ const screens: [string, () => string][] = [
   ['Word detail, a hidden word', () => renderToStaticMarkup(createElement(WordDetail, { word: { ...unlearned(1)[0], isHidden: true }, data: dataFor(unlearned(1)), queue } as never))],
   ['Word detail, a reference word', () => renderToStaticMarkup(createElement(WordDetail, { word: makeWord('para', { pos: 'prep', ruTranslation: 'для', enTranslation: 'for' }), data: dataFor([]), queue } as never))],
   ['Word detail, a word the user added', () => renderToStaticMarkup(createElement(WordDetail, { word: { ...unlearned(1)[0], isCustom: true, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'nuevo' }, data: dataFor(unlearned(1)), queue } as never))],
+  ['Placement test, on its own', () => renderToStaticMarkup(createElement(PlacementScreen, { data: dataFor(Array.from({ length: 300 }, (_, i) => makeWord(`nueva${i}`, { rank: i + 1, ruTranslation: `новое${i}`, enTranslation: `new${i}` }))), queue, onExit: noop, onBack: noop } as never))],
+  ['Placement test, too few words', () => renderToStaticMarkup(createElement(PlacementScreen, { data: dataFor(unlearned(3)), queue, onExit: noop } as never))],
   ['Learn', () => renderToStaticMarkup(createElement(LearnScreen, { data: dataFor(unlearned(40)), queue, metrics: null, onHome: noop, onReview: noop, onBack: noop } as never))],
   ['Learn, nothing left', () => renderToStaticMarkup(createElement(LearnScreen, { data: dataFor([]), queue, metrics: null, onHome: noop, onReview: noop } as never))],
   ['Review', () => renderToStaticMarkup(createElement(ReviewScreen, { data: dataFor(learned(4)), queue, metrics: null, onHome: noop, onLearn: noop, onBack: noop } as never))],

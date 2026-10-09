@@ -51,6 +51,8 @@ export interface UserSettings {
   readonly themeChoice: ThemeChoice | null
   /** The interface language chosen by the user ('en' or 'ru'); null until they choose (it then follows Telegram's language). */
   readonly uiLanguage: UiLanguage | null
+  /** Where Learn starts in the frequency order (the placement test's result); null for the default start. */
+  readonly startRank: number | null
   readonly learnPicks: readonly string[]
   readonly pendingWordDeletes: readonly string[]
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */
@@ -94,5 +96,5 @@ export interface CustomWordRow {
  */
 export type CustomWordOp = { kind: 'save'; row: CustomWordRow } | { kind: 'delete'; esWord: string; tombstone: string }
 
-/** Keys to merge into the user_settings blob (snake_case, exactly as stored). */
+/** Keys to merge into the user_settings blob (snake_case, exactly as stored). A key whose value is `null` is removed from the blob. */
 export type SettingsPatch = Record<string, unknown>

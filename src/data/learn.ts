@@ -2,6 +2,7 @@ import { learnedState } from '../sm2/sm2'
 import { newWordsPatch, streakPatch } from './daily'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
 import { livePicks, removeKeys, restoreKey, storedIndex } from './learnPicks'
+import { fromStartRank } from './placement'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import type { QueueTicket, WriteQueue } from './writeQueue'
@@ -32,7 +33,7 @@ export function batchOf(words: readonly Word[]): LearnBatch {
 const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.words.filter((w) => w.repetitions === 0).length })
 
 /**
- * Next Learn batch: min(10, remainingToday) new words. The words the user queued (learn_picks) come first, in the
+ * Next Learn batch: min(10, remainingToday) new words, from the start rank on when the placement test set one (see fromStartRank). The words the user queued (learn_picks) come first, in the
  * order they were queued; the rest is spread over the next 150 candidates instead of taken from the head of the
  * queue (see pickBatch). Known words are hidden, hence never candidates; only words the user actually learns are
  * counted towards the daily limit (newCount is the batch itself). The queue is only read here: a queued word leaves it
@@ -41,7 +42,7 @@ const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.wo
 export function selectLearnBatch(words: readonly Word[], settings: UserSettings, now: Date): LearnBatch {
   const limit = Math.min(LEARN_BATCH_SIZE, computeRemainingToday(settings, now))
   if (limit <= 0) return withCount(pickBatch([], 0, now))
-  return withCount(pickBatch(getLearnPool(words), limit, now, livePicks(words, settings.learnPicks)))
+  return withCount(pickBatch(fromStartRank(getLearnPool(words), settings.startRank), limit, now, livePicks(words, settings.learnPicks)))
 }
 
 export interface KnownDeps {

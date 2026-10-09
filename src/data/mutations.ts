@@ -1,4 +1,4 @@
-import { parseSettings } from './settings'
+import { mergeSettingsRaw, parseSettings } from './settings'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
 import { compareByRank, wordKey } from './words'
 
@@ -21,9 +21,9 @@ export function applyProgressUpdates(words: readonly Word[], updates: readonly P
   return Object.freeze(next)
 }
 
-/** Pure: merges a patch over the full settings blob (unknown keys survive) and re-parses it. */
+/** Pure: merges a patch over the full settings blob (unknown keys survive; a key patched to null is removed) and re-parses it. */
 export function applySettingsPatch(settings: UserSettings, patch: SettingsPatch): UserSettings {
-  return parseSettings({ ...settings.raw, ...patch })
+  return parseSettings(mergeSettingsRaw(settings.raw, patch))
 }
 
 /** Pure: marks the words in the recovered favorites / hidden lists (matched by wordKey); orphans are ignored. */

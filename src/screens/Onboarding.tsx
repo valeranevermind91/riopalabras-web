@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { finishOnboardingPatch } from '../data/onboarding'
+import { savePlacement } from '../data/placement'
 import { saveSetting, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
@@ -25,7 +26,18 @@ interface OnboardingProps {
   registerBack?: (handler: (() => boolean) | null) => void
 }
 
-/** Six steps, forward and back, with a progress indicator. Settings written in a step apply at once, as in Settings. */
+/** Where a step puts its own back handler (set by the step, run by the intro's back button). */
+function createBackSlot() {
+  let handler: (() => boolean) | null = null
+  return {
+    set: (next: (() => boolean) | null) => {
+      handler = next
+    },
+    run: () => handler?.() ?? false,
+  }
+}
+
+/** Seven steps, forward and back, with a progress indicator. Settings written in a step apply at once, as in Settings. */
 export function Onboarding({ data, queue, mode, onExit, registerBack }: OnboardingProps) {
   const [step, setStep] = useState(0)
   const [showHow, setShowHow] = useState(false)
@@ -33,15 +45,24 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
   const last = step === STEPS.length - 1
   const canGoBack = step > 0 || mode === 'replay'
 
+  // A step with sets of its own (the placement test) takes the back button before the intro steps back.
+  const [stepBack] = useState(createBackSlot)
   const props: StepProps = {
     settings: data.settings,
+    words: data.words,
+    savePlacement: (result) => savePlacement(result, { getSettings: data.getSettings, applyHidden: data.applyHidden, applySettings: data.applySettings, queue }),
+    advance: () => advance(),
+    retreat: () => back(),
+    interceptBack: (handler) => {
+      stepBack.set(handler)
+    },
     saveSetting: (patch) => saveSetting(patch, deps),
     stepGoal: (delta) => {
       if (stepDailyLimit(delta, deps)) haptic('select')
     },
     onHow: () => setShowHow(true),
   }
-  const { Body, canContinue, onContinue } = STEPS[step]
+  const { Body, canContinue, onContinue, ownsFooter } = STEPS[step]
   const canNext = canContinue ? canContinue(props) : true
 
   const back = () => {
@@ -51,6 +72,9 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
   const next = () => {
     if (!canNext) return
     onContinue?.({ ...props, settings: data.getSettings() }) // the latest settings: a second tap finds what the first one wrote
+    advance()
+  }
+  const advance = () => {
     if (!last) {
       haptic('tap')
       setStep(step + 1)
@@ -67,6 +91,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
   useEffect(() => {
     if (!registerBack) return
     registerBack(() => {
+      if (stepBack.run()) return true
       if (showHow) {
         setShowHow(false)
         return true
@@ -78,7 +103,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
       return mode === 'first'
     })
     return () => registerBack(null)
-  }, [registerBack, showHow, step, mode])
+  }, [registerBack, showHow, step, mode, stepBack])
 
   if (showHow) return <HowItWorks onBack={() => setShowHow(false)} />
 
@@ -95,6 +120,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
         <Body {...props} />
       </div>
 
+      {!ownsFooter && (
       <div className="intro-footer">
         {canGoBack ? (
           <button type="button" className="btn btn-secondary" onClick={back}>
@@ -107,6 +133,7 @@ export function Onboarding({ data, queue, mode, onExit, registerBack }: Onboardi
           {last ? t.done : t.continue}
         </button>
       </div>
+      )}
     </main>
   )
 }

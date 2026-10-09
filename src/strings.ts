@@ -250,6 +250,9 @@ export const en = {
     version: 'Version',
     bot: 'Open the bot',
     aboutText: 'The app is in development. You can learn and review words, and your progress is saved.',
+    placementTest: 'Take the placement test',
+    placementNone: 'Learn starts with the most common words.',
+    placementAt: (rank: number) => `Learn starts from word ${rank} of the frequency list.`,
     howItWorks: 'How it works',
     runIntro: 'Run the intro again',
     debug: 'Debug',
@@ -279,8 +282,20 @@ export const en = {
       names: { ru: 'Russian', en: 'English', both: 'Both' } as Record<string, string>,
       note: 'It can be changed in Settings.',
     },
-    // PLACEMENT TEST: this is the placeholder. The real step replaces src/screens/OnboardingPlacement.tsx; nothing else moves.
-    placement: { title: 'Placement test', text: 'A short test will go here.' },
+    // The placement test (step 5 of the intro, and "Take the placement test" in Settings): five sets of five words, nothing scored.
+    placement: {
+      title: 'Placement test',
+      question: 'Which of these do you know?',
+      hint: 'Only mark the words whose meaning you are sure of.',
+      set: (n: number, m: number) => `Set ${n} of ${m}`,
+      progress: 'Placement test progress',
+      back: 'Back',
+      next: 'Continue',
+      finish: 'Finish',
+      skip: 'Skip',
+      skipNote: 'It can be taken later from Settings.',
+      unavailable: 'There are not enough new words left for a placement test.',
+    },
     goal: { title: 'Daily goal', text: 'New words per day' },
     pronunciation: {
       title: 'Pronunciation',

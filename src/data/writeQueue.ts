@@ -132,6 +132,8 @@ export interface WriteQueue {
    * followed by "undo" before anything is sent leaves one idempotent removal, never a stuck row.
    */
   enqueueHidden: (esWord: string, hidden: boolean) => void
+  /** Hides or un-hides many words in ONE step (the placement test's marks): they leave in one request, not one per word. */
+  enqueueHiddenBatch: (esWords: readonly string[], hidden: boolean) => void
   /** Favourites or un-favourites a word (user_favorites), the same way: the latest state per word wins. */
   enqueueFavorite: (esWord: string, favorite: boolean) => void
   /**
@@ -647,6 +649,19 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       queuedAt.set(op, nowMs())
       version++
       hiddenOps.set(wordKey(esWord), op)
+      notify()
+      kick()
+    },
+
+    enqueueHiddenBatch(esWords, hidden) {
+      if (!sender.sendHidden || esWords.length === 0) return
+      // All the ops are in before the drain looks: one enqueueHidden per word would start sending after the first.
+      for (const esWord of esWords) {
+        const op = { esWord, hidden }
+        queuedAt.set(op, nowMs())
+        hiddenOps.set(wordKey(esWord), op)
+      }
+      version++
       notify()
       kick()
     },

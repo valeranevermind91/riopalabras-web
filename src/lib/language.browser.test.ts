@@ -70,6 +70,11 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
   const title = (page: Page) => page.$eval('h1', (e) => e.textContent)
   const clickText = (page: Page, selector: string, text: string) =>
     page.evaluate((sel, t) => (Array.from(document.querySelectorAll(sel)).find((b) => b.textContent?.trim().startsWith(t)) as HTMLElement).click(), selector, text)
+  /** The intro's Continue, or Skip on the placement test (it has its own buttons). */
+  const proceed = async (page: Page, label: string) => {
+    if (await page.$('[data-step="placement"]')) await page.evaluate(() => ((document.querySelector('.place-skip .link-btn') ?? document.querySelector('.place-footer .btn-primary')) as HTMLElement).click()) // Skip (or Continue, where there is no test to take)
+    else await clickText(page, '.intro-footer .btn', label)
+  }
   const footer = (page: Page) => page.$$eval('.intro-footer .btn', (els) => els.map((e) => e.textContent))
   const stepText = (page: Page) => page.$eval('.intro-progress span', (e) => e.textContent)
 
@@ -163,7 +168,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
         titles.push(await title(page))
         expect(latin(await everything(page)), `step ${n}`).toEqual([])
         expect(await page.$eval('[role="progressbar"]', (e) => e.getAttribute('aria-label'))).toBe('Ход введения')
-        if (n < 7) await clickText(page, '.intro-footer .btn', 'Дальше')
+        if (n < 7) await proceed(page, 'Дальше')
       }
       expect(titles).toEqual(['Язык приложения', 'Riopalabras', 'Что внутри', 'Переводы', 'Входной тест', 'Дневная цель', 'Произношение'])
       expect(await footer(page)).toEqual(['Назад', 'Готово'])
@@ -211,7 +216,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
 
       await clickText(page, '.lang-option', 'Русский')
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Язык приложения')
-      for (let n = 1; n < 7; n++) await clickText(page, '.intro-footer .btn', 'Дальше')
+      for (let n = 1; n < 7; n++) await proceed(page, 'Дальше')
       await clickText(page, '.intro-footer .btn', 'Готово')
       await page.waitForSelector('.home')
       expect(await everything(page)).toContain(ru.common.signInPrompt) // this harness's Home has no Telegram to sign in with

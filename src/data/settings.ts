@@ -31,8 +31,22 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     showEnTranslation: bool(raw.show_en_translation, true),
     themeChoice: parseThemeChoice(raw[THEME_SETTING_KEY]),
     uiLanguage: parseUiLanguage(raw[LANGUAGE_SETTING_KEY]),
+    startRank: typeof raw.start_rank === 'number' && Number.isFinite(raw.start_rank) && raw.start_rank > 1 ? raw.start_rank : null,
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
     raw,
   }
+}
+
+/**
+ * The settings blob with a patch laid over it. A key whose value in the patch is `null` is REMOVED from the blob (the one way to take a key out
+ * through the settings lane: null survives the queue's storage and the restore, which an undefined value would not). Every other key is set.
+ */
+export function mergeSettingsRaw(raw: Readonly<Record<string, unknown>>, patch: Readonly<Record<string, unknown>>): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...raw }
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) delete merged[key]
+    else merged[key] = value
+  }
+  return merged
 }

@@ -164,7 +164,7 @@ describe('the Words screen', () => {
     expect(words).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
     expect(words).not.toMatch(/rgba?\(/)
     expect(words).not.toContain('--tg-')
-    expect([...words.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim().replace(/\s+/g, ' ')).sort()).toEqual(['.intro-es', '.word-row-alt', '.word-row-head']) // the slice runs to the end of the stylesheet: the intro's Spanish words are in it too
+    expect([...words.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim().replace(/\s+/g, ' ')).sort()).toEqual(['.intro-es', '.place-chip', '.word-row-alt', '.word-row-head']) // the slice runs to the end of the stylesheet: the intro's Spanish words are in it too
     expect(words).toMatch(/\.word-row-head \{[^}]*font-size: 18px/)
     expect(words).toMatch(/\.words-search \{[^}]*border: 1px solid var\(--border\)[^}]*border-radius: var\(--radius-button\)/s)
     expect(words).toMatch(/\.words-search \{[^}]*background: var\(--surface\)/s)

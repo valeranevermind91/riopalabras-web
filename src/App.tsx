@@ -24,6 +24,7 @@ import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
 import { SettingsScreen } from './screens/Settings'
 import { HowItWorks } from './screens/HowItWorks'
+import { PlacementScreen } from './screens/PlacementScreen'
 import { Onboarding } from './screens/Onboarding'
 import { needsOnboarding } from './data/onboarding'
 import { WordDetail } from './screens/WordDetail'
@@ -239,6 +240,7 @@ function App() {
         theme={{ choice: theme.choice, set: theme.set }}
         debugAllowed={debugAllowed}
         onOpenDebug={() => setScreen('debug')}
+        onTakePlacement={() => setScreen('placement')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
         onBack={inPageBack}
@@ -247,6 +249,11 @@ function App() {
   }
 
   if (screen === 'how') return <HowItWorks onBack={inPageBack} />
+
+  // The placement test on its own, from Settings; finishing or skipping it goes back to Settings.
+  if (screen === 'placement' && readyData && queue) {
+    return <PlacementScreen data={readyData} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={inPageBack} />
+  }
 
   // "Run the intro again": from step 1, with the current values; finishing or leaving it goes back to Settings.
   if (screen === 'onboarding' && readyData && queue) {

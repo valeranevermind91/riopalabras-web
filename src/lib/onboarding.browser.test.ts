@@ -43,7 +43,16 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
   const pressBack = (page: Page) => page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())
   const clickText = (page: Page, selector: string, text: string) =>
     page.evaluate((sel, t) => (Array.from(document.querySelectorAll(sel)).find((b) => b.textContent?.trim() === t) as HTMLElement).click(), selector, text)
-  const next = async (page: Page) => clickText(page, '.intro-footer .btn', 'Continue')
+  /** Continue; on the placement test (which has its own buttons) that is Skip: these tests are about the rest of the intro. */
+  const next = async (page: Page) => {
+    if (await page.$('[data-step="placement"]')) await page.evaluate(() => ((document.querySelector('.place-skip .link-btn') ?? document.querySelector('.place-footer .btn-primary')) as HTMLElement).click()) // Skip (or Continue, where there is no test to take)
+    else await clickText(page, '.intro-footer .btn', 'Continue')
+  }
+  /** Back one step: the placement test has its own Back. */
+  const backOne = async (page: Page) => {
+    if (await page.$('[data-step="placement"]')) await clickText(page, '.place-footer .btn', 'Back')
+    else await clickText(page, '.intro-footer .btn', 'Back')
+  }
   const buttons = (page: Page) => page.$$eval('.intro-footer .btn', (els) => els.map((e) => e.textContent))
   /** Continue until the intro shows this step (from wherever it is now). */
   const goTo = async (page: Page, stepNumber: number) => {
@@ -95,7 +104,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
 
       // and back again, step by step
       for (let n = 7; n > 1; n--) {
-        await clickText(page, '.intro-footer .btn', 'Back')
+        await backOne(page)
         await page.waitForFunction((m) => document.querySelector('.intro-progress span')?.textContent === `Step ${m} of 7`, {}, n - 1)
       }
       expect(await title(page)).toBe('App language')
@@ -118,18 +127,6 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await pressBack(page)
       expect(await stepText(page)).toBe('Step 1 of 7')
       expect(await sent(page)).toEqual([{ ui_language: 'en' }]) // going on from step 1 chose the preselected language; nothing else was written
-      await page.close()
-    }, 60_000)
-
-    it('the placement step is a placeholder: one screen with Continue', async () => {
-      const page = await open('fresh=1&goal=default')
-      await goTo(page, 5)
-      expect(await title(page)).toBe('Placement test')
-      expect(await page.$eval('.intro-text', (e) => e.textContent)).toBe('A short test will go here.')
-      expect(await buttons(page)).toEqual(['Back', 'Continue'])
-      await next(page)
-      expect(await stepText(page)).toBe('Step 6 of 7')
-      expect(await sent(page)).toEqual([{ ui_language: 'en' }])
       await page.close()
     }, 60_000)
 
