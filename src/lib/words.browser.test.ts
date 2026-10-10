@@ -55,8 +55,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     page.evaluate((text) => (Array.from(document.querySelectorAll('.segment')).find((b) => b.textContent?.startsWith(text)) as HTMLElement).click(), label)
   const press = (page: Page, selector: string, label: string) =>
     page.evaluate((sel, text) => (Array.from(document.querySelectorAll(sel)).find((b) => b.textContent?.startsWith(text)) as HTMLElement).click(), selector, label)
-  const control = (page: Page, label: string) => press(page, '.control-btn', label)
-  const controlTexts = (page: Page) => page.$$eval('.control-btn', (els) => els.map((e) => e.textContent ?? ''))
+  const control = (page: Page, label: string) =>
+    page.evaluate((text) => (Array.from(document.querySelectorAll('.control-btn')).find((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').startsWith(text)) as HTMLElement).click(), label)
+  /** The two buttons by their accessible name: the Sort button's face is only the value, its aria-label the whole phrase ("Sort: Frequency"). */
+  const controlTexts = (page: Page) => page.$$eval('.control-btn', (els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent ?? ''))
   /** Opens a sheet from its button, taps an option in it, and closes it with a tap outside. */
   const chooseFilter = async (page: Page, button: string, option: string) => {
     await control(page, button)
@@ -427,7 +429,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         await page.focus('.words-search')
         await page.keyboard.press('End')
         for (let i = 0; i < 4; i++) await page.keyboard.press('Backspace') // "casa", one letter at a time
-        await page.waitForFunction(() => (document.querySelector('.control-btn:nth-child(2)') as HTMLButtonElement).textContent === 'Sort: Random')
+        await page.waitForFunction(() => (document.querySelector('.control-btn:nth-child(2)') as HTMLButtonElement).getAttribute('aria-label') === 'Sort: Random')
         expect(await rows(page)).toEqual(order) // the same shuffle as before the search
         await page.close()
       }, 60_000)

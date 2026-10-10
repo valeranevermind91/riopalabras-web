@@ -1565,6 +1565,18 @@ mark {
   cursor: pointer;
 }
 
+.control-icon {
+  flex: none;
+}
+
+/* Cut with an ellipsis rather than wrapping or spilling past the button: a long value (Russian) at the narrowest width. */
+.control-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .control-btn:disabled {
   color: var(--muted-2);
   cursor: default;
@@ -1577,6 +1589,7 @@ mark {
 }
 
 .control-count {
+  flex: none;
   min-width: 20px;
   padding: 1px 6px;
   border-radius: 999px;

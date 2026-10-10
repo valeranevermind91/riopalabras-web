@@ -47,15 +47,17 @@ describe('the Words screen', () => {
   it('opens on All, most common first, with nothing filtered', () => {
     const html = render(learnedSome())
     expect(html).toMatch(/class="segment is-active" aria-pressed="true">All/)
-    expect(html).toContain('Sort: Frequency')
+    expect(html).toContain('aria-label="Sort: Frequency"')
   })
 
   it('has one row of two buttons where the chips were: Filters and Sort: <current>', () => {
     const html = render(real)
     const controls = html.match(/<div class="words-controls">.*?<\/div>/)![0]
     expect(controls.match(/<button/g)).toHaveLength(2)
-    expect(controls).toMatch(/class="control-btn"[^>]*>Filters<\/button>/)
-    expect(controls).toMatch(/class="control-btn"[^>]*>Sort: Frequency<\/button>/)
+    expect(controls).toMatch(/class="control-btn"[^>]*><span class="control-label">Filters<\/span><\/button>/)
+    // the Sort button: an icon and the value alone on its face, the whole phrase as its name
+    expect(controls).toMatch(/class="control-btn"[^>]*aria-label="Sort: Frequency"[^>]*><svg[^>]*aria-hidden="true">.*?<\/svg><span class="control-label">Frequency<\/span><\/button>/)
+    expect(controls).not.toContain('>Sort: ') // "Sort:" is no longer on the face
     // the mixed chip strip is gone: nothing but the segments and these two buttons sits above the list
     expect(html).not.toContain('class="chips"')
     expect(html).not.toContain('class="chip')
@@ -64,14 +66,16 @@ describe('the Words screen', () => {
 
   it('Filters shows how many are on, and Sort names the current order', () => {
     const html = render(real, view({ sort: 'recent', filters: { state: 'due', favourites: true, queued: false, custom: false, pos: 'verb' } }))
-    expect(html).toMatch(/class="control-btn is-active"[^>]*>Filters<span class="control-count" aria-label="3 filters on">3<\/span>/)
-    expect(html).toContain('Sort: Recently learned')
+    expect(html).toMatch(/class="control-btn is-active"[^>]*><span class="control-label">Filters<\/span><span class="control-count" aria-label="3 filters on">3<\/span>/)
+    expect(html).toContain('aria-label="Sort: Recently learned"')
+    expect(html).toContain('<span class="control-label">Recently learned</span>')
     expect(render(real, view({ filters: { ...NO_FILTERS, favourites: true } }))).toContain('aria-label="1 filter on">1</span>')
   })
 
   it('while a search is on, the order is "Best match" and the Sort button is off', () => {
     const html = render(real, view({ query: 'casa', sort: 'az' }))
-    expect(html).toMatch(/class="control-btn" aria-haspopup="dialog" disabled="">Sort: Best match/)
+    expect(html).toMatch(/class="control-btn" aria-haspopup="dialog" aria-label="Sort: Best match" disabled="">/)
+    expect(html).toContain('<span class="control-label">Best match</span>')
   })
 
   it('renders only a screenful of 4,753 words: a window, not the list', () => {
@@ -154,8 +158,8 @@ describe('the Words screen', () => {
     const html = render(learnedSome(), saved)
     expect(html).toContain('value="ca"')
     expect(html).toContain('aria-label="2 filters on"')
-    expect(html).toContain('Sort: Best match') // a query is on, so the sort name steps aside
-    expect(render(learnedSome(), view({ sort: 'due' }))).toContain('Sort: Due soonest')
+    expect(html).toContain('aria-label="Sort: Best match"') // a query is on, so the sort name steps aside
+    expect(render(learnedSome(), view({ sort: 'due' }))).toContain('aria-label="Sort: Due soonest"')
   })
 
   it('no hex colours or Telegram theme variables in the new styles (tokens only), and only Spanish words use the display face', () => {

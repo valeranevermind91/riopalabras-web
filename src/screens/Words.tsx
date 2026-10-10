@@ -173,15 +173,17 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
 
       <div className="words-controls">
         <button type="button" className={filterCount > 0 ? 'control-btn is-active' : 'control-btn'} aria-haspopup="dialog" onClick={() => setSheet('filters')}>
-          {t.filtersButton}
+          <span className="control-label">{t.filtersButton}</span>
           {filterCount > 0 && (
             <span className="control-count" aria-label={t.filtersActive(filterCount)}>
               {filterCount}
             </span>
           )}
         </button>
-        <button type="button" className="control-btn" aria-haspopup="dialog" disabled={list.searching} onClick={() => setSheet('sort')}>
-          {t.sortButton(sortName)}
+        {/* The face is an icon and the current sort alone ("Sort:" and the value do not fit side by side in Russian); the full phrase is the label. */}
+        <button type="button" className="control-btn" aria-haspopup="dialog" aria-label={t.sortButton(sortName)} disabled={list.searching} onClick={() => setSheet('sort')}>
+          <SortIcon />
+          <span className="control-label">{sortName}</span>
         </button>
       </div>
 
@@ -226,6 +228,14 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         />
       )}
     </main>
+  )
+}
+
+function SortIcon() {
+  return (
+    <svg className="control-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 5v14M8 5 4.5 8.5M8 5l3.5 3.5M16 19V5M16 19l-3.5-3.5M16 19l3.5-3.5" />
+    </svg>
   )
 }
 
