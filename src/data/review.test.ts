@@ -4,7 +4,8 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
-import { buildReviewSession, createRater, rateWord, requeueAgain, shuffle, withUpdate } from './review'
+import { REVIEW_SESSION_CEILING, REVIEW_SESSION_SIZE, buildReviewSession, createRater, dueWords, overdueMs, rateWord, requeueAgain, shuffle, withUpdate } from './review'
+import { seededRandom } from '../lib/random'
 import { selectLearnBatch } from './learn'
 import { parseSettings } from './settings'
 import { computeRemainingToday, computeStats, getLearnPool, isReviewDue, nextDueWithin } from './stats'
@@ -40,9 +41,9 @@ describe('buildReviewSession: which words are due', () => {
     expect(buildReviewSession([learned('x', overrides)], NOW)).toHaveLength(0)
   })
 
-  it('has no size cap', () => {
+  it('takes at most 20 of a long backlog (the session limit; the rest wait for the next session)', () => {
     const many = Array.from({ length: 700 }, (_, i) => learned(`w${i}`))
-    expect(buildReviewSession(many, NOW)).toHaveLength(700)
+    expect(buildReviewSession(many, NOW)).toHaveLength(20)
   })
 
   it('agrees with the due definition used for the Home count', () => {
@@ -474,5 +475,176 @@ describe('when the next word comes due', () => {
     const lapsed = learned('a', { interval: 0, repetitions: 1, nextReview: minutes(10) })
     expect(computeStats([lapsed], parseSettings({}), NOW).reviewDue).toBe(0)
     expect(computeStats([lapsed], parseSettings({}), minutes(10)).reviewDue).toBe(1)
+  })
+})
+
+describe('the session limit', () => {
+  const HOUR = 3_600_000
+  const name = (i: number) => `w${String(i).padStart(2, '0')}`
+  /** n due words, w01 … : the nth is n hours overdue, so the higher the number the longer it has waited. */
+  const backlog = (n: number): Word[] => Array.from({ length: n }, (_, k) => learned(name(k + 1), { rank: k + 1, nextReview: new Date(NOW.getTime() - (k + 1) * HOUR) }))
+  const numberOf = (w: Word) => Number(w.esWord.slice(1))
+  const overdueOrder = (words: readonly Word[]) => [...words].sort((a, b) => numberOf(b) - numberOf(a)).map((w) => w.esWord)
+
+  /** What the Review screen does with a session: rate each card in turn, an Again re-queuing the word. Returns how many cards were shown. */
+  function play(session: readonly Word[], quality: number, words?: { current: readonly Word[] }) {
+    let cards = session
+    let shown = 0
+    for (let i = 0; i < cards.length; i++) {
+      shown++
+      const word = cards[i]
+      const update = rateWord(word, quality, NOW)
+      if (words) words.current = applyProgressUpdates(words.current, [update])
+      if (quality === 1) cards = requeueAgain(cards, i, withUpdate(word, update))
+    }
+    return { shown, cards }
+  }
+
+  it('the numbers: 20 words a session, at most 40 cards', () => {
+    expect(REVIEW_SESSION_SIZE).toBe(20)
+    expect(REVIEW_SESSION_CEILING).toBe(40)
+  })
+
+  it('a backlog of 50 gives sessions of 20, 20 and 10', () => {
+    const words = { current: backlog(50) as readonly Word[] }
+    const sizes: number[] = []
+    for (let n = 0; n < 5; n++) {
+      const session = buildReviewSession(words.current, NOW)
+      if (session.length === 0) break
+      sizes.push(session.length)
+      play(session, 3, words) // all rated Good: out of the due list
+    }
+    expect(sizes).toEqual([20, 20, 10])
+    expect(dueWords(words.current, NOW)).toHaveLength(0)
+  })
+
+  it('the 20 chosen are the 20 most overdue, and then the next 20, and the last 10', () => {
+    const words = { current: backlog(50) as readonly Word[] }
+    const chosen: string[][] = []
+    for (let n = 0; n < 3; n++) {
+      const session = buildReviewSession(words.current, NOW)
+      chosen.push(session.map((w) => w.esWord).sort())
+      play(session, 3, words)
+    }
+    expect(chosen[0]).toEqual(Array.from({ length: 20 }, (_, k) => name(31 + k))) // w31 … w50
+    expect(chosen[1]).toEqual(Array.from({ length: 20 }, (_, k) => name(11 + k)))
+    expect(chosen[2]).toEqual(Array.from({ length: 10 }, (_, k) => name(1 + k)))
+  })
+
+  it('overdue is measured from next_review: a word long past its date beats one just due, whatever its stage or ease', () => {
+    const words = [
+      learned('recent', { nextReview: new Date(NOW.getTime() - HOUR), repetitions: 1 }),
+      learned('longAgo', { nextReview: new Date(NOW.getTime() - 90 * 24 * HOUR), repetitions: 6, interval: 40, easeFactor: 1.3 }),
+      ...Array.from({ length: 19 }, (_, k) => learned(`mid${k}`, { nextReview: new Date(NOW.getTime() - (k + 2) * HOUR) })),
+    ]
+    const session = buildReviewSession(words, NOW).map((w) => w.esWord)
+    expect(session).toContain('longAgo')
+    expect(session).not.toContain('recent') // the least overdue of 21 is the one left out
+    expect(overdueMs(words[1], NOW)).toBe(90 * 24 * HOUR)
+    expect(overdueMs(learned('none', { nextReview: null }), NOW)).toBe(0) // no date to measure: counts as just due
+  })
+
+  it('their order is shuffled, not strictly by overdue-ness', () => {
+    const words = backlog(50)
+    const orders = Array.from({ length: 30 }, (_, seed) => buildReviewSession(words, NOW, seededRandom(seed + 1)).map((w) => w.esWord))
+    for (const order of orders) expect(order).not.toEqual(overdueOrder(buildReviewSession(words, NOW))) // never the sorted order
+    expect(new Set(orders.map((o) => o.join())).size).toBeGreaterThan(25) // and it differs from session to session
+    for (const order of orders) expect([...order].sort()).toEqual(Array.from({ length: 20 }, (_, k) => name(31 + k))) // the same 20 whatever the shuffle
+    // the most overdue word is not always first
+    expect(new Set(orders.map((o) => o[0])).size).toBeGreaterThan(5)
+  })
+
+  it('words equally overdue (a Learn batch is due all at once) are told apart at random, not by their place in the dictionary', () => {
+    const same = Array.from({ length: 30 }, (_, k) => learned(name(k + 1), { rank: k + 1, nextReview: new Date(NOW.getTime() - HOUR) }))
+    const firstTwenty = same.slice(0, 20).map((w) => w.esWord).sort()
+    const picks = Array.from({ length: 20 }, (_, seed) => buildReviewSession(same, NOW, seededRandom(seed + 1)).map((w) => w.esWord).sort())
+    expect(picks.some((p) => p.join() !== firstTwenty.join())).toBe(true)
+    for (const p of picks) expect(new Set(p).size).toBe(20)
+  })
+
+  it('a backlog of fewer than 20 is every due word, as it always was', () => {
+    for (const n of [1, 7, 19, 20]) {
+      const words = backlog(n)
+      const session = buildReviewSession(words, NOW, seededRandom(3))
+      expect(session.map((w) => w.esWord).sort()).toEqual(words.map((w) => w.esWord).sort())
+      expect(Object.isFrozen(session)).toBe(true)
+    }
+    expect(buildReviewSession([], NOW)).toHaveLength(0)
+    const twelve = backlog(12)
+    const orders = new Set(Array.from({ length: 20 }, (_, seed) => buildReviewSession(twelve, NOW, seededRandom(seed + 1)).map((w) => w.esWord).join()))
+    expect(orders.size).toBeGreaterThan(10) // still shuffled
+  })
+
+  it('a re-queued word does not push a due word out of the session: the 20 stay, the copies come after', () => {
+    const words = { current: backlog(50) as readonly Word[] }
+    const session = buildReviewSession(words.current, NOW)
+    let cards = session
+    for (let i = 0; i < 5; i++) {
+      const update = rateWord(cards[i], 1, NOW)
+      words.current = applyProgressUpdates(words.current, [update])
+      cards = requeueAgain(cards, i, withUpdate(cards[i], update))
+    }
+    expect(cards).toHaveLength(25) // 20 words and 5 copies
+    expect(cards.slice(0, 20).map((w) => w.esWord)).toEqual(session.map((w) => w.esWord)) // every one of the 20 is still there, in place
+    expect(new Set(cards.slice(20).map((w) => w.esWord)).size).toBe(5)
+    // and the 5 lapsed words are not in the due list (they wait their ten minutes), so a session drawn now is the 20 most overdue of the rest
+    const lapsed = session.slice(0, 5).map((w) => w.esWord)
+    const next = buildReviewSession(words.current, NOW)
+    expect(next).toHaveLength(20)
+    for (const esWord of lapsed) expect(next.map((w) => w.esWord)).not.toContain(esWord)
+    for (const w of session.slice(5)) expect(next.map((n) => n.esWord)).toContain(w.esWord) // the 15 not yet rated are still due, and still the most overdue
+  })
+
+  it('a session stops at 40 cards when Again is used over and over; the words still relearning simply come due later', () => {
+    const words = { current: backlog(50) as readonly Word[] }
+    const session = buildReviewSession(words.current, NOW)
+    const { shown, cards } = play(session, 1, words)
+    expect(shown).toBe(REVIEW_SESSION_CEILING)
+    expect(cards).toHaveLength(REVIEW_SESSION_CEILING)
+    // nothing is due from those 20 any more: they wait their ten minutes, and then come back
+    const lapsed = session.map((w) => w.esWord)
+    expect(dueWords(words.current, NOW).map((w) => w.esWord)).not.toEqual(expect.arrayContaining([lapsed[0]]))
+    const later = new Date(NOW.getTime() + 10 * 60 * 1000)
+    expect(dueWords(words.current, later).map((w) => w.esWord)).toEqual(expect.arrayContaining(lapsed))
+  })
+
+  it('the ceiling holds however few words there are: three words rated Again for ever end at 40 cards', () => {
+    const { shown, cards } = play(backlog(3), 1)
+    expect(shown).toBe(REVIEW_SESSION_CEILING)
+    expect(cards).toHaveLength(REVIEW_SESSION_CEILING)
+  })
+
+  it('at the ceiling a word is not re-queued, and the session is returned as it is', () => {
+    const full = backlog(REVIEW_SESSION_CEILING)
+    const word = full[3]
+    expect(requeueAgain(full, 3, withUpdate(word, rateWord(word, 1, NOW)))).toBe(full)
+    expect(requeueAgain(full, 3, withUpdate(word, rateWord(word, 1, NOW)), 41)).toHaveLength(41) // the ceiling is a parameter, 40 by default
+    // a copy still waiting is replaced, not added to, so a session at the ceiling can still send its copy to the end
+    const withCopy = [...backlog(39), withUpdate(full[0], rateWord(full[0], 1, NOW))]
+    const again = requeueAgain(withCopy, 0, withCopy[39])
+    expect(again).toHaveLength(40)
+  })
+
+  it('"Continue" draws a fresh session from what is still due, including a word that came due during the last one', () => {
+    const later = new Date(NOW.getTime() + 10 * 60 * 1000)
+    const words = { current: [...backlog(25), learned('pronta', { rank: 99, nextReview: new Date(NOW.getTime() + 5 * 60 * 1000) })] as readonly Word[] }
+    const first = buildReviewSession(words.current, NOW)
+    expect(first.map((w) => w.esWord)).not.toContain('pronta') // not due yet
+    play(first, 3, words)
+    const stillDue = dueWords(words.current, later)
+    expect(stillDue.map((w) => w.esWord)).toContain('pronta') // it came due while the session ran
+    const next = buildReviewSession(words.current, later)
+    expect(next).toHaveLength(6) // the 5 left over and the one that came due
+    expect(next.map((w) => w.esWord)).toContain('pronta')
+    expect(next.map((w) => w.esWord).filter((n) => n !== 'pronta').sort()).toEqual(['w01', 'w02', 'w03', 'w04', 'w05'])
+  })
+
+  it('the count of what is due (the Home tile) is the real total, whatever the session takes', () => {
+    const words = backlog(50)
+    expect(computeStats(words, parseSettings({}), NOW).reviewDue).toBe(50) // not 20
+    expect(dueWords(words, NOW)).toHaveLength(50)
+    const after = { current: words as readonly Word[] }
+    play(buildReviewSession(words, NOW), 3, after)
+    expect(computeStats(after.current, parseSettings({}), NOW).reviewDue).toBe(30)
   })
 })

@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { UnsavedNotice } from '../components/UnsavedNotice'
-import { buildReviewSession, createRater, requeueAgain, withUpdate } from '../data/review'
+import { buildReviewSession, createRater, dueWords, requeueAgain, withUpdate } from '../data/review'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
@@ -73,6 +73,10 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     }
   }
 
+  // When a session ends, how many words are still due (taken from the words as they are after the last rating, so anything that came due meanwhile counts).
+  const left = useMemo(() => (completed ? dueWords(data.words, new Date()).length : 0), [completed, data.words])
+
+  // "Continue" and "Refresh": the next session, drawn from what is due now.
   const refresh = () => {
     haptic('tap')
     setSession(buildReviewSession(data.words, new Date()))
@@ -83,6 +87,27 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
   }
 
   const header = <ScreenHeader title={strings.review.title} onBack={onBack} />
+
+  if (completed && left > 0) {
+    return (
+      <main className="screen">
+        {header}
+        <UnsavedNotice queue={queue} />
+        <section className="post-batch">
+          <h2>{strings.review.sessionDone}</h2>
+          <p className="subtitle">{strings.review.sessionLeft(left)}</p>
+          <div className="post-batch-actions">
+            <button type="button" className="btn btn-primary" onClick={refresh}>
+              {strings.review.continue}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={onHome}>
+              {strings.common.backToHome}
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
 
   if (completed) {
     return (

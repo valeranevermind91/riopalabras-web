@@ -348,6 +348,9 @@ export const ru: Strings = {
     allCaughtUp: 'Всё повторено',
     allCaughtUpSubtitle: 'Сейчас нет карточек, которые пора повторить.',
     refresh: 'Обновить',
+    sessionDone: 'Пока всё',
+    sessionLeft: (n) => `Осталось повторить: ${n} ${words(n)}.`,
+    continue: 'Продолжить',
   },
 
   practice: {

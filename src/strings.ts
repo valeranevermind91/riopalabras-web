@@ -383,6 +383,10 @@ export const en = {
     allCaughtUp: 'All caught up!',
     allCaughtUpSubtitle: 'No cards are due for review right now.',
     refresh: 'Refresh',
+    // After a session of 20, when more words are still due.
+    sessionDone: 'Done for now',
+    sessionLeft: (n: number) => `${n} ${plural(n, { one: 'word is', other: 'words are' })} still due.`,
+    continue: 'Continue',
   },
 
   // Matching and Cloze chrome.
