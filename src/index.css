@@ -2303,6 +2303,12 @@ mark {
   margin: 0;
 }
 
+.form-note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
 .form-note.is-error {
   border-color: var(--bad-border);
   background: var(--bad-bg);

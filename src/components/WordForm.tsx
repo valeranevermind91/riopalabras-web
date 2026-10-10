@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CUSTOM_REGIONS, CUSTOM_REGISTERS, customRegion, customRegister } from '../data/customMarks'
 import { POS_CODES, checkSpanish, findDuplicate, type Duplicate, type PosCode, type WordValues } from '../data/customWords'
 import { BottomSheet } from './WordsSheets'
+import { SpellingNote } from './SpellingNote'
 import { enrichFailureMessage, noEnrichment, type EnrichResult } from '../data/enrich'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
@@ -32,6 +33,8 @@ interface WordFormProps {
 
 type Phase = 'word' | 'details'
 type Notice = { tone: 'error' | 'info'; text: string }
+/** The lookup did not recognise the typed word: what was typed, and the likely spelling when there is one. */
+type Spelling = { typed: string; suggestion: string | null }
 
 /**
  * The form for adding a word or editing one. Adding: the Spanish word and its part of speech, then a duplicate check (nothing is
@@ -45,6 +48,9 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
   const [notice, setNotice] = useState<Notice | null>(null)
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
   const [looking, setLooking] = useState(false)
+  const [spelling, setSpelling] = useState<Spelling | null>(null)
+  // Every word this form has looked up (lowercased): a suggestion for one of them is not offered again, so "Did you mean" cannot go back and forth.
+  const tried = useRef(new Set<string>())
   // Each lookup has a number; an answer that is no longer the latest (the user stopped waiting, left) is ignored.
   const lookup = useRef(0)
   useEffect(
@@ -94,13 +100,21 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
     const id = ++lookup.current
     setLooking(true)
     setNotice(null)
+    setSpelling(null)
+    tried.current.add(current.esWord.trim().toLowerCase())
     const result = await enrich({ word: current.esWord.trim(), pos: current.pos })
     if (id !== lookup.current) return
     setLooking(false)
     if (result.ok) {
-      const { value } = result
+      const { value, notRecognised } = result
       setValues({ ...current, ...value })
-      setNotice({ tone: 'info', text: f.filled })
+      if (notRecognised) {
+        // The fields are for the word the proxy believes was meant; the word itself stays as typed until the user decides.
+        const offered = notRecognised.suggestion !== null && !tried.current.has(notRecognised.suggestion.toLowerCase()) ? notRecognised.suggestion : null
+        setSpelling({ typed: current.esWord.trim(), suggestion: offered })
+      } else {
+        setNotice({ tone: 'info', text: f.filled })
+      }
     } else {
       setNotice({ tone: 'error', text: enrichFailureMessage(result.failure) })
     }
@@ -114,18 +128,36 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
     setPhase('details')
   }
 
-  const next = (e: { preventDefault: () => void }) => {
-    e.preventDefault()
-    const spanish = checkSpanish(values.esWord)
+  // From the word and part of speech to the details: the word is checked, then looked up in the user's words (nothing is written on a hit), then looked up.
+  const proceed = (candidate: WordValues) => {
+    const spanish = checkSpanish(candidate.esWord)
     if (!spanish.ok) return setNotice({ tone: 'error', text: f.problems[spanish.problem] })
-    if (!values.pos) return setNotice({ tone: 'error', text: f.problems.pos })
+    if (!candidate.pos) return setNotice({ tone: 'error', text: f.problems.pos })
     const found = findDuplicate(words, spanish.word)
     if (found) {
       setNotice(null)
       return setDuplicate(found)
     }
     setDuplicate(null)
-    void runLookup({ ...values, esWord: spanish.word })
+    void runLookup({ ...candidate, esWord: spanish.word })
+  }
+
+  const next = (e: { preventDefault: () => void }) => {
+    e.preventDefault()
+    proceed(values)
+  }
+
+  // "Use the suggestion": the whole thing again for the corrected spelling, from a blank form. The duplicate check comes first (the corrected word may
+  // already be in the dictionary, and a duplicate stops here as it always does), then a fresh lookup: nothing from the first answer is kept.
+  const acceptSuggestion = () => {
+    if (!spelling?.suggestion) return
+    const candidate: WordValues = { ...initial, esWord: spelling.suggestion, pos: values.pos }
+    lookup.current++ // an answer still on its way is for the old word
+    setSpelling(null)
+    setNotice(null)
+    setValues(candidate)
+    setPhase('word')
+    proceed(candidate)
   }
 
   const save = (e: { preventDefault: () => void }) => {
@@ -158,6 +190,7 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
               set({ esWord: e.target.value })
               setDuplicate(null)
               setNotice(null)
+              setSpelling(null)
             }}
           />
           <span className="form-hint">{f.spanishHint}</span>
@@ -216,7 +249,14 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
         <strong>{values.esWord}</strong>
         <span className="form-word-pos">{values.pos ? f.posNames[values.pos] : ''}</span>
         {!editing && (
-          <button type="button" className="link-btn" onClick={() => setPhase('word')}>
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              setSpelling(null)
+              setPhase('word')
+            }}
+          >
             {f.change}
           </button>
         )}
@@ -235,6 +275,7 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
         </fieldset>
       )}
 
+      {spelling && <SpellingNote typed={spelling.typed} suggestion={spelling.suggestion} onUse={acceptSuggestion} onKeep={() => setSpelling(null)} />}
       {notice && (
         <p className={notice.tone === 'error' ? 'form-note is-error' : 'form-note'} role={notice.tone === 'error' ? 'alert' : 'status'}>
           {notice.text}

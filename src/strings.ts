@@ -166,6 +166,14 @@ export const en = {
       standard: 'Standard Spanish equivalent',
       standardHint: 'For a Rioplatense word: the standard word, such as “calabacín” for “zapallito”. Optional.',
       filled: 'Filled in automatically. Change anything before you save.',
+      // The lookup says the word as typed is not a Spanish word: with a likely spelling it asks, without one it only says so. Never blocks saving.
+      spelling: {
+        didYouMean: (suggestion: string) => `Did you mean ${suggestion}?`,
+        notRecognised: (word: string) => `“${word}” was not recognised as a Spanish word.`,
+        notRecognisedSave: (word: string) => `“${word}” was not recognised as a Spanish word. You can still save it.`,
+        use: (suggestion: string) => `Use ${suggestion}`,
+        keep: (word: string) => `Keep ${word}`,
+      },
       save: 'Save',
       cancel: 'Cancel',
       discardTitle: 'Discard this word?',

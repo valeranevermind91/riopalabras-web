@@ -7,7 +7,8 @@ import { strings } from '../strings'
 // The proxy's POST /enrich: fills in a translation, an example and a Rioplatense form for a Spanish word the user typed.
 // Same call the Flutter app makes (EnrichmentService): a Supabase JWT as the Bearer token, { words: [{ word, pos? }] },
 // and { words: [{ word, en_translation, ru_translation, es_rioplatense, is_rioplatense_variant, example_sentence,
-// example_translation_en, example_translation_ru, word_form_in_example }] } back. The proxy limits a user to 100 words a day
+// example_translation_en, example_translation_ru, word_form_in_example, is_real_word, suggested_spelling }] } back (the last two say
+// whether the typed word is a Spanish word and what was probably meant; a proxy that does not send them reads as "a real word"). The proxy limits a user to 100 words a day
 // and 10 requests a minute, and the whole service to a daily number of calls.
 //
 // Nothing here waits for long or throws: every outcome is a value, so the screen can say what happened and still be usable.
@@ -48,7 +49,17 @@ export type EnrichFailure =
   | { kind: 'no-result' }
   | { kind: 'other'; status: number | null }
 
-export type EnrichResult = { ok: true; value: Enriched } | { ok: false; failure: EnrichFailure }
+/**
+ * The proxy said the word as typed is not a Spanish word (`is_real_word` false), and what it probably meant when it had a guess. Only present
+ * then: an answer that says the word is real, says nothing, or comes from a proxy that does not send the field is as it always was.
+ */
+export interface NotRecognised {
+  /** The likely spelling (one word), or null when the proxy had no plausible guess. */
+  suggestion: string | null
+}
+
+/** `value` is for the word as typed, except when `notRecognised` is there: then it is for the word the proxy believes was meant. */
+export type EnrichResult = { ok: true; value: Enriched; notRecognised?: NotRecognised } | { ok: false; failure: EnrichFailure }
 
 export interface EnrichDeps {
   /** The Supabase access token to send, or null when there is no session. */
@@ -67,8 +78,16 @@ export interface EnrichDeps {
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const textOf = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
+/** The proxy's verdict on the spelling: only an explicit `is_real_word: false` counts (anything else is a real word), and a suggestion is one word or nothing. */
+function notRecognisedIn(item: Record<string, unknown>, typed: string): NotRecognised | null {
+  if (item.is_real_word !== false) return null
+  const suggestion = textOf(item.suggested_spelling)
+  const usable = suggestion !== '' && !/\s/.test(suggestion) && suggestion.toLowerCase() !== typed.trim().toLowerCase()
+  return { suggestion: usable ? suggestion : null }
+}
+
 /** The part of the answer that belongs to the word asked about (matched by lowercased `word`, as the Flutter app does). */
-function entryFor(payload: unknown, word: string): Enriched | null {
+function entryFor(payload: unknown, word: string): { value: Enriched; notRecognised: NotRecognised | null } | null {
   const list = Array.isArray(payload) ? payload : isObject(payload) ? (['words', 'results', 'items'].map((k) => payload[k]).find(Array.isArray) as unknown[] | undefined) : undefined
   if (!list) return null
   const target = word.trim().toLowerCase()
@@ -76,16 +95,19 @@ function entryFor(payload: unknown, word: string): Enriched | null {
   if (!isObject(item)) return null
   const rio = textOf(item.es_rioplatense)
   return {
-    enTranslation: textOf(item.en_translation),
-    ruTranslation: textOf(item.ru_translation),
-    exampleSentence: textOf(item.example_sentence),
-    exampleTranslationEn: textOf(item.example_translation_en),
-    exampleTranslationRu: textOf(item.example_translation_ru),
-    esRioplatense: rio === '' ? null : rio,
-    isRioplatenseVariant: item.is_rioplatense_variant === true,
-    region: customRegion(item.region),
-    register: customRegister(item.register),
-    esStandard: textOf(item.es_standard) || null,
+    value: {
+      enTranslation: textOf(item.en_translation),
+      ruTranslation: textOf(item.ru_translation),
+      exampleSentence: textOf(item.example_sentence),
+      exampleTranslationEn: textOf(item.example_translation_en),
+      exampleTranslationRu: textOf(item.example_translation_ru),
+      esRioplatense: rio === '' ? null : rio,
+      isRioplatenseVariant: item.is_rioplatense_variant === true,
+      region: customRegion(item.region),
+      register: customRegister(item.register),
+      esStandard: textOf(item.es_standard) || null,
+    },
+    notRecognised: notRecognisedIn(item, word),
   }
 }
 
@@ -133,8 +155,9 @@ export async function enrichWord(input: { word: string; pos: string | null }, de
     if (!res.ok) return fail({ kind: 'other', status: res.status })
 
     const payload: unknown = await res.json().catch(() => null)
-    const value = entryFor(payload, input.word)
-    return value ? { ok: true, value } : fail({ kind: 'no-result' })
+    const found = entryFor(payload, input.word)
+    if (!found) return fail({ kind: 'no-result' })
+    return found.notRecognised ? { ok: true, value: found.value, notRecognised: found.notRecognised } : { ok: true, value: found.value }
   }
 
   // A 401 (or no session) is answered by signing in again ONCE and asking again ONCE: never a loop.

@@ -141,6 +141,13 @@ export const ru: Strings = {
       standard: 'Эквивалент в стандартном испанском',
       standardHint: 'Для риоплатского слова: обычное слово, например «calabacín» для «zapallito». Необязательно.',
       filled: 'Заполнено автоматически. Перед сохранением всё можно изменить.',
+      spelling: {
+        didYouMean: (suggestion) => `Вы имели в виду ${suggestion}?`,
+        notRecognised: (word) => `Слово «${word}» не распознано как испанское.`,
+        notRecognisedSave: (word) => `Слово «${word}» не распознано как испанское. Его всё равно можно сохранить.`,
+        use: (suggestion) => `Исправить на ${suggestion}`,
+        keep: (word) => `Оставить ${word}`,
+      },
       save: 'Сохранить',
       cancel: 'Отмена',
       discardTitle: 'Закрыть без сохранения?',

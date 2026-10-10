@@ -83,6 +83,7 @@ describe('the two maps', () => {
       ['other', () => ru.words.enrich.other(500)],
       ['practice.wrong', () => ru.practice.wrong('x')],
       ['duplicate', () => ru.words.form.duplicate('a', 'b', 'overlay')],
+      ['spelling', () => [ru.words.form.spelling.didYouMean('a'), ru.words.form.spelling.notRecognised('a'), ru.words.form.spelling.notRecognisedSave('a'), ru.words.form.spelling.use('a'), ru.words.form.spelling.keep('a')].join(' ')],
       ['interval', () => `${ru.interval.minutes(10)} ${ru.interval.days(3)} ${ru.interval.months(2)} ${ru.interval.years(1)}`],
     ]
     setLanguage('ru')

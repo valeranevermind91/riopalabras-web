@@ -694,6 +694,156 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 90_000)
 
+    describe('a word the lookup does not recognise', () => {
+      const sp = f.spelling
+      const fields = (en: string, ru: string, example = '') => ({ enTranslation: en, ruTranslation: ru, exampleSentence: example, exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: null, isRioplatenseVariant: false, region: null, register: null, esStandard: null })
+      /** What the stubbed proxy answers for each word typed (anything else: no result). */
+      const answers = (page: Page, table: Record<string, unknown>) =>
+        page.evaluate((t) => void ((window as never as { __enrichImpl: unknown }).__enrichImpl = async (i: { word: string }) => (t as Record<string, unknown>)[i.word] ?? { ok: false, failure: { kind: 'no-result' } }), table)
+      /** Each note as its sentences (the paragraphs) and its buttons. */
+      const spellingNote = (page: Page) => page.$$eval('.form-note', (els) => els.map((e) => ({ text: (e.tagName === 'P' ? [e] : Array.from(e.querySelectorAll('p'))).map((p) => p.textContent?.trim()).join(' '), buttons: Array.from(e.querySelectorAll('button')).map((b) => b.textContent?.trim()) })))
+      const waitForWord = (page: Page, word: string) =>
+        page.waitForFunction((w) => document.querySelector('.form-word strong')?.textContent === w, {}, word)
+
+      // champeones is answered as the word the proxy believes was meant (campeones), flagged as not recognised
+      const misspelt = { ok: true, value: fields('champions', 'чемпионы', 'Los campeones ganaron.'), notRecognised: { suggestion: 'championes' } }
+      const corrected = { ok: true, value: fields('championes (Uruguayan sneakers)', 'кеды', 'Se puso los championes.') }
+
+      it('a recognised word shows no question: the form is as it always was', async () => {
+        const page = await open()
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await notes(page)).toEqual([f.filled])
+        expect(await page.$$('.form-note-actions')).toHaveLength(0)
+        await page.close()
+      }, 90_000)
+
+      it('not recognised, with a likely spelling: asks "Did you mean championes?" above the fields, with both ways on, and says plainly the word was not recognised', async () => {
+        const page = await open()
+        await answers(page, { champeones: misspelt })
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await spellingNote(page)).toEqual([{ text: `${sp.didYouMean('championes')} ${sp.notRecognised('champeones')}`, buttons: [sp.use('championes'), sp.keep('champeones')] }])
+        expect(await page.$eval('.form-word strong', (e) => e.textContent)).toBe('champeones') // the word is still as typed until the user decides
+        expect(await fieldValue(page, f.ru)).toBe('чемпионы') // the fields are as they came back
+        // above the fields: the note comes before the first field
+        expect(await page.evaluate(() => !!(document.querySelector('.form-note-actions')!.compareDocumentPosition(document.querySelector('.form-field')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true)
+        await page.close()
+      }, 90_000)
+
+      it('not recognised, with no likely spelling: one line, no actions, and saving still works', async () => {
+        const page = await open()
+        await answers(page, { qwxz: { ok: true, value: fields('', ''), notRecognised: { suggestion: null } } })
+        await startAdding(page, 'qwxz', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await spellingNote(page)).toEqual([{ text: sp.notRecognisedSave('qwxz'), buttons: [] }])
+        await typeIn(page, f.ru, 'что-то')
+        await typeIn(page, f.en, 'something')
+        await clickText(page, 'button', f.save)
+        await page.waitForSelector('.words-search')
+        expect((await sentAll(page)).words).toEqual([expect.objectContaining({ kind: 'save', row: expect.objectContaining({ es_word: 'qwxz', ru_translation: 'что-то' }) })])
+        await page.close()
+      }, 90_000)
+
+      it('"Keep champeones": the question goes, the fields stay as they came back, and what was typed is exactly what is saved', async () => {
+        const page = await open()
+        await answers(page, { champeones: misspelt, championes: corrected })
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        await clickText(page, '.form-note-actions button', sp.keep('champeones'))
+        expect(await page.$$('.form-note-actions')).toHaveLength(0)
+        expect(await notes(page)).toEqual([])
+        expect(await fieldValue(page, f.ru)).toBe('чемпионы')
+        expect(await enrichCalls(page)).toEqual([{ word: 'champeones', pos: 'n' }]) // nothing was asked again
+        await clickText(page, 'button', f.save)
+        await page.waitForSelector('.words-search')
+        const row = (await sentAll(page)).words[0].row!
+        expect(row).toMatchObject({ es_word: 'champeones', en_translation: 'champions', ru_translation: 'чемпионы', example_sentence: 'Los campeones ganaron.' })
+        await page.close()
+      }, 90_000)
+
+      it('"Use championes": the duplicate check and a fresh lookup run for the corrected word, and nothing from the first answer is kept', async () => {
+        const page = await open()
+        await answers(page, { champeones: misspelt, championes: corrected })
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        await typeIn(page, f.exampleEn, 'something I typed after the first answer') // the first answer's fields, and edits to them, are thrown away too
+        await clickText(page, '.form-note-actions button', sp.use('championes'))
+        await waitForWord(page, 'championes')
+        expect(await enrichCalls(page)).toEqual([
+          { word: 'champeones', pos: 'n' },
+          { word: 'championes', pos: 'n' }, // the part of speech goes with it
+        ])
+        expect(await fieldValue(page, f.ru)).toBe('кеды')
+        expect(await fieldValue(page, f.en)).toBe('championes (Uruguayan sneakers)')
+        expect(await fieldValue(page, f.example)).toBe('Se puso los championes.')
+        expect(await fieldValue(page, f.exampleEn)).toBe('') // not the first answer's, and not what was typed over it
+        expect(await page.$$('.form-note-actions')).toHaveLength(0)
+        expect(await notes(page)).toEqual([f.filled])
+        await clickText(page, 'button', f.save)
+        await page.waitForSelector('.words-search')
+        const row = (await sentAll(page)).words[0].row!
+        expect(row).toMatchObject({ es_word: 'championes', ru_translation: 'кеды', example_sentence: 'Se puso los championes.' })
+        expect(JSON.stringify(row)).not.toContain('чемпионы')
+        await page.close()
+      }, 90_000)
+
+      it('"Use": if the second lookup fails, the form is empty for the corrected word: the first answer is not left behind in it', async () => {
+        const page = await open()
+        await answers(page, { champeones: misspelt }) // championes: no answer
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await fieldValue(page, f.ru)).toBe('чемпионы')
+        await clickText(page, '.form-note-actions button', sp.use('championes'))
+        await waitForWord(page, 'championes')
+        expect(await fieldValue(page, f.ru)).toBe('') // not the translation of campeones
+        expect(await fieldValue(page, f.en)).toBe('')
+        expect(await fieldValue(page, f.example)).toBe('')
+        expect(await notes(page)).toEqual([strings.words.enrich.noResult])
+        await page.close()
+      }, 90_000)
+
+      it('"Use": the duplicate check comes first: a corrected word that is already there stops as a duplicate does, with no second lookup', async () => {
+        const page = await open()
+        await answers(page, { kasa: { ok: true, value: fields('house', 'дом'), notRecognised: { suggestion: 'casa' } } })
+        await startAdding(page, 'kasa', 'Noun')
+        await page.waitForSelector('.form-word')
+        await clickText(page, '.form-note-actions button', sp.use('casa'))
+        await page.waitForSelector('.form-note.is-error')
+        expect(await page.$('.form-word')).toBeNull() // back at the word, not on the details
+        expect(await page.$eval('.form-input', (e) => (e as HTMLInputElement).value)).toBe('casa')
+        expect((await notes(page))[0]).toContain(f.duplicate('casa', 'casa', 'es_word'))
+        expect(await enrichCalls(page)).toEqual([{ word: 'kasa', pos: 'n' }]) // the lookup for casa was never made
+        expect((await sentAll(page)).words).toEqual([]) // and nothing was written
+        await page.close()
+      }, 90_000)
+
+      it('the question is not asked again for a word this form has already looked up, so it cannot go back and forth', async () => {
+        const page = await open()
+        await answers(page, {
+          champeones: misspelt,
+          championes: { ok: true, value: fields('x', 'y'), notRecognised: { suggestion: 'champeones' } }, // the second answer points back at the first word
+        })
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        await clickText(page, '.form-note-actions button', sp.use('championes'))
+        await waitForWord(page, 'championes')
+        expect(await spellingNote(page)).toEqual([{ text: sp.notRecognisedSave('championes'), buttons: [] }]) // only the line: no suggestion of champeones
+        await page.close()
+      }, 90_000)
+
+      it('editing the word (or changing it) drops the question', async () => {
+        const page = await open()
+        await answers(page, { champeones: misspelt })
+        await startAdding(page, 'champeones', 'Noun')
+        await page.waitForSelector('.form-word')
+        await clickText(page, '.form-word .link-btn', f.change)
+        await page.waitForSelector('.form-input[lang="es"]')
+        expect(await page.$$('.form-note-actions')).toHaveLength(0)
+        await page.close()
+      }, 90_000)
+    })
+
     it('Back (Telegram\'s or the page\'s) closes the form first, and the list is as it was', async () => {
       const page = await open()
       await page.click('button[aria-label="Add a word"]')

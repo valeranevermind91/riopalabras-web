@@ -124,6 +124,61 @@ describe('a good answer', () => {
   })
 })
 
+describe('the spelling check (is_real_word and suggested_spelling)', () => {
+  const champeones = { ...entry, word: 'champeones', en_translation: 'champions', ru_translation: 'чемпионы', example_sentence: 'Los campeones ganaron.', is_real_word: false, suggested_spelling: 'campeones' }
+  const ask = (answer: Record<string, unknown>, word = 'champeones') => enrichWord({ word, pos: 'n' }, deps(async () => reply(200, { words: [answer] })))
+
+  it('a word the proxy says is not real comes with its likely spelling; the fields are what the proxy answered', async () => {
+    const result = await ask(champeones)
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({ enTranslation: 'champions', ruTranslation: 'чемпионы', exampleSentence: 'Los campeones ganaron.' }),
+      notRecognised: { suggestion: 'campeones' },
+    })
+  })
+
+  it('not real with no usable suggestion: recognised as not real, nothing to offer', async () => {
+    for (const bad of [null, undefined, '', '   ', 5, ['campeones'], 'dos palabras', 'champeones', 'CHAMPEONES', ' champeones ']) {
+      const result = await ask({ ...champeones, suggested_spelling: bad })
+      expect(result.ok && result.notRecognised, JSON.stringify(bad)).toEqual({ suggestion: null })
+    }
+    const missing = { ...champeones }
+    delete (missing as Partial<typeof champeones>).suggested_spelling
+    const noSuggestion = await ask(missing)
+    expect(noSuggestion.ok && noSuggestion.notRecognised).toEqual({ suggestion: null }) // a missing suggestion is a null one
+  })
+
+  it('the suggestion is trimmed', async () => {
+    const result = await ask({ ...champeones, suggested_spelling: '  campeones \n' })
+    expect(result.ok && result.notRecognised).toEqual({ suggestion: 'campeones' })
+  })
+
+  it('a real word has nothing extra, whatever came with it: the result is exactly what it was', async () => {
+    const real = await ask({ ...entry, word: 'tímido', is_real_word: true, suggested_spelling: 'tímida' }, 'tímido')
+    expect(real.ok && 'notRecognised' in real).toBe(false)
+    expect(Object.keys(real)).toEqual(['ok', 'value'])
+  })
+
+  it('an older proxy that sends neither field behaves as before', async () => {
+    const result = await ask(entry, 'tímido')
+    expect(Object.keys(result)).toEqual(['ok', 'value'])
+    expect(result.ok && result.value.enTranslation).toBe('shy')
+  })
+
+  it('only an explicit false counts: a string, a number, null, or a missing flag is a real word', async () => {
+    for (const unclear of ['false', 'no', 0, null, undefined, [], {}]) {
+      const result = await ask({ ...champeones, is_real_word: unclear })
+      expect(Object.keys(result), JSON.stringify(unclear)).toEqual(['ok', 'value'])
+    }
+  })
+
+  it('the new fields do not leak into the values the form fills in', async () => {
+    const result = await ask(champeones)
+    expect(result.ok && Object.keys(result.value)).not.toContain('isRealWord')
+    expect(result.ok && Object.keys(result.value)).not.toContain('suggestedSpelling')
+  })
+})
+
 describe('every failure is a value with its own message, and the form stays usable', () => {
   it('offline fails at once: no request is made, no timeout is waited for', async () => {
     const d = deps(async () => reply(200, {}), { isOffline: () => true, timeoutMs: 60_000 })
