@@ -3623,7 +3623,7 @@
     "rank": 4680,
     "rio_type": "meaning_shift",
     "rio_form": "foco",
-    "alt_form": "lámpara",
+    "alt_form": null,
     "alt_region": null,
     "region": "uy",
     "register": "neutral",
@@ -3638,9 +3638,7 @@
     },
     "confidence": "medium",
     "status": "accepted",
-    "flags": [
-      "validator_exception: alt_form without alt_region (country of lámpara unknown)"
-    ],
+    "flags": [],
     "std_usage": null,
     "std_usage_reason": null,
     "example": {
@@ -3653,7 +3651,7 @@
     "evidence": [
       "questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision)",
       "proposal from B (A said none): meaning_shift foco = light bulb",
-      "alt_form lámpara added by decision (respondent: \"Digo lámpara\"); Claude proposed lamparita",
+      "no alt_form: «lámpara» was one respondent's own word (\"Digo lámpara\", R9, item 33) with no country, and A has lamparita and foco in both AR and UY, so neither is a regional variant of the other",
       "DAMER: «foco» has Ar and Ur labels (rio_form, any sense)",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]

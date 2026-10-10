@@ -29,10 +29,18 @@ describe('RelationBlock', () => {
     expect(autobus).toContain('also')
     expect(autobus).toContain('colectivo')
     expect(autobus).toContain('>AR<')
+    // no entry has an alternative form without its country any more (the overlay build refuses one), but the block still copes with one
+    const untagged = renderToStaticMarkup(createElement(RelationBlock, { relation: { type: 'meaning_shift', altForm: 'otra', altRegion: null }, settings: flagsFor('en') }))
+    expect(untagged).toContain('otra')
+    expect(untagged).not.toContain('>AR<')
+    expect(untagged).not.toContain('>UY<')
+  })
+
+  it('foco has no "also" line: lámpara was one person\'s word, not a regional variant', () => {
     const foco = html('foco', 'en')
-    expect(foco).toContain('lámpara')
-    expect(foco).not.toContain('>AR<')
-    expect(foco).not.toContain('>UY<')
+    expect(foco).not.toContain('lámpara')
+    expect(foco).not.toContain('also')
+    expect(foco).toContain('>focus<') // what is left is the standard meaning
   })
 
   it('shows the standard word as the secondary note when the form leads: the label is English chrome, the note text follows the translation setting', () => {

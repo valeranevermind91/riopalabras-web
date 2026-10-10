@@ -46,7 +46,7 @@ describe('selectScope', () => {
 
   it('uses the overlay translation as the meaning, and keeps the standard meaning for meaning_shift only', () => {
     const foco = scope.find((s) => s.es_word === 'foco')
-    expect(foco).toMatchObject({ meaning_en: 'light bulb', standard_meaning_en: 'focus, spotlight', alt_form: 'lámpara' })
+    expect(foco).toMatchObject({ meaning_en: 'light bulb', standard_meaning_en: 'focus, spotlight', alt_form: null })
     expect(scope.find((s) => s.es_word === 'chance').standard_meaning_en).toBeNull()
   })
 })
@@ -96,7 +96,7 @@ describe('validateExample', () => {
   })
 
   it('does not require the standard word to be absent for meaning_shift (es_word == rio_form)', () => {
-    const foco = item({ es_word: 'foco', type: 'meaning_shift', rio_form: 'foco', alt_form: 'lámpara' })
+    const foco = item({ es_word: 'foco', type: 'meaning_shift', rio_form: 'foco', alt_form: null })
     const r = validateExample({ es_word: 'foco', example_es: 'Se quemó el foco del baño y no tenemos otro.', example_en: 'The bulb in the bathroom burned out and we have no other.', example_ru: 'В ванной перегорела лампочка, а другой у нас нет.', word_form_in_example: 'foco' }, foco)
     expect(r.errors).toEqual([])
   })

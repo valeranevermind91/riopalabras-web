@@ -4,7 +4,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateEntry } from '../../validate.mjs'
+import { assertAltPairs, validateEntry } from '../../validate.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const TOOLS = path.resolve(HERE, '..', '..')
@@ -102,15 +102,15 @@ for (const [w, id] of Object.entries(REJECT)) {
   handled.add('vagabundo')
 }
 
-// foco (item 33): kept despite 5/8, alt_form lámpara
+// foco (item 33): kept despite 5/8. It had an alt_form lámpara with no country, which is not a regional variant: dropped (see the evidence below).
 {
   const d = qByWord.get('foco').find((x) => x.id === 33)
   const b = outB.get('foco')
   const fields = {
-    rio_type: 'meaning_shift', rio_form: 'foco', alt_form: 'lámpara', alt_region: null, region: 'uy', register: b.register, notes: null,
+    rio_type: 'meaning_shift', rio_form: 'foco', alt_form: null, alt_region: null, region: 'uy', register: b.register, notes: null,
     std_meaning: { en: b.std_meaning_en, ru: b.std_meaning_ru }, translation: { en: b.en_translation, ru: b.ru_translation }, confidence: 'medium',
   }
-  make('foco', fields, 'accepted', [qEvidence(d, ' (5/8, below the usual threshold; kept by decision)'), 'proposal from B (A said none): meaning_shift foco = light bulb', 'alt_form lámpara added by decision (respondent: "Digo lámpara"); Claude proposed lamparita', ...damerEvidence({ rio_form: 'foco' })], ['validator_exception: alt_form without alt_region (country of lámpara unknown)'], 'B (A said none), manual alt_form')
+  make('foco', fields, 'accepted', [qEvidence(d, ' (5/8, below the usual threshold; kept by decision)'), 'proposal from B (A said none): meaning_shift foco = light bulb', 'no alt_form: «lámpara» was one respondent\'s own word ("Digo lámpara", R9, item 33) with no country, and A has lamparita and foco in both AR and UY, so neither is a regional variant of the other', ...damerEvidence({ rio_form: 'foco' })], [], 'B (A said none)')
   handled.add('foco')
 }
 
@@ -296,7 +296,6 @@ for (const w of words) {
   o.validator = { errors: r.errors, warnings: r.warnings.filter((x) => !/^(none_high_confidence|translation_unchanged)/.test(x)) }
   if (r.errors.length) {
     validatorIssues.push({ w, errors: r.errors, status: o.status, flags: o.flags })
-    if (o.flags.some((f) => f.startsWith('validator_exception'))) continue // manual decision outranks the validator (reported)
     if (o.status === 'accepted') {
       o.status = 'pending'
       o.evidence.push('validator: ' + r.errors.join('; ') + ' -> pending')
@@ -404,6 +403,10 @@ for (const [w, why] of Object.entries(NOT_USED_KEPT)) {
   o.std_usage_reason = `${why} (kept by hand)`
   o.evidence.push(`std_usage not_used kept by manual decision (Valera): ${why}`)
 }
+
+// ---------------------------------------------------------------- rule 6: an alternative form has its country
+// Nothing is written when an entry has an alt_form without an alt_region (or the reverse): no manual decision outranks this.
+assertAltPairs(words.map((w) => result.get(w)))
 
 // ---------------------------------------------------------------- write
 const ordered = words.map((w) => result.get(w))

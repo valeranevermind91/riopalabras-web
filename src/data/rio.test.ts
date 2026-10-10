@@ -278,10 +278,11 @@ describe('headword with the overlay', () => {
     expect(entry('metro').rio?.region).toBe('ar')
   })
 
-  it('foco is a meaning_shift: headword stays, alt_form is shown, the region tag is UY', () => {
+  it('foco is a meaning_shift: headword stays, there is no alternative form, the region tag is UY', () => {
     const w = entry('foco')
     expect(headword(w)).toEqual({ text: 'foco', form: 'standard', secondary: null })
-    expect(relationFor(w)).toMatchObject({ type: 'meaning_shift', altForm: 'lámpara', altRegion: null, stdMeaning: { en: 'focus, spotlight' } })
+    expect(relationFor(w)).toMatchObject({ type: 'meaning_shift', stdMeaning: { en: 'focus, spotlight' } })
+    expect(relationFor(w)).not.toHaveProperty('altForm')
     expect(headwordRegion(w)).toBe('uy')
   })
 

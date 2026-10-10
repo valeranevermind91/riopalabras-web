@@ -48,7 +48,7 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 - chance: B (A said none), region uy, confidence medium
 - mona: A (type none; register kept from A)
 - marcador: B (A said none), region uy, confidence medium
-- foco: B (A said none), manual alt_form
+- foco: B (A said none)
 - picado: A (type none; register kept from A)
 - condón: manual (form from legacy)
 
@@ -375,10 +375,9 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 
 ## Validator
 
-- foco: alt_pair_mismatch: alt_form and alt_region must be set together (status now accepted, flags: validator_exception: alt_form without alt_region (country of lámpara unknown))
+No errors.
 
 ## Flags
 
 - tony: needs_re_enrichment
-- foco: validator_exception: alt_form without alt_region (country of lámpara unknown)
 - condón: register_unverified: informal chosen for slang forro, no source gives it

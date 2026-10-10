@@ -232,3 +232,28 @@ export function validateBatch(response, inputs) {
 
   return { results, batchErrors }
 }
+
+/**
+ * Entries whose alt_form and alt_region are not set together: an alternative form with no country (or a country with no form). The two are one
+ * fact, "this other country says it like this", so a form without its country is meaningless and a card cannot show it honestly. `validateEntry`
+ * reports the same thing per entry (alt_pair_mismatch); this is for a whole list, as the overlay build and the shipped export are checked.
+ * Returns [{ es_word, problem }], empty when every entry is fine.
+ */
+export function altPairProblems(entries) {
+  const problems = []
+  for (const e of entries) {
+    const form = e.alt_form ?? null
+    const region = e.alt_region ?? null
+    if (form !== null && region === null) problems.push({ es_word: e.es_word, problem: `alt_form ${JSON.stringify(form)} has no alt_region` })
+    else if (form === null && region !== null) problems.push({ es_word: e.es_word, problem: `alt_region ${JSON.stringify(region)} has no alt_form` })
+  }
+  return problems
+}
+
+/** Throws, naming every entry, when any has an alt_form without an alt_region (or the reverse). The overlay build calls it before it writes anything. */
+export function assertAltPairs(entries) {
+  const problems = altPairProblems(entries)
+  if (problems.length > 0) {
+    throw new Error(`overlay build refused: ${problems.map((p) => `${p.es_word}: ${p.problem}`).join('; ')}. An alternative form needs the country that uses it (alt_region), or it is not an alternative form: drop it.`)
+  }
+}

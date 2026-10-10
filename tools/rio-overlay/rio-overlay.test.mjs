@@ -11,7 +11,7 @@ import { compareLegacy, legacyForms } from './compare.mjs'
 import { BUCKETS, buildReview, classify } from './review.mjs'
 import { CONFIDENCES, ENTRY_KEYS, REGIONS, REGISTERS, RESPONSE_SCHEMA, RIO_TYPES, SYSTEM_PROMPT, CONTEXTS, buildResponseSchema, buildSystemPrompt, buildUserPrompt } from './schema.mjs'
 import { RIO_ENTRY_KEYS } from './types.ts'
-import { formMatches, isCleanForm, showsForm, validateBatch, validateEntry } from './validate.mjs'
+import { altPairProblems, assertAltPairs, formMatches, isCleanForm, showsForm, validateBatch, validateEntry } from './validate.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SCRIPT = path.join(HERE, 'generate.mjs')
@@ -963,5 +963,60 @@ describe('review.mjs: buckets and the candidate overlay', () => {
     expect(merged.invalid).toEqual([{ es_word: 'metro', errors: ['std_meaning_not_allowed: replacement must not set std_meaning_*'] }])
     expect(merged.reviewFlags.metro).toEqual(['c', 'd', 'f'])
     expect(merged.meta.base).toEqual({ run: 'A', model: 'm1', context: 'sense' })
+  })
+})
+
+describe('an alternative form has its country', () => {
+  const e = (es_word, alt_form, alt_region) => ({ es_word, alt_form, alt_region })
+  const RESULTS = path.join(HERE, 'results', 'overlay-v1')
+  const readJson = (...p) => JSON.parse(fs.readFileSync(path.join(...p), 'utf8'))
+
+  it('finds an alt_form with no alt_region, and the reverse, and nothing else', () => {
+    const list = [e('ok', 'colectivo', 'ar'), e('none', null, null), e('foco', 'lámpara', null), e('odd', null, 'ar'), e('missing', undefined, undefined), e('blank', 'x', undefined)]
+    expect(altPairProblems(list).map((p) => p.es_word)).toEqual(['foco', 'odd', 'blank'])
+    expect(altPairProblems(list)[0].problem).toContain('"lámpara" has no alt_region')
+    expect(altPairProblems(list)[1].problem).toContain('"ar" has no alt_form')
+    expect(altPairProblems([])).toEqual([])
+  })
+
+  it('assertAltPairs throws, naming every entry, and says what to do; with none wrong it returns quietly', () => {
+    expect(() => assertAltPairs([e('ok', 'colectivo', 'ar'), e('none', null, null)])).not.toThrow()
+    expect(() => assertAltPairs([e('foco', 'lámpara', null), e('otra', 'x', null)])).toThrow(/overlay build refused: foco: alt_form "lámpara" has no alt_region; otra: alt_form "x" has no alt_region/)
+    expect(() => assertAltPairs([e('foco', 'lámpara', null)])).toThrow(/drop it/)
+  })
+
+  it('it agrees with validateEntry (alt_pair_mismatch) on a single entry', () => {
+    const r = validateEntry(entry('autobús', { rio_type: 'replacement', rio_form: 'ómnibus', region: 'uy', alt_form: 'colectivo', alt_region: null }), input('autobús'))
+    expect(r.errors.map((x) => x.split(':')[0])).toContain('alt_pair_mismatch')
+    expect(altPairProblems([{ es_word: 'autobús', alt_form: 'colectivo', alt_region: null }])).toHaveLength(1)
+  })
+
+  it('the overlay build runs the check before it writes anything, and no manual exception can skip it', () => {
+    const build = fs.readFileSync(path.join(RESULTS, 'build-overlay-v1.mjs'), 'utf8')
+    const check = build.indexOf('assertAltPairs(words.map(')
+    expect(check).toBeGreaterThan(-1)
+    expect(check).toBeLessThan(build.indexOf('fs.writeFileSync'))
+    expect(build).not.toContain('validator_exception') // the old bypass (a flag that let a manual decision outrank the validator) is gone
+  })
+
+  it('the shipped export has no alt_form without its alt_region, and its pairs are four real uy / ar ones', () => {
+    const shipped = readJson(HERE, '..', '..', 'public', 'rio_overlay.json')
+    expect(altPairProblems(shipped)).toEqual([])
+    const pairs = shipped.filter((x) => x.alt_form)
+    expect(pairs.map((x) => x.es_word).sort()).toEqual(['asilo', 'autobús', 'guay', 'portero'])
+    for (const x of pairs) expect([x.region, x.alt_region].sort()).toEqual(['ar', 'uy']) // each country has its own form
+  })
+
+  it('foco has no alternative form: lámpara was one respondent\'s word with no country', () => {
+    const foco = readJson(HERE, '..', '..', 'public', 'rio_overlay.json').find((x) => x.es_word === 'foco')
+    expect(foco).toMatchObject({ rio_type: 'meaning_shift', rio_form: 'foco', alt_form: null, alt_region: null })
+    const full = readJson(RESULTS, 'overlay.v1.json').find((x) => x.es_word === 'foco')
+    expect(full.flags).toEqual([])
+    expect(full.evidence.join(' ')).toContain('no alt_form')
+  })
+
+  it('every entry of the full overlay (any status) passes the check, and public/rio_overlay.json is the build output byte for byte, not a hand edit', () => {
+    expect(altPairProblems(readJson(RESULTS, 'overlay.v1.json'))).toEqual([])
+    expect(fs.readFileSync(path.join(HERE, '..', '..', 'public', 'rio_overlay.json'), 'utf8')).toBe(fs.readFileSync(path.join(RESULTS, 'overlay.v1.client.json'), 'utf8'))
   })
 })
