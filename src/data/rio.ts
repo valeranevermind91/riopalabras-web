@@ -28,7 +28,7 @@ export interface RioInfo {
   readonly form: string
   readonly altForm: string | null
   readonly altRegion: RioRegion | null
-  /** Null means both countries. */
+  /** Null means Rioplatense without a country: both countries use it, or too few sources to say otherwise (the overlay build's two-source rule). */
   readonly region: RioRegion | null
   readonly register: string
   readonly notes: Localized | null

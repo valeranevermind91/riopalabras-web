@@ -1,9 +1,15 @@
 // Builds overlay v1 from all stage-1 evidence. Analysis only; writes next to this file.
 // Base per entry: run A (stage1.merged.json; the one held-back entry comes from out/s1-A.json), because A is the
 // stage-1 base run (strongest model, full schema). B / Claude / legacy are only used as named proposals.
+//
+// CONSTRAINT, country labels (tools/rio-overlay/regionRule.mjs, applied in "rule 4c" below to every entry):
+//   a `region` (and an `alt_region` with its `alt_form`) is set only when at least two independent sources say the OTHER country
+//   does not use the form. The questionnaire asked only Uruguayans, so "Uruguayans use it" can never set a label: there is no
+//   by-rule `uy` any more. Everything else is null ("Rioplatense, without a country").
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { applyRegionRule } from '../../regionRule.mjs'
 import { assertAltPairs, validateEntry } from '../../validate.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -102,7 +108,7 @@ for (const [w, id] of Object.entries(REJECT)) {
   handled.add('vagabundo')
 }
 
-// foco (item 33): kept despite 5/8. It had an alt_form lámpara with no country, which is not a regional variant: dropped (see the evidence below).
+// foco (item 33): kept despite 5/8. Its `uy` below is only a proposal: rule 4c judges every country label. It had an alt_form lámpara with no country, which is not a regional variant: dropped (see the evidence below).
 {
   const d = qByWord.get('foco').find((x) => x.id === 33)
   const b = outB.get('foco')
@@ -216,17 +222,19 @@ for (const w of words) {
     const fields = {
       rio_type: d.kind === 'replacement' ? 'replacement' : e.rio_type,
       rio_form: d.kind === 'replacement' ? d.asked : w,
-      alt_form: null, alt_region: null, region: 'uy',
+      // The questionnaire only asked Uruguayans, so it sets no country label. The proposing source's own region (B or Claude's entry; the legacy field has
+      // none) is only a candidate: rule 4c keeps it when two independent families of sources say the other country does not use the form.
+      alt_form: null, alt_region: null, region: e?.region ?? null,
       register: e?.register ?? A.get(w).register,
       notes: null,
       std_meaning: e?.std_meaning_en ? { en: e.std_meaning_en, ru: e.std_meaning_ru } : null,
       translation: e?.en_translation ? { en: e.en_translation, ru: e.ru_translation } : null,
       confidence: 'medium',
     }
-    const ev = [qEvidence(d), `proposal from ${p.source} (A said ${a.rio_type === 'none' ? 'none' : fmt(a)}); region set to uy by rule`, ...damerEvidence(fields)]
+    const ev = [qEvidence(d), `proposal from ${p.source} (A said ${a.rio_type === 'none' ? 'none' : fmt(a)}); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c`, ...damerEvidence(fields)]
     const cl = claude.get(w)
     if (p.source === 'Claude' && cl.alt_form) ev.push(`Claude also proposed ${cl.alt_form} (${cl.alt_region}); not added (not asked)`)
-    make(w, fields, 'accepted', ev, [], `${p.source} (A said none), region uy, confidence medium`)
+    make(w, fields, 'accepted', ev, [], `${p.source} (A said none), confidence medium`)
     if (p.source === 'legacy' && w === 'cigarro') {
       const reg = outB.get('cigarrillo').register
       result.get(w).register = reg
@@ -281,6 +289,29 @@ for (const [w, ov] of Object.entries(MANUAL_OVERRIDES)) {
   o.notes = ov.notes
   o.evidence.push(`manual override (Valera): register ${ov.register} and a note; reason: ${FREE_TEXT_REASON}`)
 }
+
+// ---------------------------------------------------------------- rule 4c: country labels need two independent sources
+// See the constraint at the top and tools/rio-overlay/regionRule.mjs. A label no two families of sources support is dropped (null), and a pair
+// stands only if both of its labels do. The questionnaire is not a source for this. The one exception is named here, with its reason:
+// a label that rests on a fact about the world, not on what sources say. It is reported as an exception, never as a two-source finding.
+const EXTRALINGUISTIC_LABELS = {
+  metro: { region: 'ar', reason: 'there is no subway in Uruguay, so "subte" can only name a foreign system there' },
+}
+const regionLog = []
+const usedExceptions = new Set()
+for (const w of words) {
+  const o = result.get(w)
+  if (!o.region && !o.alt_form) continue
+  const r = applyRegionRule(o, { A: A.get(w), B: outB.get(w), Claude: claude.get(w), DAMER: damer }, EXTRALINGUISTIC_LABELS)
+  const before = { region: o.region, alt_form: o.alt_form, alt_region: o.alt_region }
+  o.region = r.region
+  o.alt_form = r.alt_form
+  o.alt_region = r.alt_region
+  o.evidence.push(...r.log)
+  if (r.usedException) usedExceptions.add(w)
+  regionLog.push({ es_word: w, rio_form: o.rio_form, status: o.status, before, after: { region: o.region, alt_form: o.alt_form, alt_region: o.alt_region }, lines: r.log })
+}
+for (const w of Object.keys(EXTRALINGUISTIC_LABELS)) if (!usedExceptions.has(w)) throw new Error(`extralinguistic label for ${w} was not used: remove it or fix the entry`)
 
 // ---------------------------------------------------------------- rule 5: validator
 const validatorIssues = []
@@ -440,8 +471,15 @@ for (const o of ordered.filter((x) => x.status === 'pending')) {
   for (const e of o.evidence.slice(1)) md.push(`  - ${e}`)
 }
 const weak = ordered.filter((o) => o.status === 'accepted' && o.evidence.some((e) => e.startsWith('questionnaire')) && (o.evidence.some((e) => /^proposal from/.test(e)) || (!o.evidence.some((e) => e.startsWith('DAMER')) && !o.evidence.includes('3-way agree'))))
-md.push('', '## Accepted on questionnaire evidence only (the weakest accepted entries)', '', 'Either the form came from a proposal where A said none (confidence medium, region uy by rule), or the only support is the questionnaire (no DAMER label, no 3-way agreement).', '')
+md.push('', '## Accepted on questionnaire evidence only (the weakest accepted entries)', '', 'Either the form came from a proposal where A said none (confidence medium, no country label), or the only support is the questionnaire (no DAMER label, no 3-way agreement).', '')
 for (const o of weak) md.push(`- ${o.es_word} → ${o.rio_form}${o.region ? ` @${o.region}` : ''} (${o.confidence}): ${o.evidence.filter((e) => e.startsWith('questionnaire') || e.startsWith('proposal')).join('; ')}`)
+md.push('', '## Country labels (the two-source rule)', '', 'A `region` (and an `alt_region` with its `alt_form`) is set only when at least two independent sources say the other country does not use the form (A and B are both Gemini, so they count as one family). The questionnaire only asked Uruguayans, so it never sets one. A pair stands only if both of its labels do. Every entry that had a label before the rule:', '')
+for (const r of regionLog) {
+  const was = `${r.before.region ?? '-'}${r.before.alt_form ? ` + ${r.before.alt_form} @${r.before.alt_region}` : ''}`
+  const now = `${r.after.region ?? '-'}${r.after.alt_form ? ` + ${r.after.alt_form} @${r.after.alt_region}` : ''}`
+  md.push(`- **${r.es_word}** → ${r.rio_form} (${r.status}): ${was} → ${now}`)
+  for (const line of r.lines) md.push(`  - ${line}`)
+}
 md.push('', '## Manual overrides from questionnaire free text', '', `Reason recorded for each: ${FREE_TEXT_REASON}.`, '')
 for (const m of manualOverrideLog) md.push(`- ${m.es_word} → ${m.rio_form}: register ${m.register.from} → ${m.register.to}; note ${m.hadNote ? 'replaced' : 'added'} (EN and RU)`)
 md.push('', '## Pass 2 examples', '')

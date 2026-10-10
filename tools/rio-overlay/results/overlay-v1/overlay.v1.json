@@ -92,8 +92,9 @@
     "example_review": "auto",
     "evidence": [
       "questionnaire n=8, yes=7",
-      "proposal from Claude (A said none); region set to uy by rule",
+      "proposal from Claude (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "Claude also proposed pibe (ar); not added (not asked)",
+      "country label uy kept for «gurí»: B + Claude (2 independent families) say the other country does not use it",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage equally_used (gemini-3.1-pro-preview): Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children."
     ]
@@ -524,7 +525,7 @@
     "rio_form": "levantar",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -541,7 +542,7 @@
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from B (A said none); region set to uy by rule",
+      "proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «levantar» has Ar and Ur labels (rio_form, any sense)",
       "std_usage less_common (gemini-3.1-pro-preview): While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech."
     ]
@@ -607,6 +608,7 @@
       "B: replacement: subte (high)",
       "Claude: replacement: subte @ar (medium)",
       "legacy: subte",
+      "country label ar kept for «subte» by an extralinguistic reason, NOT by the two-source rule (Claude says it; against: A + B have it in both countries; DAMER labels it for both countries (any sense)): there is no subway in Uruguay, so \"subte\" can only name a foreign system there",
       "std_usage not_used (gemini-3.1-pro-preview): In Argentina, the local subway is exclusively called subte. Metro is only used when referring to subway systems in other countries.",
       "std_usage less_common by manual override (Valera): metro has another everyday sense in the region (decided by hand)"
     ]
@@ -816,6 +818,7 @@
       "B: replacement: departamento (high)",
       "Claude: replacement: departamento @ar (high)",
       "legacy: departamento",
+      "country label ar kept for «departamento»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)",
       "std_usage not_used (gemini-3.1-pro-preview): Argentines exclusively say departamento or depto. Apartamento sounds like a translation or foreign Spanish.",
       "std_usage less_common by manual override (Valera): apartamento does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
@@ -1182,6 +1185,8 @@
     "evidence": [
       "3-way agree",
       "DAMER: «colectivo» has Ar and Ur labels (alt_form, any sense)",
+      "country label uy kept for «ómnibus»: A + B + Claude (2 independent families) say the other country does not use it",
+      "alt_form «colectivo» (ar) kept: A + B + Claude say the other country does not use it",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage not_used (gemini-3.1-pro-preview): Uruguayans say ómnibus or bondi. Autobús sounds like a dubbed TV show and is not used in natural local speech.",
       "std_usage less_common by manual override (Valera): autobús: used in Uruguay in formal and official speech; not Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
@@ -1584,7 +1589,9 @@
       "A: replacement: intendencia @uy + municipalidad @ar (high)",
       "B: replacement: intendencia (high)",
       "Claude: replacement: intendencia @uy + municipalidad @ar (medium)",
-      "legacy: municipalidad"
+      "legacy: municipalidad",
+      "country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)",
+      "alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it"
     ]
   },
   {
@@ -1805,6 +1812,7 @@
     "evidence": [
       "3-way agree",
       "DAMER: «pileta» has Ar and Ur labels (rio_form, any sense)",
+      "country label ar kept for «pileta»: A + B + Claude (2 independent families) say the other country does not use it; against: DAMER labels it for both countries (any sense)",
       "std_usage not_used (gemini-3.1-pro-preview): In Argentina, pileta is the absolute standard for swimming pool; piscina sounds formal, bookish, or foreign in everyday speech.",
       "std_usage less_common by manual override (Valera): piscina: used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)"
     ]
@@ -2239,7 +2247,7 @@
     "rio_form": "boleto",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": {
@@ -2264,7 +2272,7 @@
     "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from B (A said none); region set to uy by rule",
+      "proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «boleto» has Ar and Ur labels (rio_form, any sense)",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
@@ -2328,7 +2336,9 @@
       "A: replacement: lentes @uy + anteojos @ar (high)",
       "B: replacement: anteojos (high)",
       "Claude: replacement: lentes @uy + anteojos @ar (medium)",
-      "legacy: anteojos"
+      "legacy: anteojos",
+      "country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it",
+      "alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it"
     ]
   },
   {
@@ -2640,7 +2650,7 @@
     "rio_form": "malla",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -2654,7 +2664,7 @@
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from Claude (A said none); region set to uy by rule",
+      "proposal from Claude (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «malla» has Ar and Ur labels (rio_form, any sense)",
       "std_usage not_used (gemini-3.1-pro-preview): Maya refers to the Mayan people. The word for swimsuit is malla. They sound identical due to yeísmo, but maya is not used for the garment.",
       "std_usage less_common by manual override (Valera): maya has another everyday sense in the region (decided by hand)"
@@ -2780,7 +2790,7 @@
     "rio_form": "fibra",
     "alt_form": null,
     "alt_region": null,
-    "region": "ar",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": {
@@ -2804,7 +2814,8 @@
       "A: meaning_shift: fibra @ar (high)",
       "B: none (high)",
       "Claude: meaning_shift: fibra (medium)",
-      "legacy: fibra"
+      "legacy: fibra",
+      "country label ar dropped for «fibra»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)"
     ]
   },
   {
@@ -2872,9 +2883,9 @@
     "rank": 3911,
     "rio_type": "replacement",
     "rio_form": "de más",
-    "alt_form": "copado",
-    "alt_region": "ar",
-    "region": "uy",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
     "register": "informal",
     "notes": null,
     "std_meaning": null,
@@ -2898,6 +2909,8 @@
       "questionnaire n=8, yes=8",
       "DAMER: «copado» has Ar and Ur labels (alt_form, any sense)",
       "A: replacement: de más @uy + copado @ar (high)",
+      "country label uy dropped for «de más»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
+      "alt_form «copado» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage not_used (gemini-3.1-pro-preview): \"Guay\" is strictly Peninsular Spanish and completely absent from natural Uruguayan speech.",
       "std_usage not_used kept by manual decision (Valera): Peninsular slang for \"cool\" (copado / bárbaro here); no other sense"
@@ -2908,9 +2921,9 @@
     "rank": 3916,
     "rio_type": "replacement",
     "rio_form": "golero",
-    "alt_form": "arquero",
-    "alt_region": "ar",
-    "region": "uy",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -2934,6 +2947,8 @@
       "questionnaire n=8, yes=8 (item 24: golero)",
       "questionnaire item 23: «arquero» n=8, yes=8",
       "golero proposed by Claude (uy) with arquero (ar); A said arquero",
+      "country label uy dropped for «golero»: Claude says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
+      "alt_form «arquero» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage not_used (gemini-3.1-pro-preview): For a goalie, \"golero\" or \"arquero\" are used; \"portero\" sounds foreign in sports, though it is the standard word for a building doorman.",
       "std_usage less_common by manual override (Valera): portero has another everyday sense in the region (decided by hand)"
@@ -2974,7 +2989,7 @@
     "rio_form": "pucho",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "informal",
     "notes": {
       "en": "\"Cigarro\" or \"cigarrillo\" is the more usual everyday word; \"pucho\" is the colloquial one.",
@@ -2991,7 +3006,7 @@
     "example_review": null,
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from legacy (A said none); region set to uy by rule",
+      "proposal from legacy (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «pucho» has Ar and Ur labels (rio_form, any sense)",
       "register informal taken from B's entry for the same form (cigarrillo → pucho)",
       "manual override (Valera): register informal and a note; reason: questionnaire free-text (Salto respondent)",
@@ -3225,7 +3240,7 @@
     "rio_form": "chance",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -3247,7 +3262,7 @@
     "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from B (A said none); region set to uy by rule",
+      "proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «chance» has Ar and Ur labels (rio_form, any sense)",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
@@ -3315,9 +3330,9 @@
     "rank": 4332,
     "rio_type": "replacement",
     "rio_form": "casa de salud",
-    "alt_form": "geriátrico",
-    "alt_region": "ar",
-    "region": "uy",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -3340,6 +3355,8 @@
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: casa de salud @uy + geriátrico @ar (high)",
+      "country label uy dropped for «casa de salud»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
+      "alt_form «geriátrico» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",
       "std_usage less_common (gemini-3.1-pro-preview): Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common."
     ]
@@ -3349,9 +3366,9 @@
     "rank": 4352,
     "rio_type": "replacement",
     "rio_form": "ómnibus",
-    "alt_form": "colectivo",
-    "alt_region": "ar",
-    "region": "uy",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -3372,7 +3389,9 @@
       "A: replacement: ómnibus @uy + colectivo @ar (high)",
       "B: replacement: ómnibus @uy + colectivo @ar (high)",
       "Claude: replacement: colectivo @ar (medium)",
-      "legacy: colectivo"
+      "legacy: colectivo",
+      "country label uy dropped for «ómnibus»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
+      "alt_form «colectivo» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)"
     ]
   },
   {
@@ -3558,7 +3577,7 @@
     "rio_form": "marcador",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": {
@@ -3583,7 +3602,7 @@
     "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
-      "proposal from B (A said none); region set to uy by rule",
+      "proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c",
       "DAMER: «marcador» has Ar and Ur labels (rio_form, any sense)",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
@@ -3625,7 +3644,7 @@
     "rio_form": "foco",
     "alt_form": null,
     "alt_region": null,
-    "region": "uy",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": {
@@ -3653,6 +3672,7 @@
       "proposal from B (A said none): meaning_shift foco = light bulb",
       "no alt_form: «lámpara» was one respondent's own word (\"Digo lámpara\", R9, item 33) with no country, and A has lamparita and foco in both AR and UY, so neither is a regional variant of the other",
       "DAMER: «foco» has Ar and Ur labels (rio_form, any sense)",
+      "country label uy dropped for «foco»: no source says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
@@ -3878,7 +3898,8 @@
       "A: replacement: gaseosa @ar (high)",
       "B: replacement: gaseosa (high)",
       "Claude: replacement: gaseosa @ar (medium)",
-      "legacy: gaseosa"
+      "legacy: gaseosa",
+      "country label ar kept for «gaseosa»: A + Claude + DAMER (3 independent families) say the other country does not use it; against: B has it in both countries"
     ]
   },
   {

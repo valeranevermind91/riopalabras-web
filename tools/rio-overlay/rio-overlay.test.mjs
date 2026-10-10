@@ -999,11 +999,11 @@ describe('an alternative form has its country', () => {
     expect(build).not.toContain('validator_exception') // the old bypass (a flag that let a manual decision outrank the validator) is gone
   })
 
-  it('the shipped export has no alt_form without its alt_region, and its pairs are four real uy / ar ones', () => {
+  it('the shipped export has no alt_form without its alt_region, and its one pair is the clean uy / ar one', () => {
     const shipped = readJson(HERE, '..', '..', 'public', 'rio_overlay.json')
     expect(altPairProblems(shipped)).toEqual([])
     const pairs = shipped.filter((x) => x.alt_form)
-    expect(pairs.map((x) => x.es_word).sort()).toEqual(['asilo', 'autobús', 'guay', 'portero'])
+    expect(pairs.map((x) => x.es_word)).toEqual(['autobús']) // ómnibus (uy) / colectivo (ar): three sources agree on both sides
     for (const x of pairs) expect([x.region, x.alt_region].sort()).toEqual(['ar', 'uy']) // each country has its own form
   })
 

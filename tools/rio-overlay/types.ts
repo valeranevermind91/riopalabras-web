@@ -12,9 +12,12 @@ export interface RioOverlayEntry {
   rio_type: RioType
   /** Clean 1–3 word headword. Equals es_word for meaning_shift / regional_only; null for none. */
   rio_form: string | null
-  /** null = both countries agree (or unknown); set only when Argentina and Uruguay diverge. */
+  /**
+   * null = Rioplatense without a country (both countries use it, or the sources do not support a label). Set only when at least two independent
+   * sources say the other country does not use the form (tools/rio-overlay/regionRule.mjs): the questionnaire, which asked only Uruguayans, cannot set it.
+   */
   region: RioRegion | null
-  /** The other country's form when the countries diverge. */
+  /** The other country's form when the countries diverge, and only when two independent sources support it too (a pair stands on both labels). */
   alt_form: string | null
   alt_region: RioRegion | null
   /** What the word means in standard (Peninsular) Spanish — meaning_shift only. */

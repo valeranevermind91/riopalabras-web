@@ -18,13 +18,13 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 
 - aquí: A, manual accept
 - tú: A (form set by decision), manual accept
-- chico: Claude (A said none), region uy, confidence medium
+- chico: Claude (A said none), confidence medium
 - contigo: A (form set by decision), manual accept
 - quizá: A, manual accept
 - quizás: A, manual accept
 - hermoso: A (type none; register kept from A)
 - vuestro: A, manual accept
-- recoger: B (A said none), region uy, confidence medium
+- recoger: B (A said none), confidence medium
 - vosotros: A, manual accept
 - metro: A, manual accept
 - bello: A (type none; register kept from A)
@@ -40,14 +40,14 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 - cigarrillo: manual (form from B / legacy)
 - carro: A (form and register from B), manual accept
 - fila: A (form and register from B), manual accept
-- boleto: B (A said none), region uy, confidence medium
-- maya: Claude (A said none), region uy, confidence medium
+- boleto: B (A said none), confidence medium
+- maya: Claude (A said none), confidence medium
 - portero: A, rio_form/alt_form swapped by decision
-- cigarro: legacy (A said none), region uy, confidence medium
+- cigarro: legacy (A said none), confidence medium
 - polla: A (type none; register kept from A)
-- chance: B (A said none), region uy, confidence medium
+- chance: B (A said none), confidence medium
 - mona: A (type none; register kept from A)
-- marcador: B (A said none), region uy, confidence medium
+- marcador: B (A said none), confidence medium
 - foco: B (A said none)
 - picado: A (type none; register kept from A)
 - condón: manual (form from legacy)
@@ -100,6 +100,8 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: intendencia (high)
   - Claude: replacement: intendencia @uy + municipalidad @ar (medium)
   - legacy: municipalidad
+  - country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)
+  - alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it
 - **filme** (rank 2266): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: none (high)
   - B: replacement: película (high)
@@ -148,6 +150,8 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: anteojos (high)
   - Claude: replacement: lentes @uy + anteojos @ar (medium)
   - legacy: anteojos
+  - country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it
+  - alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it
 - **tarta** (rank 3342): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: meaning_shift: tarta (high)
   - B: replacement: torta (high)
@@ -175,6 +179,7 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: none (high)
   - Claude: meaning_shift: fibra (medium)
   - legacy: fibra
+  - country label ar dropped for «fibra»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
 - **Gil** (rank 3799): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: regional_only: gil (high)
   - B: none (low)
@@ -201,6 +206,8 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: ómnibus @uy + colectivo @ar (high)
   - Claude: replacement: colectivo @ar (medium)
   - legacy: colectivo
+  - country label uy dropped for «ómnibus»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+  - alt_form «colectivo» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
 - **baloncesto** (rank 4455): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - DAMER: «básquetbol» has Ar and Ur labels (rio_form, any sense)
   - A: replacement: básquetbol (high)
@@ -228,24 +235,65 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: gaseosa (high)
   - Claude: replacement: gaseosa @ar (medium)
   - legacy: gaseosa
+  - country label ar kept for «gaseosa»: A + Claude + DAMER (3 independent families) say the other country does not use it; against: B has it in both countries
 
 ## Accepted on questionnaire evidence only (the weakest accepted entries)
 
-Either the form came from a proposal where A said none (confidence medium, region uy by rule), or the only support is the questionnaire (no DAMER label, no 3-way agreement).
+Either the form came from a proposal where A said none (confidence medium, no country label), or the only support is the questionnaire (no DAMER label, no 3-way agreement).
 
-- chico → gurí @uy (medium): questionnaire n=8, yes=7; proposal from Claude (A said none); region set to uy by rule
-- recoger → levantar @uy (medium): questionnaire n=8, yes=8; proposal from B (A said none); region set to uy by rule
+- chico → gurí @uy (medium): questionnaire n=8, yes=7; proposal from Claude (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- recoger → levantar (medium): questionnaire n=8, yes=8; proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
 - galleta → galletita (high): questionnaire n=8, yes=8
 - feria → feria (high): questionnaire n=8, yes=8
-- boleto → boleto @uy (medium): questionnaire n=8, yes=8; proposal from B (A said none); region set to uy by rule
-- maya → malla @uy (medium): questionnaire n=8, yes=8; proposal from Claude (A said none); region set to uy by rule
-- portero → golero @uy (high): questionnaire n=8, yes=8 (item 24: golero); questionnaire item 23: «arquero» n=8, yes=8
-- cigarro → pucho @uy (medium): questionnaire n=8, yes=8; proposal from legacy (A said none); region set to uy by rule
-- chance → chance @uy (medium): questionnaire n=8, yes=8; proposal from B (A said none); region set to uy by rule
-- asilo → casa de salud @uy (high): questionnaire n=8, yes=8
-- marcador → marcador @uy (medium): questionnaire n=8, yes=8; proposal from B (A said none); region set to uy by rule
-- foco → foco @uy (medium): questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision); proposal from B (A said none): meaning_shift foco = light bulb
+- boleto → boleto (medium): questionnaire n=8, yes=8; proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- maya → malla (medium): questionnaire n=8, yes=8; proposal from Claude (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- portero → golero (high): questionnaire n=8, yes=8 (item 24: golero); questionnaire item 23: «arquero» n=8, yes=8
+- cigarro → pucho (medium): questionnaire n=8, yes=8; proposal from legacy (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- chance → chance (medium): questionnaire n=8, yes=8; proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- asilo → casa de salud (high): questionnaire n=8, yes=8
+- marcador → marcador (medium): questionnaire n=8, yes=8; proposal from B (A said none); no country label from the questionnaire (it only asked Uruguayans); the proposal's own region, if any, is judged by rule 4c
+- foco → foco (medium): questionnaire n=8, yes=5 (5/8, below the usual threshold; kept by decision); proposal from B (A said none): meaning_shift foco = light bulb
 - neumático → cubierta (high): questionnaire n=8, yes=8
+
+## Country labels (the two-source rule)
+
+A `region` (and an `alt_region` with its `alt_form`) is set only when at least two independent sources say the other country does not use the form (A and B are both Gemini, so they count as one family). The questionnaire only asked Uruguayans, so it never sets one. A pair stands only if both of its labels do. Every entry that had a label before the rule:
+
+- **chico** → gurí (accepted): uy → uy
+  - country label uy kept for «gurí»: B + Claude (2 independent families) say the other country does not use it
+- **metro** → subte (accepted): ar → ar
+  - country label ar kept for «subte» by an extralinguistic reason, NOT by the two-source rule (Claude says it; against: A + B have it in both countries; DAMER labels it for both countries (any sense)): there is no subway in Uruguay, so "subte" can only name a foreign system there
+- **apartamento** → departamento (accepted): ar → ar
+  - country label ar kept for «departamento»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)
+- **autobús** → ómnibus (accepted): uy + colectivo @ar → uy + colectivo @ar
+  - country label uy kept for «ómnibus»: A + B + Claude (2 independent families) say the other country does not use it
+  - alt_form «colectivo» (ar) kept: A + B + Claude say the other country does not use it
+- **ayuntamiento** → intendencia (pending): uy + municipalidad @ar → uy + municipalidad @ar
+  - country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)
+  - alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it
+- **piscina** → pileta (accepted): ar → ar
+  - country label ar kept for «pileta»: A + B + Claude (2 independent families) say the other country does not use it; against: DAMER labels it for both countries (any sense)
+- **gafas** → lentes (pending): uy + anteojos @ar → uy + anteojos @ar
+  - country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it
+  - alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it
+- **fibra** → fibra (pending): ar → -
+  - country label ar dropped for «fibra»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+- **guay** → de más (accepted): uy + copado @ar → -
+  - country label uy dropped for «de más»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+  - alt_form «copado» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
+- **portero** → golero (accepted): uy + arquero @ar → -
+  - country label uy dropped for «golero»: Claude says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+  - alt_form «arquero» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
+- **asilo** → casa de salud (accepted): uy + geriátrico @ar → -
+  - country label uy dropped for «casa de salud»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+  - alt_form «geriátrico» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
+- **bus** → ómnibus (pending): uy + colectivo @ar → -
+  - country label uy dropped for «ómnibus»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+  - alt_form «colectivo» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
+- **foco** → foco (accepted): uy → -
+  - country label uy dropped for «foco»: no source says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
+- **refresco** → gaseosa (pending): ar → ar
+  - country label ar kept for «gaseosa»: A + Claude + DAMER (3 independent families) say the other country does not use it; against: B has it in both countries
 
 ## Manual overrides from questionnaire free text
 
@@ -297,7 +345,7 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - patata → papa: Peninsular word for potato (papa here); no other common sense (kept by hand)
 - chaval → pibe: Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)
 - gilipollas → boludo: Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)
-- guay → de más @uy: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
+- guay → de más: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
 - aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
 
 ### less_common (51; card shows: no hint)
@@ -310,7 +358,7 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - coche → auto: 'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently.
 - coger → agarrar: coger does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
 - bonito → lindo: Lindo is the default adjective for beautiful or pretty. Bonito sounds a bit like a TV dub or foreign, but is occasionally used.
-- recoger → levantar @uy: While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech.
+- recoger → levantar: While not as strictly taboo in Uruguay as in Argentina, recoger is still mostly replaced by levantar or juntar in everyday speech.
 - metro → subte @ar: metro has another everyday sense in the region (decided by hand)
 - periódico → diario: Diario is the everyday word for newspaper. Periódico is understood but sounds formal, bookish, or like a translation.
 - alcalde → intendente: Intendente is the traditional title. Alcalde sounds foreign in Argentina, though Uruguay recently introduced it for a lower municipal role.
@@ -340,14 +388,14 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - coste → costo: coste: unsure: a standard variant of costo that does appear in formal and written Spanish in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - cojón → huevo: cojón does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
 - balón → pelota: balón has another everyday sense in the region (decided by hand)
-- maya → malla @uy: maya has another everyday sense in the region (decided by hand)
+- maya → malla: maya has another everyday sense in the region (decided by hand)
 - falda → pollera: falda has another everyday sense in the region (decided by hand)
-- portero → golero @uy: portero has another everyday sense in the region (decided by hand)
+- portero → golero: portero has another everyday sense in the region (decided by hand)
 - competición → competencia: "Competencia" is the standard everyday term, while "competición" is mostly restricted to sports journalism or formal contexts.
 - furgoneta → camioneta: furgoneta: used in the region for the commercial vehicle; not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - cubo → balde: cubo has another everyday sense in the region (decided by hand)
 - calcetín → media: calcetín: standard across Latin America; not unambiguously Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
-- asilo → casa de salud @uy: Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common.
+- asilo → casa de salud: Casa de salud or residencial are the standard terms in Uruguay; asilo is understood but sounds older or more institutional, making it less common.
 - vagabundo → linyera: Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary.
 - tejado → techo: tejado: a common word for a tiled roof in the region as well (techo is the general one); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - neumático → cubierta: Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts.
@@ -359,7 +407,7 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - chico → gurí @uy: Both 'chico' and 'gurí' are completely normal and frequently used in everyday Uruguayan speech to refer to children.
 - cigarrillo → pucho: 'Cigarrillo' is the standard, completely normal word, while 'pucho' is a very common colloquial alternative. Both are widely used.
 - fila → cola: Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people.
-- cigarro → pucho @uy: "Cigarro" is the standard everyday word for cigarette, while "pucho" is a very common informal slang term; both are widely used.
+- cigarro → pucho: "Cigarro" is the standard everyday word for cigarette, while "pucho" is a very common informal slang term; both are widely used.
 
 ### Final not_used list (kept only where es_word is unambiguously Peninsular-only and has no other common sense)
 

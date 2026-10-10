@@ -278,12 +278,28 @@ describe('headword with the overlay', () => {
     expect(entry('metro').rio?.region).toBe('ar')
   })
 
-  it('foco is a meaning_shift: headword stays, there is no alternative form, the region tag is UY', () => {
+  it('foco is a meaning_shift: headword stays, there is no alternative form and no country tag (both countries use it)', () => {
     const w = entry('foco')
     expect(headword(w)).toEqual({ text: 'foco', form: 'standard', secondary: null })
     expect(relationFor(w)).toMatchObject({ type: 'meaning_shift', stdMeaning: { en: 'focus, spotlight' } })
     expect(relationFor(w)).not.toHaveProperty('altForm')
-    expect(headwordRegion(w)).toBe('uy')
+    expect(headwordRegion(w)).toBeNull()
+  })
+
+  it('country tags are only on the entries two independent sources support: gurí and ómnibus (UY), subte, departamento and pileta (AR); the questionnaire alone sets none', () => {
+    const tag = (esWord: string) => headwordRegion(entry(esWord))
+    expect([tag('chico'), tag('autobús'), tag('metro'), tag('apartamento'), tag('piscina')]).toEqual(['uy', 'uy', 'ar', 'ar', 'ar'])
+    // asked of Uruguayans only, so no tag: Uruguayans saying they use a word does not say Argentines do not
+    for (const esWord of ['recoger', 'boleto', 'maya', 'cigarro', 'chance', 'marcador', 'foco', 'guay', 'portero', 'asilo']) expect(tag(esWord), esWord).toBeNull()
+  })
+
+  it('guay, portero and asilo lead with their Uruguayan form and have no "also" line: the pair claim was unsupported', () => {
+    for (const [esWord, form] of [['guay', 'de más'], ['portero', 'golero'], ['asilo', 'casa de salud']]) {
+      const w = entry(esWord)
+      expect(headword(w).text, esWord).toBe(form)
+      expect(relationFor(w), esWord).not.toHaveProperty('altForm')
+      expect(relationFor(w), esWord).not.toHaveProperty('altRegion')
+    }
   })
 
   it('vos is regional_only: the headword stays and there is no replacement block', () => {
