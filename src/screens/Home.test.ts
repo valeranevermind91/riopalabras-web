@@ -521,14 +521,18 @@ describe('Home layout rules in the stylesheet', () => {
     expect(block('.wotd')).toMatch(/gap: 14px/)
   })
 
-  it('the tiles are 96px tall in a two-column grid with 14px gaps, and labels wrap instead of overflowing', () => {
+  it('the tiles are at least 96px tall in a two-column grid with 14px gaps; a label is never split, and the count wraps to its own line instead', () => {
     expect(block('.home-grid')).toMatch(/grid-template-columns: 1fr 1fr/)
     expect(block('.home-grid')).toMatch(/gap: 14px/)
-    expect(block('.tile')).toMatch(/height: 96px/)
+    expect(block('.tile')).toMatch(/min-height: 96px/) // as tall as before, and taller when the count has a line of its own
     expect(block('.tile')).toMatch(/border-radius: var\(--radius-tile\)/)
     expect(block('.tile')).toMatch(/min-width: 0/)
-    expect(block('.tile-label')).toMatch(/overflow-wrap: anywhere/)
-    expect(block('.tile-text')).toMatch(/min-width: 0/)
+    expect(block('.tile')).toMatch(/flex-wrap: wrap/)
+    expect(block('.tile-label')).toMatch(/overflow-wrap: normal/) // never "anywhere": a word is not broken
+    expect(block('.tile-label')).toMatch(/hyphens: none/)
+    expect(block('.tile-label')).not.toMatch(/overflow-wrap: anywhere|word-break/)
+    expect(block('.tile-text')).toMatch(/min-width: min-content/) // never narrower than its longest word
+    expect(block('.tile-count')).toMatch(/margin-left: auto/)
   })
 
   it('the tile colours follow the design: Learn and Review soft teal, the advised one filled teal, practice lavender, disabled neutral and muted', () => {

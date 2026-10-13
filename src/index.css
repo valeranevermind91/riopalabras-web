@@ -470,11 +470,14 @@ mark {
 
 .tile {
   display: flex;
+  /* The count wraps to a line of its own when the label and the count do not fit side by side (see .tile-text): a label is never split. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  align-content: center;
+  gap: 6px 10px;
   min-width: 0;
-  height: 96px;
-  padding: 0 14px;
+  min-height: 96px;
+  padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: var(--radius-tile);
   font: inherit;
@@ -490,17 +493,20 @@ mark {
 
 .tile-text {
   display: flex;
-  flex: 1 1 auto;
+  /* Basis 0 and a floor of the widest word: the text takes what is left beside the icon, but never less than its longest word, and when that
+     and the count do not both fit the count is the one that wraps. */
+  flex: 1 1 0;
   flex-direction: column;
   gap: 1px;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .tile-label {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal; /* a word is never split, and never hyphenated */
+  hyphens: none;
 }
 
 .tile-sub {
@@ -512,6 +518,7 @@ mark {
 
 .tile-count {
   flex: none;
+  margin-left: auto; /* on the right beside the text, and on the right of its own line when it wraps */
   font-size: 19px;
   font-weight: 800;
   line-height: 1;
@@ -560,6 +567,14 @@ mark {
 .tile-matching .tile-sub,
 .tile-cloze .tile-sub {
   color: var(--lav-on-soft-2);
+}
+
+/* At the narrowest width the icon and the gap take a little less, so that the longest label (Matching) still has its whole word beside the icon. */
+@media (max-width: 340px) {
+  .tile {
+    gap: 6px 8px;
+    padding-inline: 10px;
+  }
 }
 
 /* A disabled tile says why in plain text where the Spanish word was. */

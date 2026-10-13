@@ -301,4 +301,85 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       expect(learnWhenReview).not.toBe(reviewWhenReview) // Learn is the soft teal when Review is advised (and Review is the disabled grey when Learn is: nothing is due)
     }, 60_000)
   })
+  describe('the Home tiles: a label is never split', () => {
+    const tilesOf = (page: Page) =>
+      page.evaluate(() => {
+        const intersects = (a: DOMRect, b: DOMRect) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+        const grid = document.querySelector('.home-grid') as HTMLElement
+        return (Array.from(document.querySelectorAll('.tile')) as HTMLElement[]).map((tile) => {
+          const label = tile.querySelector('.tile-label') as HTMLElement
+          const sub = tile.querySelector('.tile-sub') as HTMLElement
+          const count = tile.querySelector('.tile-count') as HTMLElement | null
+          const box = tile.getBoundingClientRect()
+          // the lines the label's own text is drawn on: one for a word that is whole
+          const range = document.createRange()
+          range.selectNodeContents(label)
+          const lines = new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size
+          const rect = (el: Element) => el.getBoundingClientRect()
+          return {
+            id: tile.dataset.tile,
+            label: label.textContent,
+            count: count?.textContent ?? null,
+            lines,
+            labelOverflows: label.scrollWidth > label.clientWidth,
+            tileOverflows: tile.scrollWidth > tile.clientWidth,
+            labelInside: rect(label).left >= box.left && rect(label).right <= box.right,
+            subInside: rect(sub).left >= box.left && rect(sub).right <= box.right && rect(sub).bottom <= box.bottom + 0.5,
+            countInside: count ? rect(count).left >= box.left && rect(count).right <= box.right && rect(count).bottom <= box.bottom + 0.5 && rect(count).top >= box.top : true,
+            countOverlaps: count ? intersects(rect(count), rect(label)) || intersects(rect(count), rect(sub)) : false,
+            iconOverlaps: intersects(rect(tile.querySelector('.tile-icon')!), rect(label)),
+            inGrid: box.left >= grid.getBoundingClientRect().left - 0.5 && box.right <= grid.getBoundingClientRect().right + 0.5,
+            pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+          }
+        })
+      })
+
+    for (const language of ['en', 'ru'] as const) {
+      for (const [digits, learn, review, query] of [[1, '5', '5', 'due=5&pool=5&limit=300'], [2, '50', '50', 'due=50&pool=50&limit=300'], [3, '300', '500', 'due=500&pool=500&limit=300']] as const) {
+        for (const width of [320, 360, 390]) {
+          it(`${language === 'en' ? 'English' : 'Russian'}, ${digits}-digit counts, ${width}px: all four labels whole, nothing overflows or overlaps`, async () => {
+            const page = await open(query, language === 'ru' ? 'ru' : undefined)
+            await page.setViewport({ width, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+            const tiles = await tilesOf(page)
+            expect(tiles.map((t) => t.label)).toEqual(['Learn', 'Review', 'Matching', 'Cloze'])
+            expect(tiles.map((t) => t.count)).toEqual([learn, review, null, null]) // Learn offers the smaller of the pool and the goal (300), Review the whole backlog
+            for (const t of tiles) {
+              expect(t.lines, `${t.id}: "${t.label}" is split over lines`).toBe(1)
+              expect(t.labelOverflows, `${t.id} label overflows`).toBe(false)
+              expect(t.tileOverflows, `${t.id} tile overflows`).toBe(false)
+              expect(t.labelInside, `${t.id} label is outside its tile`).toBe(true)
+              expect(t.subInside, `${t.id} sub is outside its tile`).toBe(true)
+              expect(t.countInside, `${t.id} count is outside its tile`).toBe(true)
+              expect(t.countOverlaps, `${t.id} count overlaps the text`).toBe(false)
+              expect(t.iconOverlaps, `${t.id} icon overlaps the label`).toBe(false)
+              expect(t.inGrid, `${t.id} is outside the grid`).toBe(true)
+              expect(t.pageScrolls).toBe(false)
+            }
+            await page.close()
+          }, 60_000)
+        }
+      }
+    }
+
+    it('also with the practice tiles enabled and a count of 999 in Review: the same, at 320px', async () => {
+      const page = await open('due=999&pool=999&limit=999')
+      await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      for (const t of await tilesOf(page)) {
+        expect(t.lines, t.id).toBe(1)
+        expect(t.countInside && t.subInside && !t.countOverlaps && !t.labelOverflows, t.id).toBe(true)
+      }
+      await page.close()
+    }, 60_000)
+
+    it('the label and the count stay on one row where they fit (a small count), and the count drops to its own line only where they do not', async () => {
+      const page = await open('due=5&pool=5&limit=300')
+      await page.setViewport({ width: 390, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      const sameRow = await page.evaluate(() => {
+        const tile = document.querySelector('[data-tile="review"]')!
+        return Math.abs(tile.querySelector('.tile-label')!.getBoundingClientRect().top - tile.querySelector('.tile-count')!.getBoundingClientRect().top) < 30
+      })
+      expect(sameRow).toBe(true)
+      await page.close()
+    }, 60_000)
+  })
 })
