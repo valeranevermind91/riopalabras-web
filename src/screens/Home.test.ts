@@ -632,12 +632,12 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     for (const quiet of [states.allDoneToday, states.poolEmpty, states.allClear]) expect(primaries(quiet())).toEqual([])
   })
 
-  it('is one line, under the streak row and above the tiles, and not an extra card, bar or button', () => {
+  it('is one line of text in a card, under the streak row and above the tiles: no icon, heading, button or bar inside it', () => {
     const html = states.reviewFirst()
     expect(html.match(/class="home-advice"/g)).toHaveLength(1)
     expect(html.indexOf('home-status')).toBeLessThan(html.indexOf('home-advice'))
     expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-grid'))
-    expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg/)
+    expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg|<h[1-6]|<img|<a /)
   })
 
   it('in Russian', () => {
@@ -656,6 +656,36 @@ describe('the line of advice under the streak, and the tile it points at', () =>
   it('is left out while the data is not there', () => {
     const html = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'loading' }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null, now: NOW } as never))
     expect(html).not.toContain('home-advice')
+  })
+})
+
+describe('the advice card and the word-of-the-day card are one family', () => {
+  const css = readFileSync('src/index.css', 'utf8')
+  const block = (selector: string) => {
+    const start = css.indexOf(`\n${selector} {`)
+    if (start === -1) throw new Error(`no ${selector} rule`)
+    return css.slice(css.indexOf('{', start), css.indexOf('}', start))
+  }
+  const px = (value: string) => value.split(/\s+/).map((v) => parseFloat(v))
+
+  it('the same background, border and radius, and a smaller padding', () => {
+    const advice = block('.home-advice')
+    const wotd = block('.wotd')
+    for (const rule of [/border: 1px solid var\(--border\)/, /border-radius: var\(--radius-card\)/, /background: var\(--surface\)/]) {
+      expect(advice).toMatch(rule)
+      expect(wotd).toMatch(rule)
+    }
+    const [adviceY, adviceX] = px(advice.match(/padding: ([^;]+);/)![1])
+    const [wotdY, wotdX] = px(wotd.match(/padding: ([^;]+);/)![1])
+    expect(adviceY).toBeLessThan(wotdY)
+    expect(adviceX).toBeLessThan(wotdX)
+  })
+
+  it('and it is the quieter of the two: muted text, at the size of the streak row, not louder than the card below', () => {
+    const advice = block('.home-advice')
+    expect(advice).toMatch(/color: var\(--muted\)/)
+    expect(parseFloat(advice.match(/font-size: ([\d.]+)px/)![1])).toBeLessThanOrEqual(13)
+    expect(advice).not.toMatch(/font-family|text-transform|letter-spacing|box-shadow|background: var\(--(teal|lav|hl)/)
   })
 })
 

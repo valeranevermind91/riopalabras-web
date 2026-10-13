@@ -1,7 +1,7 @@
 // A page for the real-browser Review session test (src/lib/review.browser.test.ts): the real Home and Review screens over a word list that
 // really changes as words are rated (Review's ratings go through applyProgress), with a write queue that only records. Query: due=50 (how many
 // words are due, the nth one n hours overdue: vieja50 is the most overdue), soon=4 (one more word, "pronta", that comes due that many seconds from now),
-// pool=30 (that many words not yet learned: Learn has something to offer), limit=300 (the daily new-word goal: how many Learn offers is the smaller of it and the pool), met=1 (today's new-word goal is already reached). The streak starts at 4, last counted yesterday.
+// pool=30 (that many words not yet learned: Learn has something to offer), limit=300 (the daily new-word goal: how many Learn offers is the smaller of it and the pool), met=1 (today's new-word goal is already reached), real=1 (the real dictionary and overlay are loaded too, so the word of the day shows). The streak starts at 4, last counted yesterday.
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -10,6 +10,8 @@ import { localDateKey, localYesterdayKey } from '../data/dates'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
 import type { ProgressUpdate, SettingsPatch, Word } from '../data/types'
+import { parseDictionary } from '../data/dictionary'
+import { parseFallbackExamples, parseRioOverlay } from '../data/rio'
 import { HomeScreen } from '../screens/Home'
 import { ReviewScreen } from '../screens/Review'
 import { makeWord } from './makeWord'
@@ -36,9 +38,10 @@ const initial: Word[] = [
   ...(soon > 0 ? [makeWord('pronta', { rank: due + 1, repetitions: 2, interval: 3, easeFactor: 2.5, nextReview: new Date(now + soon * 1000) })] : []),
 ]
 
-export function Harness() {
+export function Harness({ extra = [] }: { extra?: readonly Word[] }) {
   const [screen, setScreen] = useState<'home' | 'review'>('home')
-  const [words, setWords] = useState<readonly Word[]>(initial)
+  const [start] = useState<readonly Word[]>(() => [...extra, ...initial])
+  const [words, setWords] = useState<readonly Word[]>(start)
   const [settings, setSettings] = useState(() =>
     parseSettings({
       daily_new_word_limit: limit,
@@ -50,7 +53,7 @@ export function Harness() {
   // The latest settings, updated at once (as useUserData does).
   const latest = useRef(settings)
   // The latest words, updated at once by a rating (as useUserData does), so "is a review still due?" right after a rating already sees it.
-  const latestWords = useRef<readonly Word[]>(initial)
+  const latestWords = useRef<readonly Word[]>(start)
   const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
     latestWords.current = applyProgressUpdates(latestWords.current, updates)
     setWords(latestWords.current)
@@ -76,4 +79,11 @@ export function Harness() {
   )
 }
 
-createRoot(document.getElementById('root')!).render(<Harness />)
+const root = createRoot(document.getElementById('root')!)
+if (params.get('real') === '1') {
+  void Promise.all(['/words_enriched.json', '/rio_overlay.json', '/examples_fallback.json'].map((url) => fetch(url).then((r) => r.json()))).then(([dictionary, overlay, fallback]) =>
+    root.render(<Harness extra={parseDictionary(dictionary, parseRioOverlay(overlay), parseFallbackExamples(fallback))} />),
+  )
+} else {
+  root.render(<Harness />)
+}

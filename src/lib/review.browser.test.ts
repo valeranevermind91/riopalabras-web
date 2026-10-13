@@ -255,7 +255,8 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
           overflows: line.scrollWidth > line.clientWidth,
           right: Math.round(rect.right),
           left: Math.round(rect.left),
-          lines: Math.round(rect.height / lineHeight),
+          // the lines of text: the height of the card less its padding and border (the line is a card now)
+          lines: Math.round((rect.height - parseFloat(getComputedStyle(line).paddingTop) - parseFloat(getComputedStyle(line).paddingBottom) - 2 * parseFloat(getComputedStyle(line).borderTopWidth)) / lineHeight),
           pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
           primary: tiles.filter((t) => t.classList.contains('is-primary')).map((t) => t.dataset.tile),
           filled: tiles.filter((t) => background(t) === background(tiles.find((x) => x.classList.contains('is-primary')) ?? t) && t.classList.contains('is-primary')).length,
@@ -282,6 +283,46 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
           await page.close()
         }, 60_000)
       }
+    }
+
+    for (const language of ['en', 'ru'] as const) {
+      it(`${language === 'en' ? 'English' : 'Russian'}: the advice card has the word-of-the-day card's background, border and radius, and is the smaller and quieter of the two, at 320px`, async () => {
+        const page = await open('due=50&real=1', language === 'ru' ? 'ru' : undefined)
+        await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const seen = await page.evaluate(() => {
+          const advice = document.querySelector('.home-advice') as HTMLElement
+          const wotd = document.querySelector('.wotd') as HTMLElement
+          const style = (el: Element) => getComputedStyle(el)
+          const sum = (color: string) => color.match(/\d+/g)!.slice(0, 3).map(Number).reduce((a, b) => a + b, 0)
+          return {
+            hasBoth: !!advice && !!wotd,
+            background: [style(advice).backgroundColor, style(wotd).backgroundColor],
+            border: [style(advice).borderTopColor + style(advice).borderTopWidth + style(advice).borderTopStyle, style(wotd).borderTopColor + style(wotd).borderTopWidth + style(wotd).borderTopStyle],
+            radius: [style(advice).borderTopLeftRadius, style(wotd).borderTopLeftRadius],
+            padding: [parseFloat(style(advice).paddingTop), parseFloat(style(wotd).paddingTop)],
+            height: [advice.getBoundingClientRect().height, wotd.getBoundingClientRect().height],
+            lighterText: sum(style(advice).color) > sum(style(wotd.querySelector('.wotd-sentence')!).color), // lighter text on white: quieter
+            fontSize: [parseFloat(style(advice).fontSize), parseFloat(style(wotd.querySelector('.wotd-sentence')!).fontSize)],
+            children: advice.children.length, // text only: no icon, heading or button inside
+            order: !!(advice.compareDocumentPosition(wotd) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(document.querySelector('.home-status')!.compareDocumentPosition(advice) & Node.DOCUMENT_POSITION_FOLLOWING),
+            pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+            overflows: advice.scrollWidth > advice.clientWidth,
+          }
+        })
+        expect(seen.hasBoth).toBe(true)
+        expect(seen.background[0]).toBe(seen.background[1])
+        expect(seen.border[0]).toBe(seen.border[1])
+        expect(seen.radius[0]).toBe(seen.radius[1])
+        expect(seen.padding[0]).toBeLessThan(seen.padding[1])
+        expect(seen.height[0]).toBeLessThan(seen.height[1])
+        expect(seen.lighterText).toBe(true)
+        expect(seen.fontSize[0]).toBeLessThan(seen.fontSize[1])
+        expect(seen.children).toBe(0)
+        expect(seen.order).toBe(true)
+        expect(seen.pageScrolls).toBe(false)
+        expect(seen.overflows).toBe(false)
+        await page.close()
+      }, 60_000)
     }
 
     it('the primary tile looks different from the other: filled where the other is soft', async () => {

@@ -548,11 +548,19 @@ mark {
   opacity: 0.85;
 }
 
-/* One quiet line of advice under the streak. It may take two lines at the narrowest width. */
+/*
+ * One line of advice under the streak, in the same kind of surface as the word-of-the-day card (.wotd): the same background, border and radius, and
+ * a smaller padding. It is a hint and the card below is the content, so it is quieter: muted text at the size of the streak row above it. At 13px it
+ * takes two lines, not three, at 320px, even for the longest line (Russian, no new words left).
+ */
 .home-advice {
   margin: 0;
-  color: var(--text);
-  font-size: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
 }
