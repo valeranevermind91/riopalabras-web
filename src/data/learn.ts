@@ -1,5 +1,6 @@
 import { learnedState } from '../sm2/sm2'
-import { newWordsPatch, streakPatch } from './daily'
+import { dayPatch, learnedToday, newWordsPatch } from './daily'
+import { nothingDueNow } from './dayCards'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
 import { livePicks, removeKeys, restoreKey, storedIndex } from './learnPicks'
 import { splitAtStartRank } from './placement'
@@ -106,14 +107,15 @@ export function learnProgressUpdates(batch: LearnBatch, now: Date): ProgressUpda
 }
 
 /**
- * The settings one finished batch writes: the streak, today's new-word counter and the queue. The words the batch taught
+ * The settings one finished batch writes: today's new-word counter, the day's cards and (the moment the day first qualifies) the streak, and the
+ * queue. The batch's words are cards done (a word replaced by "Already know it" is not in the batch, and is not a card). The words the batch taught
  * leave learn_picks, exactly those (the queued words that did not fit stay, in order); the key is written only when something
- * left it, so a user who never queued anything gets no learn_picks key.
+ * left it, so a user who never queued anything gets no learn_picks key. `nothingDue`: no review is due once the batch is in (see dayPatch).
  */
-export function learnSettingsPatch(settings: UserSettings, batch: LearnBatch, now: Date): SettingsPatch {
+export function learnSettingsPatch(settings: UserSettings, batch: LearnBatch, now: Date, nothingDue: boolean = false): SettingsPatch {
   return {
-    ...streakPatch(settings, now),
     ...newWordsPatch(settings, batch.newCount, now),
+    ...dayPatch(settings, now, { cards: batch.words.length, nothingDue, learnedNow: learnedToday(settings, now) + batch.newCount }),
     ...removeKeys(settings, batch.words.map((w) => w.esWord)),
   }
 }
@@ -125,6 +127,8 @@ export interface FinishDeps {
   /** Optimistic: mirror the new state into the in-memory words / settings right away, as Review does. */
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   applySettings: (patch: SettingsPatch) => void
+  /** The words as they are now (for "no review is due": a light day counts for the streak). Learn does not change what is due. */
+  getWords?: () => readonly Word[]
   /** Called once, after the batch is applied and queued (so today's counters are current). Must not throw. */
   onFinished?: () => void
 }
@@ -147,7 +151,7 @@ export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => 
     if (ticket) return ticket
     const now = new Date()
     const updates = learnProgressUpdates(batch, now)
-    const patch = learnSettingsPatch(deps.getSettings(), batch, now) // before applySettings: it is computed from the pre-batch counter
+    const patch = learnSettingsPatch(deps.getSettings(), batch, now, nothingDueNow(deps.getWords, now)) // before applySettings: it is computed from the pre-batch counter
 
     deps.applyProgress(updates)
     if (Object.keys(patch).length > 0) deps.applySettings(patch)

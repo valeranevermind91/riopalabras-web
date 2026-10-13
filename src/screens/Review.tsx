@@ -29,12 +29,15 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
   const [revealed, setRevealed] = useState(false)
   const [completed, setCompleted] = useState(false)
   const ratedIndex = useRef(-1)
+  // The words rated in this session: a word comes back at the end after an Again, and rating it again is the same card, not a second one.
+  const ratedInSession = useRef(new Set<string>())
 
   const [rate] = useState(() =>
     createRater({
       applyProgress: data.applyProgress,
       applySettings: data.applySettings,
       getSettings: data.getSettings,
+      getWords: data.getWords,
       queue,
       ...(metrics ? { metrics } : {}),
     }),
@@ -52,7 +55,10 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     ratedIndex.current = index
     haptic('select')
 
-    const update = rate(session[index], quality)
+    const word = session[index]
+    const repeat = ratedInSession.current.has(word.esWord)
+    ratedInSession.current.add(word.esWord)
+    const update = rate(word, quality, new Date(), !repeat)
 
     // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease).
     // The end is then one card further on, so the session cannot finish with the word still owed.
@@ -84,6 +90,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     setRevealed(false)
     setCompleted(false)
     ratedIndex.current = -1
+    ratedInSession.current = new Set()
   }
 
   const header = <ScreenHeader title={strings.review.title} onBack={onBack} />

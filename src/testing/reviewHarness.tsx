@@ -1,10 +1,12 @@
 // A page for the real-browser Review session test (src/lib/review.browser.test.ts): the real Home and Review screens over a word list that
 // really changes as words are rated (Review's ratings go through applyProgress), with a write queue that only records. Query: due=50 (how many
-// words are due, the nth one n hours overdue: vieja50 is the most overdue), soon=4 (one more word, "pronta", that comes due that many seconds from now).
+// words are due, the nth one n hours overdue: vieja50 is the most overdue), soon=4 (one more word, "pronta", that comes due that many seconds from now),
+// met=1 (today's new-word goal is already reached). The streak starts at 4, last counted yesterday.
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import { applyProgressUpdates, applySettingsPatch } from '../data/mutations'
+import { localDateKey, localYesterdayKey } from '../data/dates'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
 import type { ProgressUpdate, SettingsPatch, Word } from '../data/types'
@@ -15,6 +17,7 @@ import { makeWord } from './makeWord'
 const params = new URLSearchParams(location.search)
 const due = Number(params.get('due') ?? 50)
 const soon = Number(params.get('soon') ?? 0)
+const met = params.get('met') === '1'
 
 const sent: { progress: string[]; settings: SettingsPatch[] } = { progress: [], settings: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
@@ -33,15 +36,27 @@ const initial: Word[] = [
 export function Harness() {
   const [screen, setScreen] = useState<'home' | 'review'>('home')
   const [words, setWords] = useState<readonly Word[]>(initial)
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10 }))
+  const [settings, setSettings] = useState(() =>
+    parseSettings({
+      daily_new_word_limit: 10,
+      streak_count: 4,
+      streak_last_activity_date: localYesterdayKey(new Date()),
+      ...(met ? { new_words_learned_today_count: 10, new_words_learned_today_date: localDateKey(new Date()) } : {}),
+    }),
+  )
   // The latest settings, updated at once (as useUserData does).
   const latest = useRef(settings)
-  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => setWords((w) => applyProgressUpdates(w, updates)), [])
+  // The latest words, updated at once by a rating (as useUserData does), so "is a review still due?" right after a rating already sees it.
+  const latestWords = useRef<readonly Word[]>(initial)
+  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
+    latestWords.current = applyProgressUpdates(latestWords.current, updates)
+    setWords(latestWords.current)
+  }, [])
   const applySettings = useCallback((patch: SettingsPatch) => {
     latest.current = applySettingsPatch(latest.current, patch)
     setSettings(latest.current)
   }, [])
-  const data = useMemo(() => ({ words, settings, getSettings: () => latest.current, applyProgress, applySettings }) as never, [words, settings, applyProgress, applySettings])
+  const data = useMemo(() => ({ words, settings, getSettings: () => latest.current, getWords: () => latestWords.current, applyProgress, applySettings }) as never, [words, settings, applyProgress, applySettings])
 
   if (screen === 'review') return <ReviewScreen data={data} queue={queue} metrics={null} onHome={() => setScreen('home')} onLearn={() => {}} />
   return (

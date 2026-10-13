@@ -99,6 +99,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     finisher.current ??= createBatchFinisher(batch, {
       queue,
       getSettings: data.getSettings,
+      getWords: data.getWords,
       applyProgress: data.applyProgress,
       applySettings: data.applySettings,
       onFinished: () => metrics?.markActiveToday(),

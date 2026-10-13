@@ -9,6 +9,7 @@ import {
   tapAndFinish,
   matchingEligibleCount,
   PRACTICE_MIN_WORDS,
+  recordPracticeCards,
   recordPracticeCompleted,
   startMatching,
   type MatchSide,
@@ -54,11 +55,12 @@ export function MatchingScreen({ data, queue, metrics, onHome, onBack }: Matchin
   const tap = (side: MatchSide, id: string) => {
     const current = latest.current
     if (!current) return
-    // Once per finished group: the streak and today's metrics row, through the write queue. Nothing per tap.
-    const next = tapAndFinish(current, side, id, () =>
-      recordPracticeCompleted({ getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics }),
-    )
+    // Once per finished group: today's metrics row. Once per matched pair: a card toward the streak.
+    const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
+    const next = tapAndFinish(current, side, id, () => recordPracticeCompleted(deps))
     if (next === current) return
+    // Each matched pair is a card done (a wrong tap and a first selection are not).
+    if (next.matched.size > current.matched.size) recordPracticeCards(deps, next.matched.size - current.matched.size)
     commit(next)
 
     if (next.wrong) {

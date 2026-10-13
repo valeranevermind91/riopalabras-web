@@ -176,4 +176,61 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     expect([...next].sort()).toEqual([...range(1, 5), 'pronta'].sort())
     await page.close()
   }, 180_000)
+  describe('what counts the day for the streak', () => {
+    /** The streak row's words: the streak and, until the day counts, how far today is. */
+    const statusWords = (page: Page) => page.$$eval('.streak > span:not(.streak-dots)', (els) => els.map((e) => e.textContent))
+    const goHome = async (page: Page) => {
+      await page.evaluate(() => (Array.from(document.querySelectorAll('.post-batch button')).find((b) => b.textContent?.trim() === 'Back to home') as HTMLElement).click())
+      await page.waitForSelector('[data-tile="review"]')
+    }
+    const startReview = async (page: Page) => {
+      await page.click('[data-tile="review"]')
+      await page.waitForSelector('.flip')
+    }
+
+    it('Home starts the day at "0 / 10 today" next to the streak', async () => {
+      const page = await open('due=9')
+      expect(await statusWords(page)).toEqual(['4-day streak', '0 / 10 today'])
+      await page.close()
+    }, 120_000)
+
+    it('a word rated Again and then Good is one card: nine words, ten ratings, nine cards, and the day has not counted', async () => {
+      const page = await open('due=9')
+      await startReview(page)
+      await rate(page, 'again') // the first word, back at the end of the session
+      const shown = await playSession(page, 'good')
+      expect(shown).toHaveLength(9) // the other eight, then the word again
+      await goHome(page)
+      expect(await statusWords(page)).toEqual(['4-day streak', '9 / 10 today']) // nine cards: ten ratings, but one word twice
+      await page.close()
+    }, 180_000)
+
+    it('ten different cards count the day: the streak goes up and the "today" words are gone', async () => {
+      const page = await open('due=10')
+      await startReview(page)
+      await playSession(page)
+      await goHome(page)
+      expect(await statusWords(page)).toEqual(['5-day streak']) // written when the tenth was rated
+      await page.close()
+    }, 180_000)
+
+    it('a light day counts: three due words and the goal already met is everything there was', async () => {
+      const page = await open('due=3&met=1')
+      expect(await statusWords(page)).toEqual(['4-day streak', '0 / 10 today'])
+      await startReview(page)
+      await playSession(page)
+      await goHome(page)
+      expect(await statusWords(page)).toEqual(['5-day streak'])
+      await page.close()
+    }, 180_000)
+
+    it('three due words and the goal NOT met is not a light day: 3 / 10 today', async () => {
+      const page = await open('due=3')
+      await startReview(page)
+      await playSession(page)
+      await goHome(page)
+      expect(await statusWords(page)).toEqual(['4-day streak', '3 / 10 today'])
+      await page.close()
+    }, 180_000)
+  })
 })

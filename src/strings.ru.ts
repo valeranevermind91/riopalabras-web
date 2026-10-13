@@ -35,6 +35,7 @@ export const ru: Strings = {
     degradedHiddenWarning: 'Пока всё не загрузится, скрытые вами слова могут показываться.',
     retryNow: 'Повторить сейчас',
     streak: (n) => `${n} ${plural(n, { one: 'день', few: 'дня', many: 'дней' })} подряд`,
+    streakToday: (done, needed) => `${done} / ${needed} сегодня`,
     weekdays: ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'],
     streakDots: (active) => `Активность: ${active} из последних 7 дней`,
     wotdPill: 'palabra del día',

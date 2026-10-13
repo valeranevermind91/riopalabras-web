@@ -17,6 +17,8 @@ export interface UserData {
   diagnostics: MergeDiagnostics
   /** The latest in-memory settings, for code that outlives a render (e.g. a write that retries). */
   getSettings: () => UserSettings
+  /** The latest in-memory words, updated at once by every mutation below: a read right after a rating already sees it (is a review still due?). */
+  getWords: () => readonly Word[]
   /** Mirror a successful progress write into the in-memory words. */
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   /** Mirror a successful settings write into the in-memory settings (unknown keys kept). */
@@ -105,34 +107,22 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
     }
   }, [authPending, holdLoad, userId, client])
 
-  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
-    setBase((prev) =>
-      prev.status === 'ready'
-        ? { status: 'ready', loaded: { ...prev.loaded, words: applyProgressUpdates(prev.loaded.words, updates) } }
-        : prev,
-    )
+  // Every change to the words goes through here: the latest words are updated at once (as the settings are), so a read right after the
+  // change (getWords) already sees it, not only after the next render.
+  const latestWords = useRef<readonly Word[] | null>(null)
+  const changeWords = useCallback((change: (words: readonly Word[]) => readonly Word[]) => {
+    if (latestWords.current) latestWords.current = change(latestWords.current)
+    setBase((prev) => (prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: change(prev.loaded.words) } } : prev))
   }, [])
+
+  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => changeWords((words) => applyProgressUpdates(words, updates)), [changeWords])
 
   // Declared first: applySettings updates it eagerly (see below).
   const latestSettings = useRef<UserSettings | null>(null)
-  const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => {
-    setBase((prev) =>
-      prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: applyHiddenFlag(prev.loaded.words, esWords, hidden) } } : prev,
-    )
-  }, [])
-
-  const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => {
-    setBase((prev) =>
-      prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: applyFavoriteFlag(prev.loaded.words, esWords, favorite) } } : prev,
-    )
-  }, [])
-
-  const upsertCustom = useCallback((word: Word) => {
-    setBase((prev) => (prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: upsertCustomWord(prev.loaded.words, word) } } : prev))
-  }, [])
-  const removeCustom = useCallback((esWord: string) => {
-    setBase((prev) => (prev.status === 'ready' ? { status: 'ready', loaded: { ...prev.loaded, words: removeCustomWord(prev.loaded.words, esWord) } } : prev))
-  }, [])
+  const applyHidden = useCallback((esWords: readonly string[], hidden: boolean) => changeWords((words) => applyHiddenFlag(words, esWords, hidden)), [changeWords])
+  const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => changeWords((words) => applyFavoriteFlag(words, esWords, favorite)), [changeWords])
+  const upsertCustom = useCallback((word: Word) => changeWords((words) => upsertCustomWord(words, word)), [changeWords])
+  const removeCustom = useCallback((esWord: string) => changeWords((words) => removeCustomWord(words, esWord)), [changeWords])
 
   const applySettings = useCallback((patch: SettingsPatch) => {
     // Eager, so a read right after the write (getSettings) already sees it, not only after the next render.
@@ -178,13 +168,17 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
   const retryDegraded = useCallback(() => retrier.current?.retryNow(), [])
 
   const loadedSettings = loaded?.settings ?? null
+  const loadedWords = loaded?.words ?? null
   useEffect(() => {
     latestSettings.current = loadedSettings
+    latestWords.current = loadedWords
   })
   const getSettings = useCallback(() => {
     if (!latestSettings.current) throw new Error('Settings are not loaded')
     return latestSettings.current
   }, [])
+
+  const getWords = useCallback(() => latestWords.current ?? [], [])
 
   return useMemo<DataState>(() => {
     if (base.status !== 'ready' || !loaded) return base as DataState
@@ -196,6 +190,7 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
         stats: computeStats(loaded.words, loaded.settings, new Date()),
         diagnostics: loaded.diagnostics,
         getSettings,
+        getWords,
         applyProgress,
         applySettings,
         applyHidden,
@@ -206,5 +201,5 @@ export function useUserData(auth: AuthState, client: SupabaseClient | null, hold
         retryDegraded,
       },
     }
-  }, [base, loaded, getSettings, applyProgress, applySettings, applyHidden, applyFavorite, upsertCustom, removeCustom, retryDegraded])
+  }, [base, loaded, getSettings, getWords, applyProgress, applySettings, applyHidden, applyFavorite, upsertCustom, removeCustom, retryDegraded])
 }

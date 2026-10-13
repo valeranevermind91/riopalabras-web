@@ -5,6 +5,7 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats, nextDueWithin, type Stats } from '../data/stats'
+import { STREAK_CARDS, cardsToday, streakCountedToday } from '../data/daily'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
@@ -84,7 +85,13 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
       {stats && data.status === 'ready' ? (
         <>
-          <StatusRow streak={stats.streak} activity={activity} todayActive={metrics?.today?.(now)?.active === true} now={now} />
+          <StatusRow
+            streak={stats.streak}
+            activity={activity}
+            todayActive={metrics?.today?.(now)?.active === true}
+            now={now}
+            today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: STREAK_CARDS }}
+          />
 
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
@@ -135,7 +142,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
  * The number is shown whenever the settings are (a 0 is a real 0); without them (`streak` null) it is left out rather than shown
  * as 0. The dots are left out while their data is not there (still loading, or the read failed), and the number stays.
  */
-function StatusRow({ streak, activity, todayActive, now }: { streak: number | null; activity: ReadonlySet<string> | null; todayActive: boolean; now: Date }) {
+function StatusRow({ streak, activity, todayActive, now, today }: { streak: number | null; activity: ReadonlySet<string> | null; todayActive: boolean; now: Date; today: { done: number; needed: number } | null }) {
   if (streak === null && !activity) return null
   const dots = activity ? activityDots(now, activity, todayActive) : null
   return (
@@ -152,6 +159,8 @@ function StatusRow({ streak, activity, todayActive, now }: { streak: number | nu
           </span>
         )}
         {streak !== null && <span>{strings.home.streak(streak)}</span>}
+        {/* How far today is from counting (10 cards; see dayPatch), as a few words, not a bar: nothing once the day counts. */}
+        {streak !== null && today && <span className="streak-today">{strings.home.streakToday(today.done, today.needed)}</span>}
       </div>
     </div>
   )

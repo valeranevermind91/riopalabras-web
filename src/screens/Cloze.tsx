@@ -9,6 +9,7 @@ import {
   buildClozeSession,
   clozeEligibleCount,
   clozeScore,
+  recordPracticeCards,
   recordPracticeCompleted,
   startCloze,
   type ClozeItem,
@@ -39,10 +40,12 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
 
   const answered = (outcome: ClozeOutcome) => {
     if (!session) return
-    // Once per finished session: the streak and today's metrics row, through the write queue. Nothing per question.
+    // Each answered question is a card toward the streak (giving up is not an answer); once per finished session, today's metrics row.
+    const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
+    recordPracticeCards(deps, outcome === 'gaveUp' ? 0 : 1)
     const next = answerCloze(progress, session.length, outcome, () => {
       haptic('success')
-      recordPracticeCompleted({ getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics })
+      recordPracticeCompleted(deps)
     })
     setProgress(next)
   }

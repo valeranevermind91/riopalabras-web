@@ -28,6 +28,7 @@ import {
   isPracticeWord,
   matchingEligibleCount,
   matchingPool,
+  recordPracticeCards,
   recordPracticeCompleted,
   splitSentence,
   startCloze,
@@ -457,7 +458,7 @@ describe('Cloze: session sizes and the floor', () => {
   })
 })
 
-describe('finishing: the streak and the metrics row, once, through the write queue', () => {
+describe('finishing: each pair and each answer is a card toward the streak; the metrics row is marked once per group or session', () => {
   const NOW = new Date(2026, 9, 5, 14, 0)
   const KEY = '2026-10-05'
 
@@ -475,82 +476,104 @@ describe('finishing: the streak and the metrics row, once, through the write que
       deps,
       getSettings,
       tables: () => fake.calls.map((c) => c.table),
+      settingsBlobs: () => fake.calls.filter((c) => c.table === 'user_settings').map((c) => (c.rows as { settings: Record<string, unknown> }).settings),
       drained: () => vi.waitFor(() => expect(queue.getStatus()).toMatchObject({ unsaved: false, pendingMetrics: 0, metricsRunning: false })),
     }
   }
 
-  it('recordPracticeCompleted: one streak write (when the day changes) and one active mark', () => {
+  /** What the Matching screen does with a tap: a pair that is matched is a card, a finished group marks the day active. */
+  function matchingScreen(deps: ReturnType<typeof app>['deps']) {
+    return (state: MatchingState, side: 'left' | 'right', id: string) => {
+      const next = tapAndFinish(state, side, id, () => recordPracticeCompleted(deps, NOW))
+      if (next.matched.size > state.matched.size) recordPracticeCards(deps, next.matched.size - state.matched.size, NOW)
+      return next
+    }
+  }
+  const group = (ids: string[]) => ids.map((id): MatchItem => ({ id, spanish: id, gloss: id }))
+
+  it('recordPracticeCompleted marks the day active and writes NO streak: finishing a group is not what counts the day, the cards in it are', () => {
     const markActiveToday = vi.fn()
     const enqueueSettings = vi.fn()
     let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
     const deps = { getSettings: () => settings, applySettings: (p: Record<string, unknown>) => (settings = applySettingsPatch(settings, p)), queue: { enqueueSettings }, metrics: { markActiveToday } }
     recordPracticeCompleted(deps, NOW)
-    expect(enqueueSettings).toHaveBeenCalledTimes(1)
-    expect(enqueueSettings).toHaveBeenCalledWith({ streak_count: 4, streak_last_activity_date: KEY })
-    expect(settings.streakCount).toBe(4) // mirrored in memory too
-    expect(markActiveToday).toHaveBeenCalledTimes(1)
-
-    recordPracticeCompleted(deps, NOW) // a second group the same day: the streak does not move again
-    expect(enqueueSettings).toHaveBeenCalledTimes(1)
+    recordPracticeCompleted(deps, NOW)
     expect(markActiveToday).toHaveBeenCalledTimes(2)
+    expect(enqueueSettings).not.toHaveBeenCalled()
+    expect(settings.streakCount).toBe(3)
   })
 
-  it('a whole Matching group written through the real queue: nothing per tap, then the streak once and the metrics row once', async () => {
+  it('recordPracticeCards: a card is counted (a settings write), and the streak is written the moment the 10th is done', () => {
+    const enqueueSettings = vi.fn()
+    let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
+    const deps = { getSettings: () => settings, applySettings: (p: Record<string, unknown>) => (settings = applySettingsPatch(settings, p)), queue: { enqueueSettings }, metrics: null }
+    for (let i = 0; i < 9; i++) recordPracticeCards(deps, 1, NOW)
+    expect(enqueueSettings).toHaveBeenCalledTimes(9)
+    expect(enqueueSettings.mock.calls.some(([p]) => 'streak_count' in p)).toBe(false)
+    expect(settings.cardsDoneTodayCount).toBe(9)
+    recordPracticeCards(deps, 1, NOW)
+    expect(enqueueSettings).toHaveBeenLastCalledWith({ cards_done_today_count: 10, cards_done_today_date: KEY, streak_count: 4, streak_last_activity_date: KEY })
+    recordPracticeCards(deps, 1, NOW) // the day has counted: nothing more is written
+    expect(enqueueSettings).toHaveBeenCalledTimes(10)
+  })
+
+  it('a whole Matching group through the real queue: five pairs are five cards, the metrics row once at the end, and no streak yet; a second group counts the day', async () => {
     const a = app()
-    const items = ['a', 'b', 'c', 'd', 'e'].map((id): MatchItem => ({ id, spanish: id, gloss: id }))
-    let s = startMatching({ items, left: items, right: [...items].reverse() })
-    const done = vi.fn(() => recordPracticeCompleted(a.deps, NOW))
-
-    // a wrong tap, then the five pairs
-    s = clearWrong(tapAndFinish(tapAndFinish(s, 'left', 'a', done), 'right', 'b', done))
-    for (const id of ['a', 'b', 'c', 'd']) s = tapAndFinish(tapAndFinish(s, 'left', id, done), 'right', id, done)
-    await Promise.resolve()
-    expect(a.calls).toHaveLength(0) // nothing written while playing
-    expect(done).not.toHaveBeenCalled()
-
-    s = tapAndFinish(tapAndFinish(s, 'left', 'e', done), 'right', 'e', done)
+    const tap = matchingScreen(a.deps)
+    const play = (ids: string[]) => {
+      const items = group(ids)
+      let s = startMatching({ items, left: items, right: [...items].reverse() })
+      s = clearWrong(tap(tap(s, 'left', ids[0]), 'right', ids[1])) // a wrong tap is not a card
+      for (const id of ids) s = tap(tap(s, 'left', id), 'right', id)
+      return s
+    }
+    play(['a', 'b', 'c', 'd', 'e'])
     await a.drained()
-    expect(done).toHaveBeenCalledTimes(1)
-    expect(a.tables().filter((t) => t === 'user_settings')).toHaveLength(1)
-    expect(a.tables().filter((t) => t === 'user_daily_metrics')).toHaveLength(1)
+    expect(a.getSettings().cardsDoneTodayCount).toBe(5)
+    expect(a.getSettings().streakCount).toBe(3) // five cards do not count the day
+    expect(a.settingsBlobs().some((b) => 'streak_count' in b && b.streak_count !== 3)).toBe(false)
+    expect(a.tables().filter((t) => t === 'user_daily_metrics')).toHaveLength(1) // once for the group
     expect(a.tables()).not.toContain('user_progress') // SM-2 untouched
-    expect(a.calls.find((c) => c.table === 'user_settings')!.rows).toMatchObject({ settings: { streak_count: 4, streak_last_activity_date: KEY } })
-    expect(a.calls.find((c) => c.table === 'user_daily_metrics')!.rows).toMatchObject([{ date: KEY, active: true, reviews_done: 0 }])
-    expect(a.tables().indexOf('user_settings')).toBeLessThan(a.tables().indexOf('user_daily_metrics')) // metrics go last
+
+    play(['f', 'g', 'h', 'i', 'j'])
+    await a.drained()
+    expect(a.getSettings()).toMatchObject({ cardsDoneTodayCount: 10, streakCount: 4, streakLastActivityDate: KEY })
+    expect(a.settingsBlobs().at(-1)).toMatchObject({ streak_count: 4, streak_last_activity_date: KEY, cards_done_today_count: 10 })
   })
 
-  it('a whole Cloze session: ten answers, one finish', async () => {
+  it('a Cloze session: an answered question is a card (right or wrong), giving up is not; ten answers with two given up are eight cards', async () => {
     const a = app()
     const outcomes = ['correct', 'wrong', 'gaveUp', 'correct', 'correct', 'wrong', 'correct', 'correct', 'gaveUp', 'correct'] as const
     const onComplete = vi.fn(() => recordPracticeCompleted(a.deps, NOW))
     let progress = startCloze()
-    for (const [i, outcome] of outcomes.entries()) {
+    for (const outcome of outcomes) {
+      recordPracticeCards(a.deps, outcome === 'gaveUp' ? 0 : 1, NOW) // what the Cloze screen does before it records the answer
       progress = answerCloze(progress, outcomes.length, outcome, onComplete)
-      expect(progress.done).toBe(i === outcomes.length - 1)
-      if (i < outcomes.length - 1) {
-        expect(onComplete).not.toHaveBeenCalled()
-        expect(a.calls).toHaveLength(0) // nothing is written per question
-      }
     }
     await a.drained()
     expect(onComplete).toHaveBeenCalledTimes(1)
     expect(clozeScore(progress.results)).toBe(6)
-    expect(a.tables().filter((t) => t === 'user_settings')).toHaveLength(1)
+    expect(a.getSettings().cardsDoneTodayCount).toBe(8)
+    expect(a.getSettings().streakCount).toBe(3) // eight cards: not yet
     expect(a.tables().filter((t) => t === 'user_daily_metrics')).toHaveLength(1)
     expect(a.tables()).not.toContain('user_progress')
 
-    answerCloze(progress, outcomes.length, 'correct', onComplete) // a stray extra answer is ignored
-    expect(onComplete).toHaveBeenCalledTimes(1)
+    // two more answered questions (the next session) make ten
+    recordPracticeCards(a.deps, 1, NOW)
+    recordPracticeCards(a.deps, 1, NOW)
+    await a.drained()
+    expect(a.getSettings()).toMatchObject({ cardsDoneTodayCount: 10, streakCount: 4, streakLastActivityDate: KEY })
   })
 
-  it('a second group or session the same day marks the day active again but does not touch the streak', async () => {
+  it('once the day has counted, further pairs and answers write nothing to the settings', async () => {
     const a = app()
+    for (let i = 0; i < 10; i++) recordPracticeCards(a.deps, 1, NOW)
+    await a.drained()
+    const writes = a.tables().filter((t) => t === 'user_settings').length
+    for (let i = 0; i < 20; i++) recordPracticeCards(a.deps, 1, NOW)
     recordPracticeCompleted(a.deps, NOW)
     await a.drained()
-    const settingsWrites = a.tables().filter((t) => t === 'user_settings').length
-    recordPracticeCompleted(a.deps, NOW)
-    await a.drained()
-    expect(a.tables().filter((t) => t === 'user_settings')).toHaveLength(settingsWrites)
+    expect(a.tables().filter((t) => t === 'user_settings')).toHaveLength(writes)
   })
 })
 

@@ -1,11 +1,11 @@
 import { headword, highlightTarget, type HighlightRange } from './headword'
 import type { MetricsRecorder } from './metrics'
-import { streakPatch } from './daily'
+import { recordCards, type DayCardsDeps } from './dayCards'
 import { translationsFor } from './relation'
 import { firstGloss, type Lang } from './rio'
 import { shuffle } from './review'
 import { firstTranslation, translationLines, type TranslationFlags } from './translations'
-import type { SettingsPatch, UserSettings, Word } from './types'
+import type { Word } from './types'
 import { hasTranslations, isReviewablePos, wordKey } from './words'
 import type { WriteQueue } from './writeQueue'
 
@@ -377,24 +377,23 @@ export function answerCloze(progress: ClozeProgress, total: number, outcome: Clo
 
 // ------------------------------------------------------------------------------------------------ Finishing
 
-export interface PracticeFinishDeps {
-  getSettings: () => UserSettings
-  /** Optimistic: mirror the streak into the in-memory settings. */
-  applySettings: (patch: SettingsPatch) => void
+export interface PracticeFinishDeps extends DayCardsDeps {
   queue: Pick<WriteQueue, 'enqueueSettings'>
   metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
 }
 
 /**
- * A finished Matching group or Cloze session, and only that: the streak (a settings write, only
- * when the day's streak actually changes) through the write queue, and today's metrics row marked
- * active. Called once per finished group or session, never per item.
+ * A matched pair in Matching, or an answered question in Cloze (one that was answered, right or wrong: giving up on it is not): a card done, counted
+ * toward today's streak (a settings write, only while the day has not counted yet; see dayPatch). Called per pair and per question.
+ */
+export function recordPracticeCards(deps: PracticeFinishDeps, cards: number, now: Date = new Date()): void {
+  recordCards(deps, cards, now)
+}
+
+/**
+ * A finished Matching group or Cloze session, and only that: today's metrics row marked active (the dots on Home). It no longer writes the streak:
+ * finishing a group is not what counts the day, the cards in it are (recordPracticeCards). Called once per finished group or session.
  */
 export function recordPracticeCompleted(deps: PracticeFinishDeps, now: Date = new Date()): void {
-  const patch = streakPatch(deps.getSettings(), now)
-  if (patch) {
-    deps.applySettings(patch)
-    deps.queue.enqueueSettings(patch)
-  }
   deps.metrics?.markActiveToday(now)
 }

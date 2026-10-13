@@ -313,8 +313,16 @@ dd {
 
 .streak {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
+}
+
+/* "4 / 10 today": quiet, in the muted colour of the row; no bar. */
+.streak-today {
+  color: var(--muted-2);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .streak-dots {

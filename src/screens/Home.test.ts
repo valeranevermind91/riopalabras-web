@@ -10,6 +10,7 @@ import { hashString, pickWordOfTheDay, wordOfTheDay, wordOfTheDayPool } from '..
 import { createWriteQueue } from '../data/writeQueue'
 import { parseSettings } from '../data/settings'
 import type { Word } from '../data/types'
+import { setLanguage } from '../lib/language'
 import { makeWord } from '../testing/makeWord'
 import { HomeScreen } from './Home'
 
@@ -570,3 +571,47 @@ describe('Home layout rules in the stylesheet', () => {
     for (const selector of ['.tile', '.tile-learn', '.tile-review', '.home-status']) expect(block(selector)).not.toMatch(/--hl-/)
   })
 })
+
+describe('the status row: how far today is from counting for the streak', () => {
+  const YESTERDAY = '2026-10-04'
+  const todayOf = (html: string) => html.match(/<span class="streak-today">([^<]*)<\/span>/)?.[1] ?? null
+  const withCards = (raw: Record<string, unknown>) => render({ activity: new Set<string>() }, undefined, { streak_count: 5, streak_last_activity_date: YESTERDAY, ...raw })
+
+  it('says "4 / 10 today" next to the streak while the day has not counted', () => {
+    expect(todayOf(withCards({ cards_done_today_count: 4, cards_done_today_date: TODAY }))).toBe('4 / 10 today')
+    expect(todayOf(withCards({ cards_done_today_count: 9, cards_done_today_date: TODAY }))).toBe('9 / 10 today')
+  })
+
+  it('starts the day at 0 / 10: no counter, or one from another day', () => {
+    expect(todayOf(withCards({}))).toBe('0 / 10 today')
+    expect(todayOf(withCards({ cards_done_today_count: 9, cards_done_today_date: YESTERDAY }))).toBe('0 / 10 today')
+  })
+
+  it('in Russian: "4 / 10 сегодня"', () => {
+    setLanguage('ru')
+    try {
+      expect(todayOf(withCards({ cards_done_today_count: 4, cards_done_today_date: TODAY }))).toBe('4 / 10 сегодня')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('says nothing once the day counts (the streak was written today)', () => {
+    const counted = withCards({ streak_last_activity_date: TODAY, cards_done_today_count: 10, cards_done_today_date: TODAY })
+    expect(todayOf(counted)).toBeNull()
+    expect(counted).not.toContain('streak-today')
+    expect(counted).toContain('<span>5-day streak</span>') // the streak itself is shown as before
+  })
+
+  it('is words next to the dots, not a bar: no progress element, no second bar', () => {
+    const html = withCards({ cards_done_today_count: 4, cards_done_today_date: TODAY })
+    expect(html.match(/<div class="home-status">.*?<\/div><\/div>/)![0]).not.toMatch(/role="progressbar"|<progress|class="bar/)
+    expect(html.indexOf('streak-dots')).toBeLessThan(html.indexOf('streak-today'))
+  })
+
+  it('is left out when the settings are not there (no streak number to sit next to)', () => {
+    const html = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'loading' }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null, now: NOW } as never))
+    expect(html).not.toContain('streak-today')
+  })
+})
+

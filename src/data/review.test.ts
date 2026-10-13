@@ -243,43 +243,61 @@ describe('createRater', () => {
     expect(s.progress).toEqual([update])
   })
 
-  it('writes the streak once for the first rating of the day, not once per card', () => {
+  const streakKeys = (p: SettingsPatch) => 'streak_count' in p || 'streak_last_activity_date' in p
+
+  it('does NOT write the streak at the first rating: it counts the card, and writes the streak when the 10th is done', () => {
     const s = setup({ streak_count: 4, streak_last_activity_date: '2026-10-04' })
     const rate = s.rater()
-    for (let i = 0; i < 25; i++) rate(learned(`w${i}`), 3, NOW)
+    for (let i = 0; i < 9; i++) rate(learned(`w${i}`), 3, NOW)
 
-    expect(s.progress).toHaveLength(25)
-    expect(s.patches).toEqual([{ streak_count: 5, streak_last_activity_date: localDay(NOW) }])
+    expect(s.progress).toHaveLength(9)
+    expect(s.patches.some(streakKeys)).toBe(false) // nine cards do not count the day
+    expect(s.getSettings().cardsDoneTodayCount).toBe(9)
+    expect(s.getSettings().streakCount).toBe(4) // untouched
+    expect(s.getSettings().streakLastActivityDate).toBe('2026-10-04')
+
+    rate(learned('w9'), 3, NOW) // the tenth
+    expect(s.patches.filter(streakKeys)).toEqual([{ cards_done_today_count: 10, cards_done_today_date: localDay(NOW), streak_count: 5, streak_last_activity_date: localDay(NOW) }])
     expect(s.getSettings().streakCount).toBe(5)
   })
 
-  it('a second session on the same day writes nothing more', () => {
+  it('once the day counts nothing more is written for it: a long session adds no writes, and a second session writes nothing', () => {
     const s = setup({ streak_count: 4, streak_last_activity_date: '2026-10-04' })
-    s.rater()(learned('a'), 3, NOW)
-    s.rater()(learned('b'), 3, NOW)
-    expect(s.patches).toHaveLength(1)
+    const rate = s.rater()
+    for (let i = 0; i < 25; i++) rate(learned(`w${i}`), 3, NOW)
+    expect(s.progress).toHaveLength(25)
+    expect(s.patches).toHaveLength(10) // one per card up to the tenth, none after it
+    s.rater()(learned('again'), 3, NOW)
+    expect(s.patches).toHaveLength(10)
   })
 
-  it('starts the streak at 1 after a gap, and writes again on a new day', () => {
+  it('starts the streak at 1 after a gap, once the day counts, and counts a new day from nothing', () => {
     const s = setup({ streak_count: 9, streak_last_activity_date: '2026-09-20' })
     const rate = s.rater()
-    rate(learned('a'), 3, NOW)
-    expect(s.patches[0]).toMatchObject({ streak_count: 1 })
+    for (let i = 0; i < 10; i++) rate(learned(`a${i}`), 3, NOW)
+    expect(s.patches.filter(streakKeys)).toEqual([expect.objectContaining({ streak_count: 1 })])
 
     const tomorrow = new Date(NOW.getTime() + 24 * 60 * 60 * 1000)
-    rate(learned('b'), 3, tomorrow)
-    expect(s.patches).toHaveLength(2)
-    expect(s.patches[1]).toMatchObject({ streak_count: 2 })
+    for (let i = 0; i < 9; i++) rate(learned(`b${i}`), 3, tomorrow)
+    expect(s.patches.filter(streakKeys)).toHaveLength(1) // nine on the new day: not yet
+    expect(s.getSettings().cardsDoneTodayCount).toBe(9) // the count restarted with the day
+    rate(learned('b9'), 3, tomorrow)
+    expect(s.patches.filter(streakKeys)).toHaveLength(2)
+    expect(s.patches.filter(streakKeys)[1]).toMatchObject({ streak_count: 2 })
   })
 
-  it('uses the LOCAL day: 23:30 and 00:30 local are different streak days', () => {
-    const s = setup({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
+  it('uses the LOCAL day: cards before and after local midnight are different days, and do not add up', () => {
+    const s = setup({ streak_count: 3, streak_last_activity_date: '2026-10-05' })
     const rate = s.rater()
-    rate(learned('a'), 3, new Date(2026, 9, 5, 23, 30))
-    rate(learned('b'), 3, new Date(2026, 9, 5, 23, 59))
-    expect(s.patches).toHaveLength(1)
-    rate(learned('c'), 3, new Date(2026, 9, 6, 0, 30))
-    expect(s.patches).toHaveLength(2)
+    // 2026-10-05 is already counted: nothing written for it, however many late cards
+    for (let i = 0; i < 12; i++) rate(learned(`late${i}`), 3, new Date(2026, 9, 5, 23, 30))
+    expect(s.patches).toHaveLength(0)
+    // after midnight it is a new day: its own count from nothing, and yesterday's cards do not carry over
+    for (let i = 0; i < 9; i++) rate(learned(`early${i}`), 3, new Date(2026, 9, 6, 0, 30))
+    expect(s.patches.some(streakKeys)).toBe(false)
+    expect(s.getSettings().cardsDoneTodayCount).toBe(9)
+    rate(learned('tenth'), 3, new Date(2026, 9, 6, 0, 40))
+    expect(s.patches.filter(streakKeys)).toEqual([expect.objectContaining({ streak_count: 4, streak_last_activity_date: '2026-10-06' })]) // yesterday + 1
   })
 
   it('goes through a real queue: ratings and one streak write reach the server, once each', async () => {

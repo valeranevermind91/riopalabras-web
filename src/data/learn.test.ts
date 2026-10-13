@@ -160,14 +160,33 @@ describe('what Finish writes', () => {
     }
   })
 
-  it('settings: streak and today\'s counter in one patch', () => {
+  it('settings: today\'s new-word counter and the day\'s cards in one patch, and no streak: two cards do not count the day', () => {
     const settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01' })
     expect(learnSettingsPatch(settings, batch, NOW)).toEqual({
-      streak_count: 4,
-      streak_last_activity_date: '2026-10-02',
       new_words_learned_today_count: 2,
       new_words_learned_today_date: '2026-10-02',
+      cards_done_today_count: 2,
+      cards_done_today_date: '2026-10-02',
     })
+  })
+
+  it('settings: a batch of ten words is ten cards and counts the day: the streak is in the same patch', () => {
+    const settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01' })
+    const ten = batchOf(Array.from({ length: 10 }, (_, i) => synthetic(`w${i}`, i + 1)))
+    expect(learnSettingsPatch(settings, ten, NOW)).toEqual({
+      new_words_learned_today_count: 10,
+      new_words_learned_today_date: '2026-10-02',
+      cards_done_today_count: 10,
+      cards_done_today_date: '2026-10-02',
+      streak_count: 4, // the last streak day was yesterday (2026-10-01), so the count goes up
+      streak_last_activity_date: '2026-10-02',
+    })
+  })
+
+  it('settings: a light day counts too: the goal reached with this batch and no review due', () => {
+    const settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01', daily_new_word_limit: 2 })
+    expect(learnSettingsPatch(settings, batch, NOW, true)).toMatchObject({ cards_done_today_count: 2, streak_count: 4 })
+    expect(learnSettingsPatch(settings, batch, NOW, false)).not.toHaveProperty('streak_count') // reviews still due: not everything was done
   })
 
   it('settings: a second batch the same day only moves the counter', () => {
@@ -242,8 +261,10 @@ describe('createBatchFinisher (the batch goes through the write queue)', () => {
     expect(h.calls[1].rows).toMatchObject({
       user_id: 'user-1',
       settings: {
-        streak_count: 4,
-        streak_last_activity_date: '2026-10-02',
+        streak_count: 3, // three cards: the day does not count yet
+        streak_last_activity_date: '2026-10-01',
+        cards_done_today_count: 3,
+        cards_done_today_date: '2026-10-02',
         new_words_learned_today_count: 3,
         new_words_learned_today_date: '2026-10-02',
         learn_picks: ['ser'], // unknown-to-this-screen keys survive
@@ -256,7 +277,8 @@ describe('createBatchFinisher (the batch goes through the write queue)', () => {
     h.finish()
     expect(h.applied).toEqual(['progress', 'settings'])
     expect(h.getWords().every((w) => w.repetitions === 1)).toBe(true)
-    expect(h.getSettings().streakCount).toBe(4)
+    expect(h.getSettings().streakCount).toBe(3)
+    expect(h.getSettings().cardsDoneTodayCount).toBe(3)
     expect(h.getSettings().newWordsLearnedTodayCount).toBe(3)
   })
 

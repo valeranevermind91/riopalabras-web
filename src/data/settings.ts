@@ -26,6 +26,8 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     streakLastActivityDate: str(raw.streak_last_activity_date),
     newWordsLearnedTodayCount: num(raw.new_words_learned_today_count, 0),
     newWordsLearnedTodayDate: str(raw.new_words_learned_today_date),
+    cardsDoneTodayCount: num(raw.cards_done_today_count, 0),
+    cardsDoneTodayDate: str(raw.cards_done_today_date),
     showRuTranslation: bool(raw.show_ru_translation, true),
     // Absent means on: both languages, as the cards always showed. An explicit false (set from the Flutter app) stays off.
     showEnTranslation: bool(raw.show_en_translation, true),

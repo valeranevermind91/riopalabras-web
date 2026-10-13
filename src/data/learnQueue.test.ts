@@ -121,7 +121,7 @@ describe('a failing Learn batch', () => {
     expect(showUnsavedNotice(a.queue.getStatus())).toBe(false) // banner went away by itself
     expect(confirmation).toEqual([true, false]) // closing confirmation off again
     expect([...a.progress.keys()].sort()).toEqual([...BATCH_WORDS].sort())
-    expect(a.settings()).toMatchObject({ new_words_learned_today_count: 6, streak_count: 4, new_words_learned_today_date: '2026-10-04' })
+    expect(a.settings()).toMatchObject({ new_words_learned_today_count: 6, cards_done_today_count: 4, streak_count: 3, new_words_learned_today_date: '2026-10-04' })
     expect(a.violations).toEqual([])
     off()
     unbind()
@@ -162,7 +162,7 @@ describe('the settings update is both-or-neither with the words', () => {
       expect(ticket.saved(), `${progressMode}/${settingsMode}`).toBe(true)
       expect(a.violations, `${progressMode}/${settingsMode}`).toEqual([])
       expect([...a.progress.keys()].sort()).toEqual([...BATCH_WORDS].sort())
-      expect(a.settings(), `${progressMode}/${settingsMode}`).toMatchObject({ new_words_learned_today_count: 6, streak_count: 4 })
+      expect(a.settings(), `${progressMode}/${settingsMode}`).toMatchObject({ new_words_learned_today_count: 6, cards_done_today_count: 4, streak_count: 3 })
     }
   })
 
@@ -203,7 +203,7 @@ describe('no double-apply when a retry lands after the first attempt actually su
 
     a.mode.user_settings = 'ok'
     await a.queue.retry()
-    expect(a.settings()).toMatchObject({ new_words_learned_today_count: 6, streak_count: 4 }) // 2 + 4, once
+    expect(a.settings()).toMatchObject({ new_words_learned_today_count: 6, cards_done_today_count: 4, streak_count: 3 }) // 2 + 4, once
     expect(a.getSettings().newWordsLearnedTodayCount).toBe(6)
   })
 

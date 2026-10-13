@@ -45,6 +45,9 @@ export interface UserSettings {
   readonly streakLastActivityDate: string | null
   readonly newWordsLearnedTodayCount: number
   readonly newWordsLearnedTodayDate: string | null
+  /** Cards done today across Learn, Review, Matching and Cloze, toward the streak (see dayPatch). Only counted until the day counts; lazily restarts when the date is not today. */
+  readonly cardsDoneTodayCount: number
+  readonly cardsDoneTodayDate: string | null
   readonly showRuTranslation: boolean
   readonly showEnTranslation: boolean
   /** The synced theme choice (system / light / dark); null until the user has picked one on any device. */

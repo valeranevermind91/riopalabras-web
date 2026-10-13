@@ -1,6 +1,5 @@
 import { applyReview, type Quality } from '../sm2/sm2'
-import { localDateKey } from './dates'
-import { streakPatch } from './daily'
+import { recordCards } from './dayCards'
 import type { MetricsRecorder } from './metrics'
 import { isReviewDue } from './stats'
 import { wordKey } from './words'
@@ -84,34 +83,27 @@ export interface RaterDeps {
     enqueueProgress: (update: ProgressUpdate) => void
     enqueueSettings: (patch: SettingsPatch) => void
   }
+  /** The words as they are now, right after a rating (for "no review is due": a light day counts for the streak). */
+  getWords?: () => readonly Word[]
   /** Optional: today's metrics row. Recording never throws, so it can't stand in the way of a rating. */
   metrics?: Pick<MetricsRecorder, 'recordReviewRating'>
 }
 
 /**
- * Handles a rating: applies it to the in-memory store immediately, queues the write, and records the
- * day's streak. The streak is a settings write, so it is sent only when the streak state actually
- * changes — the first rating of a local day — never once per card.
+ * Handles a rating: applies it to the in-memory store immediately, queues the write, and counts the card toward today's streak (a settings
+ * write only while the day has not counted yet: see dayPatch). `counted` is false for a card that is a repeat of a word already rated in this
+ * session (a relearning re-queue): the same word rated Again and then Good is one card, not two. The rating itself is written either way.
  */
 export function createRater(deps: RaterDeps) {
-  let streakCheckedFor: string | null = null
-
-  return function rate(word: Word, quality: Quality, now: Date = new Date()): ProgressUpdate {
+  return function rate(word: Word, quality: Quality, now: Date = new Date(), counted: boolean = true): ProgressUpdate {
     const update = rateWord(word, quality, now)
     deps.applyProgress([update])
     deps.queue.enqueueProgress(update)
 
-    const today = localDateKey(now)
-    if (streakCheckedFor !== today) {
-      streakCheckedFor = today
-      const patch = streakPatch(deps.getSettings(), now)
-      if (patch) {
-        deps.applySettings(patch)
-        deps.queue.enqueueSettings(patch)
-      }
-    }
+    // After the rating is applied, so "no review is due" sees it.
+    recordCards(deps, counted ? 1 : 0, now)
 
-    // After the streak: the metrics row mirrors today's counters, which the streak write doesn't touch.
+    // The metrics row mirrors today's counters, which the streak does not touch.
     deps.metrics?.recordReviewRating(quality, now)
 
     return update

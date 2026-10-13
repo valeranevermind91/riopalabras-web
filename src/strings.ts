@@ -51,6 +51,8 @@ export const en = {
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
     streak: (n: number) => `${n}-day streak`,
+    // How far today is from counting for the streak (10 cards): shown until the day counts, then nothing.
+    streakToday: (done: number, needed: number) => `${done} / ${needed} today`,
     // the letters under the week of dots, Monday first
     weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as readonly string[],
     streakDots: (active: number) => `Active on ${active} of the last 7 days`,
