@@ -58,6 +58,8 @@ export interface TelegramWebApp {
   // Closing confirmation (Bot API 6.2+) and events ('activated' arrives with 8.0); absent in the dev mock.
   enableClosingConfirmation?: () => void
   disableClosingConfirmation?: () => void
+  /** Asks the user to let the bot message them (Bot API 6.9+); the callback says whether they agreed. Absent in the dev mock and in older clients. */
+  requestWriteAccess?: (callback?: (granted: boolean) => void) => void
   onEvent?: (eventType: string, callback: () => void) => void
   offEvent?: (eventType: string, callback: () => void) => void
 }
@@ -108,6 +110,22 @@ export function getWebApp(): WebAppContext {
   }
 
   return { webApp: real ?? MOCK_WEB_APP, isMock: !real }
+}
+
+/**
+ * Asks Telegram to let the bot send this user messages (a native popup). Resolves true only if they agreed; false for a refusal, for a
+ * Telegram too old to ask (before 6.9), and outside Telegram.
+ */
+export function requestMessageAccess(webApp: Pick<TelegramWebApp, 'requestWriteAccess' | 'isVersionAtLeast'>): Promise<boolean> {
+  const ask = webApp.requestWriteAccess
+  if (!ask || webApp.isVersionAtLeast?.('6.9') === false) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    try {
+      ask.call(webApp, (granted) => resolve(granted === true))
+    } catch {
+      resolve(false)
+    }
+  })
 }
 
 /** Telegram's own back button (Bot API 6.1+), or null where it doesn't exist — callers then render an in-page one. */

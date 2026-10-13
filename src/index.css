@@ -2147,10 +2147,6 @@ mark {
   padding-bottom: 12px;
 }
 
-.setting-row.is-disabled .setting-label {
-  color: var(--muted);
-}
-
 .setting-link,
 .setting-nav {
   cursor: pointer;

@@ -3,7 +3,9 @@
 // settings it is given (window.__sent.settings). Query: debug=1 (allowed to open Debug), goal=18 (or goal=default: no stored goal),
 // ru=1, en=0, fresh=1 (an account that has not finished the intro: it is shown instead of Home, as App does), lang=ru (a stored
 // interface language; without it the language follows Telegram, which here means English), ready=1 (Home with a few words, so its
-// tiles and status show), dict=1 (the real dictionary, loaded from the page: enough words for the placement test), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
+// tiles and status show), reminder=on|off|none (the daily reminder's row at the start: on, off, or no row), rtz=<zone> (the zone on that row),
+// tz=<zone> (the device's zone), access=yes|no|manual (Telegram's permission prompt: answered at once, or by window.__answerAccess(true|false)),
+// paused=1 / unreachable=1 (the job has paused it / Telegram cannot deliver), savefail=1 (writes to the row fail), readfail=1 (reading it fails); everything written to the row is in window.__reminders. dict=1 (the real dictionary, loaded from the page: enough words for the placement test), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -25,6 +27,8 @@ import { HowItWorks } from '../screens/HowItWorks'
 import { Onboarding } from '../screens/Onboarding'
 import { PlacementScreen } from '../screens/PlacementScreen'
 import { SettingsScreen } from '../screens/Settings'
+import type { ReminderState, ReminderStore } from '../data/reminders'
+import { useReminders } from '../lib/useReminders'
 
 const params = new URLSearchParams(location.search)
 // `hidden` holds one entry per request the hidden lane makes (the es_words in it), so a test can see that a batch left in one request.
@@ -34,6 +38,37 @@ const queue = createWriteQueue(
   { sendProgress: async () => {}, sendSettings: async (patch) => void sent.settings.push(patch), sendHidden: async (ops) => void sent.hidden.push(ops.map((o) => `${o.hidden ? '' : '-'}${o.esWord}`)) },
   { retryDelaysMs: [1], sleep: async () => {} },
 )
+
+// The daily reminder's row, in memory: what the app writes to it is recorded, never sent anywhere.
+const reminderLog: { writes: unknown[]; updates: unknown[]; asked: number } = { writes: [], updates: [], asked: 0 }
+;(window as never as { __reminders: typeof reminderLog }).__reminders = reminderLog
+let reminderRow: ReminderState | null = params.get('reminder') ? (params.get('reminder') === 'none' ? null : { enabled: params.get('reminder') === 'on', timezone: params.get('rtz') ?? 'America/Montevideo', paused: params.get('paused') === '1', unreachable: params.get('unreachable') === '1' }) : null
+const reminderStore: ReminderStore = {
+  async read() {
+    if (params.get('readfail') === '1') throw new Error('offline')
+    return reminderRow ? { ...reminderRow } : null
+  },
+  async write(patch) {
+    if (params.get('savefail') === '1') throw new Error('offline')
+    reminderLog.writes.push(patch)
+    // as the database's trigger does: turning it on (from off) clears what the job set
+    reminderRow = { enabled: false, timezone: null, paused: false, unreachable: false, ...reminderRow, ...patch, ...(patch.enabled && !reminderRow?.enabled ? { paused: false, unreachable: false } : {}) }
+  },
+  async update(patch) {
+    if (params.get('savefail') === '1') throw new Error('offline')
+    reminderLog.updates.push(patch)
+    if (reminderRow) reminderRow = { ...reminderRow, ...patch }
+  },
+}
+let answerAccess: ((granted: boolean) => void) | null = null
+;(window as never as { __answerAccess: (granted: boolean) => void }).__answerAccess = (granted) => answerAccess?.(granted)
+const askAccess = (): Promise<boolean> => {
+  reminderLog.asked++
+  const mode = params.get('access') ?? 'yes'
+  if (mode === 'manual') return new Promise((resolve) => (answerAccess = resolve))
+  return Promise.resolve(mode === 'yes')
+}
+const deviceZone = () => params.get('tz') ?? 'America/Montevideo'
 
 // relearn=N: one more word that was rated Again just now: one repetition, interval 0, due again in N seconds (the real wait is ten minutes).
 const relearnSeconds = Number(params.get('relearn') ?? 0)
@@ -97,6 +132,7 @@ export function Harness() {
     [applySettings],
   )
   const theme = useTheme(settings, persist)
+  const reminders = useReminders(reminderStore, { askAccess, timezone: deviceZone })
   // The chosen language once the settings are there; with none chosen, Telegram's.
   useEffect(() => {
     if (loaded) setLanguage(effectiveLanguage(settings.uiLanguage))
@@ -127,6 +163,7 @@ export function Harness() {
         theme={{ choice: theme.choice, set: theme.set }}
         debugAllowed={params.get('debug') === '1'}
         onOpenDebug={() => setScreen('debug')}
+        reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}

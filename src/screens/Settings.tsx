@@ -7,6 +7,7 @@ import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
 import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
 import { VERSION_LABEL } from '../lib/buildInfo'
+import type { RemindersControl } from '../lib/useReminders'
 import { getWebApp, haptic } from '../lib/telegram'
 import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
 import { strings } from '../strings'
@@ -20,6 +21,8 @@ interface SettingsScreenProps {
   /** Whether this user may open Debug. When false the Debug section is not rendered at all. */
   debugAllowed: boolean
   onOpenDebug: () => void
+  /** The daily reminder (App owns it so the time zone is kept current at every open). Without it the Notifications section shows the toggle off and disabled. */
+  reminders?: RemindersControl
   /** Runs the placement test on its own (Learning). Without it the row is left out. */
   onTakePlacement?: () => void
   /** Opens "How it works" (About). Without it the row is left out. */
@@ -37,7 +40,12 @@ interface SettingsScreenProps {
  * and meaning), the theme, a placeholder for reminders, About, and Debug for those allowed to see it. Changes apply at
  * once and go through the write queue like any other settings change.
  */
-export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+// Read when drawn, not when the module loads: the strings follow the interface language.
+const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ declined: t.reminderDeclined, failed: t.reminderFailed, paused: t.reminderPaused, unreachable: t.reminderUnreachable })[notice]
+
+const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: () => {} }
+
+export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -196,12 +204,31 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
           {t.notifications}
         </h2>
         <div className="settings-group">
-          <div className="setting-row is-disabled">
+          <div className="setting-row">
             <div className="setting-text">
-              <span className="setting-label">{t.reminders}</span>
-              <span className="setting-hint">{t.remindersHint}</span>
+              <label htmlFor="daily-reminder" className="setting-label">
+                {t.reminder}
+              </label>
+              <span id="daily-reminder-hint" className="setting-hint">
+                {t.reminderHint}
+              </span>
             </div>
+            <input
+              id="daily-reminder"
+              type="checkbox"
+              role="switch"
+              className="switch"
+              aria-describedby={reminders.notice ? 'daily-reminder-hint daily-reminder-note' : 'daily-reminder-hint'}
+              checked={reminders.shown}
+              disabled={reminders.status !== 'ready' || reminders.busy}
+              onChange={(e) => reminders.set(e.target.checked)}
+            />
           </div>
+          {reminders.notice && (
+            <p id="daily-reminder-note" className="setting-note" role="status">
+              {noticeText(reminders.notice)}
+            </p>
+          )}
         </div>
       </section>
 

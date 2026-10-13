@@ -6,7 +6,9 @@ import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
 import { VERSION_LABEL, formatVersion } from '../lib/buildInfo'
+import { setLanguage } from '../lib/language'
 import { backTarget } from '../lib/nav'
+import type { RemindersControl } from '../lib/useReminders'
 import { readStoredChoice, storeChoice } from '../lib/theme'
 import { SettingsScreen } from './Settings'
 
@@ -130,13 +132,67 @@ describe('the Settings screen', () => {
     })
   })
 
-  describe('notifications', () => {
-    it('one disabled row, "Reminders — coming soon", with a muted explanation, and nothing to focus or press', () => {
-      const html = render()
-      const row = html.match(/<div class="setting-row is-disabled">.*?<\/div><\/div>/)![0]
-      expect(row).toContain('Reminders — coming soon')
-      expect(row).toContain('They will arrive through the bot.')
-      expect(row).not.toMatch(/<(button|input|a|select)\b|tabindex/)
+  describe('notifications: the daily reminder', () => {
+    const control = (over: Partial<RemindersControl> = {}): RemindersControl => ({ status: 'ready', shown: false, busy: false, notice: null, set: noop, ...over })
+    const switchOf = (html: string) => html.match(/<input id="daily-reminder"[^>]*>/)![0]
+
+    it('is one labelled switch with a quiet line under the label saying 20:00 and "only when something is waiting"', () => {
+      const html = render({}, { reminders: control() })
+      expect(html).toMatch(/<label for="daily-reminder" class="setting-label">Daily reminder<\/label>/)
+      expect(html).toContain('<span id="daily-reminder-hint" class="setting-hint">Comes at 20:00, and only when something is waiting.</span>')
+      expect(switchOf(html)).toMatch(/type="checkbox" role="switch" class="switch"/)
+      expect(switchOf(html)).toContain('aria-describedby="daily-reminder-hint"')
+      expect(html).not.toContain('coming soon')
+    })
+
+    it('shows what the control says: off, on, and disabled while loading, unavailable or busy', () => {
+      expect(switchOf(render({}, { reminders: control() }))).not.toContain('checked')
+      expect(switchOf(render({}, { reminders: control() }))).not.toContain('disabled')
+      expect(switchOf(render({}, { reminders: control({ shown: true }) }))).toContain('checked')
+      for (const over of [{ status: 'loading' }, { status: 'unavailable' }, { busy: true }] as const) {
+        expect(switchOf(render({}, { reminders: control(over) })), JSON.stringify(over)).toContain('disabled')
+      }
+      expect(switchOf(render())).toContain('disabled') // no control passed: nothing to turn on
+    })
+
+    it('says that Telegram did not allow messages, and where to allow them; or that saving failed; and nothing otherwise', () => {
+      const declined = render({}, { reminders: control({ notice: 'declined' }) })
+      expect(declined).toContain('<p id="daily-reminder-note" class="setting-note" role="status">Telegram did not allow messages. You can allow them from the bot&#x27;s chat.</p>')
+      expect(switchOf(declined)).toContain('aria-describedby="daily-reminder-hint daily-reminder-note"')
+      expect(render({}, { reminders: control({ notice: 'failed' }) })).toContain('Could not save this. Check your connection and try again.')
+      expect(render({}, { reminders: control() })).not.toContain('daily-reminder-note')
+    })
+
+    it('says why nothing arrives under a switch that is on: paused after several reminders, or Telegram cannot deliver', () => {
+      const paused = render({}, { reminders: control({ shown: true, notice: 'paused' }) })
+      expect(paused).toContain('Paused — nothing was studied after several reminders. Turn it off and on to resume.</p>')
+      expect(paused).toContain('role="status"')
+      const unreachable = render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })
+      expect(unreachable).toContain('Telegram cannot deliver messages. Open the bot&#x27;s chat and press Start.</p>')
+      expect(switchOf(unreachable)).toContain('aria-describedby="daily-reminder-hint daily-reminder-note"')
+    })
+
+    it('says both of them in Russian', () => {
+      setLanguage('ru')
+      try {
+        expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено — после нескольких напоминаний занятий не было. Выключите и включите снова.</p>')
+        expect(render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })).toContain('Telegram не может доставить сообщение. Откройте чат бота и нажмите Start.</p>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+
+    it('in Russian', () => {
+      setLanguage('ru')
+      try {
+        const html = render({}, { reminders: control({ notice: 'declined' }) })
+        expect(html).toContain('Ежедневное напоминание')
+        expect(html).toContain('Приходит в 20:00 и только если есть что повторять.')
+        expect(html).toContain('Telegram не разрешил сообщения. Разрешить их можно в чате с ботом.')
+        expect(render({}, { reminders: control({ notice: 'failed' }) })).toContain('Не удалось сохранить. Проверьте соединение и попробуйте ещё раз.')
+      } finally {
+        setLanguage('en')
+      }
     })
   })
 

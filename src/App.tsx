@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { createTombstoneClearer } from './data/customWords'
+import { supabaseReminderStore } from './data/reminders'
 import { enrichDepsFor, enrichWord } from './data/enrich'
 import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
 import { wordKey } from './data/words'
@@ -16,6 +17,7 @@ import { backTarget as backTargetFor, type Screen } from './lib/nav'
 import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
 import { useRecentActivity } from './lib/useRecentActivity'
+import { useReminders } from './lib/useReminders'
 import { useTheme } from './lib/useTheme'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
@@ -90,6 +92,9 @@ function App() {
 
   const data = useUserData(auth, client, holdLoad)
   const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
+  // The daily reminder lives here, not in Settings: the time zone on its row is kept current at every open.
+  const reminderStore = useMemo(() => (client && userId ? supabaseReminderStore(client, userId) : null), [client, userId])
+  const reminders = useReminders(reminderStore)
   const readyData = data.status === 'ready' ? data.data : null
   const getSettings = readyData?.getSettings ?? null
   // The chosen language once the settings are there (until then the one this device used last); with none chosen, Telegram's.
@@ -240,6 +245,7 @@ function App() {
         theme={{ choice: theme.choice, set: theme.set }}
         debugAllowed={debugAllowed}
         onOpenDebug={() => setScreen('debug')}
+        reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
