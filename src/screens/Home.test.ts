@@ -217,7 +217,7 @@ describe('the action tiles', () => {
     expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'matching', 'cloze'])
     expect([part(html, 'learn', 'tile-label'), part(html, 'review', 'tile-label'), part(html, 'matching', 'tile-label'), part(html, 'cloze', 'tile-label')]).toEqual(['Learn', 'Review', 'Matching', 'Cloze'])
     expect([part(html, 'learn', 'tile-sub'), part(html, 'review', 'tile-sub'), part(html, 'matching', 'tile-sub'), part(html, 'cloze', 'tile-sub')]).toEqual(['aprender', 'repasar', 'parejas', 'completar'])
-    for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id)).toContain(`class="tile tile-${id}"`)
+    for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id)).toMatch(new RegExp(`class="tile tile-${id}( is-primary)?"`))
     for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id)).toMatch(/<svg class="tile-icon"[^>]*aria-hidden="true"/)
   })
 
@@ -388,7 +388,7 @@ describe('the word of the day card', () => {
     expect(pickWordOfTheDay(learnedEverything, NOW)?.esWord).toBe(base)
     expect(pickWordOfTheDay(real.map((w) => ({ ...w, repetitions: 0, nextReview: null })), NOW)?.esWord).toBe(base)
     expect(pickWordOfTheDay([...real].reverse(), NOW)?.esWord).toBe(base)
-    expect(pickWordOfTheDay(real.filter((w) => w.rio?.example), NOW)?.esWord).toBe(base)
+    expect(pickWordOfTheDay(real.filter((w) => w.rio), NOW)?.esWord).toBe(base)
     expect(headwordOf(render({}, real))).toBeTruthy()
   })
 
@@ -403,25 +403,16 @@ describe('the word of the day card', () => {
       expect(todays.isHidden).toBe(false)
     })
 
-    it('if the day\'s pick is known, the next candidate in the list takes over', () => {
-      const next = pool[(at + 1) % pool.length]
-      expect(pickWordOfTheDay(hide(todays.esWord), NOW)?.esWord).toBe(next.esWord)
-      expect(pickWordOfTheDay(hide(todays.esWord), NOW)?.esWord).not.toBe(todays.esWord)
+    it('if the day\'s pick is known, another word takes its place (never the known one)', () => {
+      const replacement = pickWordOfTheDay(hide(todays.esWord), NOW)!
+      expect(replacement.esWord).not.toBe(todays.esWord)
+      expect(replacement.isHidden).toBe(false)
+      expect(pool.map((w) => w.esWord)).toContain(replacement.esWord)
     })
 
-    it('and keeps falling through while the following candidates are known too, wrapping at the end of the list', () => {
-      const run = [0, 1, 2].map((k) => pool[(at + k) % pool.length].esWord)
-      expect(pickWordOfTheDay(hide(...run), NOW)?.esWord).toBe(pool[(at + 3) % pool.length].esWord)
-      // from the last candidate on, the search wraps to the first
-      const lastDay = pool.length - 1
-      const wrapped = hide(pool[lastDay].esWord)
-      let found: Date | null = null
-      for (let d = 0; d < 400 && !found; d++) {
-        const date = new Date(2027, 0, 1 + d, 12)
-        if (hashString(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`) % pool.length === lastDay) found = date
-      }
-      expect(found).not.toBeNull()
-      expect(pickWordOfTheDay(wrapped, found!)?.esWord).toBe(pool[0].esWord)
+    it('on no day, whatever is known, is a known word shown', () => {
+      const known = pool.slice(0, 6).map((w) => w.esWord)
+      for (let d = 0; d < 400; d++) expect(known).not.toContain(pickWordOfTheDay(hide(...known), new Date(2026, 9, 1 + d, 12))!.esWord)
     })
 
     it('is deterministic: the same known words on the same day always give the same fallback', () => {
@@ -430,30 +421,22 @@ describe('the word of the day card', () => {
       expect(pickWordOfTheDay(known, NOW)?.esWord).toBe(pickWordOfTheDay(known, new Date(2026, 9, 5, 23, 0))?.esWord)
     })
 
-    it('known words that are not the pick change nothing, and un-knowing the pick brings it back', () => {
-      const others = pool.filter((w) => w.esWord !== todays.esWord).slice(0, 5).map((w) => w.esWord)
-      expect(pickWordOfTheDay(hide(...others), NOW)?.esWord).toBe(todays.esWord)
-      expect(pickWordOfTheDay(real, NOW)?.esWord).toBe(todays.esWord) // after undo nothing is hidden again
+    it('un-knowing the pick brings it back: after an undo nothing is hidden and the day is as it was', () => {
+      expect(pickWordOfTheDay(hide(todays.esWord), NOW)?.esWord).not.toBe(todays.esWord)
+      expect(pickWordOfTheDay(real, NOW)?.esWord).toBe(todays.esWord)
     })
 
-    it('every other day is unaffected too: hiding one word only moves the days that would have picked it', () => {
-      let moved = 0
-      for (let d = 0; d < 60; d++) {
-        const date = new Date(2026, 9, 1 + d, 12)
-        const before = pickWordOfTheDay(real, date)!
-        const after = pickWordOfTheDay(hide(todays.esWord), date)!
-        if (before.esWord === todays.esWord) {
-          moved++
-          expect(after.esWord).not.toBe(todays.esWord)
-        } else {
-          expect(after.esWord).toBe(before.esWord)
-        }
+    it('with one word known, the others still come once each before any comes again', () => {
+      const visible = pool.length - 1
+      for (const start of [new Date(2026, 9, 1, 12), new Date(2026, 11, 20, 12), new Date(2027, 1, 20, 12)]) {
+        const run = Array.from({ length: visible }, (_, k) => pickWordOfTheDay(hide(todays.esWord), new Date(start.getFullYear(), start.getMonth(), start.getDate() + k, 12))!.esWord)
+        expect(new Set(run).size).toBe(visible)
+        expect(run).not.toContain(todays.esWord)
       }
-      expect(moved).toBeGreaterThanOrEqual(1) // the day under test itself
     })
 
     it('with every candidate known there is no word of the day (the card is simply not shown)', () => {
-      const everyone = real.map((w) => (w.rio?.example ? { ...w, isHidden: true } : w))
+      const everyone = real.map((w) => (w.rio ? { ...w, isHidden: true } : w))
       expect(pickWordOfTheDay(everyone, NOW)).toBeNull()
       expect(wordOfTheDay(everyone, parseSettings({}), NOW)).toBeNull()
       expect(render({}, everyone)).not.toContain('class="wotd"')
@@ -463,8 +446,8 @@ describe('the word of the day card', () => {
       const html = render({}, hide(todays.esWord))
       const shown = html.match(/class="wotd-word">(.*?)</)![1]
       expect(shown).not.toBe(headword(todays).text)
-      const fallback = pool[(at + 1) % pool.length]
-      expect(shown).toBe(headword(fallback).text)
+      const replacement = pickWordOfTheDay(hide(todays.esWord), NOW)!
+      expect(shown).toBe(headword(replacement).text)
     })
 
     it('it is still not affected by learning: only the known (hidden) flag matters', () => {
@@ -473,11 +456,12 @@ describe('the word of the day card', () => {
     })
   })
 
-  it('the pick comes only from overlay words with an example whose target can be highlighted', () => {
+  it('the pick comes only from overlay words whose card can highlight its example (the overlay\'s or the dictionary\'s), and never a vulgar, offensive or pejorative one', () => {
     const pool = wordOfTheDayPool(real)
-    expect(pool.length).toBeGreaterThan(10)
+    expect(pool.length).toBe(71)
     for (const w of pool) {
-      expect(w.rio?.example).toBeTruthy()
+      expect(w.rio).toBeTruthy()
+      expect(['vulgar', 'offensive', 'pejorative']).not.toContain(w.rio!.register)
       expect(highlightTarget(w).range).not.toBeNull()
     }
     expect(pool.map((w) => w.esWord.toLowerCase())).toEqual([...pool.map((w) => w.esWord.toLowerCase())].sort())
@@ -547,11 +531,10 @@ describe('Home layout rules in the stylesheet', () => {
     expect(block('.tile-text')).toMatch(/min-width: 0/)
   })
 
-  it('the tile colours follow the design: Learn teal, Review soft teal, practice lavender, disabled neutral and muted', () => {
-    expect(block('.tile-learn')).toMatch(/background: var\(--teal\)/)
-    expect(block('.tile-learn')).toMatch(/color: var\(--teal-ink\)/)
-    expect(block('.tile-review')).toMatch(/background: var\(--teal-soft\)/)
-    expect(block('.tile-review')).toMatch(/border-color: var\(--teal-soft-border\)/)
+  it('the tile colours follow the design: Learn and Review soft teal, the advised one filled teal, practice lavender, disabled neutral and muted', () => {
+    expect(css).toMatch(/\.tile-learn,\s*\.tile-review \{[^}]*background: var\(--teal-soft\)[^}]*border-color: var\(--teal-soft-border\)[^}]*color: var\(--teal-on-soft\)/)
+    expect(block('.tile.is-primary')).toMatch(/background: var\(--teal\)/)
+    expect(block('.tile.is-primary')).toMatch(/color: var\(--teal-ink\)/)
     expect(css).toMatch(/\.tile-matching,\s*\.tile-cloze \{[^}]*background: var\(--lav-soft\)[^}]*color: var\(--lav-on-soft\)/)
     const d = block('.tile:disabled')
     expect(d).toMatch(/background: var\(--surface-2\)/)
@@ -568,7 +551,7 @@ describe('Home layout rules in the stylesheet', () => {
     const uses = [...css.matchAll(/--hl-(?:bg|text)/g)].length
     expect(uses).toBeGreaterThan(0)
     expect(block('mark')).toMatch(/background: var\(--hl-bg\)/)
-    for (const selector of ['.tile', '.tile-learn', '.tile-review', '.home-status']) expect(block(selector)).not.toMatch(/--hl-/)
+    for (const selector of ['.tile', '.tile.is-primary', '.home-advice', '.home-status']) expect(block(selector)).not.toMatch(/--hl-/)
   })
 })
 
@@ -612,6 +595,63 @@ describe('the status row: how far today is from counting for the streak', () => 
   it('is left out when the settings are not there (no streak number to sit next to)', () => {
     const html = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'loading' }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null, now: NOW } as never))
     expect(html).not.toContain('streak-today')
+  })
+})
+
+describe('the line of advice under the streak, and the tile it points at', () => {
+  const spent = { new_words_learned_today_count: 10, new_words_learned_today_date: TODAY }
+  const adviceOf = (html: string) => html.match(/<p class="home-advice">([^<]*)<\/p>/)?.[1] ?? null
+  const primaries = (html: string) => ['learn', 'review', 'matching', 'cloze'].filter((id) => tile(html, id).includes('is-primary'))
+  const states = {
+    reviewFirst: () => render({}, [...learnedWords(8, 3), ...unlearned(20)]),
+    learnNew: () => render({}, [...learnedWords(8, 0), ...unlearned(20)]),
+    allDoneToday: () => render({}, [...learnedWords(8, 0), ...unlearned(20)], spent),
+    poolEmpty: () => render({}, learnedWords(8, 0)),
+    allClear: () => render({}, learnedWords(8, 0), spent),
+  }
+
+  it('each of the five states says its line, from hand-made numbers', () => {
+    expect(adviceOf(states.reviewFirst())).toBe('Review first — 3 words are waiting')
+    expect(adviceOf(states.learnNew())).toBe('Nothing to review — 10 new words ready') // the 10 a batch would offer, not the 20 in the pool
+    expect(adviceOf(states.allDoneToday())).toBe('Done for today')
+    expect(adviceOf(states.poolEmpty())).toBe('No new words left — add your own, or practise')
+    expect(adviceOf(states.allClear())).toBe('All clear')
+  })
+
+  it('the number due in review first is the real total, not one session\'s worth', () => {
+    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting')
+  })
+
+  it('the primary tile follows the state: Review, Learn, or none; Matching and Cloze never', () => {
+    expect(primaries(states.reviewFirst())).toEqual(['review'])
+    expect(primaries(states.learnNew())).toEqual(['learn'])
+    for (const quiet of [states.allDoneToday, states.poolEmpty, states.allClear]) expect(primaries(quiet())).toEqual([])
+  })
+
+  it('is one line, under the streak row and above the tiles, and not an extra card, bar or button', () => {
+    const html = states.reviewFirst()
+    expect(html.match(/class="home-advice"/g)).toHaveLength(1)
+    expect(html.indexOf('home-status')).toBeLessThan(html.indexOf('home-advice'))
+    expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-grid'))
+    expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg/)
+  })
+
+  it('in Russian', () => {
+    setLanguage('ru')
+    try {
+      expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова')
+      expect(adviceOf(states.learnNew())).toBe('Повторять нечего — готово 10 новых слов')
+      expect(adviceOf(states.allDoneToday())).toBe('На сегодня всё')
+      expect(adviceOf(states.poolEmpty())).toBe('Новые слова кончились — добавьте свои или потренируйтесь')
+      expect(adviceOf(states.allClear())).toBe('Всё чисто')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('is left out while the data is not there', () => {
+    const html = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'loading' }, onLearn: () => {}, onReview: () => {}, onMatching: () => {}, onCloze: () => {}, queue: null, metrics: null, now: NOW } as never))
+    expect(html).not.toContain('home-advice')
   })
 })
 

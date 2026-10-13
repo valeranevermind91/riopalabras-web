@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { UNDO_WINDOW_MS } from '../data/learn'
 
 /**
  * The app with the network gone, in a real browser: the real Learn and Review screens, the real write queue and the
@@ -35,7 +36,7 @@ describe.skipIf(!CHROME)('with the network gone', () => {
 
   /** `net.up` is the network: while it is true the fake server accepts every write, once it is false nothing gets through. */
   async function open(screen: 'learn' | 'review', up: boolean) {
-    const page = await browser.newPage()
+    const page = await (await browser.createBrowserContext()).newPage() // its own context: what one test stores (the language) is not there for the next
     await page.setViewport({ width: 390, height: 700, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
     const net = { up }
     await page.setRequestInterception(true)
@@ -193,6 +194,76 @@ describe.skipIf(!CHROME)('with the network gone', () => {
       await page.reload({ waitUntil: 'networkidle0' })
       await page.waitForSelector('.flip')
       expect((await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent)))[0]).toBe('10 мин')
+      await page.close()
+    }, 60_000)
+  })
+  describe('the Undo after "Already know it" in Learn', () => {
+    const bar = (page: Page) => page.$('.learn-undo')
+    const headword = (page: Page) => page.$eval('.swipe-layer .wc-headword', (e) => e.textContent ?? '')
+    const markKnown = async (page: Page) => {
+      await page.click('.known-btn')
+      await page.waitForSelector('.learn-undo')
+    }
+    const gone = (page: Page, timeout = 3000) => page.waitForFunction(() => !document.querySelector('.learn-undo'), { timeout })
+
+    it('is offered at once, and goes the moment the user moves to another card', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      expect(await bar(page)).toBeNull()
+      await markKnown(page)
+      expect(await text(page, '.learn-undo')).toContain('Undo')
+      await page.click('.learn-nav .btn-icon:last-child') // next card
+      await gone(page)
+      await page.close()
+    }, 60_000)
+
+    it('goes by itself after a few seconds, and is still there just before', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      await markKnown(page)
+      await new Promise((resolve) => setTimeout(resolve, UNDO_WINDOW_MS - 1500))
+      expect(await bar(page)).not.toBeNull() // still inside the window
+      await gone(page, 4000) // and gone after it
+      expect(UNDO_WINDOW_MS).toBeGreaterThanOrEqual(3000)
+      expect(UNDO_WINDOW_MS).toBeLessThanOrEqual(8000) // "a few seconds"
+      await page.close()
+    }, 60_000)
+
+    it('Undo inside the window brings the word back, and then the bar is gone', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      const before = await headword(page)
+      await markKnown(page)
+      expect(await headword(page)).not.toBe(before) // the next candidate took its place
+      await page.click('.learn-undo .link-btn')
+      await gone(page)
+      expect(await headword(page)).toBe(before)
+      await page.close()
+    }, 60_000)
+
+    it('each new mark restarts the window and offers Undo for that mark only: after undoing the latest, the one before is not offered', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      await markKnown(page)
+      await new Promise((resolve) => setTimeout(resolve, UNDO_WINDOW_MS - 1500))
+      await page.click('.known-btn') // a second mark, 3.5 s into the first one's window
+      await new Promise((resolve) => setTimeout(resolve, 2500)) // past where the first window would have ended
+      expect(await bar(page)).not.toBeNull() // the second mark has its own full window
+      await page.click('.learn-undo .link-btn')
+      await gone(page)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      expect(await bar(page)).toBeNull() // the first mark is not offered again
+      await page.close()
+    }, 60_000)
+
+    it('is not there after the batch is finished', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      await markKnown(page)
+      for (let i = 0; i < 9; i++) await page.click('.learn-nav .btn-icon:last-child')
+      await page.click('.learn-finish .btn-primary')
+      await page.waitForSelector('.post-batch')
+      expect(await bar(page)).toBeNull()
       await page.close()
     }, 60_000)
   })

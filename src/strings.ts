@@ -51,6 +51,14 @@ export const en = {
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
     streak: (n: number) => `${n}-day streak`,
+    // The one line under the streak: what to do today (src/data/advice.ts). N in reviewFirst is the real number due, which may be more than one session.
+    advice: {
+      reviewFirst: (n: number) => `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting`,
+      learnNew: (n: number) => `Nothing to review — ${n} new ${plural(n, { one: 'word', other: 'words' })} ready`,
+      allDoneToday: 'Done for today',
+      poolEmpty: 'No new words left — add your own, or practise',
+      allClear: 'All clear',
+    },
     // How far today is from counting for the streak (10 cards): shown until the day counts, then nothing.
     streakToday: (done: number, needed: number) => `${done} / ${needed} today`,
     // the letters under the week of dots, Monday first

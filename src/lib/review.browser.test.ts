@@ -233,4 +233,72 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       await page.close()
     }, 180_000)
   })
+  describe('the line of advice on Home, at 320px, in both languages', () => {
+    const states = [
+      { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting', ru: 'Сначала повторение — ждут 50 слов' },
+      { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — готово 10 новых слов' },
+      { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Done for today', ru: 'На сегодня всё' },
+      { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова кончились — добавьте свои или потренируйтесь' },
+      { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All clear', ru: 'Всё чисто' },
+    ] as const
+
+    /** How the line and the tiles look right now: its text, whether it overflows or runs past the screen, how many lines it takes, and which tile is filled. */
+    const look = (page: Page) =>
+      page.evaluate(() => {
+        const line = document.querySelector('.home-advice') as HTMLElement
+        const rect = line.getBoundingClientRect()
+        const lineHeight = parseFloat(getComputedStyle(line).lineHeight)
+        const tiles = Array.from(document.querySelectorAll('.tile')) as HTMLElement[]
+        const background = (t: HTMLElement) => getComputedStyle(t).backgroundColor
+        return {
+          text: line.textContent,
+          overflows: line.scrollWidth > line.clientWidth,
+          right: Math.round(rect.right),
+          left: Math.round(rect.left),
+          lines: Math.round(rect.height / lineHeight),
+          pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+          primary: tiles.filter((t) => t.classList.contains('is-primary')).map((t) => t.dataset.tile),
+          filled: tiles.filter((t) => background(t) === background(tiles.find((x) => x.classList.contains('is-primary')) ?? t) && t.classList.contains('is-primary')).length,
+          learnReviewBackgrounds: ['learn', 'review'].map((id) => background(document.querySelector(`[data-tile="${id}"]`) as HTMLElement)),
+          above: line.compareDocumentPosition(document.querySelector('.home-grid')!) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false,
+          below: document.querySelector('.home-status')!.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false,
+        }
+      })
+
+    for (const language of ['en', 'ru'] as const) {
+      for (const state of states) {
+        it(`${state.name} in ${language === 'en' ? 'English' : 'Russian'}: the line fits in 320px, is under the streak and above the tiles, and the right tile is primary`, async () => {
+          const page = await open(state.query, language === 'ru' ? 'ru' : undefined)
+          await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+          const seen = await look(page)
+          expect(seen.text).toBe(state[language])
+          expect(seen.overflows).toBe(false)
+          expect(seen.pageScrolls).toBe(false)
+          expect(seen.left).toBeGreaterThanOrEqual(0)
+          expect(seen.right).toBeLessThanOrEqual(320)
+          expect(seen.lines).toBeLessThanOrEqual(2) // it may wrap to two lines, never more
+          expect(seen.above && seen.below).toBe(true)
+          expect(seen.primary).toEqual(state.primary ? [state.primary] : [])
+          await page.close()
+        }, 60_000)
+      }
+    }
+
+    it('the primary tile looks different from the other: filled where the other is soft', async () => {
+      const filledOf = async (query: string) => {
+        const page = await open(query)
+        const seen = await look(page)
+        await page.close()
+        return seen.learnReviewBackgrounds
+      }
+      const [learnWhenReview, reviewWhenReview] = await filledOf('due=50&pool=30')
+      const [learnWhenLearn, reviewWhenLearn] = await filledOf('due=0&pool=30')
+      const [learnQuiet, reviewQuiet] = await filledOf('due=0&pool=30&met=1')
+      expect(reviewWhenReview).not.toBe(learnWhenReview) // review is the filled one
+      expect(learnWhenLearn).not.toBe(reviewWhenLearn) // learn is the filled one
+      expect(learnQuiet).toBe(reviewQuiet) // neither: both soft, the same
+      expect(reviewWhenReview).toBe(learnWhenLearn) // the filled colour is the same whichever tile has it
+      expect(learnWhenReview).not.toBe(reviewWhenReview) // Learn is the soft teal when Review is advised (and Review is the disabled grey when Learn is: nothing is due)
+    }, 60_000)
+  })
 })

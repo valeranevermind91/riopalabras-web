@@ -517,23 +517,37 @@ mark {
   line-height: 1;
 }
 
-.tile-learn {
-  background: var(--teal);
-  color: var(--teal-ink);
-}
-
-.tile-learn .tile-sub {
-  opacity: 0.85;
-}
-
+.tile-learn,
 .tile-review {
   background: var(--teal-soft);
   border-color: var(--teal-soft-border);
   color: var(--teal-on-soft);
 }
 
+.tile-learn .tile-sub,
 .tile-review .tile-sub {
   color: var(--teal-on-soft-2);
+}
+
+/* The tile the advice points at (src/data/advice.ts): the filled one. At most one, and neither when nothing is advised. */
+.tile.is-primary {
+  background: var(--teal);
+  border-color: transparent;
+  color: var(--teal-ink);
+}
+
+.tile.is-primary .tile-sub {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* One quiet line of advice under the streak. It may take two lines at the narrowest width. */
+.home-advice {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .tile-matching,

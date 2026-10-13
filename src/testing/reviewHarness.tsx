@@ -1,7 +1,7 @@
 // A page for the real-browser Review session test (src/lib/review.browser.test.ts): the real Home and Review screens over a word list that
 // really changes as words are rated (Review's ratings go through applyProgress), with a write queue that only records. Query: due=50 (how many
 // words are due, the nth one n hours overdue: vieja50 is the most overdue), soon=4 (one more word, "pronta", that comes due that many seconds from now),
-// met=1 (today's new-word goal is already reached). The streak starts at 4, last counted yesterday.
+// pool=30 (that many words not yet learned: Learn has something to offer), met=1 (today's new-word goal is already reached). The streak starts at 4, last counted yesterday.
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -18,6 +18,7 @@ const params = new URLSearchParams(location.search)
 const due = Number(params.get('due') ?? 50)
 const soon = Number(params.get('soon') ?? 0)
 const met = params.get('met') === '1'
+const pool = Number(params.get('pool') ?? 0)
 
 const sent: { progress: string[]; settings: SettingsPatch[] } = { progress: [], settings: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
@@ -30,6 +31,7 @@ const now = Date.now()
 const hour = 3_600_000
 const initial: Word[] = [
   ...Array.from({ length: due }, (_, i) => makeWord(`vieja${i + 1}`, { rank: i + 1, repetitions: 2, interval: 3, easeFactor: 2.5, nextReview: new Date(now - (i + 1) * hour) })),
+  ...Array.from({ length: pool }, (_, i) => makeWord(`nueva${i + 1}`, { rank: 1000 + i })),
   ...(soon > 0 ? [makeWord('pronta', { rank: due + 1, repetitions: 2, interval: 3, easeFactor: 2.5, nextReview: new Date(now + soon * 1000) })] : []),
 ]
 

@@ -36,6 +36,13 @@ export const ru: Strings = {
     retryNow: 'Повторить сейчас',
     streak: (n) => `${n} ${plural(n, { one: 'день', few: 'дня', many: 'дней' })} подряд`,
     streakToday: (done, needed) => `${done} / ${needed} сегодня`,
+    advice: {
+      reviewFirst: (n) => `Сначала повторение — ${plural(n, { one: 'ждёт', few: 'ждут', many: 'ждут' })} ${n} ${words(n)}`,
+      learnNew: (n) => `Повторять нечего — готово ${n} ${plural(n, { one: 'новое слово', few: 'новых слова', many: 'новых слов' })}`,
+      allDoneToday: 'На сегодня всё',
+      poolEmpty: 'Новые слова кончились — добавьте свои или потренируйтесь',
+      allClear: 'Всё чисто',
+    },
     weekdays: ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'],
     streakDots: (active) => `Активность: ${active} из последних 7 дней`,
     wotdPill: 'palabra del día',

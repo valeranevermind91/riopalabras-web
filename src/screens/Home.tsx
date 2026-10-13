@@ -5,6 +5,7 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { computeStats, nextDueWithin, type Stats } from '../data/stats'
+import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
 import { STREAK_CARDS, cardsToday, streakCountedToday } from '../data/daily'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
@@ -68,7 +69,8 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     }
   }, [stats, metrics])
 
-  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze }) : []
+  const advice = stats ? homeAdvice({ reviewDue: stats.reviewDue, learnPool: stats.learnPool, remainingToday: stats.remainingToday }) : null
+  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze }, advice ? primaryTile(advice) : null) : []
   const now = nowProp ?? new Date()
 
   return (
@@ -93,6 +95,8 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
             today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: STREAK_CARDS }}
           />
 
+          {advice && <p className="home-advice">{adviceText(advice, stats)}</p>}
+
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
@@ -103,7 +107,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
               <button
                 key={tile.id}
                 type="button"
-                className={`tile tile-${tile.id}`}
+                className={`tile tile-${tile.id}${tile.primary ? ' is-primary' : ''}`}
                 data-tile={tile.id}
                 disabled={tile.disabled}
                 onClick={() => {
@@ -202,7 +206,26 @@ interface Tile {
   disabled: boolean
   /** Why a disabled tile is disabled, shown in place of the Spanish word. */
   reason: string
+  /** The one tile the advice points at: drawn filled, where the others are soft. */
+  primary: boolean
   onPress: () => void
+}
+
+/** The line of advice, with the numbers it needs: how many are due (all of them, not one session's worth), and how many new words a batch would offer. */
+function adviceText(advice: HomeAdvice, stats: Stats): string {
+  const t = strings.home.advice
+  switch (advice) {
+    case 'reviewFirst':
+      return t.reviewFirst(stats.reviewDue)
+    case 'learnNew':
+      return t.learnNew(stats.newToLearn)
+    case 'allDoneToday':
+      return t.allDoneToday
+    case 'poolEmpty':
+      return t.poolEmpty
+    case 'allClear':
+      return t.allClear
+  }
 }
 
 /** The four action tiles, in grid order: Learn, Review / Matching, Cloze. */
@@ -210,6 +233,7 @@ function buildTiles(
   stats: Stats,
   practice: { matching: number; cloze: number },
   on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void },
+  primary: 'learn' | 'review' | null,
 ): Tile[] {
   const t = strings.home.tiles
   const need = strings.practice.needWords
@@ -221,11 +245,12 @@ function buildTiles(
       count: stats.newToLearn,
       disabled: stats.newToLearn === 0,
       reason: stats.learnPool === 0 ? strings.home.learnPoolEmpty : strings.home.learnCapReached,
+      primary: primary === 'learn',
       onPress: on.onLearn,
     },
-    { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, onPress: on.onReview },
-    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, onPress: on.onMatching },
-    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, onPress: on.onCloze },
+    { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
+    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: on.onMatching },
+    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: on.onCloze },
   ]
 }
 

@@ -5,7 +5,7 @@ import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
 import { learnedToday } from '../data/daily'
-import { createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
+import { UNDO_WINDOW_MS, createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
@@ -52,9 +52,20 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
   // How the card in front arrives after a swipe: from where the leaving card would be one strip-length away (see arrivalOf).
   const [arrival, setArrival] = useState<Arrival | null>(null)
 
+  // The "marked as known" bar with its Undo: offered for the latest mark only, until the user moves to another card or UNDO_WINDOW_MS has passed. The
+  // number says which mark it is (a second mark restarts the window); null is no offer. The marks themselves stay recorded until the batch is finished.
+  const [undoOffer, setUndoOffer] = useState<number | null>(null)
+  const offers = useRef(0)
+  useEffect(() => {
+    if (undoOffer === null) return
+    const timer = setTimeout(() => setUndoOffer(null), UNDO_WINDOW_MS)
+    return () => clearTimeout(timer)
+  }, [undoOffer])
+
   const go = (delta: 1 | -1, plan?: ExitPlan) => {
     const next = index + delta
     if (!reading || next < 0 || next > lastIndex) return
+    setUndoOffer(null)
     setDirection(delta > 0 ? 'next' : 'prev')
     setArrival(plan ? arrivalOf(plan) : null)
     setIndex(next)
@@ -96,6 +107,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
   // Hands the batch to the queue (a double tap just returns the same ticket); nothing here awaits the network.
   const finish = () => {
     haptic('tap')
+    setUndoOffer(null)
     finisher.current ??= createBatchFinisher(batch, {
       queue,
       getSettings: data.getSettings,
@@ -113,19 +125,22 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     haptic('select')
     const next = markKnown(batch, index, knownDeps)
     setBatch(next)
+    setUndoOffer(++offers.current)
     setIndex(Math.max(0, Math.min(index, next.words.length - 1)))
   }
 
   const undo = () => {
     const last = batch.known[batch.known.length - 1]
-    if (!reading || !last) return
+    if (!reading || !last || undoOffer === null) return
     haptic('tap')
+    setUndoOffer(null) // one Undo for the latest mark: the one before it is not offered afterwards
     setBatch(undoKnown(batch, knownDeps))
     setIndex(Math.min(last.index, batch.words.length))
   }
 
   const startNextBatch = () => {
     haptic('tap')
+    setUndoOffer(null)
     setBatch(selectLearnBatch(data.words, data.settings, new Date()))
     finisher.current = null
     setTicket(null)
@@ -176,7 +191,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
         </div>
       </div>
 
-      {reading && batch.known.length > 0 && (
+      {reading && undoOffer !== null && batch.known.length > 0 && (
         <div className="learn-undo" role="status">
           <span>{strings.learn.markedKnown(headword(batch.known[batch.known.length - 1].word).text)}</span>
           <button type="button" className="link-btn" onClick={undo}>
