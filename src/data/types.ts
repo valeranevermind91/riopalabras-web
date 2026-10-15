@@ -58,6 +58,8 @@ export interface UserSettings {
   readonly startRank: number | null
   readonly learnPicks: readonly string[]
   readonly pendingWordDeletes: readonly string[]
+  /** The offer to turn on the daily reminder has been shown (once, after the first finished Learn session): it is never made again. */
+  readonly reminderOfferShown: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */
   readonly raw: Readonly<Record<string, unknown>>
 }

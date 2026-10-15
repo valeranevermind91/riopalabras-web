@@ -267,7 +267,8 @@ export const en = {
     reminderFailed: 'Could not save this. Check your connection and try again.',
     // shown under a switch that is on: why nothing arrives (the user cannot change either; turning it off and on again clears them)
     reminderPaused: 'Paused — nothing was studied after several reminders. Turn it off and on to resume.',
-    reminderUnreachable: "Telegram cannot deliver messages. Open the bot's chat and press Start.",
+    // two steps, in order: pressing Start alone does not clear the flag the job set, switching it off and on again does
+    reminderUnreachable: "Open the bot's chat and press Start, then switch this off and on again. Pressing Start alone is not enough.",
     about: 'About',
     version: 'Version',
     bot: 'Open the bot',
@@ -374,6 +375,10 @@ export const en = {
     next: 'Next',
     finishBatch: 'Finish batch',
     learnNextBatch: 'Learn next batch',
+    // offered once, under the buttons of the end screen after the first finished session
+    reminderOffer: 'The words you just learned will come back for review tomorrow. Should we remind you?',
+    reminderOfferYes: 'Remind me',
+    reminderOfferNo: 'Not now',
     reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
     capReachedTitle: "Today's new words are done",

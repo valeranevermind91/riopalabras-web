@@ -288,6 +288,7 @@ function App() {
         data={readyData}
         queue={queue}
         metrics={metrics}
+        reminders={reminders}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}

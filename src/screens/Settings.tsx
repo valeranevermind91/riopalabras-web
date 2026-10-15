@@ -43,7 +43,7 @@ interface SettingsScreenProps {
 // Read when drawn, not when the module loads: the strings follow the interface language.
 const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ declined: t.reminderDeclined, failed: t.reminderFailed, paused: t.reminderPaused, unreachable: t.reminderUnreachable })[notice]
 
-const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: () => {} }
+const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
 export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data

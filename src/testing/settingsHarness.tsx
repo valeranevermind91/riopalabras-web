@@ -15,6 +15,7 @@ import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
 import { computeStats } from '../data/stats'
 import { createWriteQueue } from '../data/writeQueue'
+import { createFakeReminders } from './fakeReminders'
 import { makeWord } from './makeWord'
 import type { SettingsPatch, Word } from '../data/types'
 import { effectiveLanguage, setLanguage, useLanguage } from '../lib/language'
@@ -27,7 +28,6 @@ import { HowItWorks } from '../screens/HowItWorks'
 import { Onboarding } from '../screens/Onboarding'
 import { PlacementScreen } from '../screens/PlacementScreen'
 import { SettingsScreen } from '../screens/Settings'
-import type { ReminderState, ReminderStore } from '../data/reminders'
 import { useReminders } from '../lib/useReminders'
 
 const params = new URLSearchParams(location.search)
@@ -39,36 +39,8 @@ const queue = createWriteQueue(
   { retryDelaysMs: [1], sleep: async () => {} },
 )
 
-// The daily reminder's row, in memory: what the app writes to it is recorded, never sent anywhere.
-const reminderLog: { writes: unknown[]; updates: unknown[]; asked: number } = { writes: [], updates: [], asked: 0 }
-;(window as never as { __reminders: typeof reminderLog }).__reminders = reminderLog
-let reminderRow: ReminderState | null = params.get('reminder') ? (params.get('reminder') === 'none' ? null : { enabled: params.get('reminder') === 'on', timezone: params.get('rtz') ?? 'America/Montevideo', paused: params.get('paused') === '1', unreachable: params.get('unreachable') === '1' }) : null
-const reminderStore: ReminderStore = {
-  async read() {
-    if (params.get('readfail') === '1') throw new Error('offline')
-    return reminderRow ? { ...reminderRow } : null
-  },
-  async write(patch) {
-    if (params.get('savefail') === '1') throw new Error('offline')
-    reminderLog.writes.push(patch)
-    // as the database's trigger does: turning it on (from off) clears what the job set
-    reminderRow = { enabled: false, timezone: null, paused: false, unreachable: false, ...reminderRow, ...patch, ...(patch.enabled && !reminderRow?.enabled ? { paused: false, unreachable: false } : {}) }
-  },
-  async update(patch) {
-    if (params.get('savefail') === '1') throw new Error('offline')
-    reminderLog.updates.push(patch)
-    if (reminderRow) reminderRow = { ...reminderRow, ...patch }
-  },
-}
-let answerAccess: ((granted: boolean) => void) | null = null
-;(window as never as { __answerAccess: (granted: boolean) => void }).__answerAccess = (granted) => answerAccess?.(granted)
-const askAccess = (): Promise<boolean> => {
-  reminderLog.asked++
-  const mode = params.get('access') ?? 'yes'
-  if (mode === 'manual') return new Promise((resolve) => (answerAccess = resolve))
-  return Promise.resolve(mode === 'yes')
-}
-const deviceZone = () => params.get('tz') ?? 'America/Montevideo'
+// The daily reminder's row and Telegram's permission prompt, faked (src/testing/fakeReminders.ts; window.__reminders records what is written).
+const fakeReminders = createFakeReminders(params)
 
 // relearn=N: one more word that was rated Again just now: one repetition, interval 0, due again in N seconds (the real wait is ten minutes).
 const relearnSeconds = Number(params.get('relearn') ?? 0)
@@ -132,7 +104,7 @@ export function Harness() {
     [applySettings],
   )
   const theme = useTheme(settings, persist)
-  const reminders = useReminders(reminderStore, { askAccess, timezone: deviceZone })
+  const reminders = useReminders(fakeReminders.store, { askAccess: fakeReminders.askAccess, timezone: fakeReminders.timezone })
   // The chosen language once the settings are there; with none chosen, Telegram's.
   useEffect(() => {
     if (loaded) setLanguage(effectiveLanguage(settings.uiLanguage))

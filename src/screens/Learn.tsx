@@ -5,11 +5,14 @@ import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
 import { learnedToday } from '../data/daily'
+import { reminderOfferPatch, shouldOfferReminder } from '../data/reminderOffer'
+import { saveSetting } from '../data/settingsActions'
 import { UNDO_WINDOW_MS, createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
+import type { RemindersControl } from '../lib/useReminders'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { arrivalOf, type Arrival, type ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
@@ -19,13 +22,15 @@ interface LearnScreenProps {
   data: UserData
   queue: WriteQueue
   metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
+  /** The daily reminder (App owns it). Without it the end screen makes no offer. */
+  reminders?: RemindersControl
   onHome: () => void
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
 }
 
-export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, reminders, onHome, onReview, onBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
@@ -153,7 +158,7 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
     return (
       <main className="screen">
         <ScreenHeader title={strings.learn.title} onBack={onBack} />
-        <PostBatch data={data} queue={queue} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
+        <PostBatch data={data} queue={queue} reminders={reminders} completed={ticket !== null} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
       </main>
     )
   }
@@ -232,17 +237,44 @@ export function LearnScreen({ data, queue, metrics, onHome, onReview, onBack }: 
 function PostBatch({
   data,
   queue,
+  reminders,
+  completed,
   onNextBatch,
   onReview,
   onHome,
 }: {
   data: UserData
   queue: WriteQueue
+  reminders: RemindersControl | undefined
+  /** A batch was finished on this screen (as opposed to an end screen reached because there was nothing to learn). */
+  completed: boolean
   onNextBatch: () => void
   onReview: () => void
   onHome: () => void
 }) {
   const { stats, settings } = data
+
+  // The offer to turn on the daily reminder: once ever, at the end of a finished session, only if the reminder is known to be off. It is decided
+  // ONCE, here, when the end screen appears, because it records itself as shown the moment it does (below), and that would end it at once.
+  const [offer, setOffer] = useState<'open' | 'asking' | 'closed'>(() => (shouldOfferReminder({ completed, settings, reminder: reminders }) ? 'open' : 'closed'))
+  const recorded = useRef(false)
+  useEffect(() => {
+    // Shown is shown: recorded now, through the write queue (nothing here waits for it), whatever the user does next, leaving included.
+    if (offer === 'closed' || recorded.current) return
+    recorded.current = true
+    saveSetting(reminderOfferPatch(), { applySettings: data.applySettings, queue })
+  }, [offer, data.applySettings, queue])
+  const remindMe = async () => {
+    if (!reminders || offer !== 'open') return
+    haptic('tap')
+    setOffer('asking')
+    await reminders.set(true) // the Settings toggle's own path: Telegram's permission first, then the row with the time zone
+    setOffer('closed') // granted, refused or failed alike: the offer is over, and a refusal leaves the toggle off with no screen of its own
+  }
+  const notNow = () => {
+    haptic('select')
+    setOffer('closed')
+  }
 
   let title: string
   let subtitle: string | null = null
@@ -283,6 +315,19 @@ function PostBatch({
           {strings.common.backToHome}
         </button>
       </div>
+      {offer !== 'closed' && (
+        <section className="reminder-offer" aria-labelledby="reminder-offer-text">
+          <p id="reminder-offer-text">{strings.learn.reminderOffer}</p>
+          <div className="reminder-offer-actions">
+            <button type="button" className="btn btn-secondary" disabled={offer === 'asking'} onClick={() => void remindMe()}>
+              {strings.learn.reminderOfferYes}
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={offer === 'asking'} onClick={notNow}>
+              {strings.learn.reminderOfferNo}
+            </button>
+          </div>
+        </section>
+      )}
     </section>
   )
 }

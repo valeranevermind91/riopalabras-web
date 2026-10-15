@@ -15,7 +15,12 @@ export interface RemindersControl {
   shown: boolean
   busy: boolean
   notice: ReminderNotice
-  set: (on: boolean) => void
+  /**
+   * Turns the reminder on or off: THE one path, used by the Settings toggle and by the offer at the end of the first Learn session. Turning
+   * on asks Telegram first (requestWriteAccess) and writes the row, with the device time zone, only if it agrees. Resolves when that is
+   * over (a refusal or a failure included: they come back as `notice`, never as a rejection). A call made while another is under way does nothing.
+   */
+  set: (on: boolean) => Promise<void>
 }
 
 interface Options {
@@ -69,32 +74,30 @@ export function useReminders(store: ReminderStore | null, options: Options = {})
   }, [store])
 
   const set = useCallback(
-    (on: boolean) => {
+    async (on: boolean) => {
       if (!store || busy.current) return
       busy.current = true
       setOutcome(null)
       setPending(on)
-      void (async () => {
-        let next: 'declined' | 'failed' | null = null
-        let saved = enabledRef.current
-        if (on) {
-          const ask = opts.current.askAccess ?? (() => requestMessageAccess(getWebApp().webApp))
-          const result = await turnReminderOn(store, ask, (opts.current.timezone ?? deviceTimezone)())
-          if (result === 'on') {
-            saved = true
-            setFlags({ paused: false, unreachable: false }) // a fresh turn-on clears them in the database (a trigger), so here too
-          } else next = result
-        } else if (await turnReminderOff(store)) {
-          saved = false
-        } else {
-          next = 'failed'
-        }
-        enabledRef.current = saved
-        setEnabled(saved)
-        setOutcome(next)
-        setPending(null)
-        busy.current = false
-      })()
+      let next: 'declined' | 'failed' | null = null
+      let saved = enabledRef.current
+      if (on) {
+        const ask = opts.current.askAccess ?? (() => requestMessageAccess(getWebApp().webApp))
+        const result = await turnReminderOn(store, ask, (opts.current.timezone ?? deviceTimezone)())
+        if (result === 'on') {
+          saved = true
+          setFlags({ paused: false, unreachable: false }) // a fresh turn-on clears them in the database (a trigger), so here too
+        } else next = result
+      } else if (await turnReminderOff(store)) {
+        saved = false
+      } else {
+        next = 'failed'
+      }
+      enabledRef.current = saved
+      setEnabled(saved)
+      setOutcome(next)
+      setPending(null)
+      busy.current = false
     },
     [store],
   )

@@ -253,7 +253,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
 
     describe('says why nothing arrives', () => {
       const PAUSED = 'Paused — nothing was studied after several reminders. Turn it off and on to resume.'
-      const UNREACHABLE = "Telegram cannot deliver messages. Open the bot's chat and press Start."
+      const UNREACHABLE = "Open the bot's chat and press Start, then switch this off and on again. Pressing Start alone is not enough."
 
       it('shows the line under a switch that is on, and keeps the switch on', async () => {
         for (const [query, text] of [['reminder=on&paused=1', PAUSED], ['reminder=on&unreachable=1', UNREACHABLE], ['reminder=on&paused=1&unreachable=1', UNREACHABLE]] as const) {

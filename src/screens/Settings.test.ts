@@ -7,6 +7,7 @@ import { createWriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
 import { VERSION_LABEL, formatVersion } from '../lib/buildInfo'
 import { setLanguage } from '../lib/language'
+import { strings } from '../strings'
 import { backTarget } from '../lib/nav'
 import type { RemindersControl } from '../lib/useReminders'
 import { readStoredChoice, storeChoice } from '../lib/theme'
@@ -133,7 +134,7 @@ describe('the Settings screen', () => {
   })
 
   describe('notifications: the daily reminder', () => {
-    const control = (over: Partial<RemindersControl> = {}): RemindersControl => ({ status: 'ready', shown: false, busy: false, notice: null, set: noop, ...over })
+    const control = (over: Partial<RemindersControl> = {}): RemindersControl => ({ status: 'ready', shown: false, busy: false, notice: null, set: async () => {}, ...over })
     const switchOf = (html: string) => html.match(/<input id="daily-reminder"[^>]*>/)![0]
 
     it('is one labelled switch with a quiet line under the label saying 20:00 and "only when something is waiting"', () => {
@@ -163,12 +164,32 @@ describe('the Settings screen', () => {
       expect(render({}, { reminders: control() })).not.toContain('daily-reminder-note')
     })
 
+    it('tells the user, for an unreachable reminder, both steps in order, and that Start alone is not enough: two short sentences', () => {
+      for (const language of ['en', 'ru'] as const) {
+        setLanguage(language)
+        try {
+          const text = strings.settings.reminderUnreachable
+          expect(text.match(/[.!?](\s|$)/g)).toHaveLength(2) // two sentences
+          expect(text.length).toBeLessThan(135) // and short ones
+          const steps = language === 'en' ? [/press Start/, /off and on again/, /Start alone is not enough/] : [/нажмите Start/, /выключите и снова включите/, /Одного нажатия Start недостаточно/]
+          let at = -1
+          for (const step of steps) {
+            const found = text.search(step)
+            expect(found, `${language}: ${step}`).toBeGreaterThan(at) // in this order: Start, then off and on, then "not enough"
+            at = found
+          }
+        } finally {
+          setLanguage('en')
+        }
+      }
+    })
+
     it('says why nothing arrives under a switch that is on: paused after several reminders, or Telegram cannot deliver', () => {
       const paused = render({}, { reminders: control({ shown: true, notice: 'paused' }) })
       expect(paused).toContain('Paused — nothing was studied after several reminders. Turn it off and on to resume.</p>')
       expect(paused).toContain('role="status"')
       const unreachable = render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })
-      expect(unreachable).toContain('Telegram cannot deliver messages. Open the bot&#x27;s chat and press Start.</p>')
+      expect(unreachable).toContain('Open the bot&#x27;s chat and press Start, then switch this off and on again. Pressing Start alone is not enough.</p>')
       expect(switchOf(unreachable)).toContain('aria-describedby="daily-reminder-hint daily-reminder-note"')
     })
 
@@ -176,7 +197,7 @@ describe('the Settings screen', () => {
       setLanguage('ru')
       try {
         expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено — после нескольких напоминаний занятий не было. Выключите и включите снова.</p>')
-        expect(render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })).toContain('Telegram не может доставить сообщение. Откройте чат бота и нажмите Start.</p>')
+        expect(render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })).toContain('Откройте чат с ботом и нажмите Start, затем выключите и снова включите напоминание. Одного нажатия Start недостаточно.</p>')
       } finally {
         setLanguage('en')
       }

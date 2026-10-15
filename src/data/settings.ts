@@ -36,6 +36,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     startRank: typeof raw.start_rank === 'number' && Number.isFinite(raw.start_rank) && raw.start_rank > 1 ? raw.start_rank : null,
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
+    reminderOfferShown: raw.reminder_offer_shown === true,
     raw,
   }
 }
