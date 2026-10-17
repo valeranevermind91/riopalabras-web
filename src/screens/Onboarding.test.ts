@@ -88,8 +88,8 @@ describe('the seven steps', () => {
     const html = step('goal')
     expect(html).toContain('aria-label="Decrease the daily goal"')
     expect(html).toContain('aria-label="Increase the daily goal"')
-    expect(html).not.toContain('sessions of 10')
-    expect(step('goal', { daily_new_word_limit: 18 })).toContain('split into sessions of 10')
+    expect(html).not.toContain('batches of 10 words')
+    expect(step('goal', { daily_new_word_limit: 18 })).toContain('split into batches of 10 words')
   })
 
   it('6: pronunciation: two facts with the Spanish words in the display face, a link to "How it works"', () => {

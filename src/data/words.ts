@@ -3,7 +3,7 @@ import type { Overlay, UserWordRow } from './overlay'
 import { customRegion, customRegister } from './customMarks'
 import type { Word } from './types'
 
-const NON_REVIEWABLE_POS = new Set(['art', 'prep', 'conj', 'contraction', 'determiner', 'pron'])
+const NON_REVIEWABLE_POS = new Set(['art', 'prep', 'conj', 'contraction', 'determiner', 'pron', 'letter'])
 
 /** The one matching key for every table: trimmed + lowercased es_word. No diacritic folding (café ≠ cafe). */
 export function wordKey(esWord: string): string {

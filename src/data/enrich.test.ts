@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { setLanguage } from '../lib/language'
 import { enrichFailureMessage, enrichWord, type EnrichDeps, type EnrichFailure } from './enrich'
 
 const PROXY = 'https://proxy.test'
@@ -337,6 +338,23 @@ describe('every failure is a value with its own message, and the form stays usab
     expect(new Set(messages).size).toBe(failures.length)
     for (const m of messages) expect(m.length).toBeGreaterThan(10)
     expect(enrichFailureMessage({ kind: 'daily-quota', usage: 99, limit: 100 })).toContain('99 of 100')
-    expect(enrichFailureMessage({ kind: 'other', status: 500 })).toContain('500')
+    // No raw status code in front of a person, and no "try again" where the form has nothing to press for it (only waiting out a limit does).
+    expect(enrichFailureMessage({ kind: 'other', status: 500 })).not.toMatch(/\d/)
+    for (const failure of [{ kind: 'timeout' }, { kind: 'network' }, { kind: 'other', status: 500 }] as EnrichFailure[]) expect(enrichFailureMessage(failure).toLowerCase()).not.toContain('try again')
+  })
+
+  it('in Russian: the same rule, and still a message each', () => {
+    setLanguage('ru')
+    try {
+      const failures: EnrichFailure[] = [{ kind: 'timeout' }, { kind: 'network' }, { kind: 'other', status: 500 }, { kind: 'no-result' }]
+      const messages = failures.map(enrichFailureMessage)
+      expect(new Set(messages).size).toBe(failures.length)
+      for (const m of messages) {
+        expect(m).not.toMatch(/\d/)
+        expect(m).not.toContain('ещё раз')
+      }
+    } finally {
+      setLanguage('en')
+    }
   })
 })

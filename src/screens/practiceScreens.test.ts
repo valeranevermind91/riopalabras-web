@@ -44,14 +44,14 @@ const home = (list: Word[], raw: Record<string, unknown> = {}) =>
   )
 
 describe('Home: the two practice buttons', () => {
-  it('are disabled with "Need 5+ words" below 5 eligible words, in English whatever the translation language', () => {
+  it('are disabled with "Learn 5+ words first" below 5 eligible words, in English whatever the translation language', () => {
     const en = home(words(4), { show_ru_translation: false, show_en_translation: true })
-    expect(en.match(/Need 5\+ words/g)).toHaveLength(2)
+    expect(en.match(/Learn 5\+ words first/g)).toHaveLength(2)
     expect(en).not.toContain('Practice Matching')
     const ru = home(words(4)) // Russian translations are the default: the buttons are still English
-    expect(ru.match(/Need 5\+ words/g)).toHaveLength(2)
+    expect(ru.match(/Learn 5\+ words first/g)).toHaveLength(2)
     expect(ru).not.toMatch(/[А-Яа-яЁё]/)
-    const needs = en.split('<button').filter((b) => b.includes('Need 5+ words'))
+    const needs = en.split('<button').filter((b) => b.includes('Learn 5+ words first'))
     expect(needs.every((b) => b.includes('disabled'))).toBe(true)
   })
 
@@ -59,7 +59,7 @@ describe('Home: the two practice buttons', () => {
     const en = home(words(6), { show_ru_translation: false, show_en_translation: true })
     expect(en).toContain('tile-label">Matching<')
     expect(en).toContain('tile-label">Cloze<')
-    expect(en).not.toContain('Need 5+ words')
+    expect(en).not.toContain('Learn 5+ words first')
     const ru = home(words(6)) // default settings: Russian translations
     expect(ru).toContain('tile-label">Matching<')
     expect(ru).toContain('tile-label">Cloze<')
@@ -109,7 +109,7 @@ describe('Matching screen', () => {
   it('with fewer than 5 usable words it says so and offers the way home', () => {
     const html = render(words(4), { show_ru_translation: false, show_en_translation: true })
     expect(html).toContain('Learn and review some words first')
-    expect(html).toContain('Back home')
+    expect(html).toContain('Back to home')
     expect(html).not.toContain('match-tile')
   })
 })
@@ -127,6 +127,20 @@ describe('Cloze screen and question', () => {
     expect(html.match(/class="cz-blank"/g)).toHaveLength(1) // one blank: a fixed-width rule
     for (const label of ['Hint', 'Reveal', 'Check']) expect(html).toContain(label)
     expect(html).not.toContain('Continue') // there is only Check until an answer exists
+  })
+
+  it('says what to do, in one line under the progress bar, like Matching does', () => {
+    const html = render(words(12), { show_ru_translation: false, show_en_translation: true })
+    expect(html).toContain('<p class="cz-instruction">Type the missing word.</p>')
+    expect(html.indexOf('role="progressbar"')).toBeLessThan(html.indexOf('cz-instruction'))
+    expect(html.indexOf('cz-instruction')).toBeLessThan(html.indexOf('class="cz-card"'))
+  })
+
+  it('the Hint and Reveal row is there before an answer, and not marked spent', () => {
+    const item = clozePool(words(6))[0]
+    const html = renderToStaticMarkup(createElement(ClozeQuestion, { item, settings: parseSettings({}), onAnswered: () => {} }))
+    expect(html).toContain('<div class="cz-secondary">')
+    expect(html).not.toContain('is-spent')
   })
 
   it('never shows the answer in the question', () => {
@@ -160,7 +174,7 @@ describe('Cloze screen and question', () => {
   it('with fewer than 5 usable words it says so and offers the way home', () => {
     const html = render(words(4), { show_ru_translation: false, show_en_translation: true })
     expect(html).toContain('Learn and review some words with example sentences first')
-    expect(html).toContain('Back home')
+    expect(html).toContain('Back to home')
     expect(html).not.toContain('cz-card')
   })
 })

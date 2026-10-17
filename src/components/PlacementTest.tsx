@@ -31,10 +31,16 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
   const [bands] = useState(() => buildPlacement(words))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ReadonlySet<string>[]>(() => Array.from({ length: 5 }, () => new Set<string>()))
+  // What the finished test found, said back to the person before they move on (null while the test is being taken).
+  const [found, setFound] = useState<PlacementResult | null>(null)
 
   useEffect(() => {
     if (!interceptBack) return
     interceptBack(() => {
+      if (found) {
+        onDone() // already kept: Back from the result leaves, it does not reopen the sets
+        return true
+      }
       if (index > 0) {
         setIndex(index - 1)
         return true
@@ -42,7 +48,7 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
       return false
     })
     return () => interceptBack(null)
-  }, [interceptBack, index])
+  }, [interceptBack, index, found, onDone])
 
   const labels = t()
   if (!bands) {
@@ -77,8 +83,24 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
   const forward = () => {
     haptic('tap')
     if (!last) return setIndex(index + 1)
-    onSave(placementResult(bands, selected))
-    onDone()
+    const result = placementResult(bands, selected)
+    onSave(result)
+    setFound(result)
+  }
+
+  if (found) {
+    return (
+      <div className="place" data-state="result">
+        <h2 className="place-question">{labels.resultTitle}</h2>
+        <p className="intro-text">{found.marked.length > 0 ? labels.resultMarked(found.marked.length) : labels.resultNoneMarked}</p>
+        <p className="intro-text">{found.startRank !== null ? labels.resultHarder : labels.resultBeginning}</p>
+        <div className="place-footer">
+          <button type="button" className="btn btn-primary" onClick={onDone}>
+            {showSkipNote ? labels.next : labels.resultDone}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -77,3 +77,27 @@ describe('shapes', () => {
   })
 })
 
+
+describe('wrapping and focus (the polish pass)', () => {
+  it('paragraphs avoid a lone last word (pretty), and short blocks are balanced: titles, advice, tile reasons, labels, hints and notes', () => {
+    expect(rule('body')).toMatch(/text-wrap: pretty/)
+    const balanced = css.match(/([^{}]+)\{\s*text-wrap: balance;\s*\}/)![1].split('*/').pop()!.split(',').map((s) => s.trim())
+    for (const selector of ['h1', 'h2', 'h3', '.subtitle', '.home-advice', '.tile-text', '.setting-label', '.setting-hint', '.words-note', '.post-batch-why', '.intro-note', '.intro-text', '.intro-line', '.wc-translation', '.wc-row-text', '.learn-undo span', '.cz-sentence', '.cz-feedback', '.match-hint', '.cz-instruction']) expect(balanced, selector).toContain(selector)
+  })
+
+  it('the intro list puts the name above its line, so a long name no longer squeezes the text into a narrow column', () => {
+    expect(rule('.intro-list li')).toMatch(/flex-direction: column/)
+    expect(rule('.intro-list li')).not.toMatch(/align-items: baseline/)
+  })
+
+  it('the Cloze answer wears the practice colour when focused, the search clear is the app\'s own shape, and the spent Hint/Reveal row keeps its place', () => {
+    expect(rule('.cz-input:focus-visible')).toMatch(/outline: 2px solid var\(--lav\)/)
+    expect(rule('.words-search::-webkit-search-cancel-button')).toMatch(/-webkit-appearance: none/)
+    expect(rule('.words-search::-webkit-search-cancel-button')).toMatch(/background-color: var\(--muted\)/)
+    expect(rule('.cz-secondary.is-spent')).toMatch(/visibility: hidden/) // hidden, not display: none: Continue stays where Check was
+  })
+
+  it('the Cloze instruction is set like the Matching one', () => {
+    expect(css).toMatch(/\.match-hint,\s*\.cz-instruction \{/)
+  })
+})

@@ -71,7 +71,7 @@ describe('the Settings screen', () => {
     })
 
     it('the note about sessions of 10 appears above 15, and not at or below it', () => {
-      const note = 'split into sessions of 10'
+      const note = 'split into batches of 10 words'
       for (const limit of [0, 10, 14, 15]) expect(render({ daily_new_word_limit: limit }), String(limit)).not.toContain(note)
       for (const limit of [16, 18, 20]) expect(render({ daily_new_word_limit: limit }), String(limit)).toContain(note)
     })
@@ -196,7 +196,7 @@ describe('the Settings screen', () => {
     it('says both of them in Russian', () => {
       setLanguage('ru')
       try {
-        expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено — после нескольких напоминаний занятий не было. Выключите и включите снова.</p>')
+        expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено: после нескольких напоминаний вы не занимались. Чтобы возобновить, выключите напоминание и включите снова.</p>')
         expect(render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })).toContain('Откройте чат с ботом и нажмите Start, затем выключите и снова включите напоминание. Одного нажатия Start недостаточно.</p>')
       } finally {
         setLanguage('en')
@@ -218,18 +218,18 @@ describe('the Settings screen', () => {
   })
 
   describe('about', () => {
-    it('shows the version from the build, as "v<hash> · <date>"', () => {
+    it('shows the version from the build, as "<hash> · <date>", the hash with no "v" in front of it', () => {
       const html = render()
       expect(html).toContain(`<span class="setting-value">${VERSION_LABEL}</span>`)
-      expect(formatVersion('1a2b3c4', '2026-10-07')).toBe('v1a2b3c4 · 2026-10-07')
+      expect(formatVersion('1a2b3c4', '2026-10-07')).toBe('1a2b3c4 · 2026-10-07')
     })
 
     it('a build with no git reads "dev", not "vdev"', () => {
       expect(formatVersion('dev', '2026-10-07')).toBe('dev · 2026-10-07')
     })
 
-    it('has the short paragraph about the app being in development', () => {
-      expect(render()).toContain('The app is in development. You can learn and review words, and your progress is saved.')
+    it('has the short paragraph about what the app is and where progress goes', () => {
+      expect(render()).toContain('Learn the Spanish of Uruguay and Argentina one word at a time. Your progress is saved to your account.')
     })
 
     it('links to the bot from the username: https://t.me/<username>', () => {

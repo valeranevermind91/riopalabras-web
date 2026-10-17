@@ -132,6 +132,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
       <div className="bar" role="progressbar" aria-label={t.progressLabel} aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
         <div className="bar-fill" style={{ width: `${((index + 1) / session.length) * 100}%` }} />
       </div>
+      <p className="cz-instruction">{t.clozeHint}</p>
       <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} onAnswered={answered} onChecked={() => (answeredIn.current = timer.stop())} />
     </main>
   )

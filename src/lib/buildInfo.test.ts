@@ -59,7 +59,7 @@ describe('the build info injected into the app', () => {
     expect(BUILD_HASH.length).toBeGreaterThan(0)
     expect(BUILD_TIME).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
     expect(VERSION_LABEL).toBe(formatVersion(BUILD_HASH, formatBuildDate(BUILD_TIME)))
-    expect(VERSION_LABEL).toMatch(/ · \d{4}-\d{2}-\d{2}$/) // the format is as it was: v<hash> · YYYY-MM-DD
+    expect(VERSION_LABEL).toMatch(/ · \d{4}-\d{2}-\d{2}$/) // the format: <hash> · YYYY-MM-DD
     expect(VERSION_LABEL).not.toContain('0.0.0')
   })
 })
@@ -97,13 +97,13 @@ describe('the build day, in the reader\'s own time zone', () => {
 
   it('is in the format it always was: four-digit year, two-digit month and day', () => {
     for (const zone of ['America/Montevideo', 'Asia/Tokyo', 'UTC']) expect(formatBuildDate('2026-01-05T12:00:00.000Z', zone)).toBe('2026-01-05')
-    expect(formatVersion('1a2b3c4', formatBuildDate(built, 'America/Montevideo'))).toBe('v1a2b3c4 · 2026-10-16')
+    expect(formatVersion('1a2b3c4', formatBuildDate(built, 'America/Montevideo'))).toBe('1a2b3c4 · 2026-10-16')
     expect(formatVersion('dev', formatBuildDate(built, 'UTC'))).toBe('dev · 2026-10-17')
   })
 
   it('is empty, so the version reads without a date, when there is no usable moment or zone', () => {
     for (const bad of ['', 'not a date', '2026-13-45T99:99:99Z']) expect(formatBuildDate(bad), JSON.stringify(bad)).toBe('')
     expect(formatBuildDate(built, 'Mars/Olympus')).toBe('')
-    expect(formatVersion('abc1234', formatBuildDate(''))).toBe('vabc1234')
+    expect(formatVersion('abc1234', formatBuildDate(''))).toBe('abc1234')
   })
 })

@@ -82,7 +82,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     expect(first).not.toEqual([...sorted].reverse())
 
     // the end of a session with more due: how many are left, Continue, and the way home
-    expect(await postBatch(page)).toEqual({ title: 'Done for now', subtitle: '30 words are still due.', buttons: ['Continue', 'Back to home'] })
+    expect(await postBatch(page)).toEqual({ title: 'Session complete', subtitle: '30 words are still due.', buttons: ['Continue', 'Back to home'] })
     await page.evaluate(() => (Array.from(document.querySelectorAll('.post-batch button')).find((b) => b.textContent?.trim() === 'Back to home') as HTMLElement).click())
     await page.waitForSelector('[data-tile="review"]')
     expect(await tile(page)).toBe(30) // the real total waiting, not 20 and not the session
@@ -115,7 +115,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     setLanguage('ru') // the plural form follows the language of the process, as it does in the page
     try {
       expect(await postBatch(page)).toEqual({ title: ru.review.sessionDone, subtitle: ru.review.sessionLeft(5), buttons: [ru.review.continue, ru.common.backToHome] })
-      expect(ru.review.sessionDone).toBe('Пока всё')
+      expect(ru.review.sessionDone).toBe('Сессия завершена')
       expect(ru.review.sessionLeft(5)).toBe('Осталось повторить: 5 слов.')
       expect(ru.review.sessionLeft(1)).toBe('Осталось повторить: 1 слово.')
       expect(ru.review.sessionLeft(2)).toBe('Осталось повторить: 2 слова.')
@@ -149,7 +149,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     expect(new Set(shown).size).toBe(20)
     // the end screen says how many are still due (the 10 of the 30 that were never in the session), and nothing about 40
     const end = await postBatch(page)
-    expect(end).toEqual({ title: 'Done for now', subtitle: '10 words are still due.', buttons: ['Continue', 'Back to home'] })
+    expect(end).toEqual({ title: 'Session complete', subtitle: '10 words are still due.', buttons: ['Continue', 'Back to home'] })
     expect(JSON.stringify(end)).not.toMatch(/40|limit|ceiling|maximum/i)
     await page.close()
   }, 180_000)
@@ -276,10 +276,10 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
   describe('the line of advice on Home, at 320px, in both languages', () => {
     const states = [
       { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting', ru: 'Сначала повторение — ждут 50 слов' },
-      { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — готово 10 новых слов' },
+      { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — можно выучить 10 новых слов' },
       { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Done for today', ru: 'На сегодня всё' },
-      { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова кончились — добавьте свои или потренируйтесь' },
-      { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All clear', ru: 'Всё чисто' },
+      { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова закончились — добавьте свои или потренируйтесь' },
+      { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All clear', ru: 'Всё в порядке' },
     ] as const
 
     /** How the line and the tiles look right now: its text, whether it overflows or runs past the screen, how many lines it takes, and which tile is filled. */

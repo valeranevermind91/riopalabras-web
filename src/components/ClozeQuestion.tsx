@@ -109,7 +109,8 @@ export function ClozeQuestion({ item, settings, onAnswered, onChecked }: ClozeQu
           spellCheck={false}
           autoFocus
         />
-        <div className="cz-secondary">
+        {/* Spent once the question is answered: hidden, not removed, so Continue stays where the thumb was going for Check. */}
+        <div className={answer ? 'cz-secondary is-spent' : 'cz-secondary'}>
           <button type="button" className="btn btn-secondary" disabled={answer !== null || hintShown} onClick={() => setHintShown(true)}>
             {t.hint}
           </button>

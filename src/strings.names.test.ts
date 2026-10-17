@@ -1,0 +1,193 @@
+import { describe, expect, it } from 'vitest'
+import { MAX_INTERVAL_DAYS, RELEARN_MINUTES } from './sm2/sm2'
+import { en } from './strings'
+import { ru } from './strings.ru'
+
+/**
+ * One name per thing, in each language, pinned. The user-facing words for a concept are chosen once (below) and a string that drifts back to
+ * the old name, or a Russian string that slips into "ты" or a gendered "я", fails here.
+ *   known       a word the person said they know: "I already know this word" → "marked as known" → the Known tab (never "hidden", never "hide")
+ *   well learned the progress state that used to be called "Known well" (it clashed with Known)
+ *   session     one run of Review, Matching or Cloze: "Session complete" / "New session" (never "group", never "done for now")
+ *   batch       one go at Learn: "Finish batch" (Russian: подборка, never порция)
+ */
+
+/** Every string in a map, with the function ones called on a few sample arguments (the debug screen is a developer tool and is left out). */
+function texts(node: unknown, path = ''): { path: string; text: string }[] {
+  if (typeof node === 'string') return [{ path, text: node }]
+  if (typeof node === 'function') {
+    for (const args of [[3, 3], [3], ['casa', 'casa', 'es_word'], [['a', 'b']], [{ at: '', table: '', attempt: 1, kind: '', status: null, code: null, message: '', outcome: '' }]] as unknown[][]) {
+      try {
+        const out = (node as (...a: unknown[]) => unknown)(...args)
+        if (typeof out === 'string') return [{ path, text: out }]
+      } catch {
+        // the next sample
+      }
+    }
+    return []
+  }
+  if (Array.isArray(node)) return node.flatMap((item, i) => texts(item, `${path}[${i}]`))
+  if (node !== null && typeof node === 'object') {
+    return Object.entries(node)
+      .filter(([key]) => key !== 'debug' && key !== 'wordContent' && key !== 'card')
+      .flatMap(([key, value]) => texts(value, path ? `${path}.${key}` : key))
+  }
+  return []
+}
+const enTexts = texts(en)
+const ruTexts = texts(ru)
+const offenders = (list: { path: string; text: string }[], pattern: RegExp) => list.filter((t) => pattern.test(t.text)).map((t) => `${t.path}: ${t.text}`)
+
+describe('the scan itself', () => {
+  it('reads hundreds of strings in each language, functions included', () => {
+    expect(enTexts.length).toBeGreaterThan(300)
+    expect(ruTexts.length).toBeGreaterThan(300)
+    expect(enTexts.some((t) => t.path === 'practice.sessionComplete')).toBe(true)
+    expect(enTexts.some((t) => t.path === 'learn.markedKnown')).toBe(true)
+  })
+
+  it('would catch a stray word: the check is real', () => {
+    expect(offenders([...enTexts, { path: 'x', text: 'Hidden words' }], /\bhid(den|e)?\b/i)).toEqual(['x: Hidden words'])
+  })
+})
+
+describe('known, not hidden', () => {
+  it('English: the tab, the state and the filters say "Known", and no string says hidden, hide or hid', () => {
+    expect(en.words.segments.hidden).toBe('Known')
+    expect(en.words.stateName.hidden).toBe('Known')
+    expect(offenders(enTexts, /\bhid(den|e)?\b/i)).toEqual([])
+  })
+
+  it('Russian: the same, with «Известные» / «Известное», and no скрыт-', () => {
+    expect(ru.words.segments.hidden).toBe('Известные')
+    expect(ru.words.stateName.hidden).toBe('Известное')
+    expect(offenders(ruTexts, /скры[тв]/i)).toEqual([])
+  })
+
+  it('the tab is the one the placement note and the empty list send people to', () => {
+    expect(en.onboarding.placement.hidesNote).toContain(`the ${en.words.segments.hidden} tab`)
+    expect(ru.onboarding.placement.hidesNote).toContain(`«${ru.words.segments.hidden}»`)
+    expect(en.words.emptyHidden).toContain('mark as known')
+    expect(ru.words.emptyHidden).toContain('отметили как известные')
+  })
+
+  it('"Known well" is "Well learned" (Хорошо выучено), so Known means one thing', () => {
+    expect(en.words.states.established).toBe('Well learned')
+    expect(en.words.stateName.established).toBe('Well learned')
+    expect(ru.words.states.established).toBe('Хорошо выучено')
+    expect(ru.words.stateName.established).toBe('Хорошо выучено')
+    expect(offenders(enTexts, /known well/i)).toEqual([])
+    expect(offenders(ruTexts, /знаю хорошо/i)).toEqual([])
+  })
+})
+
+describe('one name for the end of a run of Matching, Cloze and Review', () => {
+  it('"Session complete" in all three, and "New session" to go again, in both languages', () => {
+    for (const [map, complete, again] of [[en, 'Session complete', 'New session'], [ru, 'Сессия завершена', 'Новая сессия']] as const) {
+      expect(map.practice.sessionComplete).toBe(complete)
+      expect(map.practice.groupComplete).toBe(complete)
+      expect(map.review.sessionDone).toBe(complete)
+      expect(map.practice.newSession).toBe(again)
+      expect(map.practice.nextGroup).toBe(again)
+    }
+  })
+
+  it('no string calls it a group (Matching) or "done for now" (Review)', () => {
+    expect(offenders(enTexts, /\bgroup\b|done for now/i)).toEqual([])
+    expect(offenders(ruTexts, /групп|пока всё/i)).toEqual([])
+  })
+
+  it('Learn is a batch (Russian: подборка), never a portion, and never "sessions of 10"', () => {
+    expect(offenders(ruTexts, /порци/i)).toEqual([])
+    expect(offenders(enTexts, /sessions of/i)).toEqual([])
+    expect(ru.learn.finishBatch).toBe('Завершить подборку')
+    expect(en.learn.finishBatch).toBe('Finish batch')
+  })
+
+  it('"Back to home" is one string everywhere in English, as «На главный экран» is in Russian', () => {
+    for (const map of [en, ru]) expect(map.practice.backHome).toBe(map.common.backToHome)
+    expect(en.common.backToHome).toBe('Back to home')
+    expect(offenders(enTexts, /back home/i)).toEqual([])
+  })
+})
+
+describe('spelling and address', () => {
+  it('English: favourites, with a u, like practise and recognised (never "favorites" in what a person reads)', () => {
+    expect(offenders(enTexts, /favorite/i)).toEqual([])
+    expect(en.home.degradedTables.user_favorites).toBe('favourites')
+  })
+
+  it('Russian: formal "вы" throughout: no ты-forms (ты, тебе, тебя, твой, видишь, хочешь…)', () => {
+    expect(offenders(ruTexts, /(^|[^а-яё])(ты|тебе|тебя|тобой|твой|твоя|твоё|твои|твоих)(?![а-яё])/i)).toEqual([])
+    expect(offenders(ruTexts, /(^|[^а-яё])[а-яё]{3,}(ешь|ёшь|ишь)(?![а-яё])/i)).toEqual([])
+  })
+
+  it('Russian: no gendered first person ("я … сделал/сделала", "сам/сама", but «сами» is the formal plural and fine)', () => {
+    expect(offenders(ruTexts, /(^|[^а-яё])я\s+[а-яё]+(л|ла|ло|ли)(?![а-яё])/i)).toEqual([])
+    expect(offenders(ruTexts, /(^|[^а-яё])сама?(?![а-яё])/i)).toEqual([]) // "сами" is the formal plural and fine: «Введите перевод сами»
+    expect(ru.words.form.fillMyself).toBe('Ввести вручную')
+  })
+})
+
+describe('what the text says about the scheduler is what the scheduler does', () => {
+  it('"How it works": the longest gap is nine months and Again is ten minutes (the numbers the code has), and it does not say Again starts over', () => {
+    expect(MAX_INTERVAL_DAYS).toBe(270) // nine months of 30 days
+    expect(RELEARN_MINUTES).toBe(10)
+    const spaced = (map: { howItWorks: { sections: readonly { id: string; text: string }[] } }) => map.howItWorks.sections.find((s) => s.id === 'spaced')!.text
+    expect(spaced(en)).toContain('nine months')
+    expect(spaced(en)).toContain('ten minutes')
+    expect(spaced(en)).not.toMatch(/each one longer than the last|starts the word over/i)
+    expect(spaced(ru)).toContain('девяти месяцев')
+    expect(spaced(ru)).toContain('десять минут')
+    expect(spaced(ru)).not.toMatch(/каждый длиннее предыдущего|начинает слово заново/i)
+  })
+})
+
+describe('what a disabled tile and an empty state tell the person to do', () => {
+  it('the practice tiles say what to do (learn words first), not only what is missing', () => {
+    expect(en.practice.needWords).toBe('Learn 5+ words first')
+    expect(ru.practice.needWords).toBe('Выучите 5+ слов')
+  })
+
+  it('the Learn tile says more comes tomorrow, and says so differently for a goal of 0', () => {
+    expect(en.home.learnCapReached).toBe('More tomorrow')
+    expect(ru.home.learnCapReached).toBe('Новые слова завтра')
+    expect(en.home.learnGoalOff).not.toBe(en.home.learnCapReached)
+    expect(ru.home.learnGoalOff).not.toBe(ru.home.learnCapReached)
+  })
+
+  it('an empty list names the way out: Learn, or clearing the search and filters', () => {
+    expect(en.words.emptyLearned).toContain('Learn')
+    expect(ru.words.emptyLearned).toContain('Learn')
+    expect(en.words.emptyFiltered).toContain('clear the filters')
+    expect(ru.words.emptyFiltered).toContain('сбросьте фильтры')
+    expect(en.words.clearSearchAndFilters).toBe('Clear search and filters')
+    expect(ru.words.clearSearchAndFilters).toBe('Сбросить поиск и фильтры')
+  })
+
+  it('a translation failure shows no status code and no "try again" the form has no button for', () => {
+    for (const map of [en, ru]) {
+      for (const text of [map.words.enrich.timeout, map.words.enrich.network, map.words.enrich.other(500)]) expect(text).not.toMatch(/\d/)
+    }
+    expect(offenders(enTexts.filter((t) => /enrich\.(timeout|network|other)/.test(t.path)), /try again/i)).toEqual([])
+  })
+
+  it('the region choice that means both countries says so, and the hint names it', () => {
+    expect(en.words.form.regionBoth).toBe('Both countries or unknown')
+    expect(ru.words.form.regionBoth).toBe('Обе страны или неизвестно')
+    expect(en.words.form.regionHint).toContain(en.words.form.regionBoth)
+    expect(ru.words.form.regionHint).toContain(ru.words.form.regionBoth)
+  })
+
+  it('the Cloze screen has an instruction line in both languages, one sentence', () => {
+    for (const hint of [en.practice.clozeHint, ru.practice.clozeHint]) {
+      expect(hint.length).toBeGreaterThan(10)
+      expect(hint.match(/[.!?](\s|$)/g)).toHaveLength(1)
+    }
+  })
+
+  it('the search placeholder is short enough for 320px (the width itself is checked in the browser)', () => {
+    expect(en.words.searchPlaceholder.length).toBeLessThanOrEqual(34)
+    expect(ru.words.searchPlaceholder.length).toBeLessThanOrEqual(30)
+  })
+})

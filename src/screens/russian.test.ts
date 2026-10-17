@@ -139,7 +139,7 @@ describe('Russian interface, English-only translations', () => {
     const home = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'ready', data: dataFor(words, raw) }, onLearn: noop, onReview: noop, onMatching: noop, onCloze: noop, queue: null, metrics: null } as never))
     expect(home).toContain('0 дней подряд') // the chrome is Russian
     const list = renderToStaticMarkup(createElement(WordsScreen, { data: dataFor(words, raw), queue, savedView: null, onViewChange: noop, onOpen: noop } as never))
-    expect(list).toContain('Поиск: испанский, английский или русский')
+    expect(list).toContain('Поиск на трёх языках')
     expect(list).toContain('word0') // the translation shown is English
     expect(list).not.toMatch(/слово[а-я]/) // and no Russian translation
     const detail = renderToStaticMarkup(createElement(WordDetail, { word: unlearned(1)[0], data: dataFor(unlearned(1), raw), queue } as never))

@@ -78,7 +78,12 @@ describe('wordState: hidden, reference-only, due, established, learning, new —
     })
 
     it('an ordinary noun, verb, adjective or adverb is not reference-only', () => {
-      for (const pos of ['n', 'v', 'adj', 'adv', 'num', 'interj', 'letter']) expect(isReferenceOnly(word({ pos }))).toBe(false)
+      for (const pos of ['n', 'v', 'adj', 'adv', 'num', 'interj']) expect(isReferenceOnly(word({ pos }))).toBe(false)
+    })
+
+    it('a letter of the alphabet is: "c (letter)" is not a word to learn', () => {
+      expect(isReferenceOnly(word({ pos: 'letter' }))).toBe(true)
+      expect(wordState(word({ pos: 'letter' }), NOW)).toBe('reference')
     })
   })
 

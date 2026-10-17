@@ -134,7 +134,7 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
             <button type="button" className="setting-row setting-nav" onClick={onTakePlacement}>
               <span className="setting-text">
                 <span className="setting-label">{t.placementTest}</span>
-                <span className="setting-hint">{settings.startRank === null ? t.placementNone : t.placementAt(settings.startRank)}</span>
+                <span className="setting-hint">{settings.startRank === null ? t.placementNone : t.placementDone}</span>
               </span>
               <span className="setting-chevron" aria-hidden="true">
                 ›

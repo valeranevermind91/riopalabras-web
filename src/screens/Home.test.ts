@@ -233,10 +233,13 @@ describe('the action tiles', () => {
   })
 
   describe('disabled tiles say why, in place of the Spanish word, with no count', () => {
-    it('Daily limit reached', () => {
+    it('More tomorrow (the daily limit reached), and a goal of 0 says so instead', () => {
       const html = render({}, [...learnedWords(8, 3), ...unlearned(20)], { daily_new_word_limit: 5, new_words_learned_today_count: 5, new_words_learned_today_date: TODAY })
       expect(tile(html, 'learn')).toContain('disabled=""')
-      expect(part(html, 'learn', 'tile-sub')).toBe('Daily limit reached')
+      expect(part(html, 'learn', 'tile-sub')).toBe('More tomorrow')
+      const off = render({}, [...learnedWords(8, 3), ...unlearned(20)], { daily_new_word_limit: 0 })
+      expect(part(off, 'learn', 'tile-sub')).toBe('Daily goal is 0')
+      expect(tile(off, 'learn')).toContain('disabled=""')
       expect(tile(html, 'learn')).not.toContain('tile-count')
       expect(tile(html, 'learn')).not.toContain('aprender')
     })
@@ -254,10 +257,10 @@ describe('the action tiles', () => {
       expect(tile(html, 'review')).not.toContain('tile-count')
     })
 
-    it('Need 5+ words, on each practice tile', () => {
+    it('Learn 5+ words first, on each practice tile', () => {
       const html = render({}, [...learnedWords(4, 4), ...unlearned(5)])
       for (const id of ['matching', 'cloze']) {
-        expect(part(html, id, 'tile-sub')).toBe('Need 5+ words')
+        expect(part(html, id, 'tile-sub')).toBe('Learn 5+ words first')
         expect(tile(html, id)).toContain('disabled=""')
         expect(tile(html, id)).not.toContain('parejas')
         expect(tile(html, id)).not.toContain('completar')
@@ -290,10 +293,10 @@ describe('notices', () => {
     return queue
   }
 
-  it('the hidden-words notice sits between the status row and the word card, and nothing is lost', () => {
+  it('the known-words notice sits between the status row and the word card, and nothing is lost', () => {
     const html = render({}, real, {}, ['user_hidden_words'])
     expect(html).toContain('class="notice"')
-    expect(html).toContain('hidden words')
+    expect(html).toContain('known words')
     const [status, notice, card, grid] = ['home-status', 'class="notice"', 'class="wotd"', 'class="home-grid"'].map((c) => html.indexOf(c))
     expect(status).toBeLessThan(notice)
     expect(notice).toBeLessThan(card)
@@ -647,10 +650,10 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     setLanguage('ru')
     try {
       expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова')
-      expect(adviceOf(states.learnNew())).toBe('Повторять нечего — готово 10 новых слов')
+      expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно выучить 10 новых слов')
       expect(adviceOf(states.allDoneToday())).toBe('На сегодня всё')
-      expect(adviceOf(states.poolEmpty())).toBe('Новые слова кончились — добавьте свои или потренируйтесь')
-      expect(adviceOf(states.allClear())).toBe('Всё чисто')
+      expect(adviceOf(states.poolEmpty())).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
+      expect(adviceOf(states.allClear())).toBe('Всё в порядке')
     } finally {
       setLanguage('en')
     }

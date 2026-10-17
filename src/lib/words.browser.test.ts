@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { NOTICE_MS } from '../screens/Words'
 import { strings } from '../strings'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
@@ -108,9 +109,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('opens on All, most common first: segments All · Learned · Hidden, and the Filters and Sort buttons', async () => {
+  it('opens on All, most common first: segments All · Learned · Known, and the Filters and Sort buttons', async () => {
     const page = await open()
-    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Learned 43', 'Hidden 2'])
+    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Learned 43', 'Known 2'])
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])
     expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency'])
     expect((await rows(page))[0]).toBe('de')
@@ -193,9 +194,89 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('Hidden lists the words marked as known with "Bring back"; it goes through the hidden lane and the word leaves the list', async () => {
+  it('the search placeholder fits its field at 320px, in English and in Russian (it used to be cut off at "Russi")', async () => {
+    for (const query of ['?lang=en', '?lang=ru&ru=0']) {
+      const page = await open(query)
+      await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      const fit = await page.$eval('.words-search', (input) => {
+        const style = getComputedStyle(input)
+        const context = document.createElement('canvas').getContext('2d')!
+        context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+        const room = (input as HTMLInputElement).clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+        return { placeholder: (input as HTMLInputElement).placeholder, text: Math.ceil(context.measureText((input as HTMLInputElement).placeholder).width), room: Math.floor(room) }
+      })
+      expect(fit.text, fit.placeholder).toBeLessThanOrEqual(fit.room)
+      await page.close()
+    }
+  }, 60_000)
+
+  it('the clear (×) in the search field is drawn in the app\'s muted ink, not the browser\'s blue (read off a screenshot of the field\'s right end)', async () => {
     const page = await open()
-    await segment(page, 'Hidden')
+    await page.type('.words-search', 'ca')
+    const box = await page.$eval('.words-search', (el) => {
+      const r = el.getBoundingClientRect()
+      const probe = document.createElement('i')
+      probe.style.color = 'var(--muted)'
+      document.body.append(probe)
+      return { x: r.right - 36, y: r.top + 2, width: 30, height: r.height - 4, muted: getComputedStyle(probe).color }
+    })
+    const shot = (await page.screenshot({ clip: { x: box.x, y: box.y, width: box.width, height: box.height }, encoding: 'base64' })) as string
+    // the darkest pixel in that strip is the × (nothing else is drawn there): its colour is the muted ink
+    const darkest = await page.evaluate(
+      (b64) =>
+        new Promise<number[]>((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(img, 0, 0)
+            const data = ctx.getImageData(0, 0, img.width, img.height).data
+            let best = [255, 255, 255]
+            for (let i = 0; i < data.length; i += 4) if (data[i] + data[i + 1] + data[i + 2] < best[0] + best[1] + best[2]) best = [data[i], data[i + 1], data[i + 2]]
+            resolve(best)
+          }
+          img.src = `data:image/png;base64,${b64}`
+        }),
+      shot,
+    )
+    const muted = box.muted.match(/\d+/g)!.slice(0, 3).map(Number)
+    for (let k = 0; k < 3; k++) expect(Math.abs(darkest[k] - muted[k]), `channel ${k}: ${darkest} vs ${muted}`).toBeLessThanOrEqual(30)
+    await page.close()
+  }, 60_000)
+
+  it('a list that is empty because of the search offers "Clear search and filters", and pressing it brings the list back (the segment stays)', async () => {
+    const page = await open()
+    await search(page, 'zzzzqq')
+    await page.waitForSelector('.words-empty')
+    expect(await page.$eval('.words-empty p', (e) => e.textContent)).toBe('No words match. Try another search, or clear the filters.')
+    expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters'])
+    await segment(page, 'Learned')
+    await page.waitForSelector('.words-empty .btn') // still empty for the same reason: the search is still there
+    await page.click('.words-empty .btn')
+    await page.waitForSelector('.word-row')
+    expect(await page.$eval('.words-search', (e) => (e as HTMLInputElement).value)).toBe('')
+    expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['Learned']) // the segment is the person's choice and stays
+    await page.close()
+  }, 60_000)
+
+  it('with a filter on and nothing matching, the same button clears the filter too', async () => {
+    const page = await open()
+    await control(page, 'Filters')
+    await page.waitForSelector('.sheet')
+    await press(page, '.sheet .chip', 'Queued') // nothing is queued in this fixture
+    await closeSheet(page)
+    await page.waitForSelector('.words-empty .btn')
+    await page.click('.words-empty .btn')
+    await page.waitForSelector('.word-row')
+    expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency']) // no "1 filter on" badge any more
+    await page.close()
+  }, 60_000)
+
+  it('Known lists the words marked as known with "Bring back"; it goes through the hidden lane and the word leaves the list', async () => {
+    const page = await open()
+    await segment(page, 'Known')
     await page.waitForSelector('.word-row-bring')
     expect(await page.$$eval('.word-row-bring', (els) => els.length)).toBe(2)
     expect(await page.$('.word-row-star')).toBeNull()
@@ -209,22 +290,22 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     expect(await rows(page)).not.toContain(first)
     await page.waitForFunction(() => (window as never as { __sent: { hidden: unknown[] } }).__sent.hidden.length > 0)
     expect((await sent(page)).hidden.at(-1)).toMatchObject({ hidden: false })
-    expect((await page.$$eval('.segment', (els) => els.map((e) => e.textContent)))[2]).toBe('Hidden 1')
+    expect((await page.$$eval('.segment', (els) => els.map((e) => e.textContent)))[2]).toBe('Known 1')
     await page.close()
   }, 60_000)
 
-  it('a hidden word found by search says so, opens in detail with its kept progress, and "Bring back" there works too', async () => {
+  it('a known word found by search says so, opens in detail with its kept progress, and "Bring back" there works too', async () => {
     const page = await open()
     const fx = await fixture(page)
     await search(page, fx.hidden[0])
     await page.waitForSelector('.word-row-bring')
     await openRow(page, 0)
     const text = await page.$eval('.state-block', (e) => e.textContent ?? '')
-    expect(text).toContain('Hidden')
+    expect(text).toContain('Known')
     expect(text).toContain('Its progress is kept')
     await page.click('.detail-actions .btn-primary')
     await page.waitForFunction(() => document.querySelector('.detail-actions .btn-primary') === null)
-    expect(await page.$eval('.state-block', (e) => e.textContent ?? '')).not.toContain('Hidden')
+    expect(await page.$eval('.state-block', (e) => e.textContent ?? '')).not.toContain('Known')
     expect((await sent(page)).hidden.at(-1)).toMatchObject({ hidden: false })
     expect((await status(page)).pendingFavorites).toBe(0)
     await page.close()
@@ -680,6 +761,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await clickText(page, 'button', f.save)
       await page.waitForSelector('.words-search')
       expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('Added, and queued for Learn.')
+      // the note is a confirmation: still there after a few seconds, gone by itself soon after (not left over the list until it is changed)
+      await new Promise((r) => setTimeout(r, Math.min(3000, NOTICE_MS - 1500)))
+      expect(await page.$('.words-note')).not.toBeNull()
+      await page.waitForFunction(() => document.querySelector('.words-note') === null, { timeout: NOTICE_MS + 2000 })
 
       const sent = await sentAll(page)
       expect(sent.words).toEqual([
@@ -1101,14 +1186,14 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 90_000)
 
-    it('the edit form has region and register selects with "Unknown", and a standard field; they round-trip by hand, and clearing one writes null', async () => {
+    it('the edit form has region and register selects with "Both countries or unknown" / "Unknown", and a standard field; they round-trip by hand, and clearing one writes null', async () => {
       const page = await open()
       await addWord(page)
       await openByName(page, 'Zapallito')
       await clickText(page, '.detail-actions .btn', 'Edit')
       await page.waitForSelector('.word-form')
       expect(await page.$$eval('.form-field select', (els) => els.map((e) => Array.from((e as HTMLSelectElement).options).map((o) => o.textContent)))).toEqual([
-        ['Unknown', 'Argentina only', 'Uruguay only'],
+        ['Both countries or unknown', 'Argentina only', 'Uruguay only'],
         ['Unknown', 'Neutral', 'Informal', 'Vulgar', 'Offensive', 'Pejorative'],
       ])
       expect([await fieldValue(page, f.region), await fieldValue(page, f.register), await fieldValue(page, f.standard)]).toEqual(['', '', '']) // all unknown

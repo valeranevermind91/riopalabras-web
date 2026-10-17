@@ -23,10 +23,9 @@ export function formatBuildDate(builtAt: string, timeZone?: string): string {
   }
 }
 
-/** "v1a2b3c4 · 2026-10-07"; a build without a commit (no git) reads "dev · 2026-10-07". */
+/** "1a2b3c4 · 2026-10-07"; a build without a commit (no git) reads "dev · 2026-10-07". The hash stands alone: a "v" in front of it ("v1a2b3c4") reads as one odd word. */
 export function formatVersion(hash: string, date: string): string {
-  const name = hash === 'dev' ? 'dev' : `v${hash}`
-  return date ? `${name} · ${date}` : name
+  return date ? `${hash} · ${date}` : hash
 }
 
 /** The version as Settings shows it: the hash, and the build's day in the user's own time zone. */

@@ -20,6 +20,9 @@ import { strings } from '../strings'
 
 const t = strings.words
 
+/** How long "Added, and queued for Learn." stays: long enough to read, short enough not to still be there when the list has moved on. */
+export const NOTICE_MS = 6000
+
 const SEGMENTS: readonly Segment[] = ['all', 'learned', 'hidden']
 
 interface WordsScreenProps {
@@ -48,6 +51,12 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const [adding, setAdding] = useState(false)
   // What the last thing done said ("Added, and queued for Learn."), until the list is changed.
   const [notice, setNotice] = useState<string | null>(null)
+  // The note is a confirmation, not state: it goes by itself after NOTICE_MS (or at once when the list is changed, below).
+  useEffect(() => {
+    if (notice === null) return
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS)
+    return () => clearTimeout(timer)
+  }, [notice])
   const now = useMemo(() => new Date(), [])
 
   useEffect(() => {
@@ -98,7 +107,8 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
 
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
   const anyFilter = view.filters.state || view.filters.favourites || view.filters.queued || view.filters.custom || view.filters.pos
-  const emptyText = list.rows.length > 0 ? null : list.searching || anyFilter ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
+  const emptyBecauseFiltered = list.rows.length === 0 && (list.searching || anyFilter)
+  const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
   const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.queued}|${view.filters.custom}|${view.filters.pos}`
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
@@ -196,7 +206,14 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
       {list.searching && <p className="words-note">{t.count(list.rows.length)}</p>}
 
       {emptyText ? (
-        <p className="words-empty">{emptyText}</p>
+        <div className="words-empty">
+          <p>{emptyText}</p>
+          {emptyBecauseFiltered && (
+            <button type="button" className="btn btn-secondary" onClick={() => change({ query: '', filters: NO_FILTERS })}>
+              {t.clearSearchAndFilters}
+            </button>
+          )}
+        </div>
       ) : (
         <VirtualList
           key={listKey}

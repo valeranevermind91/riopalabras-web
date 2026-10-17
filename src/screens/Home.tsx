@@ -249,7 +249,7 @@ function buildTiles(
       es: t.learn.es,
       count: stats.newToLearn,
       disabled: stats.newToLearn === 0,
-      reason: stats.learnPool === 0 ? strings.home.learnPoolEmpty : strings.home.learnCapReached,
+      reason: stats.learnPool === 0 ? strings.home.learnPoolEmpty : stats.dailyLimit === 0 ? strings.home.learnGoalOff : strings.home.learnCapReached,
       primary: primary === 'learn',
       onPress: on.onLearn,
     },

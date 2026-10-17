@@ -317,7 +317,7 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
       <label className="form-field">
         <span className="form-label">{f.region}</span>
         <select className="form-input" value={values.region ?? ''} onChange={(e) => set({ region: customRegion(e.target.value) })}>
-          <option value="">{f.unknown}</option>
+          <option value="">{f.regionBoth}</option>
           {CUSTOM_REGIONS.map((region) => (
             <option key={region} value={region}>
               {f.regionNames[region]}

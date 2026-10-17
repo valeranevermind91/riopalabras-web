@@ -59,14 +59,22 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
     for (let i = 0; i < n; i++) await page.evaluate((k) => (document.querySelectorAll('.place-chip')[k] as HTMLElement).click(), i)
   }
   const forward = (page: Page) => page.evaluate(() => (document.querySelector('.place-footer .btn-primary') as HTMLElement).click())
-  /** Goes through the five sets marking `counts[k]` words in set k; the last Continue is "Finish". */
-  const takeTest = async (page: Page, counts: number[]) => {
+  /**
+   * Goes through the five sets marking `counts[k]` words in set k; the last Continue is "Finish", which shows what the test found. `leave` then
+   * presses the one button on that (Continue in the intro, Done on its own); with `leave: false` the result stays on screen for the test to read.
+   */
+  const takeTest = async (page: Page, counts: number[], leave = true) => {
     for (let k = 0; k < 5; k++) {
       await page.waitForFunction((n) => document.querySelector('.place-progress span')?.textContent?.includes(`${n} `), {}, k + 1)
       await mark(page, counts[k])
       await forward(page)
     }
+    await page.waitForSelector('.place[data-state="result"]')
+    if (leave) await forward(page)
   }
+  /** What the result says: its title, its two lines and its button, in order. */
+  const resultText = (page: Page) =>
+    page.$eval('.place[data-state="result"]', (e) => ({ title: e.querySelector('.place-question')!.textContent, lines: Array.from(e.querySelectorAll('.intro-text')).map((p) => p.textContent), buttons: Array.from(e.querySelectorAll('.btn')).map((b) => b.textContent) }))
   const toPlacement = async (page: Page) => {
     for (let n = 1; n < 5; n++) await clickText(page, '.intro-footer .btn', 'Continue')
     await page.waitForSelector('[data-step="placement"]')
@@ -229,7 +237,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await toSettings(page)
       const rows = await page.$$eval('#settings-learning ~ .settings-group .setting-nav .setting-label', (els) => els.map((e) => e.textContent))
       expect(rows).toEqual(['Take the placement test'])
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts with the most common words.')
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Mark the words you already know, so Learn starts at the right point.')
       await page.close()
     }, 60_000)
 
@@ -248,9 +256,91 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       expect(await page.$eval('h1', (e) => e.textContent)).toBe('Settings')
       expect(await startRanks(page)).toEqual([BAND_STARTS[3]])
       expect((await sent(page)).hidden).toHaveLength(1)
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe(`Learn will draw mostly from word ${BAND_STARTS[3]} onwards, but not only.`)
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts from a harder point than the most common words.')
       await page.close()
     }, 90_000)
+
+    describe('the result, said in plain words before the person moves on', () => {
+      const openStandalone = async (query: string) => {
+        const page = await open(query)
+        await toSettings(page)
+        await clickText(page, '#settings-learning ~ .settings-group .setting-nav', query.includes('lang=ru') ? ru.settings.placementTest : en.settings.placementTest)
+        await page.waitForSelector('.place')
+        return page
+      }
+
+      it('says how many words were marked as known and that Learn starts from a harder point; never the rank itself', async () => {
+        const page = await openStandalone('goal=12&lang=en')
+        await takeTest(page, [5, 4, 5, 1, 0], false) // 15 marked, the wall in the fourth set
+        expect(await resultText(page)).toEqual({
+          title: 'Test finished',
+          lines: ['15 words were marked as known and will stay out of Learn and Review.', 'Learn will start from a harder point.'],
+          buttons: ['Done'],
+        })
+        const shown = await page.$eval('.place', (e) => (e as HTMLElement).innerText)
+        expect(shown.replace('15', '')).not.toMatch(/\d/) // the count is the only number: no start rank, no band
+        expect(shown).not.toContain(String(BAND_STARTS[3]))
+        // it was kept before the person pressed anything: the result is a report, not a question
+        expect(await startRanks(page)).toEqual([BAND_STARTS[3]])
+        expect((await sent(page)).hidden).toHaveLength(1)
+        await forward(page)
+        await page.waitForSelector('.settings')
+        await page.close()
+      }, 90_000)
+
+      it('says one word, not "words", for one; and nothing marked says so', async () => {
+        const one = await openStandalone('goal=12&lang=en')
+        await takeTest(one, [1, 0, 0, 0, 0], false)
+        expect((await resultText(one)).lines).toEqual(['1 word was marked as known and will stay out of Learn and Review.', 'Learn will start with the most common words.'])
+        await one.close()
+        const none = await openStandalone('goal=12&lang=en')
+        await takeTest(none, [0, 0, 0, 0, 0], false)
+        expect((await resultText(none)).lines).toEqual(['No words were marked as known.', 'Learn will start with the most common words.'])
+        await none.close()
+      }, 120_000)
+
+      it('a beginner who marked words still hears that they were marked, and that Learn starts at the beginning', async () => {
+        const page = await openStandalone('goal=12&lang=en')
+        await takeTest(page, [2, 5, 5, 5, 5], false)
+        expect((await resultText(page)).lines).toEqual(['22 words were marked as known and will stay out of Learn and Review.', 'Learn will start with the most common words.'])
+        await page.close()
+      }, 90_000)
+
+      it('in the intro it is the same report, its button says Continue, and it moves on to the next step', async () => {
+        const page = await open('fresh=1&goal=default&lang=en')
+        await toPlacement(page)
+        await takeTest(page, [5, 5, 3, 0, 0], false)
+        expect(await resultText(page)).toEqual({
+          title: 'Test finished',
+          lines: ['13 words were marked as known and will stay out of Learn and Review.', 'Learn will start from a harder point.'],
+          buttons: ['Continue'],
+        })
+        await forward(page)
+        await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 6 of 7')
+        await page.close()
+      }, 90_000)
+
+      it('Back from the result leaves, as the button does: it does not reopen the sets', async () => {
+        const page = await openStandalone('goal=12&lang=en')
+        await takeTest(page, [5, 5, 5, 0, 0], false)
+        expect(await pressBack(page)).toBe('handled')
+        await page.waitForSelector('.settings')
+        expect((await sent(page)).hidden).toHaveLength(1) // kept once
+        await page.close()
+      }, 90_000)
+
+      it('in Russian: the same facts, in the same two lines', async () => {
+        const page = await openStandalone('goal=12&lang=ru')
+        await takeTest(page, [5, 4, 5, 1, 0], false)
+        expect(await resultText(page)).toEqual({
+          title: ru.onboarding.placement.resultTitle,
+          lines: [ru.onboarding.placement.resultMarked(15), ru.onboarding.placement.resultHarder],
+          buttons: [ru.onboarding.placement.resultDone],
+        })
+        expect(ru.onboarding.placement.resultMarked(15)).toBe('Отмечено слов: 15. Известные слова не будут появляться в Learn и Review.')
+        await page.close()
+      }, 90_000)
+    })
 
     it('Skip returns to Settings and writes nothing', async () => {
       const page = await open('goal=12&lang=en')
@@ -283,16 +373,16 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await page.close()
     }, 60_000)
 
-    it('a retake that finds a beginner clears start_rank (the key is removed), and Settings says Learn starts at the beginning again', async () => {
+    it('a retake that finds a beginner clears start_rank (the key is removed), and Settings goes back to describing the test', async () => {
       const page = await open('goal=12&lang=en&start_rank=2000')
       await toSettings(page)
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn will draw mostly from word 2000 onwards, but not only.')
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts from a harder point than the most common words.')
       await clickText(page, '#settings-learning ~ .settings-group .setting-nav', 'Take the placement test')
       await page.waitForSelector('.place')
       await takeTest(page, [2, 5, 5, 5, 5])
       await page.waitForSelector('.settings')
       expect((await sent(page)).settings).toEqual([{ start_rank: null }]) // the one write: the key goes
-      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts with the most common words.')
+      expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Mark the words you already know, so Learn starts at the right point.')
       expect((await sent(page)).hidden).toHaveLength(1) // what they marked is hidden all the same
       await page.close()
     }, 90_000)
@@ -402,7 +492,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await page.waitForSelector('.place')
       expect(await note(page)).toEqual([en.onboarding.placement.hidesNote])
       expect(await placed(page)).toEqual({ afterChips: true, beforeSkip: true, insideSkip: false, insideChips: false })
-      expect(en.onboarding.placement.hidesNote).toBe('Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back in the word list.')
+      expect(en.onboarding.placement.hidesNote).toBe('Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back from the Known tab.')
       await page.close()
     }, 60_000)
 

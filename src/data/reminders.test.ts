@@ -231,10 +231,11 @@ describe("Telegram's permission prompt", () => {
 
 describe('which parts of speech Review skips', () => {
   // The daily-reminder job (riopalabras-proxy, reminders.js: NON_REVIEWABLE_POS) counts what is due with this same list, so the number in
-  // the message matches Review. If this test has to change, change that list too.
-  it('is art, prep, conj, contraction, determiner and pron, in any case, and nothing else', () => {
-    for (const pos of ['art', 'prep', 'conj', 'contraction', 'determiner', 'pron', 'ART', 'Prep']) expect(isReviewablePos(pos), pos).toBe(false)
-    for (const pos of ['n', 'v', 'adj', 'adv', 'num', 'interj', 'letter', 'custom', 'phrase']) expect(isReviewablePos(pos), pos).toBe(true)
+  // the message matches Review. If this test has to change, change that list too. ('letter' was added here first: reminders.js in the proxy repo
+  // still has to get it, or a reminder can count a learned letter that Review no longer shows.)
+  it('is art, prep, conj, contraction, determiner, pron and letter, in any case, and nothing else', () => {
+    for (const pos of ['art', 'prep', 'conj', 'contraction', 'determiner', 'pron', 'letter', 'ART', 'Prep', 'Letter']) expect(isReviewablePos(pos), pos).toBe(false)
+    for (const pos of ['n', 'v', 'adj', 'adv', 'num', 'interj', 'custom', 'phrase']) expect(isReviewablePos(pos), pos).toBe(true)
   })
 })
 

@@ -36,11 +36,11 @@ const render = (words: readonly Word[], savedView: ListView | null = null, setti
 const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', seed: 1, filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
 
 describe('the Words screen', () => {
-  it('has the header, a search field, the segments All · Learned · Hidden with their counts, the two buttons and the list', () => {
+  it('has the header, a search field, the segments All · Learned · Known with their counts, the two buttons and the list', () => {
     const html = render(learnedSome())
     expect(html).toContain('<h1>Words</h1>')
-    expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English or Russian"/)
-    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Learned 5', 'Hidden 0'])
+    expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English, Russian"/)
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Learned 5', 'Known 0'])
     expect(html).toContain('role="list"')
   })
 
@@ -111,7 +111,7 @@ describe('the Words screen', () => {
     expect(html).toMatch(/word-row-star is-on" aria-pressed="true" aria-label="Remove [^"]+ from favourites"/)
   })
 
-  it('the Hidden list has "Bring back" on each row in place of the star', () => {
+  it('the Known list has "Bring back" on each row in place of the star', () => {
     const words = [makeWord('siete', { rank: 1, isHidden: true, repetitions: 2, nextReview: new Date(Date.now() + day) }), makeWord('uno', { rank: 2 })]
     const html = render(words, view({ segment: 'hidden' }))
     expect(html).toContain('Bring back</button>')
@@ -120,8 +120,17 @@ describe('the Words screen', () => {
     expect(html.match(/class="word-row"/g)).toHaveLength(1)
   })
 
+  it('a list empty because of the search or the filters offers to clear them; one empty by nature does not', () => {
+    const button = 'Clear search and filters</button>'
+    expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain(button)
+    expect(render([makeWord('uno')], view({ filters: { ...NO_FILTERS, favourites: true } }))).toContain(button)
+    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).not.toContain(button) // nothing is known yet: there is nothing to clear
+    expect(render([makeWord('uno')], view({ segment: 'learned' }))).not.toContain(button)
+    expect(render(learnedSome())).not.toContain(button) // a list with rows
+  })
+
   it('an empty list says what goes there', () => {
-    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('Nothing hidden. Words you mark as known appear here.')
+    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No known words yet. Words you mark as known appear here.')
     expect(render([makeWord('uno')], view({ segment: 'learned' }))).toContain('Nothing learned yet.')
     expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain('No words match.')
   })
@@ -190,10 +199,10 @@ describe('the filters sheet', () => {
     expect(headings).toEqual(['Progress', 'Show only', 'Part of speech'])
   })
 
-  it('Progress: Any · Not started · In progress · Known well · Due now; Show only: Favourites · Queued · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
+  it('Progress: Any · Not started · In progress · Well learned · Due now; Show only: Favourites · Queued · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
     const html = sheet()
     const group = (id: string) => [...html.match(new RegExp(`aria-labelledby="${id}">.*?</section>`))![0].matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
-    expect(group('sheet-progress')).toEqual(['Any', 'Not started', 'In progress', 'Known well', 'Due now'])
+    expect(group('sheet-progress')).toEqual(['Any', 'Not started', 'In progress', 'Well learned', 'Due now'])
     expect(group('sheet-show-only')).toEqual(['Favourites', 'Queued', 'Custom'])
     expect(group('sheet-pos')).toEqual(['Verbs', 'Nouns', 'Adjectives', 'Adverbs'])
   })
@@ -265,7 +274,7 @@ describe('the word detail', () => {
     it('holds all five rows: State, Repetitions, Interval, Next review and Ease factor', () => {
       const inside = details(detail(learned))
       expect([...inside.matchAll(/<dt>([^<]+)<\/dt>/g)].map((m) => m[1])).toEqual(['State', 'Repetitions', 'Interval', 'Next review', 'Ease factor'])
-      expect(inside).toContain('<dt>State</dt><dd>Known well</dd>')
+      expect(inside).toContain('<dt>State</dt><dd>Well learned</dd>')
       expect(inside).toContain('<dt>Repetitions</dt><dd>3</dd>')
       expect(inside).toContain('<dt>Interval</dt><dd>12d</dd>')
       expect(inside).toContain('<dt>Ease factor</dt><dd>2.36</dd>')
@@ -332,7 +341,7 @@ describe('the word detail', () => {
 
   it('a hidden word explains that its progress is kept, and offers "Bring back"; a favourite offers to remove the star', () => {
     const html = detail({ ...base, isHidden: true, isFavorite: true, repetitions: 2, nextReview: new Date(NOWISH + day) })
-    expect(html).toContain('<dd>Hidden</dd>')
+    expect(html).toContain('<dd>Known</dd>')
     expect(html).toContain('Its progress is kept')
     expect(html).toContain('aria-label="Bring back casa"')
     expect(html).toContain('Remove from favourites')
