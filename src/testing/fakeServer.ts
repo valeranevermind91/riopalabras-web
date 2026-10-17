@@ -6,7 +6,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
  * behind a fetch the REAL supabase-js client is built on. It behaves the way the live database does where it
  * matters here: row-level security only lets `authenticated` users write rows with their own user_id (a write
  * made with the anon key is refused with 401 / 42501), and reads made with the anon key do not fail, they come back empty.
+ *
+ * review_log is APPEND-ONLY, as the real table is (SELECT and INSERT granted, nothing else): a PATCH or a DELETE, or an upsert that would MERGE
+ * into an existing row (that is an UPDATE), is refused with 42501; a plain insert of an id that exists is a 23505 conflict; an insert with
+ * `resolution=ignore-duplicates` skips the rows whose id exists and keeps the rest.
  */
+const APPEND_ONLY = new Set(['review_log'])
 const b64 = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const unb64 = (text: string) => atob(text.replace(/-/g, '+').replace(/_/g, '/'))
 
@@ -34,7 +39,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   // Things a test can break on purpose.
   // Lets a test look at the server's state at the moment a request arrives (before it is applied).
   const spy: { beforeRest: ((request: { method: string; table: string }) => void) | null } = { beforeRest: null }
-  const broken = { forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false }
+  const broken = { loseAnswerOf: null as string | null, rejectRowsWhere: null as ((row: Row) => boolean) | null, missingTable: null as string | null, forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false }
 
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -104,8 +109,26 @@ export function createFakeServer(options: FakeServerOptions = {}) {
       const limit = url.searchParams.get('limit')
       return json(visible.slice(offset, limit === null ? undefined : offset + Number(limit)))
     }
+    if (broken.missingTable === table) return json({ code: 'PGRST205', message: `Could not find the table 'public.${table}' in the schema cache` }, 404)
     if (broken.hangWrites && request.method !== 'GET') return new Promise<Response>(() => {})
     if (broken.forbidWrites || broken.forbidTable === table) return json({ code: '42501', message: `new row violates row-level security policy for table "${table}"` }, 403)
+    if (APPEND_ONLY.has(table) && role === 'authenticated') {
+      const refuse = () => json({ code: '42501', message: `permission denied for table ${table}` }, 403)
+      if (request.method !== 'POST') return refuse() // no UPDATE and no DELETE grant
+      const prefer = request.headers.get('prefer') ?? ''
+      if (prefer.includes('resolution=merge-duplicates')) return refuse() // an upsert that merges is an UPDATE
+      const sent = ((await request.json()) as Row | Row[]) ?? []
+      const batch = Array.isArray(sent) ? sent : [sent]
+      if (batch.some((r) => r.user_id !== claims.sub)) return json({ code: '42501', message: `new row violates row-level security policy for table "${table}"` }, 403)
+      const bad = broken.rejectRowsWhere ? batch.find(broken.rejectRowsWhere) : undefined
+      if (bad) return json({ code: '23514', message: `new row for relation "${table}" violates check constraint` }, 400) // the whole request fails, as one statement does
+      const ignore = prefer.includes('resolution=ignore-duplicates')
+      const fresh = batch.filter((r) => !rows.some((x) => x.id === r.id))
+      if (fresh.length < batch.length && !ignore) return json({ code: '23505', message: `duplicate key value violates unique constraint "${table}_pkey"` }, 409)
+      rows.push(...fresh.map((r) => ({ ...r })))
+      tables.set(table, rows)
+      return new Response(null, { status: 201 })
+    }
     if (request.method === 'DELETE' && role === 'authenticated') {
       // .eq('user_id', …).in('es_word', […]) arrives as user_id=eq.x&es_word=in.("a","b")
       const keep = rows.filter((r) => {
@@ -151,7 +174,11 @@ export function createFakeServer(options: FakeServerOptions = {}) {
     if (url.pathname === '/auth/telegram' && broken.proxyUnreachable) throw new TypeError('Failed to fetch') // no network: the request never completes
     if (url.pathname === '/auth/telegram') response = await proxy(request)
     else if (url.pathname.startsWith('/auth/v1/')) response = await auth(url, request)
-    else if (url.pathname.startsWith('/rest/v1/')) response = await rest(url, request)
+    else if (url.pathname.startsWith('/rest/v1/')) {
+      response = await rest(url, request)
+      // The server did the write and the answer never reached the client (a dropped connection): the case that makes a retry send the same row twice.
+      if (broken.loseAnswerOf && url.pathname === `/rest/v1/${broken.loseAnswerOf}` && request.method !== 'GET') throw new TypeError('Failed to fetch')
+    }
     else response = json({ message: 'not found' }, 404)
     log.push({ url: url.pathname, method: request.method, role, status: response.status })
     return response

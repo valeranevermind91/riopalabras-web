@@ -1,0 +1,93 @@
+// A page for the real-browser review-log test (src/lib/reviewLog.browser.test.ts): ONE of the four real screens (Review, Learn, Matching or Cloze) over
+// the real write queue, the real review log and its real learned-at store; the queue's sender only records what it is given. Everything the log
+// sends is in window.__log (the entries, in order); progress rows are in window.__progress. Query: screen=review|learn|matching|cloze (default review),
+// logfail=1 (the log's send always fails, as with a table that cannot be reached), learned=N (how many learned words, default 12), fresh=N (how many
+// new words Learn can teach, default 12).
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import '../index.css'
+import { applyProgressUpdates, applySettingsPatch } from '../data/mutations'
+import { createLearnedAtStore, createReviewLog, type ReviewLogEntry } from '../data/reviewLog'
+import { parseSettings } from '../data/settings'
+import { computeStats } from '../data/stats'
+import type { ProgressUpdate, SettingsPatch, Word } from '../data/types'
+import { createWriteQueue } from '../data/writeQueue'
+import { ClozeScreen } from '../screens/Cloze'
+import { LearnScreen } from '../screens/Learn'
+import { MatchingScreen } from '../screens/Matching'
+import { ReviewScreen } from '../screens/Review'
+import { makeWord } from './makeWord'
+
+const params = new URLSearchParams(location.search)
+const screen = params.get('screen') ?? 'review'
+const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number } = { log: [], progress: [], logAttempts: 0 }
+;(window as never as { __log: ReviewLogEntry[]; __progress: ProgressUpdate[]; __sent: typeof sent }).__log = sent.log
+;(window as never as { __progress: ProgressUpdate[] }).__progress = sent.progress
+;(window as never as { __sent: typeof sent }).__sent = sent
+
+const queue = createWriteQueue(
+  {
+    sendProgress: async (updates) => void sent.progress.push(...updates),
+    sendSettings: async () => {},
+    sendHidden: async () => {},
+    sendLog: async (entries) => {
+      sent.logAttempts++
+      if (params.get('logfail') === '1') throw new Error('review_log is unreachable')
+      sent.log.push(...entries)
+    },
+  },
+  { retryDelaysMs: [1], logRetryDelaysMs: [1, 1], sleep: async () => {} },
+)
+const memory = () => {
+  const items = new Map<string, string>()
+  return { getItem: (k: string) => items.get(k) ?? null, setItem: (k: string, v: string) => void items.set(k, v), removeItem: (k: string) => void items.delete(k) }
+}
+const reviewLog = createReviewLog({ enqueue: queue.enqueueLog, learnedAt: createLearnedAtStore('harness-user', memory()) })
+
+const DAY = 86_400_000
+const LEARNED = Number(params.get('learned') ?? 12)
+const FRESH = Number(params.get('fresh') ?? 12)
+const pad = (n: number) => String(n).padStart(2, '0')
+const WORDS: readonly Word[] = [
+  // learned and due, with an example the Cloze can blank and a translation each: Review, Matching and Cloze all use these
+  ...Array.from({ length: LEARNED }, (_, i) =>
+    makeWord(`vieja${pad(i + 1)}`, {
+      rank: i + 1,
+      repetitions: 2,
+      interval: 3,
+      nextReview: new Date(Date.now() - DAY - i * 3_600_000),
+      enTranslation: `old${i + 1}`,
+      ruTranslation: `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,
+      exampleSentence: `Esta es la vieja${pad(i + 1)} del día.`,
+      wordFormInExample: `vieja${pad(i + 1)}`,
+    }),
+  ),
+  // new words for Learn
+  ...Array.from({ length: FRESH }, (_, i) => makeWord(`nueva${pad(i + 1)}`, { rank: 100 + i, enTranslation: `new${i + 1}`, ruTranslation: `новое${i + 1}` })),
+]
+
+export function Harness() {
+  const [words, setWords] = useState<readonly Word[]>(WORDS)
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 20, onboarding_done: true }))
+  const latest = useRef(settings)
+  const latestWords = useRef(words)
+  const applySettings = useCallback((patch: SettingsPatch) => {
+    latest.current = applySettingsPatch(latest.current, patch)
+    setSettings(latest.current)
+  }, [])
+  const applyProgress = useCallback((updates: readonly ProgressUpdate[]) => {
+    latestWords.current = applyProgressUpdates(latestWords.current, updates)
+    setWords(latestWords.current)
+  }, [])
+  const data = useMemo(
+    () => ({ words, settings, stats: computeStats(words, settings, new Date()), getSettings: () => latest.current, getWords: () => latestWords.current, applySettings, applyProgress, applyHidden: () => {}, degraded: [], retryDegraded: () => {} }) as never,
+    [words, settings, applySettings, applyProgress],
+  )
+  const common = { data, queue, metrics: null, reviewLog, onHome: () => {} }
+  if (screen === 'learn') return <LearnScreen {...common} onReview={() => {}} />
+  if (screen === 'matching') return <MatchingScreen {...common} />
+  if (screen === 'cloze') return <ClozeScreen {...common} />
+  return <ReviewScreen {...common} onLearn={() => {}} />
+}
+
+createRoot(document.getElementById('root')!).render(<Harness />)

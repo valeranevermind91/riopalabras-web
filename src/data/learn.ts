@@ -1,4 +1,5 @@
 import { learnedState } from '../sm2/sm2'
+import type { ReviewLog } from './reviewLog'
 import { dayPatch, learnedToday, newWordsPatch } from './daily'
 import { nothingDueNow } from './dayCards'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
@@ -134,6 +135,9 @@ export interface FinishDeps {
   getWords?: () => readonly Word[]
   /** Called once, after the batch is applied and queued (so today's counters are current). Must not throw. */
   onFinished?: () => void
+  /** Optional: the review log, and the id of this batch's session. Each word the batch introduces becomes one row (mode 'learn'). */
+  log?: ReviewLog
+  sessionId?: string | null
 }
 
 /**
@@ -159,6 +163,9 @@ export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => 
     deps.applyProgress(updates)
     if (Object.keys(patch).length > 0) deps.applySettings(patch)
     ticket = deps.queue.enqueueBatch(updates, patch)
+    // One row per word introduced, after the batch is queued. Their state before is read from the batch's own words (new), so this is not affected by the
+    // update just applied. A word marked "already known" instead is not in the batch and is not a rating: nothing is logged for it.
+    deps.log?.learned(batch.words, learnedState(now), deps.sessionId ?? null, now)
     deps.onFinished?.()
     return ticket
   }

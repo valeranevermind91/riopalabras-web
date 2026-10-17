@@ -12,6 +12,7 @@ import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
+import type { ReviewLog } from '../data/reviewLog'
 import type { RemindersControl } from '../lib/useReminders'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { arrivalOf, type Arrival, type ExitPlan } from '../lib/swipe'
@@ -24,18 +25,23 @@ interface LearnScreenProps {
   metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
   /** The daily reminder (App owns it). Without it the end screen makes no offer. */
   reminders?: RemindersControl
+  /** The review log (App makes it once the user is signed in). Without it nothing is logged. */
+  reviewLog?: ReviewLog | null
   onHome: () => void
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
 }
 
-export function LearnScreen({ data, queue, metrics, reminders, onHome, onReview, onBack }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome, onReview, onBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
   const finisher = useRef<(() => QueueTicket) | null>(null)
   const knownDeps = { queue, applyHidden: data.applyHidden, getSettings: data.getSettings, applySettings: data.applySettings }
+
+  // The review log: a batch is one sitting, so it has a session id of its own (a new batch gets a new one).
+  const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
 
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
@@ -120,6 +126,7 @@ export function LearnScreen({ data, queue, metrics, reminders, onHome, onReview,
       applyProgress: data.applyProgress,
       applySettings: data.applySettings,
       onFinished: () => metrics?.markActiveToday(),
+      ...(reviewLog ? { log: reviewLog, sessionId } : {}),
     })
     setTicket(finisher.current())
   }
@@ -148,6 +155,7 @@ export function LearnScreen({ data, queue, metrics, reminders, onHome, onReview,
     setUndoOffer(null)
     setBatch(selectLearnBatch(data.words, data.settings, new Date()))
     finisher.current = null
+    setSessionId(reviewLog?.startSession() ?? null)
     setTicket(null)
     setIndex(0)
     setDirection('next')

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ClozeQuestion } from '../components/ClozeQuestion'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
+import type { ReviewLog } from '../data/reviewLog'
 import {
   clozeCueLines,
   PRACTICE_MIN_WORDS,
@@ -25,16 +26,24 @@ interface ClozeScreenProps {
   data: UserData
   queue: WriteQueue
   metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
+  /** The review log (App makes it once the user is signed in). Without it nothing is logged. */
+  reviewLog?: ReviewLog | null
   onHome: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
 }
 
-export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScreenProps) {
+export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }: ClozeScreenProps) {
   const t = strings.practice
   const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(data.words))
   const [progress, setProgress] = useState<ClozeProgress>(startCloze)
   const { index, results, done } = progress
+  // The review log: a Cloze session has an id of its own, and each question's time is from the question appearing to the answer.
+  const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
+  const shownAt = useRef(0)
+  useEffect(() => {
+    shownAt.current = Date.now() // the first question is in front of the user from the moment the screen is
+  }, [])
 
   const header = <ScreenHeader title={t.clozeTitle} onBack={onBack} />
 
@@ -43,6 +52,9 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
     // Each answered question is a card toward the streak (giving up is not an answer); once per finished session, today's metrics row.
     const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
     recordPracticeCards(deps, outcome === 'gaveUp' ? 0 : 1)
+    // One log row per answered question, right or wrong (giving up is not an answer).
+    if (reviewLog && outcome !== 'gaveUp') reviewLog.practice({ word: session[index].word, mode: 'cloze', correct: outcome === 'correct', sessionId, durationMs: Date.now() - shownAt.current, now: new Date() })
+    shownAt.current = Date.now() // the next question is in front of the user from now
     const next = answerCloze(progress, session.length, outcome, () => {
       haptic('success')
       recordPracticeCompleted(deps)
@@ -53,6 +65,8 @@ export function ClozeScreen({ data, queue, metrics, onHome, onBack }: ClozeScree
   const newSession = () => {
     haptic('tap')
     setSession(buildClozeSession(data.words))
+    setSessionId(reviewLog?.startSession() ?? null)
+    shownAt.current = Date.now()
     setProgress(startCloze())
   }
 

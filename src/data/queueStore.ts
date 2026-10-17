@@ -1,4 +1,5 @@
 import type { DailyMetricsRow } from './metrics'
+import type { LogMode, LogState, ReviewLogEntry } from './reviewLog'
 import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch } from './types'
 
 /**
@@ -6,6 +7,11 @@ import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch } from 
  * does not lose them. Every entry is stamped with the time it was queued; on restore, entries older than
  * MAX_AGE_MS are dropped and counted. Storage is best-effort throughout: a missing or throwing localStorage
  * changes nothing about how the queue behaves, it just means nothing survives a kill.
+ *
+ * The review log (an append-only history, see reviewLog.ts) is the exception to two of those rules. It is kept under a key of its own, so that a
+ * log that has grown large (the server out of reach for a long time) can fill the quota without stopping the progress, settings and hidden
+ * words above from being saved. And it has no age limit: a row is a fact, sending it again is harmless (the insert ignores a repeated id), and
+ * dropping it for being old would lose a rating. What bounds it is a count, in writeQueue.ts.
  */
 
 /** Entries older than this are not replayed (see the staleness notes in writeQueue.ts and the Debug screen). */
@@ -39,6 +45,8 @@ export interface QueueSnapshot {
   metrics: Stamped<DailyMetricsRow>[]
   /** Custom-word saves and deletes (user_words). */
   words: Stamped<CustomWordOp>[]
+  /** Review-log rows not yet sent, oldest first. Saved under its own key; never dropped for age. */
+  log: ReviewLogEntry[]
 }
 
 export interface RestoreResult {
@@ -62,6 +70,7 @@ export interface StorageLike {
 }
 
 export const storageKeyFor = (userId: string) => `${KEY_PREFIX}${userId}`
+export const logStorageKeyFor = (userId: string) => `${KEY_PREFIX}${userId}.log`
 
 export function safeLocalStorage(): StorageLike | null {
   try {
@@ -71,7 +80,9 @@ export function safeLocalStorage(): StorageLike | null {
   }
 }
 
-export const isEmptySnapshot = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.favorites.length === 0 && s.settings === null && s.metrics.length === 0 && s.words.length === 0
+/** Nothing in the part saved under the main key (the log has a key of its own). */
+const isEmptyMain = (s: QueueSnapshot) => s.progress.length === 0 && s.hidden.length === 0 && s.favorites.length === 0 && s.settings === null && s.metrics.length === 0 && s.words.length === 0
+export const isEmptySnapshot = (s: QueueSnapshot) => isEmptyMain(s) && s.log.length === 0
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
@@ -92,6 +103,33 @@ function readMetrics(raw: unknown): DailyMetricsRow | null {
 }
 
 const text = (v: unknown): v is string => typeof v === 'string'
+
+const LOG_MODES: readonly string[] = ['review', 'learn', 'matching', 'cloze']
+const LOG_STATES: readonly string[] = ['new', 'learning', 'review', 'relearning']
+
+function readLogEntry(raw: unknown): ReviewLogEntry | null {
+  if (!isObject(raw) || !text(raw.id) || !raw.id || !text(raw.esWord) || !raw.esWord || !text(raw.reviewedAt) || Number.isNaN(Date.parse(raw.reviewedAt))) return null
+  if (!finite(raw.rating) || raw.rating < 1 || raw.rating > 4 || !text(raw.mode) || !LOG_MODES.includes(raw.mode) || !text(raw.stateBefore) || !LOG_STATES.includes(raw.stateBefore)) return null
+  if (!finite(raw.scheduledDays) || !finite(raw.intervalAfter) || !finite(raw.easeAfter) || !finite(raw.repetitionsAfter)) return null
+  if (raw.elapsedDays !== null && !finite(raw.elapsedDays)) return null
+  if (raw.sessionId !== null && !text(raw.sessionId)) return null
+  if (raw.durationMs !== null && !finite(raw.durationMs)) return null
+  return {
+    id: raw.id,
+    esWord: raw.esWord,
+    reviewedAt: raw.reviewedAt,
+    rating: raw.rating,
+    mode: raw.mode as LogMode,
+    stateBefore: raw.stateBefore as LogState,
+    elapsedDays: raw.elapsedDays,
+    scheduledDays: raw.scheduledDays,
+    intervalAfter: raw.intervalAfter,
+    easeAfter: raw.easeAfter,
+    repetitionsAfter: raw.repetitionsAfter,
+    sessionId: raw.sessionId,
+    durationMs: raw.durationMs,
+  }
+}
 
 function readWordOp(raw: unknown): CustomWordOp | null {
   if (!isObject(raw)) return null
@@ -148,12 +186,59 @@ function readList<T>(list: unknown, read: (raw: unknown) => T | null, cutoff: nu
 /** The queue's store for one signed-in user: its own key, and a user id inside the record that must match. */
 export function createQueueStore(userId: string, storage: StorageLike | null = safeLocalStorage(), now: () => number = Date.now): QueueStore {
   const key = storageKeyFor(userId)
+  const logKey = logStorageKeyFor(userId)
+  // What the log key holds now (how many rows, the first and the last): the log is rewritten only when it has changed, not on every save of the rest.
+  let savedLog: string | null = null
+  const signatureOf = (log: readonly ReviewLogEntry[]) => (log.length === 0 ? '' : `${log.length}:${log[0].id}:${log[log.length - 1].id}`)
+
+  /** Writes the log under its own key; a failure here (quota) does not touch the main key. */
+  const saveLog = (log: readonly ReviewLogEntry[]) => {
+    if (!storage) return
+    const signature = signatureOf(log)
+    if (signature === savedLog) return
+    try {
+      if (log.length === 0) storage.removeItem(logKey)
+      else storage.setItem(logKey, JSON.stringify({ v: 1, userId, savedAt: now(), entries: log }))
+      savedLog = signature
+    } catch {
+      // storage full, blocked or missing: the rows stay in memory and are tried again at the next save
+    }
+  }
+
+  /** The log's rows from its key: never another account's, unreadable rows counted and left out, nothing dropped for age. */
+  const readLog = (logText: string | null, tally: { unreadable: number }): ReviewLogEntry[] => {
+    if (logText === null) return []
+    let record: unknown
+    try {
+      record = JSON.parse(logText)
+    } catch {
+      tally.unreadable++
+      return []
+    }
+    if (!isObject(record) || record.v !== 1 || record.userId !== userId || !Array.isArray(record.entries)) {
+      if (!(isObject(record) && record.userId !== userId)) tally.unreadable++
+      return []
+    }
+    const seen = new Set<string>()
+    const out: ReviewLogEntry[] = []
+    for (const raw of record.entries) {
+      const entry = readLogEntry(raw)
+      if (!entry) tally.unreadable++
+      else if (!seen.has(entry.id)) {
+        seen.add(entry.id)
+        out.push(entry)
+      }
+    }
+    savedLog = signatureOf(out) // what is on disk is what was read: not rewritten until it changes
+    return out
+  }
 
   return {
     save(snapshot) {
       if (!storage) return
+      saveLog(snapshot.log)
       try {
-        if (isEmptySnapshot(snapshot)) {
+        if (isEmptyMain(snapshot)) {
           storage.removeItem(key)
           return
         }
@@ -179,22 +264,28 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
     load() {
       if (!storage) return null
       let text: string | null
+      let logText: string | null
       try {
         text = storage.getItem(key)
+        logText = storage.getItem(logKey)
       } catch {
         return null
       }
-      if (text === null) return null
+      if (text === null && logText === null) return null
+
+      const logTally = { unreadable: 0 }
+      const log = readLog(logText, logTally)
+      if (text === null) return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [], log }, droppedStale: 0, droppedUnreadable: logTally.unreadable }
 
       let record: unknown
       try {
         record = JSON.parse(text)
       } catch {
-        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [] }, droppedStale: 0, droppedUnreadable: 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [], log }, droppedStale: 0, droppedUnreadable: 1 + logTally.unreadable }
       }
       // Never another account's queue, even if it somehow sits under this key.
       if (!isObject(record) || record.v !== 1 || record.userId !== userId) {
-        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [] }, droppedStale: 0, droppedUnreadable: isObject(record) && record.userId !== userId ? 0 : 1 }
+        return { snapshot: { progress: [], hidden: [], favorites: [], settings: null, metrics: [], words: [], log }, droppedStale: 0, droppedUnreadable: (isObject(record) && record.userId !== userId ? 0 : 1) + logTally.unreadable }
       }
 
       const cutoff = now() - MAX_AGE_MS
@@ -223,7 +314,7 @@ export function createQueueStore(userId: string, storage: StorageLike | null = s
         tally.unreadable++
       }
 
-      return { snapshot: { progress, hidden, favorites, settings, metrics, words }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable }
+      return { snapshot: { progress, hidden, favorites, settings, metrics, words, log }, droppedStale: tally.stale, droppedUnreadable: tally.unreadable + logTally.unreadable }
     },
   }
 }

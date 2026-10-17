@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
+import type { ReviewLogEntry } from './reviewLog'
 import { mergeSettingsRaw } from './settings'
 import type { CustomWordOp, ProgressUpdate, SettingsPatch, UserSettings } from './types'
 
@@ -28,6 +29,15 @@ const AUTH_MESSAGE = /jwt|token.*(expired|invalid)|invalid.*token|not authentica
 export function isRejection(err: unknown): boolean {
   if (!(err instanceof WriteError)) return false
   return err.status === 401 || err.status === 403 || err.code === '42501' || err.code === 'PGRST301' || err.code === 'PGRST300' || err.code === 'NO_SESSION' || AUTH_MESSAGE.test(err.message)
+}
+
+/**
+ * A write the database will never accept as it stands: one of its rows breaks a rule (SQLSTATE 22xxx, a bad value; 23xxx, a constraint). That is not
+ * "try again later", and not a refusal for who is asking. It is judged by the code alone: a problem with the request as a whole (a missing table or
+ * column, PGRST codes) is not about one row and must never be taken for it.
+ */
+export function isDataError(err: unknown): boolean {
+  return err instanceof WriteError && !isRejection(err) && /^2[23][0-9A-Z]{3}$/.test(err.code ?? '')
 }
 
 const fail = (table: string, error: { message: string; code?: string }, status: number | null): never => {
@@ -166,4 +176,41 @@ export async function writeCustomWords(client: SupabaseClient, userId: string, o
     const { error, status } = await client.from('user_words').delete().eq('user_id', userId).eq('es_word', op.esWord)
     if (error) fail('user_words', error, status)
   }
+}
+
+/** One review_log row, in the table's columns. stability_after and difficulty_after are for a later scheduler and are not filled in; algo says which scheduler made the numbers. */
+export function toReviewLogRow(userId: string, entry: ReviewLogEntry) {
+  return {
+    id: entry.id,
+    user_id: userId,
+    es_word: entry.esWord,
+    reviewed_at: entry.reviewedAt,
+    rating: entry.rating,
+    mode: entry.mode,
+    state_before: entry.stateBefore,
+    elapsed_days: entry.elapsedDays,
+    scheduled_days: entry.scheduledDays,
+    interval_after: entry.intervalAfter,
+    ease_after: entry.easeAfter,
+    repetitions_after: entry.repetitionsAfter,
+    stability_after: null,
+    difficulty_after: null,
+    algo: 'sm2',
+    session_id: entry.sessionId,
+    duration_ms: entry.durationMs,
+  }
+}
+
+/**
+ * Appends review_log rows. The log is append-only (the client may SELECT and INSERT and nothing else), and every row has an id made on the client,
+ * so the insert is "ignore a duplicate id": INSERT ... ON CONFLICT (id) DO NOTHING. A retry, or a replay of a row that did arrive, then changes nothing
+ * and is not an error. (It must not be a merging upsert: that is an UPDATE, which the table refuses.) Throws on any failure.
+ */
+export async function insertReviewLog(client: SupabaseClient, userId: string, entries: readonly ReviewLogEntry[]): Promise<void> {
+  if (entries.length === 0) return
+  const { error, status } = await client.from('review_log').upsert(
+    entries.map((e) => toReviewLogRow(userId, e)),
+    { onConflict: 'id', ignoreDuplicates: true },
+  )
+  if (error) fail('review_log', error, status)
 }

@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { RatingButtons } from '../components/RatingButtons'
 import { ReviewCard } from '../components/ReviewCard'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { buildReviewSession, createRater, dueWords, requeueAgain, withUpdate } from '../data/review'
 import type { MetricsRecorder } from '../data/metrics'
+import type { ReviewLog } from '../data/reviewLog'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
@@ -16,19 +17,27 @@ interface ReviewScreenProps {
   data: UserData
   queue: WriteQueue
   metrics: Pick<MetricsRecorder, 'recordReviewRating'> | null
+  /** The review log (App makes it once the user is signed in). Without it nothing is logged. */
+  reviewLog?: ReviewLog | null
   onHome: () => void
   onLearn: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
 }
 
-export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: ReviewScreenProps) {
+export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn, onBack }: ReviewScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [session, setSession] = useState(() => buildReviewSession(data.words, new Date()))
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [completed, setCompleted] = useState(false)
   const ratedIndex = useRef(-1)
+  // The review log: this session's id (a new one when "Continue" starts the next session), and when the card now in front of the user appeared.
+  const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
+  const shownAt = useRef(0)
+  useEffect(() => {
+    shownAt.current = Date.now() // the first card is in front of the user from the moment the screen is
+  }, [])
   // The words rated in this session: a word comes back at the end after an Again (once: see requeueAgain), and rating it again is the same card, not a second one.
   const ratedInSession = useRef(new Set<string>())
 
@@ -40,6 +49,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
       getWords: data.getWords,
       queue,
       ...(metrics ? { metrics } : {}),
+      ...(reviewLog ? { log: reviewLog } : {}),
     }),
   )
 
@@ -58,7 +68,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     const word = session[index]
     const repeat = ratedInSession.current.has(word.esWord)
     ratedInSession.current.add(word.esWord)
-    const update = rate(word, quality, new Date(), !repeat)
+    const update = rate(word, quality, new Date(), !repeat, { sessionId, durationMs: Date.now() - shownAt.current })
 
     // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease), but only
     // once: a second Again lets it leave (it is already scheduled ten minutes out). The end is one card further on whenever a word is brought
@@ -77,6 +87,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     } else {
       setIndex(index + 1)
       setRevealed(false)
+      shownAt.current = Date.now() // the next card is in front of the user from now
     }
   }
 
@@ -87,6 +98,8 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
   const refresh = () => {
     haptic('tap')
     setSession(buildReviewSession(data.words, new Date()))
+    setSessionId(reviewLog?.startSession() ?? null) // the next session is a new sitting in the log
+    shownAt.current = Date.now()
     setIndex(0)
     setRevealed(false)
     setCompleted(false)

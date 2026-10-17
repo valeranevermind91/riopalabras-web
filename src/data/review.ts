@@ -1,5 +1,6 @@
 import { applyReview, type Quality } from '../sm2/sm2'
 import { recordCards } from './dayCards'
+import type { ReviewLog } from './reviewLog'
 import type { MetricsRecorder } from './metrics'
 import { isReviewDue } from './stats'
 import { wordKey } from './words'
@@ -95,18 +96,30 @@ export interface RaterDeps {
   getWords?: () => readonly Word[]
   /** Optional: today's metrics row. Recording never throws, so it can't stand in the way of a rating. */
   metrics?: Pick<MetricsRecorder, 'recordReviewRating'>
+  /** Optional: the review log (reviewLog.ts). Each rating becomes one row, after it has been applied and queued; logging never throws. */
+  log?: ReviewLog
+}
+
+/** What the screen knows about a rating that the rating itself does not: which session it belongs to, and how long the card was in front of the user. */
+export interface RatingContext {
+  sessionId: string | null
+  /** Milliseconds from the card being shown to the rating, or null if the screen cannot tell. */
+  durationMs: number | null
 }
 
 /**
  * Handles a rating: applies it to the in-memory store immediately, queues the write, and counts the card toward today's streak (a settings
  * write only while the day has not counted yet: see dayPatch). `counted` is false for a card that is a repeat of a word already rated in this
  * session (a relearning re-queue): the same word rated Again and then Good is one card, not two. The rating itself is written either way.
+ * With `context` (and a log in the deps) the rating is also written to the review log: one row per rating, a re-queued card's too, because each
+ * is a real scheduling event. The log is written AFTER the rating is applied and queued, and nothing in it can stop that.
  */
 export function createRater(deps: RaterDeps) {
-  return function rate(word: Word, quality: Quality, now: Date = new Date(), counted: boolean = true): ProgressUpdate {
+  return function rate(word: Word, quality: Quality, now: Date = new Date(), counted: boolean = true, context?: RatingContext): ProgressUpdate {
     const update = rateWord(word, quality, now)
     deps.applyProgress([update])
     deps.queue.enqueueProgress(update)
+    deps.log?.review({ word, rating: quality, update, sessionId: context?.sessionId ?? null, durationMs: context?.durationMs ?? null, now })
 
     // After the rating is applied, so "no review is due" sees it.
     recordCards(deps, counted ? 1 : 0, now)

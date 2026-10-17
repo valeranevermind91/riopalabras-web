@@ -5,10 +5,11 @@ import { isOffline } from '../lib/online'
 import { fetchSettings, fetchSettingsRow } from './overlay'
 import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
 import { reconcileSettingsPatch } from './restoreRules'
+import type { ReviewLogEntry } from './reviewLog'
 import { parseSettings } from './settings'
 import { createQueueStore, type FavoriteOpEntry, type HiddenOpEntry, type QueueSnapshot, type QueueStore } from './queueStore'
 import { wordKey } from './words'
-import { WriteError, isRejection, upsertDailyMetrics, upsertProgress, writeCustomWords, writeFavoriteWords, writeHiddenWords, writeSettings } from './writes'
+import { WriteError, insertReviewLog, isDataError, isRejection, upsertDailyMetrics, upsertProgress, writeCustomWords, writeFavoriteWords, writeHiddenWords, writeSettings } from './writes'
 
 /** One word's latest hidden state: hidden = true adds it to user_hidden_words, false removes it. */
 export interface HiddenOp {
@@ -42,6 +43,11 @@ export interface QueueSender {
   /** Optional: the best-effort metrics lane is simply off without it. */
   /** `restoredDates` is given only when some rows came back from storage after a restart (see restoreRules.ts / metrics merge). */
   sendMetrics?: (rows: readonly DailyMetricsRow[], restoredDates?: ReadonlySet<string>) => Promise<void>
+  /**
+   * Optional: the review-log lane is simply off without it. Receives rows to APPEND (never replaced, never changed); the insert must ignore a
+   * row whose id is already there, so that sending a row twice (a retry, a replay after a restart) is harmless.
+   */
+  sendLog?: (entries: readonly ReviewLogEntry[]) => Promise<void>
   /**
    * Optional: gets a usable session back (refresh, or sign in again). Called once when the server refuses a write
    * for who is asking (401/403, row-level security); true means "try the same write again now".
@@ -93,6 +99,16 @@ export interface QueueStatus {
    * Clears when a write is accepted again.
    */
   authRejected: boolean
+  /** Review-log rows waiting to be sent (their lane never counts toward `unsaved`, `failed` or `authRejected`: the log is not user-facing). */
+  pendingLog: number
+  /** The last log send failed (the lane retries on its own slow schedule, and again when anything is queued, restored or retried). */
+  logError: string | null
+  /** The log lane used up its retries, or was refused (no session), and is idle until the next enqueue, restore or retry(). */
+  logGaveUp: boolean
+  /** Rows the database refused one by one (a value that breaks a rule of the table) and that were therefore left out. Not counted for a table that rejects everything: see runLog. */
+  logDropped: number
+  /** Oldest rows given up because the waiting log passed LOG_CAP (the server was out of reach for a very long time). */
+  logEvicted: number
   /** Entries read back from storage when the app opened (writes a killed webview had not sent). */
   restoredEntries: number
   /** Entries left out on restore because they were older than the staleness limit (7 days), and entries that could not be read. */
@@ -125,6 +141,12 @@ export interface QueueTicket {
 export interface WriteQueue {
   /** Records a word's latest state; an earlier unsent state for the same word is replaced. */
   enqueueProgress: (update: ProgressUpdate) => void
+  /**
+   * Appends one review-log row. Unlike every lane above it keeps EVERY row (nothing replaces an earlier one, there is no "latest state per key"),
+   * in order, until the server has it: it is saved on the device with the rest of the queue, replayed after a restart, and a failure to send it
+   * is invisible to the UI and never delays anything. A row whose id is already waiting is not added again.
+   */
+  enqueueLog: (entry: ReviewLogEntry) => void
   /** Merges keys into the pending settings patch. */
   enqueueSettings: (patch: SettingsPatch) => void
   /**
@@ -189,6 +211,8 @@ export interface WriteQueueOptions {
   chunkSize?: number
   /** Waits between attempts of the metrics lane; once exhausted it idles until the next enqueue or retry(). */
   metricsRetryDelaysMs?: readonly number[]
+  /** Waits between attempts of the review-log lane. */
+  logRetryDelaysMs?: readonly number[]
   sleep?: (ms: number) => Promise<void>
   /** A request that has not answered after this long counts as failed (the retries and the banner follow), instead of "saving" forever. */
   sendTimeoutMs?: number
@@ -207,6 +231,15 @@ const DEFAULT_SEND_TIMEOUT_MS = 20_000
 const DEFAULT_RETRY_DELAYS_MS = [1000, 3000, 8000]
 const DEFAULT_CHUNK_SIZE = 100
 const DEFAULT_METRICS_RETRY_DELAYS_MS = [5000, 30_000, 120_000]
+const DEFAULT_LOG_RETRY_DELAYS_MS = [5000, 30_000, 120_000]
+/** Rows per request. */
+const LOG_CHUNK = 100
+/**
+ * The most log rows kept waiting. A row is small (about 300 bytes saved), so this is about a megabyte and a half on disk: far more than the app writes
+ * between two successful sends, so it is reached only when the server has been out of reach for weeks. Past it the OLDEST row goes (counted as
+ * logEvicted): a bound has to exist, or a table that never answers would eat the device's storage.
+ */
+export const LOG_CAP = 5000
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -221,6 +254,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const delays = options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS
   const chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE
   const metricsDelays = options.metricsRetryDelaysMs ?? DEFAULT_METRICS_RETRY_DELAYS_MS
+  const logDelays = options.logRetryDelaysMs ?? DEFAULT_LOG_RETRY_DELAYS_MS
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
   const sendTimeoutMs = options.sendTimeoutMs ?? DEFAULT_SEND_TIMEOUT_MS
   const nowMs = options.now ?? Date.now
@@ -243,6 +277,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   const hiddenOps = new Map<string, HiddenOp>()
   const favoriteOps = new Map<string, FavoriteOp>()
   const wordOps = new Map<string, CustomWordOp>()
+  // The review log: every row, in the order it was made (a Map keeps insertion order), by id.
+  const logRows = new Map<string, ReviewLogEntry>()
   // When each pending state was queued (the objects themselves are the keys), for the staleness rule on restore.
   const queuedAt = new WeakMap<object, number>()
   let settingsQueuedAt: Record<string, number> = {}
@@ -277,6 +313,14 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let metricsLastSuccessAt: string | null = null
   let metricsGaveUp = false
   let metricsRecoveryTried = false
+  let logRun: Promise<void> | null = null
+  let logFailures = 0
+  let logError: string | null = null
+  let logGaveUp = false
+  let logRecoveryTried = false
+  let logSucceeded = false // the table has accepted rows in this run: a row it refuses after that is a bad row, not a table that refuses everything
+  let logDropped = 0
+  let logEvicted = 0
   let lastError: string | null = null
   // The server refused the last progress/settings/hidden write (or metrics write) for who is asking.
   let rejected = false
@@ -303,6 +347,11 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     unsaved: progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || wordOps.size > 0 || settings !== null || sending,
     stuck,
     pendingMetrics: metrics.size,
+    pendingLog: logRows.size,
+    logError,
+    logGaveUp,
+    logDropped,
+    logEvicted,
     metricsError,
     metricsRunning: metricsRun !== null,
     metricsAttempts,
@@ -326,6 +375,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       settings: settings ? { patch: settings, at: { ...settingsQueuedAt } } : null,
       metrics: [...metrics.values()].map(stamped),
       words: [...wordOps.values()].map(stamped),
+      log: [...logRows.values()],
     }
   }
   const persist = () => {
@@ -519,6 +569,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     stuck = false
     notify()
     kickMetrics()
+    kickLog()
   }
 
   // ---- metrics lane: lowest priority, best effort, invisible to everything else ----
@@ -583,6 +634,96 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     notify()
   }
 
+  // ---- review-log lane: append-only, after everything else, best effort, invisible to the UI ----
+  /** Takes a row out once it is sent, or given up. */
+  const forgetLog = (entry: ReviewLogEntry) => {
+    if (logRows.get(entry.id) === entry) {
+      logRows.delete(entry.id)
+      version++
+    }
+  }
+
+  /**
+   * A chunk was refused for a reason about its rows (see isDataError). Send the rows one at a time to find the bad ones, so that one bad row neither
+   * stays in front of the rest for ever nor takes good rows down with it. A refused row is dropped (counted, and named in the console) only if the
+   * table has accepted rows before, or accepts another row of this pass: a table that refuses EVERY row is not a bad row but a problem with the table
+   * or with what the app sends, and then nothing is dropped (the rows wait on disk for the fix). Throws the first failure that is not about a row.
+   */
+  async function isolateLog(send: (entries: readonly ReviewLogEntry[]) => Promise<void>, chunk: readonly ReviewLogEntry[]) {
+    const refused: { entry: ReviewLogEntry; err: unknown }[] = []
+    for (const entry of chunk) {
+      try {
+        await within(send([entry]))
+        forgetLog(entry)
+        logSucceeded = true
+      } catch (err) {
+        if (!isDataError(err)) throw err
+        refused.push({ entry, err })
+      }
+    }
+    if (refused.length === 0) return
+    if (!logSucceeded) throw refused[0].err // nothing has ever been accepted: keep every row
+    for (const { entry, err } of refused) {
+      forgetLog(entry)
+      logDropped++
+      console.warn(`[review log] row ${entry.id} (${entry.esWord}) was refused by the database and left out: ${messageOf(err)}`)
+    }
+  }
+
+  async function runLog() {
+    const send = sender.sendLog
+    logGaveUp = false
+    // Yields to progress and settings: if they show up (or are stuck failing), the lane stops and is re-kicked after the next drain.
+    while (send && logRows.size > 0 && !hasPending()) {
+      const chunk = [...logRows.values()].slice(0, LOG_CHUNK)
+      try {
+        try {
+          await within(send(chunk))
+          for (const sent of chunk) forgetLog(sent)
+          logSucceeded = true
+        } catch (err) {
+          if (!isDataError(err) || chunk.length === 0) throw err
+          await isolateLog(send, chunk)
+        }
+        logFailures = 0
+        logError = null
+        logRecoveryTried = false
+        notify()
+      } catch (err) {
+        logError = messageOf(err)
+        if (isRejection(err)) {
+          // Not signed in (or refused): get a session back once; if that does not help, wait for the next trigger. Nothing is shown for it.
+          if (!logRecoveryTried && sender.recoverAuth) {
+            logRecoveryTried = true
+            if (await recover()) continue
+          }
+          logGaveUp = true
+          notify()
+          return
+        }
+        notify()
+        if (logFailures >= logDelays.length) {
+          logGaveUp = true
+          return
+        }
+        await sleep(logDelays[logFailures++])
+      }
+    }
+  }
+
+  function kickLog() {
+    if (logRun || !sender.sendLog || logRows.size === 0 || hasPending()) return
+    logRun = runLog()
+      .catch(() => {}) // runLog handles its own failures; this is only a safety net
+      .finally(() => {
+        logRun = null
+        notify()
+        // A row that arrived (or a drain that ended) while this run was winding down must not be left waiting.
+        if (!logGaveUp) kickLog()
+      })
+    notify()
+  }
+
   function kick() {
     if (draining || failed || !hasPending()) return
     draining = drain().finally(() => {
@@ -618,7 +759,13 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         metricsGaveUp = false
         metricsRecoveryTried = false
       }
+      if (!logRun) {
+        logFailures = 0
+        logGaveUp = false
+        logRecoveryTried = false
+      }
       kickMetrics()
+      kickLog()
       return Promise.resolve(true)
     }
     // The drain that gave up is only just finishing: let it end, then make the single attempt.
@@ -712,6 +859,25 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       }
     },
 
+    enqueueLog(entry) {
+      if (!sender.sendLog || logRows.has(entry.id)) return
+      logRows.set(entry.id, entry)
+      // A bound has to exist (see LOG_CAP): past it the oldest row goes.
+      while (logRows.size > LOG_CAP) {
+        const oldest = logRows.keys().next().value as string
+        logRows.delete(oldest)
+        logEvicted++
+      }
+      version++
+      if (!logRun) {
+        logFailures = 0 // a new row after the lane gave up starts a fresh round of attempts
+        logGaveUp = false
+        logRecoveryTried = false
+      }
+      notify()
+      kickLog()
+    },
+
     enqueueMetrics(row) {
       queuedAt.set(row, nowMs())
       version++
@@ -800,6 +966,17 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         restored++
       }
 
+      // The log: every row that was waiting (no age limit: see queueStore.ts), after any row already queued in this run.
+      for (const entry of result.snapshot.log) {
+        if (logRows.has(entry.id)) continue
+        logRows.set(entry.id, entry)
+        restored++
+      }
+      while (logRows.size > LOG_CAP) {
+        logRows.delete(logRows.keys().next().value as string)
+        logEvicted++
+      }
+
       restoredEntries = restored
       droppedStale = result.droppedStale
       droppedUnreadable = result.droppedUnreadable
@@ -807,6 +984,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       notify()
       kick()
       kickMetrics()
+      kickLog()
       return { restored, droppedStale, droppedUnreadable }
     },
 
@@ -896,6 +1074,7 @@ export function createSupabaseWriteQueue(
       sendHidden: (ops) => signedIn(() => writeHiddenWords(client, userId, ops)),
       sendFavorites: (ops) => signedIn(() => writeFavoriteWords(client, userId, ops)),
       sendWords: (ops) => signedIn(() => writeCustomWords(client, userId, ops)),
+      sendLog: (entries) => signedIn(() => insertReviewLog(client, userId, entries)),
       sendMetrics: (rows, restoredDates) =>
         signedIn(async () => {
           // A row from an earlier run may be behind what another device pushed for that day: merge, never overwrite.

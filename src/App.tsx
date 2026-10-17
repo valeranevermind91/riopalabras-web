@@ -3,6 +3,7 @@ import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, 
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { createTombstoneClearer } from './data/customWords'
 import { supabaseReminderStore } from './data/reminders'
+import { createLearnedAtStore, createReviewLog } from './data/reviewLog'
 import { enrichDepsFor, enrichWord } from './data/enrich'
 import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
 import { wordKey } from './data/words'
@@ -74,6 +75,8 @@ function App() {
     () => (client && userId ? createSupabaseWriteQueue(client, userId, readSettings, { recoverSession, onWordsDeleted }) : null),
     [client, userId, readSettings, recoverSession, onWordsDeleted],
   )
+  // The review log (reviewLog.ts): every answer, appended through the queue above. It exists only for a signed-in user, as the queue does.
+  const reviewLog = useMemo(() => (queue && userId ? createReviewLog({ enqueue: queue.enqueueLog, learnedAt: createLearnedAtStore(userId) }) : null), [queue, userId])
   const enrich = useMemo(() => (client ? (input: { word: string; pos: string | null }) => enrichWord(input, enrichDepsFor(client, recoverSession)) : undefined), [client, recoverSession])
 
   // Restore the queue saved by an earlier run and send it, and only then let the user's state load.
@@ -289,6 +292,7 @@ function App() {
         queue={queue}
         metrics={metrics}
         reminders={reminders}
+        reviewLog={reviewLog}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}
@@ -302,6 +306,7 @@ function App() {
         data={readyData}
         queue={queue}
         metrics={metrics}
+        reviewLog={reviewLog}
         onHome={() => void go('home')}
         onLearn={() => void go('learn')}
         onBack={inPageBack}
@@ -310,7 +315,7 @@ function App() {
   }
 
   if (screen === 'matching' && readyData && queue) {
-    return <MatchingScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
+    return <MatchingScreen data={readyData} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={() => void go('home')} onBack={inPageBack} />
   }
 
   if (screen === 'words' && readyData && queue) {
@@ -338,7 +343,7 @@ function App() {
   }
 
   if (screen === 'cloze' && readyData && queue) {
-    return <ClozeScreen data={readyData} queue={queue} metrics={metrics} onHome={() => void go('home')} onBack={inPageBack} />
+    return <ClozeScreen data={readyData} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={() => void go('home')} onBack={inPageBack} />
   }
 
   // The first open of an account that has not finished the intro: it is shown instead of Home, and finishing it writes onboarding_done.
