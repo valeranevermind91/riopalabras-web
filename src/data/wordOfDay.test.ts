@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseDictionary } from './dictionary'
-import { dayNumber, pickWordOfTheDay, wordOfTheDay, wordOfTheDayOrder, wordOfTheDayPool } from './wordOfDay'
+import { dayNumber, pickIndex, pickWordOfTheDay, wordOfTheDay, wordOfTheDayOrder, wordOfTheDayPool } from './wordOfDay'
+import { seededRandom } from '../lib/random'
 import { parseFallbackExamples, parseRioOverlay } from './rio'
 import { parseSettings } from './settings'
 import type { Word } from './types'
@@ -160,14 +161,158 @@ describe('words the user has marked as known', () => {
     for (const w of picks(400, undefined, hide(...known))) expect(known).not.toContain(w)
   })
 
-  it('leave the rest in a cycle of their own: with 3 known, 18 days show 18 different words', () => {
+  it('leave the cycle as long as it was: every other word still has its own day, and the known words\' days show others (3 known: 71 days, 68 different words)', () => {
     const known = pool.slice(0, 3).map((w) => w.esWord)
-    for (let start = 0; start < 200; start += 13) expect(new Set(picks(N - 3, day(start), hide(...known))).size).toBe(N - 3)
+    for (let start = 0; start < 200; start += 13) {
+      const shown = picks(N, day(start), hide(...known))
+      expect(new Set(shown).size).toBe(N - 3) // each visible word once, and three of them shown a second time on the days of the three hidden ones
+      for (const name of known) expect(shown).not.toContain(name)
+    }
   })
 
   it('and with everything known there is no word of the day', () => {
     expect(pickWordOfTheDay(hide(...pool.map((w) => w.esWord)), day(5))).toBeNull()
     expect(wordOfTheDay(hide(...pool.map((w) => w.esWord)), parseSettings({}), day(5))).toBeNull()
     expect(pickWordOfTheDay([], day(5))).toBeNull()
+  })
+})
+
+describe('hiding a word changes only the days that word fell on', () => {
+  const order = wordOfTheDayOrder(pool)
+  const names = order.map((w) => w.esWord)
+  const at = (esWord: string) => names.indexOf(esWord)
+  /** The position in the ordered pool of the nth day after `from`. */
+  const positionOf = (n: number, from?: Date) => dayNumber(day(n, from)) % N
+  const two = 2 * N
+
+  it('hiding any one pool word leaves every other day\'s pick unchanged, over two cycles and from any start', () => {
+    for (const from of [new Date(2026, 0, 1), new Date(2026, 9, 17), new Date(2027, 11, 30)]) {
+      const base = picks(two, from)
+      for (const name of names) {
+        const hiddenOne = picks(two, from, hide(name))
+        const changed = base.map((w, i) => (w === hiddenOne[i] ? -1 : i)).filter((i) => i >= 0)
+        // exactly the days on which that word fell, and on those days it is not shown
+        expect(changed.map((i) => positionOf(i, from)), `${name} from ${from.toDateString()}`).toEqual(changed.map(() => at(name)))
+        expect(changed).toHaveLength(2)
+        for (const i of changed) expect(hiddenOne[i]).not.toBe(name)
+      }
+    }
+  })
+
+  it('and the days already shown are among those left alone: the last 30 days read the same after hiding a word that fell outside them', () => {
+    const from = new Date(2026, 9, 17)
+    const shown = Array.from({ length: 30 }, (_, i) => pickWordOfTheDay(real, day(i - 30, from))!.esWord)
+    const outside = names.find((n) => !shown.includes(n))!
+    const after = Array.from({ length: 30 }, (_, i) => pickWordOfTheDay(hide(outside), day(i - 30, from))!.esWord)
+    expect(after).toEqual(shown)
+  })
+
+  it('a word that is visible is shown on its own day whatever else is hidden: the divisor is the whole pool, not what is left', () => {
+    const random = seededRandom(7)
+    for (let trial = 0; trial < 40; trial++) {
+      const hiddenNames = names.filter(() => random() < 0.3)
+      const words = hide(...hiddenNames)
+      for (let i = 0; i < N; i++) {
+        const w = pickWordOfTheDay(words, day(i))!
+        const own = order[positionOf(i)]
+        if (!hiddenNames.includes(own.esWord)) expect(w.esWord).toBe(own.esWord)
+      }
+    }
+  })
+
+  it('the word that has to be shown twice is shown again about half a cycle later, not days later', () => {
+    for (const name of names) {
+      const hiddenOne = hide(name)
+      for (let i = 0; i < N; i++) {
+        if (positionOf(i) !== at(name)) continue
+        const substitute = pickWordOfTheDay(hiddenOne, day(i))!.esWord
+        const gap = Math.abs(at(substitute) - at(name))
+        expect(Math.min(gap, N - gap), `${name} -> ${substitute}`).toBeGreaterThanOrEqual(Math.floor(N / 2) - 1)
+      }
+    }
+  })
+
+  it('a day\'s word does not depend on the days before it: asked in any order, or after thousands of other days, it is the same', () => {
+    const words = hide(...names.slice(10, 16))
+    const direct = Array.from({ length: 30 }, (_, i) => pickWordOfTheDay(words, day(5000 + i))!.esWord)
+    for (let i = 0; i < 3000; i++) pickWordOfTheDay(words, day(i)) // lots of other days first
+    const reversed = Array.from({ length: 30 }, (_, i) => pickWordOfTheDay(words, day(5029 - i))!.esWord).reverse()
+    expect(reversed).toEqual(direct)
+    expect(Array.from({ length: 30 }, (_, i) => pickWordOfTheDay(hide(...names.slice(10, 16)), day(5000 + i))!.esWord)).toEqual(direct) // a fresh array, the same result
+  })
+})
+
+describe('no two days in a row show the same word, whatever is hidden', () => {
+  const order = wordOfTheDayOrder(pool)
+  const names = order.map((w) => w.esWord)
+  /** The picks for every position of a circle with these positions hidden, and whether any two neighbours (the last and the first too) are the same. */
+  function circle(hidden: readonly boolean[]) {
+    const shown = hidden.map((_, i) => pickIndex(hidden, i))
+    const same = shown.filter((p, i) => p === shown[(i + 1) % shown.length])
+    return { shown, same }
+  }
+
+  it('for EVERY subset of small pools (every size from 3 to 13, every subset that leaves at least three words)', () => {
+    for (let n = 3; n <= 13; n++) {
+      for (let mask = 0; mask < 1 << n; mask++) {
+        const hidden = Array.from({ length: n }, (_, i) => Boolean(mask & (1 << i)))
+        if (hidden.filter((h) => !h).length < 3) continue
+        const { shown, same } = circle(hidden)
+        expect(same, `n=${n} mask=${mask.toString(2)}`).toEqual([])
+        for (const p of shown) expect(hidden[p!], `n=${n} mask=${mask.toString(2)}`).toBe(false) // and never a hidden word
+      }
+    }
+  })
+
+  it('for thousands of subsets of the real pool, thin and thick, with runs and wrapping around the end', () => {
+    const random = seededRandom(11)
+    for (let trial = 0; trial < 3000; trial++) {
+      const density = random()
+      const hidden = names.map(() => random() < density)
+      if (hidden.filter((h) => !h).length < 3) continue
+      const { shown, same } = circle(hidden)
+      expect(same, `trial ${trial}`).toEqual([])
+      for (const p of shown) expect(hidden[p!]).toBe(false)
+    }
+    /** `length` positions in a row from `from`, wrapping around the end, hidden. */
+    const run = (from: number, length: number) => names.map((_, i) => (i - from + N) % N < length)
+    for (const hidden of [run(60, 14), run(0, N - 3), run(N - 3, N - 3), run(30, N - 3)]) {
+      expect(hidden.filter((h) => !h).length).toBeGreaterThanOrEqual(3)
+      expect(circle(hidden).same).toEqual([])
+    }
+  })
+
+  it('in the app\'s own terms: any run of days after hiding any subset shows no word twice in a row', () => {
+    const random = seededRandom(5)
+    for (let trial = 0; trial < 60; trial++) {
+      const hiddenNames = names.filter(() => random() < random())
+      if (names.length - hiddenNames.length < 3) continue
+      const shown = picks(3 * N, day(Math.floor(random() * 400)), hide(...hiddenNames))
+      for (let i = 1; i < shown.length; i++) expect(shown[i], `trial ${trial} day ${i}`).not.toBe(shown[i - 1])
+      for (const name of hiddenNames) expect(shown).not.toContain(name)
+    }
+  })
+
+  it('with fewer than three words left no rule can keep two days apart, and a word is still shown: one left is shown every day, none left is null', () => {
+    const one = names.map((_, i) => i !== 40)
+    expect(Array.from({ length: N }, (_, i) => pickIndex(one, i))).toEqual(Array(N).fill(40))
+    expect(pickIndex(names.map(() => true), 3)).toBeNull()
+    const twoLeft = names.map((_, i) => i !== 5 && i !== 6)
+    for (let i = 0; i < N; i++) expect([5, 6]).toContain(pickIndex(twoLeft, i))
+  })
+})
+
+describe('with nothing hidden, 71 days show 71 different words', () => {
+  it('from any start: no repeat inside a cycle, and the same word again exactly one cycle later', () => {
+    expect(N).toBe(71)
+    for (let start = 0; start < 400; start += 37) {
+      const shown = picks(N, day(start))
+      expect(new Set(shown).size, `from day ${start}`).toBe(N)
+      expect(picks(N, day(start + N))).toEqual(shown)
+    }
+  })
+
+  it('pickIndex with nothing hidden is the day\'s own position, for any size', () => {
+    for (const n of [1, 2, 3, 71, 200]) for (let i = 0; i < n; i++) expect(pickIndex(Array(n).fill(false), i)).toBe(i)
   })
 })

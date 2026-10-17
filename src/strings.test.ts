@@ -264,3 +264,24 @@ describe('the language of the page', () => {
     expect(languages).toContain(getLanguage())
   })
 })
+
+describe('the placement test says what marking does, in the words the app already uses', () => {
+  it('English: "marked as known" (Learn\'s bar and the Words screen), "kept out of Learn, Review and practice", "bring them back" (the Words button), and one sentence', () => {
+    const note = en.onboarding.placement.hidesNote
+    expect(note).toContain(en.learn.markedKnown('x').replace(/^“x” /, '')) // "marked as known": the phrase Learn\'s bar uses
+    expect(note).toContain('kept out of Learn, Review and practice')
+    const [verb, particle] = en.words.bringBack.toLowerCase().split(' ') // "Bring back": the button in the word list
+    expect(note).toContain(`${verb} them ${particle}`) // the same phrase, with its object
+    expect(note.match(/[.!?](\s|$)/g)).toHaveLength(1)
+    expect(note.length).toBeLessThan(135)
+  })
+
+  it('Russian: the same ideas in the same words as the existing strings: отмечаются как известные, Learn, Review и упражнения, Вернуть', () => {
+    const note = ru.onboarding.placement.hidesNote
+    expect(note).toContain('как известные') // the Learn bar says «…» отмечено как известное; the Words screen, "отметили как известные"
+    expect(note).toContain('Learn, Review и упражнения') // as in the Words screen\'s note and How it works
+    expect(note.toLowerCase()).toContain(ru.words.bringBack.toLowerCase())
+    expect(note.match(/[.!?](\s|$)/g)).toHaveLength(1)
+    expect(note.length).toBeLessThan(140)
+  })
+})

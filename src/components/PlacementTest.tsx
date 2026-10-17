@@ -106,6 +106,8 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
         })}
       </div>
 
+      <p className="intro-note place-hides">{labels.hidesNote}</p>
+
       <div className="place-skip">
         <button type="button" className="link-btn" onClick={onSkip}>
           {labels.skip}

@@ -310,6 +310,8 @@ export const en = {
       title: 'Placement test',
       question: 'Which of these do you know?',
       hint: 'Only mark the words whose meaning you are sure of.',
+      // what ticking does (the same "marked as known" as Learn's button and the Words screen; they wait under Hidden there)
+      hidesNote: 'Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back in the word list.',
       set: (n: number, m: number) => `Set ${n} of ${m}`,
       progress: 'Placement test progress',
       back: 'Back',

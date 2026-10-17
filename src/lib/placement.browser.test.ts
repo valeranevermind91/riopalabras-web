@@ -372,4 +372,88 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await page.close()
     }, 60_000)
   })
+  describe('says what marking a word does', () => {
+    const note = (page: Page) => page.$$eval('.place-hides', (els) => els.map((e) => e.textContent))
+    /** The note sits after the words and before the Skip row, and is not part of either. */
+    const placed = (page: Page) =>
+      page.evaluate(() => {
+        const n = document.querySelector('.place-hides')!
+        const chips = document.querySelector('.place-chips')!
+        const skip = document.querySelector('.place-skip')!
+        const after = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+        return { afterChips: after(chips, n), beforeSkip: after(n, skip), insideSkip: skip.contains(n), insideChips: chips.contains(n) }
+      })
+
+    it('in the intro: one line on every set, after the words, saying they are marked as known and kept out of Learn, Review and practice', async () => {
+      const page = await open('fresh=1&goal=default&lang=en')
+      await toPlacement(page)
+      for (let k = 1; k <= 5; k++) {
+        await page.waitForFunction((n) => document.querySelector('.place-progress span')?.textContent?.includes(`${n} `), {}, k)
+        expect(await note(page), `set ${k}`).toEqual([en.onboarding.placement.hidesNote])
+        await forward(page)
+      }
+      await page.close()
+    }, 90_000)
+
+    it('from Settings: the same line, in the same place', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      await clickText(page, '#settings-learning ~ .settings-group .setting-nav', 'Take the placement test')
+      await page.waitForSelector('.place')
+      expect(await note(page)).toEqual([en.onboarding.placement.hidesNote])
+      expect(await placed(page)).toEqual({ afterChips: true, beforeSkip: true, insideSkip: false, insideChips: false })
+      expect(en.onboarding.placement.hidesNote).toBe('Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back in the word list.')
+      await page.close()
+    }, 60_000)
+
+    it('in Russian, in both places', async () => {
+      const intro = await open('fresh=1&goal=default&lang=ru')
+      for (let n = 1; n < 5; n++) await clickText(intro, '.intro-footer .btn', 'Дальше')
+      await intro.waitForSelector('[data-step="placement"]')
+      expect(await note(intro)).toEqual([ru.onboarding.placement.hidesNote])
+      await intro.close()
+
+      const standalone = await open('goal=12&lang=ru')
+      await standalone.evaluate(() => (document.querySelector('.screen-header-actions .icon-btn:last-child') as HTMLElement).click())
+      await standalone.waitForSelector('.settings')
+      await standalone.evaluate(() => (document.querySelector('#settings-learning ~ .settings-group .setting-nav') as HTMLElement).click())
+      await standalone.waitForSelector('.place')
+      expect(await note(standalone)).toEqual([ru.onboarding.placement.hidesNote])
+      await standalone.close()
+    }, 90_000)
+
+    it('does not change what the screen already promised: still no score, no praise, no right or wrong', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      await clickText(page, '#settings-learning ~ .settings-group .setting-nav', 'Take the placement test')
+      await page.waitForSelector('.place')
+      const text = await page.$eval('.place', (e) => (e as HTMLElement).innerText)
+      expect(text).not.toMatch(/correct|wrong|score|well done|great|nice|almost|!/i)
+      await page.close()
+    }, 60_000)
+
+    for (const lang of ['en', 'ru'] as const) {
+      it(`fits at 320px in ${lang === 'en' ? 'English' : 'Russian'}: a few short lines, inside the screen, the chips and the buttons still in reach`, async () => {
+        const page = await open(`goal=12&lang=${lang}`)
+        await page.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        await page.evaluate(() => (document.querySelector('.screen-header-actions .icon-btn:last-child') as HTMLElement).click())
+        await page.waitForSelector('.settings')
+        await page.evaluate(() => (document.querySelector('#settings-learning ~ .settings-group .setting-nav') as HTMLElement).click())
+        await page.waitForSelector('.place-hides')
+        const m = await page.evaluate(() => {
+          const n = document.querySelector('.place-hides')!
+          const r = n.getBoundingClientRect()
+          const lineHeight = parseFloat(getComputedStyle(n).lineHeight)
+          const footer = document.querySelector('.place-footer')!.getBoundingClientRect()
+          return { left: r.left, right: r.right, lines: Math.round(r.height / lineHeight), scroll: document.documentElement.scrollWidth, width: window.innerWidth, footerBottom: footer.bottom, tall: document.documentElement.scrollHeight }
+        })
+        expect(m.scroll).toBeLessThanOrEqual(m.width)
+        expect(m.left).toBeGreaterThanOrEqual(0)
+        expect(m.right).toBeLessThanOrEqual(m.width)
+        expect(m.lines).toBeLessThanOrEqual(5)
+        await page.close()
+      }, 60_000)
+    }
+  })
+
 })

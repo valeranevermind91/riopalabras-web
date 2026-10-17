@@ -426,12 +426,15 @@ describe('the word of the day card', () => {
       expect(pickWordOfTheDay(real, NOW)?.esWord).toBe(todays.esWord)
     })
 
-    it('with one word known, the others still come once each before any comes again', () => {
-      const visible = pool.length - 1
+    it('with one word known, every other word still has its own day, and only the known word\'s day shows another one (70 different words in 71 days)', () => {
+      const dayAt = (start: Date, k: number) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + k, 12)
       for (const start of [new Date(2026, 9, 1, 12), new Date(2026, 11, 20, 12), new Date(2027, 1, 20, 12)]) {
-        const run = Array.from({ length: visible }, (_, k) => pickWordOfTheDay(hide(todays.esWord), new Date(start.getFullYear(), start.getMonth(), start.getDate() + k, 12))!.esWord)
-        expect(new Set(run).size).toBe(visible)
+        const before = Array.from({ length: pool.length }, (_, k) => pickWordOfTheDay(real, dayAt(start, k))!.esWord)
+        const run = Array.from({ length: pool.length }, (_, k) => pickWordOfTheDay(hide(todays.esWord), dayAt(start, k))!.esWord)
+        expect(new Set(run).size).toBe(pool.length - 1)
         expect(run).not.toContain(todays.esWord)
+        const changed = run.filter((w, k) => w !== before[k])
+        expect(changed).toHaveLength(1) // the one day that word fell on; no other day moved
       }
     })
 

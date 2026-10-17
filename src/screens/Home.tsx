@@ -14,6 +14,7 @@ import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
+import { useForeground } from '../lib/useForeground'
 import { RELEARN_MS } from '../sm2/sm2'
 import { strings } from '../strings'
 
@@ -43,6 +44,9 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
   // was while Home stays open, the counts are taken again the moment the next such word comes due.
   const [asOf, setAsOf] = useState(() => new Date())
+  // And again when the app comes back to the foreground: a Mini App left open overnight would otherwise keep yesterday's date, and with it
+  // yesterday's word of the day and yesterday's counts.
+  useForeground(() => setAsOf(new Date()))
   const at = nowProp ?? asOf
   const stats = useMemo(() => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, at) : null), [data, at])
   const comesDueAt = useMemo(() => (data.status === 'ready' && !nowProp ? nextDueWithin(data.data.words, at, RELEARN_MS)?.getTime() ?? null : null), [data, nowProp, at])
@@ -58,9 +62,10 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     return {
       matching: matchingEligibleCount(data.data.words, data.data.settings),
       cloze: clozeEligibleCount(data.data.words),
-      wotd: wordOfTheDay(data.data.words, data.data.settings, nowProp ?? new Date()),
     }
-  }, [data, nowProp])
+  }, [data])
+  // Today's word, for the date Home was last taken at (see asOf above), so it moves on when the app returns on a new day.
+  const wotd = useMemo(() => (data.status === 'ready' ? wordOfTheDay(data.data.words, data.data.settings, at) : null), [data, at])
 
   // The start-of-day snapshot (due / pool / limit), captured the first time Home shows each day; a no-op after that.
   useEffect(() => {
@@ -100,7 +105,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
-          {extras?.wotd ? <WordOfTheDayCard wotd={extras.wotd} onOpen={onOpenWord} /> : <div className="home-spacer" />}
+          {wotd ? <WordOfTheDayCard wotd={wotd} onOpen={onOpenWord} /> : <div className="home-spacer" />}
 
           <div className="home-grid">
             {tiles.map((tile) => (
