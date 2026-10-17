@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { applyReview, learnedState } from '../sm2/sm2'
 import { makeWord } from '../testing/makeWord'
 import { createRater, rateWord } from './review'
-import { buildLogEntry, createLearnedAtStore, createReviewLog, elapsedDays, newId, previousReviewAt, stateBefore, type LearnedAtStore, type ReviewLogEntry } from './reviewLog'
+import { buildLogEntry, createLearnedAtStore, createReviewLog, elapsedDays, newId, practiceScheduledDays, previousReviewAt, stateBefore, type LearnedAtStore, type ReviewLogEntry } from './reviewLog'
 import type { ProgressUpdate, Word } from './types'
 
 const DAY = 86_400_000
@@ -205,12 +205,53 @@ describe('the other modes', () => {
     expect(rows.map((r) => r.esWord)).toEqual(['a', 'b'])
   })
 
-  it('Matching and Cloze: nothing is scheduled and the word is unchanged, so the "after" columns repeat what it is; right is 3, wrong or retried is 1', () => {
+  it('Matching and Cloze: the word is unchanged, so the "after" columns repeat what it is; right is 3, wrong or retried is 1', () => {
     const { log, rows } = collecting()
     log.practice({ word: learnedWord, mode: 'matching', correct: true, sessionId: 'g', durationMs: null, now: T0 })
     log.practice({ word: learnedWord, mode: 'cloze', correct: false, sessionId: 'c', durationMs: 7000, now: T0 })
     expect(rows.map((r) => [r.mode, r.rating, r.durationMs])).toEqual([['matching', 3, null], ['cloze', 1, 7000]])
-    for (const row of rows) expect(row).toMatchObject({ stateBefore: 'review', scheduledDays: 0, intervalAfter: 3, easeAfter: 2.3, repetitionsAfter: 2 })
+    for (const row of rows) expect(row).toMatchObject({ stateBefore: 'review', intervalAfter: 3, easeAfter: 2.3, repetitionsAfter: 2 })
+  })
+
+  it('Matching and Cloze: scheduled_days is the word\'s own interval as it stood before the answer, never a 0 standing in for "nothing"', () => {
+    const { log, rows } = collecting()
+    for (const interval of [1, 3, 15, 40, 365]) {
+      const word = makeWord('casa', { repetitions: 4, interval, easeFactor: 2.5, nextReview: new Date(T0.getTime() + interval * DAY) })
+      log.practice({ word, mode: 'cloze', correct: true, sessionId: 's', durationMs: 1, now: T0 })
+      log.practice({ word, mode: 'matching', correct: false, sessionId: 's', durationMs: null, now: T0 })
+    }
+    expect(rows.map((r) => [r.mode, r.scheduledDays, r.intervalAfter])).toEqual(
+      [1, 3, 15, 40, 365].flatMap((d) => [['cloze', d, d], ['matching', d, d]]),
+    )
+    for (const row of rows) expect(row.scheduledDays).not.toBe(0)
+  })
+
+  it('a word with no schedule in days (introduced by Learn, or in its ten-minute step) has null, not 0, for both practice modes', () => {
+    const { log, rows } = collecting()
+    const learning = makeWord('casa', { ...learnedState(T0) }) // repetitions 1, interval 0
+    const relearning = after({ easeFactor: 2.5, interval: 8, repetitions: 3 }, 1, T0)
+    for (const word of [learning, relearning]) {
+      log.practice({ word, mode: 'cloze', correct: true, sessionId: 's', durationMs: 1, now: T0 })
+      log.practice({ word, mode: 'matching', correct: true, sessionId: 's', durationMs: null, now: T0 })
+    }
+    expect(rows.map((r) => r.scheduledDays)).toEqual([null, null, null, null])
+    expect(rows.map((r) => r.stateBefore)).toEqual(['learning', 'learning', 'relearning', 'relearning'])
+  })
+
+  it('practiceScheduledDays: the interval when there is one, else null', () => {
+    expect(practiceScheduledDays({ interval: 15 })).toBe(15)
+    expect(practiceScheduledDays({ interval: 1 })).toBe(1)
+    expect(practiceScheduledDays({ interval: 0 })).toBeNull()
+  })
+
+  it('Review and Learn keep what they truly schedule: the interval the rating gave (0 only for the ten-minute step), and the next local day for Learn', () => {
+    const { log, rows } = collecting()
+    const word = makeWord('casa', { repetitions: 4, interval: 12, easeFactor: 2.5, nextReview: new Date(T0.getTime() + 12 * DAY) })
+    log.review({ word, rating: 3, update: rateWord(word, 3, T0), sessionId: 's', durationMs: null, now: T0 })
+    log.review({ word, rating: 1, update: rateWord(word, 1, T0), sessionId: 's', durationMs: null, now: T0 })
+    log.learned([makeWord('nueva')], learnedState(T0), 's', T0)
+    expect(rows.map((r) => [r.mode, r.scheduledDays])).toEqual([['review', rows[0].intervalAfter], ['review', 0], ['learn', 1]])
+    expect(rows[0].scheduledDays).toBeGreaterThan(12)
   })
 
   it('only Review rows are scheduling events: the others are marked, and say they changed nothing', () => {

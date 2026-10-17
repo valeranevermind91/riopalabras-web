@@ -173,21 +173,26 @@ export function setClosingConfirmation(enabled: boolean, webApp: TelegramWebApp 
   }
 }
 
-/** Calls `callback` when Telegram re-activates the Mini App (Bot API 8.0+). Returns the unsubscribe; a no-op where the event doesn't exist. */
-export function onTelegramActivated(callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
+/** Calls `callback` when Telegram sends the Mini App `event` ('activated' or 'deactivated', Bot API 8.0+). Returns the unsubscribe; a no-op where the event doesn't exist. */
+export function onTelegramEvent(event: 'activated' | 'deactivated', callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
   if (!webApp.onEvent || !webApp.isVersionAtLeast?.('8.0')) return () => {}
   try {
-    webApp.onEvent('activated', callback)
+    webApp.onEvent(event, callback)
   } catch {
     return () => {}
   }
   return () => {
     try {
-      webApp.offEvent?.('activated', callback)
+      webApp.offEvent?.(event, callback)
     } catch {
       // already gone
     }
   }
+}
+
+/** Calls `callback` when Telegram re-activates the Mini App (Bot API 8.0+). Returns the unsubscribe; a no-op where the event doesn't exist. */
+export function onTelegramActivated(callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
+  return onTelegramEvent('activated', callback, webApp)
 }
 
 /**

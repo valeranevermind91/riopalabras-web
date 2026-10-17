@@ -742,6 +742,13 @@ mark {
   color: var(--muted);
 }
 
+.post-batch-why {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .post-batch-actions {
   display: grid;
   gap: 12px;

@@ -47,6 +47,8 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
     const page = await (await browser.createBrowserContext()).newPage()
     await page.emulateTimezone('America/Montevideo')
     await page.setViewport({ width: 390, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+    // A clock the test can move: performance.now() is the real one plus an offset, so "the user looked away for a minute" does not take a minute.
+    await page.evaluateOnNewDocument(`(() => { const real = performance.now.bind(performance); window.__perfOffset = 0; performance.now = () => real() + window.__perfOffset })()`)
     await page.goto(`${base}/src/testing/logHarness.html?${query}`, { waitUntil: 'networkidle0' })
     return page
   }
@@ -54,6 +56,16 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
   const progress = (page: Page) => page.evaluate(() => (window as never as { __progress: { esWord: string }[] }).__progress)
   const logAttempts = (page: Page) => page.evaluate(() => (window as never as { __sent: { logAttempts: number } }).__sent.logAttempts)
   const waitForRows = (page: Page, n: number) => page.waitForFunction((count) => (window as never as { __log: unknown[] }).__log.length >= count, { timeout: 10_000 }, n)
+  const looksAway = (page: Page, ms: number) => page.evaluate((n) => ((window as never as { __perfOffset: number }).__perfOffset += n), ms)
+  /** The app goes to the background and comes back (the page hidden, then visible again), as when the user switches app. */
+  const goesAway = (page: Page) =>
+    page.evaluate(() => {
+      const set = (state: string) => Object.defineProperty(document, 'visibilityState', { get: () => state, configurable: true })
+      set('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      set('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
   // ---- Review ----
@@ -138,6 +150,64 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
       expect(row.durationMs).toBeGreaterThanOrEqual(600)
       expect(row.durationMs).toBeLessThan(5000)
       expect(second.durationMs).toBeLessThan(500)
+      await page.close()
+    }, 60_000)
+  })
+
+  describe('the time on a card, in Review', () => {
+    it('is null when the app was in the background meanwhile, and null (not clamped) when it took over a minute; the other cards are timed as usual', async () => {
+      const page = await open('screen=review&learned=10')
+      await page.waitForSelector('.flip')
+      await goesAway(page) // the first card: the app is switched away and back before it is answered
+      await rate(page, 'good')
+      await looksAway(page, 61_000) // the second: the user looked away for 61 seconds without leaving the app
+      await rate(page, 'good')
+      await looksAway(page, 58_000) // the third: 58 seconds is slow, but it is time on the card
+      await rate(page, 'good')
+      await rate(page, 'good') // the fourth, at once
+      await waitForRows(page, 4)
+      const rows = await log(page)
+      expect(rows.map((r) => r.durationMs === null)).toEqual([true, true, false, false])
+      expect(rows[2].durationMs).toBeGreaterThanOrEqual(58_000)
+      expect(rows[2].durationMs).toBeLessThanOrEqual(60_000)
+      expect(rows[3].durationMs).toBeLessThan(2000)
+      expect(rows.map((r) => r.rating)).toEqual([3, 3, 3, 3]) // the answers are logged all the same: it is only the time that is not known
+      await page.close()
+    }, 120_000)
+
+    it('is null too when Telegram deactivates the Mini App (the page may never report itself hidden there)', async () => {
+      const page = await browser.createBrowserContext().then((c) => c.newPage())
+      await page.emulateTimezone('America/Montevideo')
+      await page.setViewport({ width: 390, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      await page.evaluateOnNewDocument(`window.Telegram = { WebApp: { initData: 'test', initDataUnsafe: { user: { id: 1, first_name: 'T' } }, colorScheme: 'light', themeParams: {}, version: '8.0',
+        isVersionAtLeast: () => true, ready() {}, expand() {}, onEvent(name, cb) { (window.__telegramEvents ||= {})[name] = cb }, offEvent() {}, HapticFeedback: undefined } }`)
+      await page.goto(`${base}/src/testing/logHarness.html?screen=review&learned=6`, { waitUntil: 'networkidle0' })
+      await page.waitForSelector('.flip')
+      expect(await page.evaluate(() => typeof (window as never as { __telegramEvents?: Record<string, unknown> }).__telegramEvents?.deactivated)).toBe('function')
+      await page.evaluate(() => {
+        const events = (window as never as { __telegramEvents: Record<string, () => void> }).__telegramEvents
+        events.deactivated() // minimised or switched to another tab (and the user comes back before answering)
+      })
+      await rate(page, 'good')
+      await rate(page, 'good')
+      await waitForRows(page, 2)
+      const rows = await log(page)
+      expect(rows[0].durationMs).toBeNull()
+      expect(rows[1].durationMs).not.toBeNull() // the next card is timed afresh
+      await page.close()
+    }, 60_000)
+
+    it('just under a minute is kept and just over is not (the exact boundary is in the timer\'s own tests; here the margins are wider than the clicks take)', async () => {
+      const page = await open('screen=review&learned=6')
+      await page.waitForSelector('.flip')
+      await looksAway(page, 57_000)
+      await rate(page, 'good')
+      await looksAway(page, 62_000)
+      await rate(page, 'good')
+      await waitForRows(page, 2)
+      const rows = await log(page)
+      expect(rows[0].durationMs).not.toBeNull()
+      expect(rows[1].durationMs).toBeNull()
       await page.close()
     }, 60_000)
   })
@@ -229,7 +299,7 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
       const rows = await log(page)
       expect(rows).toHaveLength(5)
       expect(Object.fromEntries(rows.map((r) => [r.esWord, r.rating]))).toEqual({ [left[0]]: 1, [left[1]]: 1, [left[2]]: 3, [left[3]]: 3, [left[4]]: 3 })
-      for (const r of rows) expect(r).toMatchObject({ mode: 'matching', stateBefore: 'review', scheduledDays: 0, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2, durationMs: null })
+      for (const r of rows) expect(r).toMatchObject({ mode: 'matching', stateBefore: 'review', scheduledDays: 3, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2, durationMs: null })
       expect(new Set(rows.map((r) => r.sessionId)).size).toBe(1)
       expect(rows[0].sessionId).toMatch(UUID)
 
@@ -275,12 +345,105 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
       const rows = await log(page)
       expect(rows.map((r) => [r.esWord, r.rating, r.mode])).toEqual([[first, 3, 'cloze'], [second, 1, 'cloze'], [fourth, 3, 'cloze']])
       for (const r of rows) {
-        expect(r).toMatchObject({ stateBefore: 'review', scheduledDays: 0, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2 })
+        expect(r).toMatchObject({ stateBefore: 'review', scheduledDays: 3, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2 })
         expect(r.durationMs).toBeGreaterThan(0)
       }
       expect(new Set(rows.map((r) => r.sessionId)).size).toBe(1)
       expect(rows[0].sessionId).toMatch(UUID)
       await page.close()
+    }, 120_000)
+  })
+
+  describe('the time on a question, in Cloze', () => {
+    const askedWord = (page: Page) => page.$eval('.cz-cue', (e) => e.textContent ?? '').then((text) => `vieja${String(Number(text.match(/old(\d+)/)![1])).padStart(2, '0')}`)
+    /** Types an answer and presses Check: the answer is committed, the feedback is up, "Continue" is not pressed yet. */
+    async function check(page: Page, how: 'right' | 'wrong') {
+      await page.waitForSelector('.cz-input:not([disabled])')
+      const word = await askedWord(page)
+      await page.type('.cz-input', how === 'right' ? word : 'zzzzz')
+      await page.click('.cz-dock .btn-primary')
+      await page.waitForSelector('.cz-dock .btn-primary:not([type="submit"])')
+      return word
+    }
+    const proceed = (page: Page) => page.click('.cz-dock .btn-primary')
+
+    it('is null when the app was away, or the question took over a minute, and the answer is logged all the same', async () => {
+      const page = await open('screen=cloze&learned=12')
+      await page.waitForSelector('.cz-card')
+      await goesAway(page)
+      await check(page, 'right')
+      await proceed(page)
+      await looksAway(page, 61_000)
+      await check(page, 'wrong')
+      await proceed(page)
+      await check(page, 'right') // at once
+      await proceed(page)
+      await waitForRows(page, 3)
+      const rows = await log(page)
+      expect(rows.map((r) => [r.rating, r.durationMs === null])).toEqual([[3, true], [1, true], [3, false]])
+      expect(rows[2].durationMs).toBeLessThan(5000)
+      await page.close()
+    }, 120_000)
+
+    it('stops at the answer: reading the feedback for two minutes, or leaving the app while reading it, does not make the time on the question longer', async () => {
+      const page = await open('screen=cloze&learned=12')
+      await page.waitForSelector('.cz-card')
+      await check(page, 'right')
+      await looksAway(page, 130_000) // reading the feedback, as in the live row of 130814 ms
+      await goesAway(page)
+      await proceed(page)
+      await waitForRows(page, 1)
+      const [row] = await log(page)
+      expect(row.durationMs).not.toBeNull()
+      expect(row.durationMs).toBeLessThan(5000)
+      await page.close()
+    }, 60_000)
+  })
+
+  describe('scheduled_days of the practice modes, in the real screens', () => {
+    const glossOf = (word: string) => {
+      const i = Number(word.replace('vieja', '')) - 1
+      return `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`
+    }
+    async function playMatchingGroup(page: Page) {
+      await page.waitForSelector('.match-grid')
+      const left = await page.$$eval('.match-col:first-child button', (els) => els.map((e) => e.textContent ?? ''))
+      for (const word of left) {
+        await page.evaluate((w, g) => {
+          const cols = document.querySelectorAll('.match-col')
+          ;(Array.from(cols[0].querySelectorAll('button')).find((b) => b.textContent === w) as HTMLElement).click()
+          ;(Array.from(cols[1].querySelectorAll('button')).find((b) => b.textContent === g) as HTMLElement).click()
+        }, word, glossOf(word))
+      }
+      await waitForRows(page, 5)
+    }
+
+    it('a word with a 15-day or a 40-day interval is logged with that interval, in Matching and in Cloze (not 0)', async () => {
+      for (const interval of [15, 40]) {
+        const matching = await open(`screen=matching&learned=12&interval=${interval}`)
+        await playMatchingGroup(matching)
+        for (const r of await log(matching)) expect(r).toMatchObject({ mode: 'matching', scheduledDays: interval, intervalAfter: interval })
+        await matching.close()
+
+        const cloze = await open(`screen=cloze&learned=12&interval=${interval}`)
+        await cloze.waitForSelector('.cz-card')
+        await cloze.waitForSelector('.cz-input:not([disabled])')
+        const word = await cloze.$eval('.cz-cue', (e) => `vieja${String(Number((e.textContent ?? '').match(/old(\d+)/)![1])).padStart(2, '0')}`)
+        await cloze.type('.cz-input', word)
+        await cloze.click('.cz-dock .btn-primary')
+        await cloze.waitForSelector('.cz-dock .btn-primary:not([type="submit"])')
+        await cloze.click('.cz-dock .btn-primary')
+        await waitForRows(cloze, 1)
+        expect((await log(cloze))[0]).toMatchObject({ mode: 'cloze', scheduledDays: interval, intervalAfter: interval })
+        await cloze.close()
+      }
+    }, 180_000)
+
+    it('a word with no schedule in days (introduced by Learn, not reviewed yet) is logged with null, not 0', async () => {
+      const matching = await open('screen=matching&learned=12&interval=0&reps=1')
+      await playMatchingGroup(matching)
+      for (const r of await log(matching)) expect(r).toMatchObject({ mode: 'matching', stateBefore: 'learning', scheduledDays: null, intervalAfter: 0 })
+      await matching.close()
     }, 120_000)
   })
 

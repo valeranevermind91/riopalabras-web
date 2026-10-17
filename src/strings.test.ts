@@ -285,3 +285,27 @@ describe('the placement test says what marking does, in the words the app alread
     expect(note.length).toBeLessThan(140)
   })
 })
+
+describe('the line that says why Learn stops for the day', () => {
+  it('English: one sentence, in the app\'s own words (review, comes back, tomorrow)', () => {
+    const why = en.learn.capReachedWhy
+    expect(why.match(/[.!?](\s|$)/g)).toHaveLength(1)
+    expect(why).toContain('tomorrow')
+    expect(why).toContain('review')
+    expect(why).toContain('comes back') // the phrase How it works uses for it
+    expect(why.length).toBeLessThan(180)
+  })
+
+  it('Russian: the same, with the words the app already uses for review and for a word coming back', () => {
+    const why = ru.learn.capReachedWhy
+    expect(why.match(/[.!?](\s|$)/g)).toHaveLength(1)
+    expect(why).toContain('завтрашнее повторение')
+    expect(why).toContain('возвращается на повторение') // as in "Слова возвращаются по расписанию" and the reminder offer
+    expect(why.length).toBeLessThan(190)
+  })
+
+  it('both languages have it', () => {
+    expect(en.learn.capReachedWhy.length).toBeGreaterThan(20)
+    expect(ru.learn.capReachedWhy.length).toBeGreaterThan(20)
+  })
+})

@@ -110,7 +110,7 @@ const LOG_STATES: readonly string[] = ['new', 'learning', 'review', 'relearning'
 function readLogEntry(raw: unknown): ReviewLogEntry | null {
   if (!isObject(raw) || !text(raw.id) || !raw.id || !text(raw.esWord) || !raw.esWord || !text(raw.reviewedAt) || Number.isNaN(Date.parse(raw.reviewedAt))) return null
   if (!finite(raw.rating) || raw.rating < 1 || raw.rating > 4 || !text(raw.mode) || !LOG_MODES.includes(raw.mode) || !text(raw.stateBefore) || !LOG_STATES.includes(raw.stateBefore)) return null
-  if (!finite(raw.scheduledDays) || !finite(raw.intervalAfter) || !finite(raw.easeAfter) || !finite(raw.repetitionsAfter)) return null
+  if ((raw.scheduledDays !== null && !finite(raw.scheduledDays)) || !finite(raw.intervalAfter) || !finite(raw.easeAfter) || !finite(raw.repetitionsAfter)) return null
   if (raw.elapsedDays !== null && !finite(raw.elapsedDays)) return null
   if (raw.sessionId !== null && !text(raw.sessionId)) return null
   if (raw.durationMs !== null && !finite(raw.durationMs)) return null
@@ -122,7 +122,9 @@ function readLogEntry(raw: unknown): ReviewLogEntry | null {
     mode: raw.mode as LogMode,
     stateBefore: raw.stateBefore as LogState,
     elapsedDays: raw.elapsedDays,
-    scheduledDays: raw.scheduledDays,
+    // An earlier build wrote 0 here for Matching and Cloze ("due today", which is false). A row of those modes still waiting to be sent gets what it
+    // should have had: the word's interval (it is the "after" interval, since practice changes nothing), or null when it had none.
+    scheduledDays: (raw.mode === 'matching' || raw.mode === 'cloze') && raw.scheduledDays === 0 ? (raw.intervalAfter > 0 ? raw.intervalAfter : null) : raw.scheduledDays,
     intervalAfter: raw.intervalAfter,
     easeAfter: raw.easeAfter,
     repetitionsAfter: raw.repetitionsAfter,

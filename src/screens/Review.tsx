@@ -8,6 +8,7 @@ import type { MetricsRecorder } from '../data/metrics'
 import type { ReviewLog } from '../data/reviewLog'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
+import { useCardTimer } from '../lib/cardTimer'
 import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { isAgain } from '../sm2/sm2'
@@ -34,10 +35,10 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
   const ratedIndex = useRef(-1)
   // The review log: this session's id (a new one when "Continue" starts the next session), and when the card now in front of the user appeared.
   const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
-  const shownAt = useRef(0)
+  const timer = useCardTimer() // the time on a card: null if the app was away meanwhile or it took over a minute (see cardTimer.ts)
   useEffect(() => {
-    shownAt.current = Date.now() // the first card is in front of the user from the moment the screen is
-  }, [])
+    timer.start() // the first card is in front of the user from the moment the screen is
+  }, [timer])
   // The words rated in this session: a word comes back at the end after an Again (once: see requeueAgain), and rating it again is the same card, not a second one.
   const ratedInSession = useRef(new Set<string>())
 
@@ -68,7 +69,7 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
     const word = session[index]
     const repeat = ratedInSession.current.has(word.esWord)
     ratedInSession.current.add(word.esWord)
-    const update = rate(word, quality, new Date(), !repeat, { sessionId, durationMs: Date.now() - shownAt.current })
+    const update = rate(word, quality, new Date(), !repeat, { sessionId, durationMs: timer.stop() })
 
     // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease), but only
     // once: a second Again lets it leave (it is already scheduled ten minutes out). The end is one card further on whenever a word is brought
@@ -87,7 +88,7 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
     } else {
       setIndex(index + 1)
       setRevealed(false)
-      shownAt.current = Date.now() // the next card is in front of the user from now
+      timer.start() // the next card is in front of the user from now
     }
   }
 
@@ -99,7 +100,7 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
     haptic('tap')
     setSession(buildReviewSession(data.words, new Date()))
     setSessionId(reviewLog?.startSession() ?? null) // the next session is a new sitting in the log
-    shownAt.current = Date.now()
+    timer.start()
     setIndex(0)
     setRevealed(false)
     setCompleted(false)

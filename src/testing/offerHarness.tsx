@@ -1,6 +1,7 @@
 // A page for the real-browser test of the daily-reminder offer at the end of a Learn session (src/lib/reminderOffer.browser.test.ts): the real Learn
 // screen, the real write queue (its sender just records what it is given in window.__sent.settings), the real useReminders hook over a fake row and a fake
-// Telegram prompt (src/testing/fakeReminders.ts, which also documents that part of the query). Query: pool=N (how many new words there are to learn,
+// Telegram prompt (src/testing/fakeReminders.ts, which also documents that part of the query). Query: limit=N (the daily new-word goal, default 20: with 10 it is
+// reached by the first batch), pool=N (how many new words there are to learn,
 // default 12; the first batch is 10), offered=1 (the offer was already made: the flag is in the blob), lang=ru, nolearn=1 (the page passes no reminders
 // control at all, as a screen that has none).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -32,7 +33,7 @@ const WORDS: readonly Word[] = Array.from({ length: POOL }, (_, i) => makeWord(`
 export function Harness() {
   useLanguage()
   const [words, setWords] = useState<readonly Word[]>(WORDS)
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 20, onboarding_done: true, ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: Number(params.get('limit') ?? 20), onboarding_done: true, ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
   const latest = useRef(settings)
   const latestWords = useRef(words)
   const applySettings = useCallback((patch: SettingsPatch) => {

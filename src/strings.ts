@@ -385,6 +385,8 @@ export const en = {
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
     capReachedTitle: "Today's new words are done",
     capReachedSubtitle: 'Nice work. Come back tomorrow for more.',
+    // why the day's new words stop (shown under the line above, when the daily goal is reached)
+    capReachedWhy: "New words are limited each day so that tomorrow's review stays manageable: every word you learn comes back for review, and too many at once pile up.",
     poolEmptyTitle: 'No new words available right now.',
     poolEmptySubtitle: "Learn introduces new words you haven't studied yet.",
   },

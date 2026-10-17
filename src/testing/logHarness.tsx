@@ -2,7 +2,8 @@
 // the real write queue, the real review log and its real learned-at store; the queue's sender only records what it is given. Everything the log
 // sends is in window.__log (the entries, in order); progress rows are in window.__progress. Query: screen=review|learn|matching|cloze (default review),
 // logfail=1 (the log's send always fails, as with a table that cannot be reached), learned=N (how many learned words, default 12), fresh=N (how many
-// new words Learn can teach, default 12).
+// new words Learn can teach, default 12), interval=N and reps=N (the learned words' interval in days and repetitions, default 3 and 2: interval=0 reps=1 is a word
+// introduced by Learn and not reviewed yet, which has no schedule in days).
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -47,14 +48,16 @@ const reviewLog = createReviewLog({ enqueue: queue.enqueueLog, learnedAt: create
 const DAY = 86_400_000
 const LEARNED = Number(params.get('learned') ?? 12)
 const FRESH = Number(params.get('fresh') ?? 12)
+const INTERVAL = Number(params.get('interval') ?? 3)
+const REPS = Number(params.get('reps') ?? 2)
 const pad = (n: number) => String(n).padStart(2, '0')
 const WORDS: readonly Word[] = [
   // learned and due, with an example the Cloze can blank and a translation each: Review, Matching and Cloze all use these
   ...Array.from({ length: LEARNED }, (_, i) =>
     makeWord(`vieja${pad(i + 1)}`, {
       rank: i + 1,
-      repetitions: 2,
-      interval: 3,
+      repetitions: REPS,
+      interval: INTERVAL,
       nextReview: new Date(Date.now() - DAY - i * 3_600_000),
       enTranslation: `old${i + 1}`,
       ruTranslation: `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,

@@ -194,6 +194,27 @@ describe('a queued row survives a restart and is replayed once', () => {
     expect(saved.log).toBeUndefined()
   })
 
+  it('a Matching or Cloze row an earlier build queued with a 0 in scheduled_days is sent with what it should have had; null is accepted, and other rows are untouched', async () => {
+    const storage = memoryStorage()
+    const rows = [
+      entry({ mode: 'cloze', scheduledDays: 0, intervalAfter: 15 }), // the bug: "due today" for a word with a 15-day interval
+      entry({ mode: 'matching', scheduledDays: 0, intervalAfter: 40 }),
+      entry({ mode: 'cloze', scheduledDays: 0, intervalAfter: 0 }), // no schedule at all: null, not 0
+      entry({ mode: 'cloze', scheduledDays: null, intervalAfter: 0 }), // the form the new build writes
+      entry({ mode: 'review', scheduledDays: 0, intervalAfter: 0 }), // a real ten-minute step: stays 0
+      entry({ mode: 'learn', scheduledDays: 1, intervalAfter: 0 }),
+    ]
+    open(storage, recorder({ hangLog: true }).sender).enqueueLog(rows[0])
+    const record = JSON.parse(storage.items.get(logStorageKeyFor('user-1'))!)
+    record.entries = rows
+    storage.items.set(logStorageKeyFor('user-1'), JSON.stringify(record))
+    const r = recorder()
+    const q = open(storage, r.sender)
+    expect(q.restore()).toMatchObject({ restored: 6, droppedUnreadable: 0 })
+    await drained(q)
+    expect(r.log.flat().map((e) => [e.mode, e.scheduledDays])).toEqual([['cloze', 15], ['matching', 40], ['cloze', null], ['cloze', null], ['review', 0], ['learn', 1]])
+  })
+
   it('another account\'s log is never replayed, and unreadable rows are counted and left out', async () => {
     const storage = memoryStorage()
     open(storage, recorder({ hangLog: true }).sender, 'user-1').enqueueLog(entry())

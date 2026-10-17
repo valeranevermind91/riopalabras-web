@@ -33,8 +33,12 @@ export interface ReviewLogEntry {
   readonly stateBefore: LogState
   /** Days since the word's previous review, to the best of what is known (see previousReviewAt); 0 for a new word; null when it cannot be told. */
   readonly elapsedDays: number | null
-  /** Days the answer scheduled the word out (Review: the new interval, 0 for the ten-minute step; Learn: 1, due tomorrow; practice: 0, nothing scheduled). */
-  readonly scheduledDays: number
+  /**
+   * Days the word is scheduled out. Review: the interval the rating gave (0 only for the ten-minute step after an Again, which really is due the same
+   * day). Learn: 1, the next local day, which is what finishing a batch schedules. Matching and Cloze schedule nothing, so this is the word's own interval
+   * as it stood before the answer, or null when it has none (a word not yet reviewed has no interval in days). Never 0 as a stand-in: 0 would say "due today".
+   */
+  readonly scheduledDays: number | null
   readonly intervalAfter: number
   readonly easeAfter: number
   readonly repetitionsAfter: number
@@ -167,7 +171,7 @@ export interface BuildInput {
   mode: LogMode
   rating: number
   after: AfterState
-  scheduledDays: number
+  scheduledDays: number | null
   sessionId: string | null
   durationMs: number | null
   now: Date
@@ -209,6 +213,9 @@ export function newId(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
+/** The schedule a practice answer carries: the word's own interval in days, or null when it has none (interval 0 means "not scheduled in days"). */
+export const practiceScheduledDays = (word: Pick<Word, 'interval'>): number | null => (word.interval > 0 ? word.interval : null)
+
 export interface ReviewLog {
   /** A new session id: call it when a sitting starts (a Review session, a Learn batch, a Matching group, a Cloze session) and pass it to every answer in it. */
   startSession: () => string
@@ -221,7 +228,8 @@ export interface ReviewLog {
   learned: (words: readonly Word[], after: AfterState, sessionId: string | null, now: Date) => void
   /**
    * A matched pair (Matching) or an answered question (Cloze). Nothing is scheduled and the word's state is unchanged, so the "after" columns repeat
-   * its current values. Rating: 3 when it was right at the first try, 1 when it was wrong (Cloze) or needed another try (Matching): a stand-in.
+   * its current values, and scheduled_days is the interval the word already had (null if it has none: see ReviewLogEntry.scheduledDays). Rating: 3 when
+   * it was right at the first try, 1 when it was wrong (Cloze) or needed another try (Matching): a stand-in.
    */
   practice: (input: { word: Word; mode: 'matching' | 'cloze'; correct: boolean; sessionId: string | null; durationMs: number | null; now: Date }) => void
 }
@@ -269,7 +277,7 @@ export function createReviewLog(deps: { enqueue: (entry: ReviewLogEntry) => void
             mode,
             rating: correct ? 3 : 1,
             after: { interval: word.interval, easeFactor: word.easeFactor, repetitions: word.repetitions },
-            scheduledDays: 0,
+            scheduledDays: practiceScheduledDays(word),
             sessionId,
             durationMs,
             now,

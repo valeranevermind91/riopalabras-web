@@ -20,12 +20,14 @@ interface ClozeQuestionProps {
   settings: Pick<UserSettings, 'showRuTranslation' | 'showEnTranslation'>
   /** Fires once, when Continue is pressed after the question was answered or given up. */
   onAnswered: (outcome: ClozeOutcome) => void
+  /** The moment the answer is committed (Check, or giving up), before the feedback is read: where the time spent on the question ends. */
+  onChecked?: () => void
 }
 
 type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 
 /** One fill-in-the-blank question. Every element stays mounted in the same place, so nothing shifts when a hint or the feedback appears. */
-export function ClozeQuestion({ item, settings, onAnswered }: ClozeQuestionProps) {
+export function ClozeQuestion({ item, settings, onAnswered, onChecked }: ClozeQuestionProps) {
   const t = strings.practice 
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
@@ -38,9 +40,13 @@ export function ClozeQuestion({ item, settings, onAnswered }: ClozeQuestionProps
     if (answer || typed.trim() === '') return
     const verdict = checkClozeAnswer({ typed, target, headword: item.headword })
     setAnswer({ kind: verdict.kind, outcome: verdict.outcome })
+    onChecked?.()
   }
   const reveal = () => {
-    if (!answer) setAnswer({ kind: 'gaveUp', outcome: 'gaveUp' })
+    if (!answer) {
+      setAnswer({ kind: 'gaveUp', outcome: 'gaveUp' })
+      onChecked?.()
+    }
   }
   const next = () => {
     if (!answer || sent.current) return

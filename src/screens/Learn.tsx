@@ -286,6 +286,7 @@ function PostBatch({
 
   let title: string
   let subtitle: string | null = null
+  let why: string | null = null
   let canContinue = false
 
   if (stats.learnPool === 0) {
@@ -294,6 +295,7 @@ function PostBatch({
   } else if (stats.remainingToday === 0) {
     title = strings.learn.capReachedTitle
     subtitle = strings.learn.capReachedSubtitle
+    why = strings.learn.capReachedWhy // the reason the words stop: without it the limit reads as the app holding words back
   } else {
     title = strings.learn.newWordsToday(learnedToday(settings, new Date()), settings.dailyNewWordLimit)
     canContinue = true
@@ -308,6 +310,7 @@ function PostBatch({
       <UnsavedNotice queue={queue} />
       <h2>{title}</h2>
       {subtitle && <p className="subtitle">{subtitle}</p>}
+      {why && <p className="post-batch-why">{why}</p>}
       <div className="post-batch-actions">
         {canContinue && (
           <button type="button" className={secondary(true)} onClick={onNextBatch}>

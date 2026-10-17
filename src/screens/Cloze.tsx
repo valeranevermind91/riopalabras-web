@@ -19,6 +19,7 @@ import {
 } from '../data/practice'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
+import { useCardTimer } from '../lib/cardTimer'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
 
@@ -40,10 +41,12 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
   const { index, results, done } = progress
   // The review log: a Cloze session has an id of its own, and each question's time is from the question appearing to the answer.
   const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
-  const shownAt = useRef(0)
+  const timer = useCardTimer() // the time on a question: null if the app was away meanwhile or it took over a minute (see cardTimer.ts)
+  // The time is read when the answer is COMMITTED (Check, or giving up), not when "Continue" is pressed after the feedback: reading the feedback is not time answering.
+  const answeredIn = useRef<number | null>(null)
   useEffect(() => {
-    shownAt.current = Date.now() // the first question is in front of the user from the moment the screen is
-  }, [])
+    timer.start() // the first question is in front of the user from the moment the screen is
+  }, [timer])
 
   const header = <ScreenHeader title={t.clozeTitle} onBack={onBack} />
 
@@ -52,9 +55,11 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
     // Each answered question is a card toward the streak (giving up is not an answer); once per finished session, today's metrics row.
     const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
     recordPracticeCards(deps, outcome === 'gaveUp' ? 0 : 1)
-    // One log row per answered question, right or wrong (giving up is not an answer).
-    if (reviewLog && outcome !== 'gaveUp') reviewLog.practice({ word: session[index].word, mode: 'cloze', correct: outcome === 'correct', sessionId, durationMs: Date.now() - shownAt.current, now: new Date() })
-    shownAt.current = Date.now() // the next question is in front of the user from now
+    // One log row per answered question, right or wrong (giving up is not an answer). The clock is read for every question, so the next starts afresh.
+    const durationMs = answeredIn.current
+    answeredIn.current = null
+    if (reviewLog && outcome !== 'gaveUp') reviewLog.practice({ word: session[index].word, mode: 'cloze', correct: outcome === 'correct', sessionId, durationMs, now: new Date() })
+    timer.start() // the next question is in front of the user from now
     const next = answerCloze(progress, session.length, outcome, () => {
       haptic('success')
       recordPracticeCompleted(deps)
@@ -66,7 +71,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
     haptic('tap')
     setSession(buildClozeSession(data.words))
     setSessionId(reviewLog?.startSession() ?? null)
-    shownAt.current = Date.now()
+    timer.start()
     setProgress(startCloze())
   }
 
@@ -127,7 +132,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
       <div className="bar" role="progressbar" aria-label={t.progressLabel} aria-valuemin={1} aria-valuemax={session.length} aria-valuenow={index + 1}>
         <div className="bar-fill" style={{ width: `${((index + 1) / session.length) * 100}%` }} />
       </div>
-      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} onAnswered={answered} />
+      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} onAnswered={answered} onChecked={() => (answeredIn.current = timer.stop())} />
     </main>
   )
 }

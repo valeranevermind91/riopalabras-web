@@ -106,6 +106,16 @@ describe('the review log, end to end', () => {
     expect(next).not.toBe(session)
   })
 
+  it('a practice row\'s scheduled_days reaches the table as the word\'s interval, or as null when it has none (never 0)', async () => {
+    const app = await openApp()
+    const at = new Date(T0 + DAY)
+    app.log.practice({ word: makeWord('quince', { repetitions: 5, interval: 15, nextReview: new Date(T0 + 15 * DAY) }), mode: 'cloze', correct: true, sessionId: 's', durationMs: null, now: at })
+    app.log.practice({ word: makeWord('cuarenta', { repetitions: 6, interval: 40, nextReview: new Date(T0 + 40 * DAY) }), mode: 'matching', correct: true, sessionId: 's', durationMs: null, now: at })
+    app.log.practice({ word: makeWord('nueva', { repetitions: 1, interval: 0, nextReview: new Date(T0 + DAY) }), mode: 'cloze', correct: false, sessionId: 's', durationMs: 4000, now: at })
+    await vi.waitFor(() => expect(rows()).toHaveLength(3))
+    expect(rows().map((r) => [r.es_word, r.scheduled_days, r.interval_after, r.duration_ms])).toEqual([['quince', 15, 15, null], ['cuarenta', 40, 40, null], ['nueva', null, 0, 4000]])
+  })
+
   it('a duplicate id does not create a second row, and is not an error: the same row sent twice is one row', async () => {
     const app = await openApp()
     const row = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', esWord: 'casa', reviewedAt: new Date(T0).toISOString(), rating: 3, mode: 'review' as const, stateBefore: 'review' as const, elapsedDays: 3, scheduledDays: 8, intervalAfter: 8, easeAfter: 2.5, repetitionsAfter: 3, sessionId: null, durationMs: null }
