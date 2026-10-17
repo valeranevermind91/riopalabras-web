@@ -104,10 +104,10 @@ describe('applyReview', () => {
     expect(applyReview({ easeFactor: 1.3, interval: 4, repetitions: 3 }, 2, NOW).easeFactor).toBe(1.3)
   })
 
-  it('clamps intervals to 36500 days', () => {
+  it('clamps intervals to the cap (270 days; the cap itself is tested in intervalCap.test.ts)', () => {
     const huge: Sm2Card = { easeFactor: 2.5, interval: 30000, repetitions: 20 }
-    expect(applyReview(huge, 3, NOW).interval).toBe(36500)
-    expect(applyReview(huge, 4, NOW).interval).toBe(36500)
+    expect(applyReview(huge, 3, NOW).interval).toBe(270)
+    expect(applyReview(huge, 4, NOW).interval).toBe(270)
   })
 
   it('schedules nextReview exactly interval × 24h after now', () => {
@@ -137,6 +137,8 @@ describe('formatInterval', () => {
     [30, '1mo'],
     [45, '2mo'],
     [180, '6mo'],
+    [269, '9mo'],
+    [270, '9mo'],
     [364, '12mo'],
     [365, '1y'],
     [730, '2y'],

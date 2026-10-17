@@ -20,7 +20,12 @@ export type Quality = number
 
 export const DEFAULT_EASE = 2.5
 export const MIN_EASE = 1.3
-export const MAX_INTERVAL_DAYS = 36500
+/**
+ * The longest a word is ever scheduled out: nine months. Past that an interval stops meaning anything — the person has either kept the word for
+ * good or lost it, and "2y" on a button reads as a bug rather than a promise. It applies to every newly computed interval, so a word stored with a
+ * longer one (from before this cap) keeps its date and comes under the cap at its next review. FSRS will need the same cap when it replaces SM-2.
+ */
+export const MAX_INTERVAL_DAYS = 270
 /** An Again brings the word back after this long (and the Review session brings it back at its end, sooner). */
 export const RELEARN_MINUTES = 10
 
