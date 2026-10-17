@@ -18,8 +18,10 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
 /** A session takes at most this many words from the due list. (If 20 turns out wrong, change the number: there is no setting for it.) */
 export const REVIEW_SESSION_SIZE = 20
 /**
- * A session never holds more cards than this, re-queues included: if a user keeps rating Again, the session ends here and the words still relearning
- * simply come due later. It exists only so a bad session cannot grow without end; nothing on screen mentions it.
+ * A session never holds more cards than this, re-queues included. It is a BACKSTOP: what keeps an Again from looping is that a word returns at most
+ * once (see requeueAgain), which already caps a session of REVIEW_SESSION_SIZE words at twice that. The ceiling is the second, independent limit, on
+ * the session as a whole: it binds whatever the session's size, and it is what the progress counter's denominator can never pass. Nothing on screen
+ * mentions it.
  */
 export const REVIEW_SESSION_CEILING = 40
 
@@ -49,16 +51,22 @@ export function withUpdate(word: Word, update: ProgressUpdate): Word {
 }
 
 /**
- * The session after an Again on the card at `index`: the word, as the rating left it, goes to the very end, so it comes back in the same
- * sitting (however few cards are left, it is last). It is never in the queue twice: a copy still waiting behind `index` is dropped first, so
- * an Again on the copy sends it to the end again instead of piling up. The cards before and at `index` stay as they were. Re-queues do not count
- * against the session's REVIEW_SESSION_SIZE (they are a repeat, not a new word), but the session never holds more than `ceiling` cards: past it the
- * session is returned as it is.
+ * The session after an Again: the word, as the rating left it, goes to the very end, so it comes back in the same sitting (however few cards
+ * are left, it is last). Every card that was in the session stays as it was, so the cursor keeps its place.
+ *
+ * A word returns AT MOST ONCE. A word is in the session twice at most: once where the session put it, and once as its return. So an Again on a
+ * word that is already there twice (the return itself, or a first showing whose return is already waiting) does not queue it again, and the
+ * word leaves the session: its rating has already scheduled it ten minutes out, so it comes back on its own, in a later session, and repeating
+ * it now would only trap the user. Every word adds at most one card, so a session always ends.
+ *
+ * Returns do not count against the session's REVIEW_SESSION_SIZE (they are a repeat, not a new word), but the session never holds more than
+ * `ceiling` cards, the backstop on the whole session: past it the session is returned as it is, the word keeps its ten minutes, and it comes
+ * due in a later session.
  */
-export function requeueAgain(session: readonly Word[], index: number, updated: Word, ceiling: number = REVIEW_SESSION_CEILING): readonly Word[] {
+export function requeueAgain(session: readonly Word[], updated: Word, ceiling: number = REVIEW_SESSION_CEILING): readonly Word[] {
   const key = wordKey(updated.esWord)
-  const next = [...session.filter((w, i) => i <= index || wordKey(w.esWord) !== key), updated]
-  // At the ceiling the word is not queued again: it keeps its ten minutes and comes due in a later session.
+  if (session.filter((w) => wordKey(w.esWord) === key).length >= 2) return session // already back once: it leaves
+  const next = [...session, updated]
   return next.length > ceiling ? session : Object.freeze(next)
 }
 

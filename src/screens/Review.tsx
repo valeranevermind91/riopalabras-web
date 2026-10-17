@@ -29,7 +29,7 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
   const [revealed, setRevealed] = useState(false)
   const [completed, setCompleted] = useState(false)
   const ratedIndex = useRef(-1)
-  // The words rated in this session: a word comes back at the end after an Again, and rating it again is the same card, not a second one.
+  // The words rated in this session: a word comes back at the end after an Again (once: see requeueAgain), and rating it again is the same card, not a second one.
   const ratedInSession = useRef(new Set<string>())
 
   const [rate] = useState(() =>
@@ -60,11 +60,12 @@ export function ReviewScreen({ data, queue, metrics, onHome, onLearn, onBack }: 
     ratedInSession.current.add(word.esWord)
     const update = rate(word, quality, new Date(), !repeat)
 
-    // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease).
-    // The end is then one card further on, so the session cannot finish with the word still owed.
+    // An Again brings the word back at the end of this sitting, as the rating left it (so its next rating starts from the lowered ease), but only
+    // once: a second Again lets it leave (it is already scheduled ten minutes out). The end is one card further on whenever a word is brought
+    // back, so the session cannot finish with a word still owed, and the card counter's total never passes the ceiling.
     let cards = session
     if (isAgain(quality)) {
-      cards = requeueAgain(session, index, withUpdate(session[index], update))
+      cards = requeueAgain(session, withUpdate(session[index], update))
       setSession(cards)
     }
 

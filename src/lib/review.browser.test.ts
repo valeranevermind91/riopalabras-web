@@ -154,6 +154,46 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     await page.close()
   }, 180_000)
 
+  it('a word rated Again twice leaves the session: a stuck last card reads 21 / 21 once, and then the session ends (no 22 / 22)', async () => {
+    const page = await open('due=20')
+    await page.click('[data-tile="review"]')
+    await page.waitForSelector('.flip')
+    const counters: string[] = []
+    for (let i = 0; i < 19; i++) {
+      counters.push(await counter(page))
+      await rate(page, 'good')
+    }
+    const stuck = await headword(page)
+    counters.push(await counter(page))
+    expect(counters[counters.length - 1]).toBe('20 / 20')
+    await rate(page, 'again') // the first Again: the word comes back at the end
+    expect(await counter(page)).toBe('21 / 21')
+    expect(await headword(page)).toBe(stuck) // the same word, once more
+    counters.push(await counter(page))
+    await rate(page, 'again') // the second Again: it leaves, and the session has nothing left to show
+    await page.waitForSelector('.post-batch')
+    expect(await page.$('.review-count')).toBeNull()
+    expect(counters.some((c) => c.startsWith('22 /'))).toBe(false)
+    await page.close()
+  }, 120_000)
+
+  it('rating Again on every card: the counter reads at most 40, in both numbers, from the first card to the last', async () => {
+    const page = await open('due=30')
+    await page.click('[data-tile="review"]')
+    await page.waitForSelector('.flip')
+    const counters: string[] = []
+    while (await page.$('.review-count')) {
+      counters.push(await counter(page))
+      await rate(page, 'again')
+    }
+    await page.waitForSelector('.post-batch')
+    const parsed = counters.map((c) => c.split(' / ').map(Number))
+    expect(parsed.every(([n, m]) => n <= m && m <= 40)).toBe(true)
+    expect(parsed[parsed.length - 1]).toEqual([40, 40]) // 20 words, each shown twice, and then it ends
+    expect(parsed.map(([n]) => n)).toEqual(Array.from({ length: 40 }, (_, i) => i + 1)) // one step at a time, never a card more than once
+    await page.close()
+  }, 180_000)
+
   it('Continue draws from what is due then: a word that came due during the last session is in the next one', async () => {
     const page = await open('due=25&soon=4')
     await page.click('[data-tile="review"]')

@@ -147,7 +147,7 @@ describe.skipIf(!CHROME)('with the network gone', () => {
         return { interval: row.interval, repetitions: row.repetitions, easeFactor: row.easeFactor, nextReview: row.nextReview.getTime() }
       }, word)
 
-    it('the button says 10 min, and the word comes back at the end of the same session, once, however often it is Again', async () => {
+    it('the button says 10 min, and the word comes back at the end of the same session once; a second Again lets it leave, its ten minutes already set', async () => {
       const { page } = await open('review', false) // the network is down: every write waits in the queue, where it can be read
       await page.waitForSelector('.flip')
       expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '4d', '8d', '10d']) // the others preview from interval 3, ease 2.5
@@ -170,20 +170,21 @@ describe.skipIf(!CHROME)('with the network gone', () => {
       expect(await counter(page)).toBe('7 / 7')
       expect(await headword(page)).toBe(word) // and then it is back, last
 
-      await rate(page, 'again') // Again again: to the end again, not a second copy
-      expect(await counter(page)).toBe('8 / 8')
-      expect(await headword(page)).toBe(word)
-      const second = await progressOf(page, word)
-      expect(second).toMatchObject({ interval: 0, repetitions: 1 })
-      expect(second.easeFactor).toBeLessThan(first.easeFactor) // it keeps dropping from the lowered value, not from the snapshot's 2.5
-      expect(second.easeFactor).toBeCloseTo(1.86, 2) // 2.5 → 2.18 → 1.86
-
       // this time its buttons preview from repetitions 1 at the lowered ease
+      await page.click('.flip')
+      await page.waitForSelector('.rating:not(.is-hidden) .rate-again')
       expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '1d', '2d', '3d'])
-      await rate(page, 'good')
-      await page.waitForSelector('.post-batch') // the session ends only once the word has been rated something else
-      const done = await progressOf(page, word)
-      expect(done).toMatchObject({ interval: 2, repetitions: 2 })
+
+      await page.click('.rate-again') // Again a second time: it leaves the session (a word returns once), and the session is over
+      await page.waitForSelector('.post-batch')
+      expect(await page.$('.review-count')).toBeNull() // no 8 / 8
+      const second = await progressOf(page, word)
+      expect(second).toMatchObject({ interval: 0, repetitions: 1 }) // still relearning, not forgotten: it was scheduled again
+      expect(second.easeFactor).toBeLessThan(first.easeFactor) // and the ease kept dropping from the lowered value, not from the snapshot's 2.5
+      expect(second.easeFactor).toBeCloseTo(1.86, 2) // 2.5 → 2.18 → 1.86
+      const wait2 = second.nextReview - Date.now()
+      expect(wait2).toBeGreaterThan(9 * 60 * 1000) // its ten minutes, so it comes back on its own in a later session
+      expect(wait2).toBeLessThanOrEqual(10 * 60 * 1000)
       await page.close()
     }, 60_000)
 

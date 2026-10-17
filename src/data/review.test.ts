@@ -369,7 +369,7 @@ describe('an Again re-queues the word at the end of the session', () => {
 
   it('the word, as the rating left it, goes to the very end', () => {
     const session = cards('a', 'b', 'c', 'd', 'e')
-    const next = requeueAgain(session, 1, rated(session[1])) // Again on b
+    const next = requeueAgain(session, rated(session[1])) // Again on b
     expect(order(next)).toEqual(['a', 'b', 'c', 'd', 'e', 'b'])
     const copy = next[next.length - 1]
     expect(copy).toMatchObject({ repetitions: 1, interval: 0 }) // the state the rating wrote
@@ -381,39 +381,36 @@ describe('an Again re-queues the word at the end of the session', () => {
 
   it('with fewer than three cards left (or none) it is last anyway', () => {
     const session = cards('a', 'b', 'c', 'd')
-    expect(order(requeueAgain(session, 3, rated(session[3])))).toEqual(['a', 'b', 'c', 'd', 'd']) // the last card: the session goes on
-    expect(order(requeueAgain(session, 2, rated(session[2])))).toEqual(['a', 'b', 'c', 'd', 'c']) // one card left
-    expect(order(requeueAgain(cards('only'), 0, rated(learned('only'))))).toEqual(['only', 'only'])
+    expect(order(requeueAgain(session, rated(session[3])))).toEqual(['a', 'b', 'c', 'd', 'd']) // the last card: the session goes on
+    expect(order(requeueAgain(session, rated(session[2])))).toEqual(['a', 'b', 'c', 'd', 'c']) // one card left
+    expect(order(requeueAgain(cards('only'), rated(learned('only'))))).toEqual(['only', 'only'])
   })
 
-  it('a second Again on the copy sends it to the end again: it is never in the queue twice', () => {
+  it('a second Again on the copy lets the word leave the session: nothing is queued, and the rating has still scheduled it ten minutes out', () => {
     const session = cards('a', 'b', 'c')
-    let now = requeueAgain(session, 0, rated(session[0])) // a b c a'
+    const now = requeueAgain(session, rated(session[0])) // a b c a'
     expect(order(now)).toEqual(['a', 'b', 'c', 'a'])
     // b and c are rated Good, nothing is re-queued; then the copy is rated Again
-    now = requeueAgain(now, 3, rated(now[3]))
-    expect(order(now)).toEqual(['a', 'b', 'c', 'a', 'a']) // the copy at 3 was consumed, one new copy is waiting after it
-    expect(order(now).slice(4).filter((n) => n === 'a')).toHaveLength(1) // exactly one copy still to come
-    // and the ease keeps dropping from the lowered value, not from the snapshot's
-    expect(now[4].easeFactor).toBeLessThan(now[3].easeFactor)
+    const second = rated(now[3])
+    const after = requeueAgain(now, second)
+    expect(after).toBe(now) // untouched: no third card for a
+    expect(order(after).filter((n) => n === 'a')).toHaveLength(2) // the first showing and the one return
+    // it is not forgotten: its rating still wrote a lowered ease and a next review ten minutes out, so it comes back on its own
+    expect(second.easeFactor).toBeLessThan(now[3].easeFactor)
     expect(now[3].easeFactor).toBeLessThan(2.5)
+    expect(second.nextReview?.getTime()).toBe(NOW.getTime() + 10 * 60 * 1000)
   })
 
-  it('a copy still waiting behind the card is dropped first, so copies cannot pile up', () => {
-    const session = [...cards('a', 'b'), learned('a')] // a stray later copy of a
-    const next = requeueAgain(session, 0, rated(session[0]))
-    expect(order(next)).toEqual(['a', 'b', 'a']) // the stray one went; one new copy at the end
+  it('a word that already has its return waiting is not queued a second time, whatever card the Again is on', () => {
+    const session = [...cards('a', 'b'), learned('a')] // a, b, and a's return waiting at the end
+    expect(requeueAgain(session, rated(session[0]))).toBe(session)
   })
 
-  it('the ease floors at 1.3 however often it is Again', () => {
-    let session: readonly Word[] = cards('a', 'b')
-    let index = 0
-    for (let i = 0; i < 12; i++) {
-      session = requeueAgain(session, index, rated(session[index]))
-      index = session.length - 1 // the copy is the next card that matters
-    }
-    expect(session[session.length - 1].easeFactor).toBe(1.3)
-    expect(session.filter((w) => w.esWord === 'a').length).toBeGreaterThan(1) // earlier copies are behind us, one is ahead
+  it('the ease floors at 1.3 however often a word is rated Again', () => {
+    let word: Word = learned('a')
+    for (let i = 0; i < 12; i++) word = rated(word)
+    expect(word.easeFactor).toBe(1.3)
+    expect(word).toMatchObject({ repetitions: 1, interval: 0 })
   })
 
   it('only Again re-queues: nothing here is called for the other ratings', () => {
@@ -513,7 +510,7 @@ describe('the session limit', () => {
       const word = cards[i]
       const update = rateWord(word, quality, NOW)
       if (words) words.current = applyProgressUpdates(words.current, [update])
-      if (quality === 1) cards = requeueAgain(cards, i, withUpdate(word, update))
+      if (quality === 1) cards = requeueAgain(cards, withUpdate(word, update))
     }
     return { shown, cards }
   }
@@ -600,7 +597,7 @@ describe('the session limit', () => {
     for (let i = 0; i < 5; i++) {
       const update = rateWord(cards[i], 1, NOW)
       words.current = applyProgressUpdates(words.current, [update])
-      cards = requeueAgain(cards, i, withUpdate(cards[i], update))
+      cards = requeueAgain(cards, withUpdate(cards[i], update))
     }
     expect(cards).toHaveLength(25) // 20 words and 5 copies
     expect(cards.slice(0, 20).map((w) => w.esWord)).toEqual(session.map((w) => w.esWord)) // every one of the 20 is still there, in place
@@ -626,21 +623,21 @@ describe('the session limit', () => {
     expect(dueWords(words.current, later).map((w) => w.esWord)).toEqual(expect.arrayContaining(lapsed))
   })
 
-  it('the ceiling holds however few words there are: three words rated Again for ever end at 40 cards', () => {
+  it('a few words rated Again for ever end at twice their number: each returns once and then leaves, far short of the ceiling', () => {
     const { shown, cards } = play(backlog(3), 1)
-    expect(shown).toBe(REVIEW_SESSION_CEILING)
-    expect(cards).toHaveLength(REVIEW_SESSION_CEILING)
+    expect(shown).toBe(6)
+    expect(cards).toHaveLength(6)
   })
 
   it('at the ceiling a word is not re-queued, and the session is returned as it is', () => {
     const full = backlog(REVIEW_SESSION_CEILING)
     const word = full[3]
-    expect(requeueAgain(full, 3, withUpdate(word, rateWord(word, 1, NOW)))).toBe(full)
-    expect(requeueAgain(full, 3, withUpdate(word, rateWord(word, 1, NOW)), 41)).toHaveLength(41) // the ceiling is a parameter, 40 by default
-    // a copy still waiting is replaced, not added to, so a session at the ceiling can still send its copy to the end
+    expect(requeueAgain(full, withUpdate(word, rateWord(word, 1, NOW)))).toBe(full)
+    expect(requeueAgain(full, withUpdate(word, rateWord(word, 1, NOW)), 41)).toHaveLength(41) // the ceiling is a parameter, 40 by default
+    // a word that is already there twice is not queued a third time, at the ceiling or below it
     const withCopy = [...backlog(39), withUpdate(full[0], rateWord(full[0], 1, NOW))]
-    const again = requeueAgain(withCopy, 0, withCopy[39])
-    expect(again).toHaveLength(40)
+    expect(requeueAgain(withCopy, withCopy[39])).toBe(withCopy)
+    expect(requeueAgain(withCopy, withCopy[39], 100)).toBe(withCopy) // and not for want of room
   })
 
   it('"Continue" draws a fresh session from what is still due, including a word that came due during the last one', () => {
@@ -664,5 +661,115 @@ describe('the session limit', () => {
     const after = { current: words as readonly Word[] }
     play(buildReviewSession(words, NOW), 3, after)
     expect(computeStats(after.current, parseSettings({}), NOW).reviewDue).toBe(30)
+  })
+})
+
+describe('a word returns within a session at most once', () => {
+  const HOUR = 3_600_000
+  const name = (i: number) => `w${String(i).padStart(2, '0')}`
+  const backlog = (n: number): Word[] => Array.from({ length: n }, (_, k) => learned(name(k + 1), { rank: k + 1, nextReview: new Date(NOW.getTime() - (k + 1) * HOUR) }))
+
+  /**
+   * The loop of the Review screen, as it is: rate the card shown, an Again re-queues the word, the session is over when the card just rated was the
+   * last one. `quality(word, nth)` is the rating for that word's nth showing (1 = first). Records the card counter as the screen draws it
+   * ("n / m", m being the session's length), and stops a loop that would not end.
+   */
+  function run(session: readonly Word[], quality: (esWord: string, nth: number) => number, ceiling?: number) {
+    let cards = session
+    let index = 0
+    const seen = new Map<string, number>()
+    const shown: string[] = []
+    const counters: { n: number; m: number }[] = []
+    for (let guard = 0; guard < 1000; guard++) {
+      const word = cards[index]
+      const nth = (seen.get(word.esWord) ?? 0) + 1
+      seen.set(word.esWord, nth)
+      shown.push(word.esWord)
+      counters.push({ n: index + 1, m: cards.length })
+      const q = quality(word.esWord, nth)
+      if (q <= 1) cards = requeueAgain(cards, withUpdate(word, rateWord(word, q as never, NOW)), ceiling)
+      if (index >= cards.length - 1) return { ended: true, shown, counters, cards }
+      index++
+    }
+    return { ended: false, shown, counters, cards }
+  }
+  const count = (shown: readonly string[], esWord: string) => shown.filter((w) => w === esWord).length
+
+  it('a word rated Again once comes back exactly once, at the end, and is not shown a third time', () => {
+    const session = backlog(5)
+    const target = session[1].esWord
+    const result = run(session, (esWord, nth) => (esWord === target && nth === 1 ? 1 : 3))
+    expect(result.ended).toBe(true)
+    expect(count(result.shown, target)).toBe(2)
+    expect(result.shown[result.shown.length - 1]).toBe(target) // its return is the last card
+    expect(result.shown).toHaveLength(6) // 5 cards and one return
+    for (const w of session) if (w.esWord !== target) expect(count(result.shown, w.esWord)).toBe(1)
+  })
+
+  it('a word rated Again twice leaves the session: the second Again ends its stay, and the session ends with no card owed', () => {
+    const session = backlog(5)
+    const target = session[4].esWord // the last card: the case that used to loop
+    const result = run(session, (esWord) => (esWord === target ? 1 : 3))
+    expect(result.ended).toBe(true)
+    expect(count(result.shown, target)).toBe(2) // shown, returned, gone
+    expect(result.shown).toHaveLength(6)
+    expect(result.counters[result.counters.length - 1]).toEqual({ n: 6, m: 6 }) // the counter reads 6 / 6, never 7 / 7
+  })
+
+  it('the loop that was reported (a stuck last card: 21 / 21, 22 / 22, 23 / 23 …) is over after one return', () => {
+    const session = backlog(20)
+    const last = session[19].esWord
+    const result = run(session, (esWord) => (esWord === last ? 1 : 3))
+    expect(result.ended).toBe(true)
+    expect(result.shown).toHaveLength(21) // 20 cards and the one return: 21 / 21 is the most the counter reads
+    expect(result.counters[result.counters.length - 1]).toEqual({ n: 21, m: 21 })
+    expect(count(result.shown, last)).toBe(2)
+  })
+
+  it('a session of nothing but Again ends: every word is shown twice and no more', () => {
+    for (const size of [1, 2, 3, 7, 20]) {
+      const result = run(backlog(size), () => 1)
+      expect(result.ended, String(size)).toBe(true)
+      expect(result.shown, String(size)).toHaveLength(2 * size)
+      for (const w of backlog(size)) expect(count(result.shown, w.esWord), `${size}: ${w.esWord}`).toBe(2)
+    }
+  })
+
+  it('whatever the ratings, a session ends, no word is shown more than twice, and the counter never passes the ceiling', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const random = seededRandom(seed)
+      const size = 1 + Math.floor(random() * 20)
+      const againShare = random()
+      const result = run(buildReviewSession(backlog(size), NOW, seededRandom(seed)), () => (random() < againShare ? 1 : 3))
+      expect(result.ended, `seed ${seed}`).toBe(true)
+      for (const w of backlog(size)) expect(count(result.shown, w.esWord), `seed ${seed} ${w.esWord}`).toBeLessThanOrEqual(2)
+      for (const { n, m } of result.counters) {
+        expect(m).toBeLessThanOrEqual(REVIEW_SESSION_CEILING)
+        expect(n).toBeLessThanOrEqual(m)
+      }
+    }
+  })
+
+  it('the counter never reads more than the ceiling, at any size of session and with every card Again', () => {
+    for (let size = 1; size <= REVIEW_SESSION_CEILING; size++) {
+      const result = run(buildReviewSession(backlog(size), NOW, seededRandom(size), size), () => 1)
+      expect(result.ended, String(size)).toBe(true)
+      const biggest = Math.max(...result.counters.map((c) => c.m))
+      expect(biggest, String(size)).toBeLessThanOrEqual(REVIEW_SESSION_CEILING)
+      expect(Math.max(...result.counters.map((c) => c.n)), String(size)).toBeLessThanOrEqual(REVIEW_SESSION_CEILING)
+      expect(result.shown.length, String(size)).toBeLessThanOrEqual(REVIEW_SESSION_CEILING)
+    }
+  })
+
+  it('the ceiling really binds: a session of 30 words all rated Again would be 60 cards by the one-return rule alone, and stops at 40', () => {
+    const session = buildReviewSession(backlog(30), NOW, seededRandom(3), 30)
+    expect(session).toHaveLength(30)
+    const result = run(session, () => 1)
+    expect(result.ended).toBe(true)
+    expect(result.shown).toHaveLength(REVIEW_SESSION_CEILING)
+    expect(result.cards).toHaveLength(REVIEW_SESSION_CEILING)
+    expect(Math.max(...result.counters.map((c) => c.m))).toBe(REVIEW_SESSION_CEILING)
+    // a smaller ceiling binds the same way
+    expect(run(session, () => 1, 33).shown).toHaveLength(33)
   })
 })
