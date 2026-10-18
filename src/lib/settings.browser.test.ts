@@ -111,10 +111,10 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
   }, 60_000)
 
   it('Home → Settings → Debug → Back lands on Settings (and Back again on Home)', async () => {
-    const page = await open('debug=1')
+    const page = await open('unlocked=1')
     await toSettings(page)
     expect(await page.$$eval('.settings-label', (els) => els.map((e) => e.textContent))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About', 'Debug'])
-    expect(await page.$$eval('#settings-debug ~ .settings-group button', (els) => els.length)).toBe(1)
+    expect(await page.$$eval('#settings-debug ~ .settings-group button', (els) => els.map((e) => e.textContent))).toEqual(['Debug›', 'Lock Debug']) // the way in, and the way out
     await page.click('#settings-debug ~ .settings-group .setting-nav')
     await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Debug')
 
@@ -126,7 +126,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
   }, 60_000)
 
   it('every row is at least 48px tall, and every control has a name that is tied to it', async () => {
-    const page = await open('debug=1')
+    const page = await open('unlocked=1')
     await toSettings(page)
     const heights = await page.$$eval('.setting-row', (els) => els.map((e) => Math.round(e.getBoundingClientRect().height)))
     expect(heights.length).toBeGreaterThanOrEqual(8)

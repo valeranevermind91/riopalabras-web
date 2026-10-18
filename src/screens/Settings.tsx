@@ -19,8 +19,6 @@ interface SettingsScreenProps {
   data: UserData
   queue: WriteQueue
   theme: { choice: ThemeChoice; set: (choice: ThemeChoice) => void }
-  /** Whether this user may open Debug. When false the Debug section is not rendered at all. */
-  debugAllowed: boolean
   onOpenDebug: () => void
   /** The daily reminder (App owns it so the time zone is kept current at every open). Without it the Notifications section shows the toggle off and disabled. */
   reminders?: RemindersControl
@@ -46,7 +44,7 @@ const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ decli
 
 const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
-export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -76,7 +74,6 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
     haptic('select')
     saveSetting(debugUnlockedPatch(false), deps)
   }
-  const showDebug = debugAllowed || settings.debugUnlocked
   const openLink = (e: MouseEvent<HTMLAnchorElement>) => {
     const open = getWebApp().webApp.openTelegramLink
     if (!link || !open) return // outside Telegram the anchor just opens the page
@@ -280,7 +277,7 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
         <p className="settings-about">{t.aboutText}</p>
       </section>
 
-      {showDebug && (
+      {settings.debugUnlocked && (
         <section className="settings-section" aria-labelledby="settings-debug">
           <h2 id="settings-debug" className="settings-label">
             {t.debug}

@@ -597,7 +597,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       })
 
     it('shows start_rank, then ten words with their rank and where each came from: 7 from the window, 3 from below', async () => {
-      const page = await open('ready=1&debug=1&goal=10&lang=en&start_rank=2422')
+      const page = await open('ready=1&unlocked=1&goal=10&lang=en&start_rank=2422')
       await toDebug(page)
       const lines = await preview(page)
       expect(lines[0]).toBe('start_rank: 2422')
@@ -609,7 +609,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
     }, 60_000)
 
     it('says "none" without a start_rank, and everything is from the window', async () => {
-      const page = await open('ready=1&debug=1&goal=10&lang=en')
+      const page = await open('ready=1&unlocked=1&goal=10&lang=en')
       await toDebug(page)
       const lines = await preview(page)
       expect(lines[0]).toBe('start_rank: none')
@@ -619,7 +619,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
     }, 60_000)
 
     it('is read-only: looking writes nothing, and the settings it shows are the stored ones', async () => {
-      const page = await open('ready=1&debug=1&goal=10&lang=en&start_rank=2422')
+      const page = await open('ready=1&unlocked=1&goal=10&lang=en&start_rank=2422')
       await toDebug(page)
       await preview(page)
       expect(await sent(page)).toEqual({ settings: [], hidden: [] })

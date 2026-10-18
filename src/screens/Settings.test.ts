@@ -22,7 +22,6 @@ const render = (raw: Record<string, unknown> = {}, props: Partial<Parameters<typ
       data: { settings: parseSettings(raw), getSettings: () => parseSettings(raw), applySettings: noop } as never,
       queue,
       theme: { choice: 'system', set: noop },
-      debugAllowed: false,
       onOpenDebug: noop,
       botUsername: 'riopalabras_bot',
       ...props,
@@ -40,8 +39,8 @@ describe('the Settings screen', () => {
     expect(html).toMatch(/class="settings-label"/)
   })
 
-  it('Debug is the fifth section, after About, for someone allowed', () => {
-    expect(labels(render({}, { debugAllowed: true }))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About', 'Debug'])
+  it('Debug is the sixth section, after About, for an account that unlocked it', () => {
+    expect(labels(render({ debug_unlocked: true }))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About', 'Debug'])
   })
 
   describe('the daily goal', () => {
@@ -250,7 +249,7 @@ describe('the Settings screen', () => {
       afterEach(() => vi.unstubAllEnvs())
       const fromEnv = () =>
         renderToStaticMarkup(
-          createElement(SettingsScreen, { data: { settings: parseSettings({}), getSettings: () => parseSettings({}), applySettings: noop } as never, queue, theme: { choice: 'system', set: noop }, debugAllowed: false, onOpenDebug: noop }),
+          createElement(SettingsScreen, { data: { settings: parseSettings({}), getSettings: () => parseSettings({}), applySettings: noop } as never, queue, theme: { choice: 'system', set: noop }, onOpenDebug: noop }),
         )
 
       it('reads the username and builds the link', () => {
@@ -273,23 +272,23 @@ describe('the Settings screen', () => {
   })
 
   describe('debug', () => {
-    it('is not in the DOM at all for someone who is not allowed: no row, no section label, no word "Debug"', () => {
-      const html = render({}, { debugAllowed: false })
+    it('is not in the DOM at all until it is unlocked: no row, no section label, no word "Debug"', () => {
+      const html = render({})
       expect(html).not.toContain('Debug')
       expect(html).not.toContain('settings-debug')
       expect(html).not.toContain('setting-nav')
     })
 
-    it('for someone allowed it is one row labelled "Debug", a button that opens the Debug screen', () => {
-      const html = render({}, { debugAllowed: true })
+    it('unlocked it is one section with two rows: "Debug", a button that opens the Debug screen, and "Lock Debug"', () => {
+      const html = render({ debug_unlocked: true })
       const section = html.match(/<section class="settings-section" aria-labelledby="settings-debug">.*?<\/section>/)![0]
-      expect(section.match(/<button/g)).toHaveLength(1)
+      expect(section.match(/<button/g)).toHaveLength(2)
       expect(section).toMatch(/<button type="button" class="setting-row setting-nav"><span class="setting-label">Debug<\/span>/)
     })
 
     describe('unlocked with seven taps on the version row (debug_unlocked in the settings blob)', () => {
       it('an account that unlocked it sees the section, with a second row to lock it again', () => {
-        const html = render({ debug_unlocked: true }, { debugAllowed: false })
+        const html = render({ debug_unlocked: true })
         const section = html.match(/<section class="settings-section" aria-labelledby="settings-debug">.*?<\/section>/)![0]
         expect(section.match(/<button/g)).toHaveLength(2)
         expect(section).toContain('<span class="setting-label">Debug</span>')
@@ -298,16 +297,10 @@ describe('the Settings screen', () => {
 
       it('an account that did not never sees the word, and nothing about a lock', () => {
         for (const raw of [{}, { debug_unlocked: false }, { debug_unlocked: 'true' }]) {
-          const html = render(raw, { debugAllowed: false })
+          const html = render(raw)
           expect(html, JSON.stringify(raw)).not.toContain('Debug')
           expect(html).not.toContain('Lock')
         }
-      })
-
-      it('someone on the list sees the section with no lock row: it is theirs whatever the gesture says', () => {
-        const section = render({}, { debugAllowed: true }).match(/<section class="settings-section" aria-labelledby="settings-debug">.*?<\/section>/)![0]
-        expect(section.match(/<button/g)).toHaveLength(1)
-        expect(section).not.toContain('Lock')
       })
 
       it('in Russian the lock row is «Заблокировать Debug»', () => {
@@ -381,14 +374,13 @@ describe('where Back goes', () => {
     expect(app).toMatch(/backTargetFor\(screen/)
     expect(app).toMatch(/onSettings=\{\(\) => setScreen\('settings'\)\}/)
     expect(app).toMatch(/onOpenDebug=\{\(\) => setScreen\('debug'\)\}/)
-    expect(app).toMatch(/debugAllowed=\{debugAllowed\}/)
-    expect(app).toMatch(/if \(!debugAllowed\) return <NotAvailable \/>/)
+    expect(app).toMatch(/if \(!debugUnlocked\) return <NotAvailable \/>/)
   })
 
-  it('App lets Debug in for an account that unlocked it as well as for the list, and opens every screen at the top of the page', () => {
+  it('App lets Debug in only for an account that unlocked it, and opens every screen at the top of the page', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
     // App is not rendered by any test: the two lines that make the gesture and the scroll fix real are pinned
-    expect(app).toMatch(/const debugAllowed = debugListed \|\| \(readyData\?\.settings\.debugUnlocked \?\? false\)/)
+    expect(app).toMatch(/const debugUnlocked = readyData\?\.settings\.debugUnlocked \?\? false/)
     expect(app).toMatch(/useScreenScroll\(screen, open\?\.from \?\? null\)/)
   })
 })

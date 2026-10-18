@@ -11,7 +11,6 @@ import { createViewStore } from './data/wordList'
 import { useUserData } from './data/useUserData'
 import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
-import { useDebugAccess } from './lib/useDebugAccess'
 import { effectiveLanguage, setLanguage, useLanguage } from './lib/language'
 import { getSupabase } from './lib/supabase'
 import { backTarget as backTargetFor, type Screen } from './lib/nav'
@@ -95,13 +94,12 @@ function App() {
   const holdLoad = userId !== null && restoredFor !== userId
 
   const data = useUserData(auth, client, holdLoad)
-  // Debug is for those on the VITE_DEBUG_TG_IDS list, and for an account that unlocked it with seven taps on the version row (a setting in its blob).
-  const debugListed = useDebugAccess(auth, client, telegram.isMock)
   // The daily reminder lives here, not in Settings: the time zone on its row is kept current at every open.
   const reminderStore = useMemo(() => (client && userId ? supabaseReminderStore(client, userId) : null), [client, userId])
   const reminders = useReminders(reminderStore)
   const readyData = data.status === 'ready' ? data.data : null
-  const debugAllowed = debugListed || (readyData?.settings.debugUnlocked ?? false)
+  // Debug has one way in: seven taps on the version row in Settings, remembered in the account's settings (debug_unlocked), and one way out ("Lock Debug").
+  const debugUnlocked = readyData?.settings.debugUnlocked ?? false
   const getSettings = readyData?.getSettings ?? null
   // The chosen language once the settings are there (until then the one this device used last); with none chosen, Telegram's.
   const storedLanguage = readyData ? readyData.settings.uiLanguage : undefined
@@ -251,7 +249,6 @@ function App() {
         data={readyData}
         queue={queue}
         theme={{ choice: theme.choice, set: theme.set }}
-        debugAllowed={debugAllowed}
         onOpenDebug={() => setScreen('debug')}
         reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
@@ -275,7 +272,7 @@ function App() {
   }
 
   if (screen === 'debug') {
-    if (!debugAllowed) return <NotAvailable />
+    if (!debugUnlocked) return <NotAvailable />
     return (
       <DebugScreen
         telegram={telegram}

@@ -252,7 +252,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
 
     it('with a stored Russian it is all Russian, and choosing English switches it all at once and saves the choice', async () => {
       const ctx = await context()
-      const page = await settingsPage(ctx, 'goal=12&lang=ru&debug=1')
+      const page = await settingsPage(ctx, 'goal=12&lang=ru&unlocked=1')
       expect(await htmlLang(page)).toBe('ru')
       await toSettings(page)
       expect(await page.$$eval('.settings-label', (els) => els.map((e) => e.textContent))).toEqual(['Обучение', 'Язык', 'Оформление', 'Уведомления', 'О приложении', 'Debug'])
@@ -272,7 +272,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
 
     it('Debug stays English in a Russian interface', async () => {
       const ctx = await context()
-      const page = await settingsPage(ctx, 'goal=12&lang=ru&debug=1')
+      const page = await settingsPage(ctx, 'goal=12&lang=ru&unlocked=1')
       await toSettings(page)
       await page.evaluate(() => (document.querySelector('#settings-debug ~ .settings-group .setting-nav') as HTMLElement).click())
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Debug')

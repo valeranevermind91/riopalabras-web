@@ -1,6 +1,6 @@
 // A page for the real-browser Settings test (src/lib/settings.browser.test.ts): the real Home header, Settings and Debug
 // screens, the real theme hook, and Back going where App sends it (lib/nav). The write queue's sender just records the
-// settings it is given (window.__sent.settings). Query: debug=1 (allowed to open Debug), goal=18 (or goal=default: no stored goal),
+// settings it is given (window.__sent.settings). Query: unlocked=1 (Debug unlocked on the account), goal=18 (or goal=default: no stored goal),
 // ru=1, en=0, fresh=1 (an account that has not finished the intro: it is shown instead of Home, as App does), lang=ru (a stored
 // interface language; without it the language follows Telegram, which here means English), ready=1 (Home with a few words, so its
 // tiles and status show), reminder=on|off|none (the daily reminder's row at the start: on, off, or no row), rtz=<zone> (the zone on that row),
@@ -136,7 +136,6 @@ export function Harness() {
         data={data}
         queue={queue}
         theme={{ choice: theme.choice, set: theme.set }}
-        debugAllowed={params.get('debug') === '1'}
         onOpenDebug={() => setScreen('debug')}
         reminders={reminders}
         onTakePlacement={() => setScreen('placement')}

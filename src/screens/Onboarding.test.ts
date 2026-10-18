@@ -184,7 +184,7 @@ describe('How it works', () => {
 describe('Settings, About', () => {
   const about = (props: Record<string, unknown>) =>
     renderToStaticMarkup(
-      createElement(SettingsScreen, { data: { settings: parseSettings({}), getSettings: () => parseSettings({}), applySettings: noop } as never, queue, theme: { choice: 'system', set: noop }, debugAllowed: false, onOpenDebug: noop, botUsername: '', ...props } as never),
+      createElement(SettingsScreen, { data: { settings: parseSettings({}), getSettings: () => parseSettings({}), applySettings: noop } as never, queue, theme: { choice: 'system', set: noop }, onOpenDebug: noop, botUsername: '', ...props } as never),
     )
 
   it('has "How it works" and "Run the intro again" rows inside About, when the app gives it the ways to open them', () => {

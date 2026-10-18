@@ -31,7 +31,6 @@ afterEach(() => {
 /** What App does on launch for this user, in the same order, with the app's own modules. */
 async function launch() {
   const { ensureSession } = await import('../lib/auth')
-  const { verifiedTelegramId } = await import('../lib/debugGate')
   const { loadOverlay } = await import('./overlay')
   const { parseSettings } = await import('./settings')
   const { mergeWords } = await import('./words')
@@ -44,7 +43,6 @@ async function launch() {
   const initData = initDataFor(TELEGRAM_ID)
   const auth: AuthResult = await ensureSession(client, initData, TELEGRAM_ID)
   if (auth.status !== 'signed-in') throw new Error(`sign-in failed: ${JSON.stringify(auth)}`)
-  void verifiedTelegramId(client) // the Debug gate asks the auth server who this is, for every user, right after sign-in
 
   const { overlay } = await loadOverlay(client, auth.userId)
   let words = mergeWords(Array.from({ length: 40 }, (_, i) => makeWord(`palabra${i + 1}`, { rank: i + 1 })), overlay).words
