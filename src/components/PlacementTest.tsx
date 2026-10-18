@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { buildPlacement, placementResult, type PlacementResult } from '../data/placement'
+import { buildPlacement, placementResult, probePositions, startPosition, type PlacementResult } from '../data/placement'
 import { headword } from '../data/headword'
 import type { Word } from '../data/types'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
+import { PlacementScale } from './PlacementScale'
 
 const t = () => strings.onboarding.placement
 
@@ -88,13 +89,20 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
     setFound(result)
   }
 
+  const positions = probePositions(bands.length)
   if (found) {
     return (
       <div className="place" data-state="result">
         <h2 className="place-question">{labels.resultTitle}</h2>
+        {/* the search, finished: every probe asked, and the marker where Learn will start */}
+        <div role="img" aria-label={labels.scale.resultLabel}>
+          <PlacementScale probes={positions} current={null} done={positions.map((_, i) => i)} settled={startPosition(bands, found.startRank)} labels={labels.scale} />
+        </div>
         <p className="intro-text">{found.marked.length > 0 ? labels.resultMarked(found.marked.length) : labels.resultNoneMarked}</p>
         <p className="intro-text">{found.startRank !== null ? labels.resultHarder : labels.resultBeginning}</p>
-        <div className="place-footer">
+        {/* a start from further out is a guess from 25 words: say it will correct itself (Learn draws about a third of every batch from below the start) */}
+        {found.startRank !== null && <p className="intro-note place-approx">{labels.resultApprox}</p>}
+        <div className="place-footer is-single">
           <button type="button" className="btn btn-primary" onClick={onDone}>
             {showSkipNote ? labels.next : labels.resultDone}
           </button>
@@ -105,10 +113,12 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
 
   return (
     <div className="place" data-state="asking" data-set={index + 1}>
+      {index === 0 && <p className="place-purpose">{labels.purpose}</p>}
       <div className="place-progress">
         <span>{labels.set(index + 1, bands.length)}</span>
-        <div className="bar" role="progressbar" aria-label={labels.progress} aria-valuemin={1} aria-valuemax={bands.length} aria-valuenow={index + 1}>
-          <div className="bar-fill" style={{ width: `${((index + 1) / bands.length) * 100}%` }} />
+        {/* the search so far on a scale of the whole dictionary: the set being asked is lit, the ones asked are dimmed; nothing fills up */}
+        <div role="progressbar" aria-label={labels.progress} aria-valuemin={1} aria-valuemax={bands.length} aria-valuenow={index + 1} aria-valuetext={labels.set(index + 1, bands.length)}>
+          <PlacementScale probes={positions} current={index} done={positions.map((_, i) => i).filter((i) => i < index)} settled={null} labels={labels.scale} />
         </div>
       </div>
 

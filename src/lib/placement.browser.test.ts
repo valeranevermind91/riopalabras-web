@@ -74,7 +74,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
   }
   /** What the result says: its title, its two lines and its button, in order. */
   const resultText = (page: Page) =>
-    page.$eval('.place[data-state="result"]', (e) => ({ title: e.querySelector('.place-question')!.textContent, lines: Array.from(e.querySelectorAll('.intro-text')).map((p) => p.textContent), buttons: Array.from(e.querySelectorAll('.btn')).map((b) => b.textContent) }))
+    page.$eval('.place[data-state="result"]', (e) => ({ title: e.querySelector('.place-question')!.textContent, lines: Array.from(e.querySelectorAll('.intro-text')).map((p) => p.textContent), note: e.querySelector('.place-approx')?.textContent ?? null, buttons: Array.from(e.querySelectorAll('.btn')).map((b) => b.textContent) }))
   const toPlacement = async (page: Page) => {
     for (let n = 1; n < 5; n++) await clickText(page, '.intro-footer .btn', 'Continue')
     await page.waitForSelector('[data-step="placement"]')
@@ -275,6 +275,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
         expect(await resultText(page)).toEqual({
           title: 'Test finished',
           lines: ['15 words were marked as known and will stay out of Learn and Review.', 'Learn will start from a harder point.'],
+          note: en.onboarding.placement.resultApprox, // a start from further out is a guess: it says it corrects itself
           buttons: ['Done'],
         })
         const shown = await page.$eval('.place', (e) => (e as HTMLElement).innerText)
@@ -303,6 +304,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
         const page = await openStandalone('goal=12&lang=en')
         await takeTest(page, [2, 5, 5, 5, 5], false)
         expect((await resultText(page)).lines).toEqual(['22 words were marked as known and will stay out of Learn and Review.', 'Learn will start with the most common words.'])
+        expect((await resultText(page)).note).toBeNull() // starting at the beginning is no guess to correct
         await page.close()
       }, 90_000)
 
@@ -313,6 +315,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
         expect(await resultText(page)).toEqual({
           title: 'Test finished',
           lines: ['13 words were marked as known and will stay out of Learn and Review.', 'Learn will start from a harder point.'],
+          note: en.onboarding.placement.resultApprox,
           buttons: ['Continue'],
         })
         await forward(page)
@@ -335,11 +338,173 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
         expect(await resultText(page)).toEqual({
           title: ru.onboarding.placement.resultTitle,
           lines: [ru.onboarding.placement.resultMarked(15), ru.onboarding.placement.resultHarder],
+          note: ru.onboarding.placement.resultApprox,
           buttons: [ru.onboarding.placement.resultDone],
         })
         expect(ru.onboarding.placement.resultMarked(15)).toBe('Отмечено слов: 15. Известные слова не будут появляться в Learn и Review.')
         await page.close()
       }, 90_000)
+    })
+
+    describe('the purpose line and the scale', () => {
+      const openStandalone = async (language: 'en' | 'ru', width = 320, reducedMotion = false) => {
+        const page = await open(`goal=12&lang=${language}`)
+        if (reducedMotion) await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value: 'reduce' }])
+        await page.setViewport({ width, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        await toSettings(page)
+        await clickText(page, '#settings-learning ~ .settings-group .setting-nav', language === 'ru' ? ru.settings.placementTest : en.settings.placementTest)
+        await page.waitForSelector('.place')
+        return page
+      }
+      /** The scale as it is on screen: its probes in order with their state and box, the two end labels, the marker, the page's width. */
+      const scale = async (page: Page, { settled = true } = {}) => {
+        // let the lit probe finish changing and the marker finish settling in: the positions asked about are the final ones
+        if (settled) await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)).then(() => true))
+        return page.evaluate(() => {
+          const box = (e: Element) => {
+            const r = e.getBoundingClientRect()
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+          }
+          const color = (e: Element) => getComputedStyle(e).backgroundColor
+          const token = (name: string) => {
+            const probe = document.createElement('i')
+            probe.style.color = `var(${name})`
+            document.body.append(probe)
+            return getComputedStyle(probe).color
+          }
+          const start = document.querySelector('.pscale-start')
+          return {
+            probes: Array.from(document.querySelectorAll('.pscale-probe')).map((e) => ({ state: e.classList.contains('is-current') ? 'current' : e.classList.contains('is-done') ? 'done' : 'upcoming', ...box(e), fill: color(e), at: (e as HTMLElement).style.left })),
+            ends: Array.from(document.querySelectorAll('.pscale-ends span')).map((e) => ({ text: e.textContent, ...box(e) })),
+            marker: start ? { left: (start as HTMLElement).style.left, label: box(start.querySelector('.pscale-start-label')!), animation: getComputedStyle(start).animationName, animationDuration: getComputedStyle(start).animationDuration } : null,
+            text: (document.querySelector('.pscale') as HTMLElement).innerText,
+            width: document.documentElement.scrollWidth,
+            viewport: window.innerWidth,
+            lav: token('--lav'),
+            line: token('--border'),
+            teal: token('--teal'),
+            fills: document.querySelectorAll('.place .bar-fill, .place progress, .place meter').length,
+          }
+        })
+      }
+      const advance = async (page: Page, marked: number) => {
+        await mark(page, marked)
+        await forward(page)
+      }
+
+      it('the first set, and only the first, opens with one line saying the test is only for working out where to start you', async () => {
+        for (const language of ['en', 'ru'] as const) {
+          const page = await openStandalone(language)
+          const purpose = (p: Page) => p.$$eval('.place-purpose', (els) => els.map((e) => e.textContent))
+          const expected = [(language === 'en' ? en : ru).onboarding.placement.purpose]
+          expect(await purpose(page)).toEqual(expected)
+          expect(await page.$eval('.place-purpose', (e) => e.nextElementSibling!.className)).toBe('place-progress') // above the set counter and the scale: before the first set
+          await forward(page)
+          await page.waitForFunction(() => document.querySelector('.place-progress span')?.textContent?.includes('2 '))
+          expect(await purpose(page)).toEqual([])
+          await page.evaluate(() => (document.querySelector('.place-footer .btn-secondary') as HTMLElement).click()) // back to the first set: it is there again
+          await page.waitForFunction(() => document.querySelector('.place-progress span')?.textContent?.includes('1 '))
+          expect(await purpose(page)).toEqual(expected)
+          await page.close()
+        }
+      }, 90_000)
+
+      it('in the intro the first set has it too', async () => {
+        const page = await open('fresh=1&goal=default&lang=en')
+        await toPlacement(page)
+        expect(await page.$$eval('.place-purpose', (els) => els.map((e) => e.textContent))).toEqual([en.onboarding.placement.purpose])
+        await page.close()
+      }, 60_000)
+
+      for (const language of ['en', 'ru'] as const) {
+        it(`${language === 'en' ? 'English' : 'Russian'}, 320px: five probes along the scale; the set being asked is lit, the ones asked are dimmed, and nothing fills up`, async () => {
+          const page = await openStandalone(language)
+          for (let k = 1; k <= 5; k++) {
+            await page.waitForFunction((n) => document.querySelector('.place-progress span')?.textContent?.includes(`${n} `), {}, k)
+            const s = await scale(page)
+            expect(s.probes.map((p) => p.state), `set ${k}`).toEqual(Array.from({ length: 5 }, (_, i) => (i + 1 < k ? 'done' : i + 1 === k ? 'current' : 'upcoming')))
+            expect(s.probes.map((p) => p.at)).toEqual(['10%', '30%', '50%', '70%', '90%'])
+            // lit in the practice colour (never teal, the app's "good"), dimmed to the line's own colour, upcoming plain
+            const current = s.probes.find((p) => p.state === 'current')!
+            expect(current.fill).toBe(s.lav)
+            expect(current.fill).not.toBe(s.teal)
+            for (const done of s.probes.filter((p) => p.state === 'done')) expect(done.fill).toBe(s.line)
+            expect(s.fills, 'no bar that fills').toBe(0)
+            expect(s.text, 'no number, no percentage').not.toMatch(/\d|%/)
+            expect(s.marker).toBeNull() // the marker is only for the end
+            if (k < 5) await advance(page, 2)
+          }
+          await page.close()
+        }, 90_000)
+
+        it(`${language === 'en' ? 'English' : 'Russian'}, 320px: the scale, its two ends and every probe lie inside the screen, and the ends do not run into each other`, async () => {
+          const page = await openStandalone(language)
+          const s = await scale(page)
+          expect(s.width).toBeLessThanOrEqual(s.viewport)
+          for (const box of [...s.probes, ...s.ends]) {
+            expect(box.left).toBeGreaterThanOrEqual(0)
+            expect(box.right).toBeLessThanOrEqual(s.viewport)
+          }
+          expect(s.ends.map((e) => e.text)).toEqual([(language === 'en' ? en : ru).onboarding.placement.scale.frequent, (language === 'en' ? en : ru).onboarding.placement.scale.rare])
+          expect(s.ends[0].right + 8).toBeLessThan(s.ends[1].left) // at least a gap between "common" and "rare"
+          // probes are in order, left to right, and apart
+          for (let i = 1; i < s.probes.length; i++) expect(s.probes[i].right).toBeGreaterThan(s.probes[i - 1].right)
+          await page.close()
+        }, 60_000)
+
+        it(`${language === 'en' ? 'English' : 'Russian'}, 320px: at the end the marker settles where Learn starts, its label inside the screen at the left end, in the middle and at the right`, async () => {
+          for (const [marked, left] of [[[2, 5, 5, 5, 5], '0%'], [[5, 5, 5, 0, 0], '60%'], [[5, 5, 5, 5, 0], '80%'], [[5, 5, 5, 5, 5], '80%']] as const) {
+            const page = await openStandalone(language)
+            await takeTest(page, [...marked], false)
+            // on the way in (the marker slides from the last probe, at the far right, and fades in) the page is never wider than the screen
+            const inFlight = await scale(page, { settled: false })
+            expect(inFlight.width, `${marked} while settling`).toBeLessThanOrEqual(inFlight.viewport)
+            const s = await scale(page)
+            expect(s.marker!.left, String(marked)).toBe(left)
+            expect(s.probes.every((p) => p.state === 'done'), 'every probe asked').toBe(true)
+            expect(s.marker!.label.left, String(marked)).toBeGreaterThanOrEqual(0)
+            expect(s.marker!.label.right, String(marked)).toBeLessThanOrEqual(s.viewport)
+            expect(s.text, 'the scale shows no number').not.toMatch(/\d|%/)
+            expect(s.text).toContain((language === 'en' ? en : ru).onboarding.placement.scale.start)
+            expect(s.width).toBeLessThanOrEqual(s.viewport)
+            await page.close()
+          }
+        }, 180_000)
+      }
+
+      it('wider than 320px it is the same scale, with more room (390 and 480)', async () => {
+        for (const width of [390, 480]) {
+          const page = await openStandalone('ru', width)
+          const s = await scale(page)
+          expect(s.width).toBeLessThanOrEqual(s.viewport)
+          expect(s.probes.map((p) => p.at)).toEqual(['10%', '30%', '50%', '70%', '90%'])
+          await page.close()
+        }
+      }, 60_000)
+
+      it('with animation allowed the lit probe changes over a quarter of a second and the marker settles in over 0.7s', async () => {
+        const page = await openStandalone('en')
+        const during = await page.$eval('.pscale-probe', (e) => getComputedStyle(e).transitionDuration)
+        expect(during).toContain('0.25s')
+        await takeTest(page, [5, 5, 5, 0, 0], false)
+        const s = await scale(page)
+        expect(s.marker!.animation).toBe('pscale-settle')
+        expect(s.marker!.animationDuration).toBe('0.7s')
+        await page.close()
+      }, 60_000)
+
+      it('with reduced motion nothing animates: no transition on the probes, no settling animation on the marker, and it is where it should be at once', async () => {
+        const page = await openStandalone('en', 320, true)
+        expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
+        const transitions = await page.$$eval('.pscale-probe', (els) => els.map((e) => getComputedStyle(e).transitionDuration))
+        expect(transitions).toEqual(Array(5).fill('0s'))
+        await takeTest(page, [5, 5, 5, 0, 0], false)
+        const s = await scale(page)
+        expect(s.marker!.animation).toBe('none')
+        expect(s.marker!.left).toBe('60%')
+        expect(await page.$eval('.pscale-start', (e) => getComputedStyle(e).opacity)).toBe('1') // not caught part-way through a fade
+        await page.close()
+      }, 60_000)
     })
 
     it('Skip returns to Settings and writes nothing', async () => {

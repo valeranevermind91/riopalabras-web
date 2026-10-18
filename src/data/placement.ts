@@ -65,6 +65,22 @@ export function startRankFor(counts: readonly number[], bandStarts: readonly num
   return bandStarts[wall === -1 ? bandStarts.length - 1 : wall] ?? null
 }
 
+/**
+ * Where on a scale standing for the whole dictionary (0 = the most frequent words, 1 = the rarest) each of `count` sets probes: the middle of its part
+ * of the frequency list. The scale carries positions, not ranks, so a test whose probes jump about (the adaptive one in the backlog) draws on it unchanged.
+ */
+export const probePositions = (count: number): number[] => Array.from({ length: count }, (_, k) => (k + 0.5) / count)
+
+/**
+ * Where on that scale Learn starts for a result: where the band the wall is in begins (0, the left end, when Learn starts at the beginning).
+ * A position, never a rank: the person is shown where on the scale, not a number.
+ */
+export function startPosition(bands: readonly PlacementBand[], startRank: number | null): number {
+  if (startRank === null) return 0
+  const band = bands.findIndex((b) => b.startRank === startRank)
+  return band < 0 ? 0 : band / bands.length
+}
+
 export interface PlacementResult {
   /** The new start rank, or null when the answers leave it where it is. */
   startRank: number | null

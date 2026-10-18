@@ -2724,15 +2724,142 @@ mark {
 
 .place-progress {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
 }
 
-.place-progress .bar {
-  flex: 1;
+.place-purpose {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* ---- The search drawn on a scale (PlacementScale): never a bar that fills, never a number, never a colour that says "good" ---- */
+
+.pscale {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The stage keeps room for the marker's label above the line from the first set on, so nothing moves when the marker arrives. */
+.pscale-stage {
+  position: relative;
+  height: 54px;
+  margin: 0 10px;
+}
+
+.pscale-track {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 26px;
+}
+
+.pscale-track::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  left: -10px;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.pscale-probe {
+  position: absolute;
+  top: 50%;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--muted-2);
+  border-radius: 50%;
+  background: var(--page);
+  transition: width 250ms ease-out, height 250ms ease-out, margin 250ms ease-out, background-color 250ms ease-out, border-color 250ms ease-out, box-shadow 250ms ease-out;
+}
+
+/* The set being asked: lit in the practice colour with a soft halo. Asked sets: dimmed to the line's own colour. */
+.pscale-probe.is-current {
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-color: var(--lav);
+  background: var(--lav);
+  box-shadow: 0 0 0 5px var(--lav-soft);
+}
+
+.pscale-probe.is-done {
+  border-color: var(--border);
+  background: var(--border);
+}
+
+/* Where Learn will start: an ink line from the label down to the scale, settling in from the last probe. */
+.pscale-start {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  animation: pscale-settle 700ms ease-out both;
+}
+
+.pscale-start::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.pscale-start-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+@keyframes pscale-settle {
+  from {
+    left: var(--from);
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pscale-ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Reduced motion: the lit probe and the marker simply are where they should be; nothing slides, fades or grows. */
+@media (prefers-reduced-motion: reduce) {
+  .pscale-probe {
+    transition: none;
+  }
+
+  .pscale-start {
+    animation: none;
+  }
 }
 
 .place-question {
@@ -2787,6 +2914,17 @@ mark {
   gap: 12px;
   padding: 12px 0 4px;
   background: var(--page);
+}
+
+.setting-version {
+  /* Tapped seven times it unlocks Debug, and nothing about it may say so: no highlight flash, no text selection from quick taps. */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.place-footer.is-single {
+  grid-template-columns: 1fr;
 }
 
 .settings-key {

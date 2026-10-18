@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeServer, initDataFor } from '../testing/fakeServer'
 import { applySettingsPatch } from './mutations'
 import { enabledLanguages } from './translations'
-import { MAX_DAILY_LIMIT, MIN_DAILY_LIMIT, SESSIONS_NOTE_FROM, clampDailyLimit, dailyLimitPatch, isLastLanguage, isValidLanguages, languagesPatch, setLanguage, stepDailyLimit } from './settingsActions'
+import { DEBUG_UNLOCKED_KEY, MAX_DAILY_LIMIT, MIN_DAILY_LIMIT, SESSIONS_NOTE_FROM, clampDailyLimit, dailyLimitPatch, isLastLanguage, isValidLanguages, languagesPatch, setLanguage, stepDailyLimit, debugUnlockedPatch } from './settingsActions'
 import { parseSettings } from './settings'
 import type { SettingsPatch, UserSettings } from './types'
 
@@ -167,5 +167,27 @@ describe('what the controls write: the same keys, through the settings lane, kep
     stepDailyLimit(1, u.deps)
     await u.idle()
     expect(Object.keys(u.stored()).sort()).toEqual(['daily_new_word_limit'])
+  })
+})
+
+describe('the Debug unlock kept in the settings blob', () => {
+  it('is off for an account that never unlocked it, and only a real true turns it on (a stray string or number does not)', () => {
+    expect(parseSettings(null).debugUnlocked).toBe(false)
+    expect(parseSettings({}).debugUnlocked).toBe(false)
+    expect(parseSettings({ debug_unlocked: true }).debugUnlocked).toBe(true)
+    for (const stray of ['true', 1, 'yes', null, {}, [true]]) expect(parseSettings({ debug_unlocked: stray }).debugUnlocked, String(stray)).toBe(false)
+  })
+
+  it('unlocking writes the key; locking again removes it, so the account is as it was before', () => {
+    expect(DEBUG_UNLOCKED_KEY).toBe('debug_unlocked')
+    expect(debugUnlockedPatch(true)).toEqual({ debug_unlocked: true })
+    expect(debugUnlockedPatch(false)).toEqual({ debug_unlocked: null }) // null is how a key leaves the blob
+    const before = parseSettings({ ui_language: 'ru' })
+    const unlocked = applySettingsPatch(before, debugUnlockedPatch(true))
+    expect(unlocked.debugUnlocked).toBe(true)
+    const locked = applySettingsPatch(unlocked, debugUnlockedPatch(false))
+    expect(locked.debugUnlocked).toBe(false)
+    expect('debug_unlocked' in locked.raw).toBe(false)
+    expect(locked.raw).toEqual(before.raw)
   })
 })

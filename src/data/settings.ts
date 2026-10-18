@@ -37,6 +37,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     learnPicks: strings(raw.learn_picks),
     pendingWordDeletes: strings(raw.pending_word_deletes),
     reminderOfferShown: raw.reminder_offer_shown === true,
+    debugUnlocked: raw.debug_unlocked === true,
     raw,
   }
 }

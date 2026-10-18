@@ -20,6 +20,7 @@ import { makeWord } from './makeWord'
 import type { SettingsPatch, Word } from '../data/types'
 import { effectiveLanguage, setLanguage, useLanguage } from '../lib/language'
 import { backTarget, type Screen } from '../lib/nav'
+import { useScreenScroll } from '../lib/screenScroll'
 import { themePatch, type ThemeChoice } from '../lib/theme'
 import { useTheme } from '../lib/useTheme'
 import { DebugScreen } from '../screens/Debug'
@@ -87,6 +88,7 @@ export function Harness() {
       ...(params.get('fresh') === '1' ? {} : { onboarding_done: true }),
       ...(params.get('lang') ? { ui_language: params.get('lang') } : {}),
       ...(params.get('start_rank') ? { start_rank: Number(params.get('start_rank')) } : {}),
+      ...(params.get('unlocked') === '1' ? { debug_unlocked: true } : {}),
     }),
   )
   // The latest settings, updated at once (as useUserData does), so two taps before a render both see the first.
@@ -123,6 +125,7 @@ export function Harness() {
     ;(window as never as { __pressBack: () => string }).__pressBack = goBack
   })
   const back = () => void goBack()
+  useScreenScroll(screen, null) // as App does
 
   if (screen === 'how') return <HowItWorks onBack={back} />
   if (screen === 'placement') return <PlacementScreen data={data} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={back} />

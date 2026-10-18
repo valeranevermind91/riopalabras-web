@@ -60,6 +60,8 @@ export interface UserSettings {
   readonly pendingWordDeletes: readonly string[]
   /** The offer to turn on the daily reminder has been shown (once, after the first finished Learn session): it is never made again. */
   readonly reminderOfferShown: boolean
+  /** The Debug section of Settings was unlocked on this account (seven taps on the version row, see lib/tapCount.ts). Never set by default. */
+  readonly debugUnlocked: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */
   readonly raw: Readonly<Record<string, unknown>>
 }

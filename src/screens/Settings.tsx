@@ -1,12 +1,13 @@
-import type { MouseEvent } from 'react'
+import { useRef, type MouseEvent } from 'react'
 import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
-import { SESSIONS_NOTE_FROM, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
+import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
 import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
 import { VERSION_LABEL } from '../lib/buildInfo'
+import { DEBUG_UNLOCK_GAP_MS, DEBUG_UNLOCK_TAPS, createTapCounter } from '../lib/tapCount'
 import type { RemindersControl } from '../lib/useReminders'
 import { getWebApp, haptic } from '../lib/telegram'
 import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
@@ -64,6 +65,18 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
     haptic('select')
     saveSetting(languagePatch(language), deps)
   }
+  // Seven quick taps on the version row unlock the Debug section for this account; nothing on screen says so.
+  const taps = useRef(createTapCounter({ taps: DEBUG_UNLOCK_TAPS, gapMs: DEBUG_UNLOCK_GAP_MS }))
+  const tapVersion = () => {
+    if (settings.debugUnlocked || !taps.current.tap()) return
+    haptic('success')
+    saveSetting(debugUnlockedPatch(true), deps)
+  }
+  const lockDebug = () => {
+    haptic('select')
+    saveSetting(debugUnlockedPatch(false), deps)
+  }
+  const showDebug = debugAllowed || settings.debugUnlocked
   const openLink = (e: MouseEvent<HTMLAnchorElement>) => {
     const open = getWebApp().webApp.openTelegramLink
     if (!link || !open) return // outside Telegram the anchor just opens the page
@@ -253,7 +266,7 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
               </span>
             </button>
           )}
-          <div className="setting-row">
+          <div className="setting-row setting-version" onClick={tapVersion}>
             <span className="setting-label">{t.version}</span>
             <span className="setting-value">{VERSION_LABEL}</span>
           </div>
@@ -267,7 +280,7 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
         <p className="settings-about">{t.aboutText}</p>
       </section>
 
-      {debugAllowed && (
+      {showDebug && (
         <section className="settings-section" aria-labelledby="settings-debug">
           <h2 id="settings-debug" className="settings-label">
             {t.debug}
@@ -279,6 +292,11 @@ export function SettingsScreen({ data, queue, theme, debugAllowed, onOpenDebug, 
                 ›
               </span>
             </button>
+            {settings.debugUnlocked && (
+              <button type="button" className="setting-row setting-nav" onClick={lockDebug}>
+                <span className="setting-label">{t.debugLock}</span>
+              </button>
+            )}
           </div>
         </section>
       )}

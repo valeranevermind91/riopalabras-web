@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { LOWER_SHARE } from './data/learnPick'
 import { MAX_INTERVAL_DAYS, RELEARN_MINUTES } from './sm2/sm2'
 import { en } from './strings'
 import { ru } from './strings.ru'
@@ -214,5 +215,29 @@ describe('what a disabled tile and an empty state tell the person to do', () => 
   it('the search placeholder is short enough for 320px (the width itself is checked in the browser)', () => {
     expect(en.words.searchPlaceholder.length).toBeLessThanOrEqual(34)
     expect(ru.words.searchPlaceholder.length).toBeLessThanOrEqual(30)
+  })
+})
+
+describe('what the placement test says about itself', () => {
+  it('before the first set: it is only so the app can work out where to start you (one sentence, in both languages, no score and no number)', () => {
+    expect(en.onboarding.placement.purpose).toBe('This test is only here so the app can work out where to start you.')
+    expect(ru.onboarding.placement.purpose).toBe('Этот тест нужен только для того, чтобы приложение поняло, с каких слов начать обучение.')
+    for (const text of [en.onboarding.placement.purpose, ru.onboarding.placement.purpose]) {
+      expect(text.match(/[.!?](\s|$)/g)).toHaveLength(1)
+      expect(text).not.toMatch(/\d|score|wrong|correct|балл|правильно|неправильно/i)
+    }
+  })
+
+  it('in the result: the starting point is approximate and corrects itself, because Learn keeps mixing in easier words', () => {
+    const en_ = en.onboarding.placement.resultApprox
+    const ru_ = ru.onboarding.placement.resultApprox
+    for (const phrase of ['approximate', 'corrects itself', 'easier words', 'within a few days']) expect(en_).toContain(phrase)
+    for (const phrase of ['приблизительная', 'со временем уточняется', 'более лёгкие слова', 'за несколько дней']) expect(ru_).toContain(phrase)
+    expect(en_).not.toMatch(/\d|score/i)
+  })
+
+  it('and that is true: Learn draws a share of every batch from below the start (about a third), which the sentence relies on', () => {
+    expect(LOWER_SHARE).toBeGreaterThan(0.2)
+    expect(LOWER_SHARE).toBeLessThan(0.4)
   })
 })

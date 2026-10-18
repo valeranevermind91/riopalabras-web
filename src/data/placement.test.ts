@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { seededRandom } from '../lib/random'
 import { makeWord } from '../testing/makeWord'
-import { BAND_COUNT, BAND_SIZE, START_RANK_KEY, WALL, buildPlacement, fromStartRank, placementPool, placementResult, savePlacement, startRankFor, type PlacementBand } from './placement'
+import { BAND_COUNT, BAND_SIZE, START_RANK_KEY, WALL, buildPlacement, fromStartRank, placementPool, placementResult, probePositions, savePlacement, startPosition, startRankFor, type PlacementBand } from './placement'
 import { headword } from './headword'
 import { selectLearnBatch } from './learn'
 import { WINDOW_SIZE } from './learnPick'
@@ -372,6 +372,48 @@ describe('the stored blob after a retake that finds a beginner', () => {
     } finally {
       vi.unstubAllGlobals()
       vi.unstubAllEnvs()
+    }
+  })
+})
+
+describe('the placement scale: where the probes sit, and where Learn starts, as positions (never ranks)', () => {
+  const bands = (starts: number[]): PlacementBand[] => starts.map((startRank) => ({ startRank, words: [] }))
+
+  it('each set probes the middle of its part of the dictionary: five sets at a tenth, three tenths, a half, seven tenths, nine tenths', () => {
+    expect(probePositions(5)).toEqual([0.1, 0.3, 0.5, 0.7, 0.9])
+    expect(probePositions(1)).toEqual([0.5])
+    expect(probePositions(0)).toEqual([])
+  })
+
+  it('Learn starts at the left end when it starts at the beginning, and at the start of the band the wall is in otherwise', () => {
+    const five = bands([1, 950, 1900, 2850, 3800])
+    expect(startPosition(five, null)).toBe(0)
+    expect(startPosition(five, 1)).toBe(0)
+    expect(startPosition(five, 950)).toBeCloseTo(0.2)
+    expect(startPosition(five, 2850)).toBeCloseTo(0.6)
+    expect(startPosition(five, 3800)).toBeCloseTo(0.8)
+  })
+
+  it('a start rank that is no band\'s (an old one, from another dictionary) is drawn at the left end, never off the scale', () => {
+    expect(startPosition(bands([1, 950, 1900, 2850, 3800]), 1234)).toBe(0)
+  })
+
+  it('agrees with the test itself: the position of the result for any answers lies between the probe before the wall and the probe after it', () => {
+    const real = Array.from({ length: 6000 }, (_, i) => makeWord(`palabra${String(i + 1).padStart(4, '0')}`, { rank: i + 1, repetitions: 0 }))
+    const built = buildPlacement(real, seededRandom(7))!
+    const probes = probePositions(built.length)
+    for (const marks of [[5, 5, 5, 1, 0], [5, 5, 1, 0, 0], [3, 3, 3, 3, 3], [5, 5, 5, 5, 2], [5, 2, 5, 5, 5]]) {
+      const selected = built.map((band, k) => new Set(band.words.slice(0, marks[k]).map((w) => w.esWord)))
+      const result = placementResult(built, selected)
+      const at = startPosition(built, result.startRank)
+      const wall = marks.findIndex((n) => n <= WALL)
+      if (wall <= 0 && !(wall === -1)) expect(at, String(marks)).toBe(0) // a beginner
+      else {
+        const k = wall === -1 ? built.length - 1 : wall
+        expect(at, String(marks)).toBeCloseTo(k / built.length)
+        expect(at).toBeGreaterThan(probes[k] - 0.2 / 1)
+        expect(at).toBeLessThan(probes[k])
+      }
     }
   })
 })

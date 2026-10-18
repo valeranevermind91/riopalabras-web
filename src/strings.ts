@@ -282,6 +282,7 @@ export const en = {
     howItWorks: 'How it works',
     runIntro: 'Run the intro again',
     debug: 'Debug',
+    debugLock: 'Lock Debug',
   },
 
   // The intro, shown once on a new account and again from Settings. English chrome; Spanish words are marked `es` (set in the display face).
@@ -324,11 +325,16 @@ export const en = {
       skipNote: 'It can be taken later from Settings.',
       unavailable: 'There are not enough new words left for a placement test.',
       // what the test did, said when it is finished (never the start rank itself: a number nobody can read)
+      // said once, above the first set: what the test is for (it does not decide anything else about what is taught)
+      purpose: 'This test is only here so the app can work out where to start you.',
+      // the scale drawn under the set counter and in the result: a search for a starting point, not a score
+      scale: { frequent: 'Common words', rare: 'Rare words', start: 'Learn starts here', resultLabel: 'Where Learn will start, among the words from most to least common' },
       resultTitle: 'Test finished',
       resultMarked: (n: number) => `${n} ${plural(n, { one: 'word was', other: 'words were' })} marked as known and will stay out of Learn and Review.`,
       resultNoneMarked: 'No words were marked as known.',
       resultHarder: 'Learn will start from a harder point.',
       resultBeginning: 'Learn will start with the most common words.',
+      resultApprox: 'The starting point is approximate and corrects itself: Learn keeps mixing in some easier words, so a wrong guess works itself out within a few days.',
       resultDone: 'Done',
     },
     goal: { title: 'Daily goal', text: 'New words per day' },

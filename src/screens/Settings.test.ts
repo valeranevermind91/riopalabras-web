@@ -286,6 +286,63 @@ describe('the Settings screen', () => {
       expect(section.match(/<button/g)).toHaveLength(1)
       expect(section).toMatch(/<button type="button" class="setting-row setting-nav"><span class="setting-label">Debug<\/span>/)
     })
+
+    describe('unlocked with seven taps on the version row (debug_unlocked in the settings blob)', () => {
+      it('an account that unlocked it sees the section, with a second row to lock it again', () => {
+        const html = render({ debug_unlocked: true }, { debugAllowed: false })
+        const section = html.match(/<section class="settings-section" aria-labelledby="settings-debug">.*?<\/section>/)![0]
+        expect(section.match(/<button/g)).toHaveLength(2)
+        expect(section).toContain('<span class="setting-label">Debug</span>')
+        expect(section).toContain('<span class="setting-label">Lock Debug</span>')
+      })
+
+      it('an account that did not never sees the word, and nothing about a lock', () => {
+        for (const raw of [{}, { debug_unlocked: false }, { debug_unlocked: 'true' }]) {
+          const html = render(raw, { debugAllowed: false })
+          expect(html, JSON.stringify(raw)).not.toContain('Debug')
+          expect(html).not.toContain('Lock')
+        }
+      })
+
+      it('someone on the list sees the section with no lock row: it is theirs whatever the gesture says', () => {
+        const section = render({}, { debugAllowed: true }).match(/<section class="settings-section" aria-labelledby="settings-debug">.*?<\/section>/)![0]
+        expect(section.match(/<button/g)).toHaveLength(1)
+        expect(section).not.toContain('Lock')
+      })
+
+      it('in Russian the lock row is «Заблокировать Debug»', () => {
+        setLanguage('ru')
+        try {
+          expect(render({ debug_unlocked: true })).toContain('<span class="setting-label">Заблокировать Debug</span>')
+        } finally {
+          setLanguage('en')
+        }
+      })
+
+      it('nothing on screen hints at the gesture: the version row is a plain row, not a button, link or control, and says nothing of taps', () => {
+        const html = render({})
+        const row = html.match(/<div class="setting-row setting-version">.*?<\/div>/)![0]
+        expect(row).toBe('<div class="setting-row setting-version"><span class="setting-label">Version</span><span class="setting-value">' + VERSION_LABEL + '</span></div>')
+        expect(row).not.toMatch(/role=|tabindex|aria-|title=|<button|<a /)
+        expect(html).not.toMatch(/tap|unlock|developer/i)
+      })
+
+      it('the version row\'s style gives no sign it can be tapped: no pointer, no highlight flash, no text selection from quick taps', () => {
+        const css = readFileSync('src/index.css', 'utf8')
+        const rule = css.match(/\.setting-version \{([^}]*)\}/)![1]
+        expect(rule).toMatch(/-webkit-tap-highlight-color: transparent/)
+        expect(rule).toMatch(/user-select: none/)
+        expect(rule).not.toMatch(/cursor/)
+      })
+
+      it('no Telegram id, and nothing personal, in the code that does it', () => {
+        for (const file of ['src/lib/tapCount.ts', 'src/screens/Settings.tsx', 'src/data/settingsActions.ts']) {
+          const code = readFileSync(file, 'utf8')
+          expect(code, file).not.toMatch(/\b\d{6,}\b/) // a Telegram id is a long number
+          expect(code, file).not.toMatch(/telegram_id|tg_\d|initDataUnsafe|@telegram/i)
+        }
+      })
+    })
   })
 
   it('every row is at least 48px tall, and nothing in the new styles is a colour literal or a Telegram variable', () => {
@@ -326,6 +383,13 @@ describe('where Back goes', () => {
     expect(app).toMatch(/onOpenDebug=\{\(\) => setScreen\('debug'\)\}/)
     expect(app).toMatch(/debugAllowed=\{debugAllowed\}/)
     expect(app).toMatch(/if \(!debugAllowed\) return <NotAvailable \/>/)
+  })
+
+  it('App lets Debug in for an account that unlocked it as well as for the list, and opens every screen at the top of the page', () => {
+    const app = readFileSync('src/App.tsx', 'utf8')
+    // App is not rendered by any test: the two lines that make the gesture and the scroll fix real are pinned
+    expect(app).toMatch(/const debugAllowed = debugListed \|\| \(readyData\?\.settings\.debugUnlocked \?\? false\)/)
+    expect(app).toMatch(/useScreenScroll\(screen, open\?\.from \?\? null\)/)
   })
 })
 

@@ -48,6 +48,12 @@ export function saveSetting(patch: SettingsPatch, deps: Pick<SettingsDeps, 'appl
   deps.queue.enqueueSettings(patch)
 }
 
+/** The key in the settings blob that remembers the Debug section was unlocked, so it stays unlocked on the account. */
+export const DEBUG_UNLOCKED_KEY = 'debug_unlocked'
+
+/** Unlocking writes the key; locking again removes it (a null patch removes a key from the blob), leaving the account as it was before. */
+export const debugUnlockedPatch = (unlocked: boolean): SettingsPatch => ({ [DEBUG_UNLOCKED_KEY]: unlocked ? true : null })
+
 /** One step on the daily goal; false when it is already at the end of the range. */
 export function stepDailyLimit(delta: 1 | -1, deps: SettingsDeps): boolean {
   const patch = dailyLimitPatch(deps.getSettings().dailyNewWordLimit, delta)

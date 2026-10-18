@@ -19,6 +19,7 @@ import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
 import { useRecentActivity } from './lib/useRecentActivity'
 import { useReminders } from './lib/useReminders'
+import { useScreenScroll } from './lib/screenScroll'
 import { useTheme } from './lib/useTheme'
 import { DebugScreen, type TelegramInfo } from './screens/Debug'
 import { HomeScreen } from './screens/Home'
@@ -94,11 +95,13 @@ function App() {
   const holdLoad = userId !== null && restoredFor !== userId
 
   const data = useUserData(auth, client, holdLoad)
-  const debugAllowed = useDebugAccess(auth, client, telegram.isMock)
+  // Debug is for those on the VITE_DEBUG_TG_IDS list, and for an account that unlocked it with seven taps on the version row (a setting in its blob).
+  const debugListed = useDebugAccess(auth, client, telegram.isMock)
   // The daily reminder lives here, not in Settings: the time zone on its row is kept current at every open.
   const reminderStore = useMemo(() => (client && userId ? supabaseReminderStore(client, userId) : null), [client, userId])
   const reminders = useReminders(reminderStore)
   const readyData = data.status === 'ready' ? data.data : null
+  const debugAllowed = debugListed || (readyData?.settings.debugUnlocked ?? false)
   const getSettings = readyData?.getSettings ?? null
   // The chosen language once the settings are there (until then the one this device used last); with none chosen, Telegram's.
   const storedLanguage = readyData ? readyData.settings.uiLanguage : undefined
@@ -128,6 +131,8 @@ function App() {
   const go = useCallback((to: Screen) => setScreen(to), [])
   /** Where Back leads from the current screen. */
   const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null)
+  // A screen opens at the top of the page (the one Back leads to gets its place back), not wherever the last one was scrolled to.
+  useScreenScroll(screen, open?.from ?? null)
   // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
   const backInterceptor = useRef<(() => boolean) | null>(null)
   const registerBack = useCallback((handler: (() => boolean) | null) => {

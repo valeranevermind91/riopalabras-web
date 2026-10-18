@@ -418,4 +418,163 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     expect(await count()).toBe(9)
     await page.close()
   }, 60_000)
+
+  describe('the Debug section behind seven taps on the version row', () => {
+    const versionRow = '.setting-version'
+    const tapVersion = async (page: Page, times: number) => {
+      for (let i = 0; i < times; i++) await page.click(versionRow)
+    }
+    const debugSection = (page: Page) => page.$('#settings-debug')
+    const pageText = (page: Page) => page.evaluate(() => document.body.innerText)
+
+    it('six quick taps do nothing; the seventh unlocks Debug and writes debug_unlocked once', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      expect(await debugSection(page)).toBeNull()
+      const before = await pageText(page)
+      await tapVersion(page, 6)
+      expect(await debugSection(page)).toBeNull()
+      expect(await pageText(page)).toBe(before) // nothing on screen changed
+      expect(await sent(page)).toEqual([])
+      await tapVersion(page, 1)
+      await page.waitForSelector('#settings-debug')
+      expect(await page.$$eval('#settings-debug ~ .settings-group .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['Debug', 'Lock Debug'])
+      expect(await sent(page)).toEqual([{ debug_unlocked: true }])
+      await tapVersion(page, 7) // more taps on an unlocked account write nothing more
+      expect(await sent(page)).toEqual([{ debug_unlocked: true }])
+      await page.close()
+    }, 60_000)
+
+    it('slow taps never unlock it: a pause longer than a second and a half starts the count again', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      await tapVersion(page, 6)
+      await new Promise((r) => setTimeout(r, 1700))
+      await tapVersion(page, 1) // the seventh in all, but the first since the pause
+      expect(await debugSection(page)).toBeNull()
+      await tapVersion(page, 5)
+      expect(await debugSection(page)).toBeNull()
+      await tapVersion(page, 1) // seven since the pause
+      await page.waitForSelector('#settings-debug')
+      await page.close()
+    }, 60_000)
+
+    it('only taps on the version row count: twenty on the text beneath it do nothing, and six on the row with one elsewhere between are still six', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      for (let i = 0; i < 20; i++) await page.click('.settings-about')
+      expect(await debugSection(page)).toBeNull()
+      await tapVersion(page, 3)
+      await page.click('.settings-about')
+      await tapVersion(page, 3)
+      expect(await debugSection(page)).toBeNull()
+      await page.close()
+    }, 60_000)
+
+    it('an account that unlocked it sees Debug at once, opens it, and locks it again: the section goes and the key leaves the blob', async () => {
+      const page = await open('goal=12&lang=en&unlocked=1')
+      await toSettings(page)
+      await page.waitForSelector('#settings-debug')
+      await press(page, '#settings-debug ~ .settings-group .setting-nav', 'Lock Debug')
+      await page.waitForFunction(() => document.querySelector('#settings-debug') === null)
+      expect(await sent(page)).toEqual([{ debug_unlocked: null }])
+      expect(await pageText(page)).not.toContain('Debug')
+      await tapVersion(page, 7) // and it can be found again the same way
+      await page.waitForSelector('#settings-debug')
+      expect(await sent(page)).toEqual([{ debug_unlocked: null }, { debug_unlocked: true }])
+      await page.close()
+    }, 60_000)
+
+    it('Debug opens from the unlocked section and Back lands on Settings', async () => {
+      const page = await open('goal=12&lang=en&unlocked=1')
+      await toSettings(page)
+      await press(page, '#settings-debug ~ .settings-group .setting-nav', 'Debug')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Debug')
+      await back(page)
+      await page.waitForSelector('.settings')
+      await page.close()
+    }, 60_000)
+
+    it('nothing about the version row says it can be tapped: not focusable, no role, no pointer, no highlight, the same on a touch device', async () => {
+      const page = await open('goal=12&lang=en')
+      await toSettings(page)
+      const look = await page.$eval(versionRow, (e) => {
+        const style = getComputedStyle(e)
+        return { tag: e.tagName, tabIndex: (e as HTMLElement).tabIndex, role: e.getAttribute('role'), aria: e.getAttributeNames().filter((n) => n.startsWith('aria-') || n === 'title'), cursor: style.cursor, tapHighlight: style.getPropertyValue('-webkit-tap-highlight-color'), select: style.userSelect }
+      })
+      expect(look).toEqual({ tag: 'DIV', tabIndex: -1, role: null, aria: [], cursor: 'auto', tapHighlight: 'rgba(0, 0, 0, 0)', select: 'none' })
+      const plain = await page.$eval('.setting-row:not(.setting-nav):not(.setting-version):not(.setting-link)', (e) => getComputedStyle(e).cursor)
+      expect(plain).toBe('auto')
+      await page.close()
+    }, 60_000)
+
+    it('in Russian the lock row says «Заблокировать Debug»', async () => {
+      const page = await open('goal=12&lang=ru&unlocked=1')
+      await page.click('button[aria-label="Настройки"]')
+      await page.waitForSelector('#settings-debug')
+      expect(await page.$$eval('#settings-debug ~ .settings-group .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['Debug', 'Заблокировать Debug'])
+      await page.close()
+    }, 60_000)
+  })
+
+  describe('a screen opens at the top of the page, and the one Back leads to gets its place back', () => {
+    async function openShort(query: string) {
+      const page = await open(query)
+      await page.setViewport({ width: 390, height: 500, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }) // short, so Settings and "How it works" both scroll
+      return page
+    }
+    const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY))
+    const scrollToEnd = (page: Page) => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    const settle = (page: Page) => new Promise((r) => setTimeout(r, 150)).then(() => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(true)))))
+
+    it('"How it works", opened from the bottom of Settings, opens at its top (it used to open where Settings had been scrolled to)', async () => {
+      const page = await openShort('goal=12&lang=en')
+      await toSettings(page)
+      await scrollToEnd(page)
+      await settle(page)
+      expect(await scrollY(page)).toBeGreaterThan(100) // Settings really is scrolled
+      await press(page, '.setting-nav', 'How it works')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'How it works')
+      await settle(page)
+      expect(await scrollY(page)).toBe(0)
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(520) // and it is a page that can scroll, so the test means something
+      await page.close()
+    }, 60_000)
+
+    it('Back from it puts Settings where it was left', async () => {
+      const page = await openShort('goal=12&lang=en')
+      await toSettings(page)
+      // part-way down, not the end: at the end a clamped scroll would look like a restored one
+      await page.evaluate(() => window.scrollTo(0, Math.round((document.documentElement.scrollHeight - window.innerHeight) / 2)))
+      await settle(page)
+      const left = await scrollY(page)
+      expect(left).toBeGreaterThan(50)
+      expect(left).toBeLessThan(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight - 50))
+      await press(page, '.setting-nav', 'How it works')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'How it works')
+      await scrollToEnd(page) // read to the bottom of it
+      await settle(page)
+      await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack()) // Back as App does it, without scrolling to its button
+      await page.waitForSelector('.settings')
+      await settle(page)
+      expect(await scrollY(page)).toBe(left)
+      await page.close()
+    }, 60_000)
+
+    it('the same for Debug (a tall page opened from Settings), the intro and the placement test', async () => {
+      const page = await openShort('goal=12&lang=en&unlocked=1&ready=1')
+      await toSettings(page)
+      for (const [row, heading] of [['Debug', 'Debug'], ['Run the intro again', null], ['Take the placement test', 'Placement test']] as const) {
+        await scrollToEnd(page)
+        await settle(page)
+        await press(page, '.setting-nav', row)
+        await page.waitForFunction((h) => (h ? document.querySelector('h1')?.textContent === h : document.querySelector('.intro-progress') !== null), {}, heading)
+        await settle(page)
+        expect(await scrollY(page), row).toBe(0)
+        await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())
+        await page.waitForSelector('.settings')
+      }
+      await page.close()
+    }, 90_000)
+  })
 })
