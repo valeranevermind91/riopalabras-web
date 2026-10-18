@@ -719,6 +719,62 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }, 90_000)
   })
 
+  describe('the Rioplatense marks on a card, at 320px, in both languages: a meaning shift, a local headword and an ordinary word', () => {
+    /** Opens the word's detail (its card is the same card Learn draws) at 320px and reads the marks off it. */
+    async function marks(query: string, word: string) {
+      const page = await open(query)
+      await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      await search(page, word)
+      await page.waitForSelector('.word-row')
+      await openRow(page, Math.max(0, (await rows(page)).findIndex((r) => r.startsWith(word))))
+      const read = await page.evaluate(() => {
+        const card = document.querySelector('.word-card') as HTMLElement
+        const lines = (e: Element) => {
+          const range = document.createRange()
+          range.selectNodeContents(e)
+          return new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size
+        }
+        const shift = card.querySelector('.wc-shift')
+        const box = card.getBoundingClientRect()
+        const rects = Array.from(card.querySelectorAll('.wc-meta > *, .wc-shift, .wc-relation p')).map((e) => e.getBoundingClientRect())
+        return {
+          headword: card.querySelector('.wc-headword')!.textContent,
+          pill: card.querySelector('.wc-rio')?.textContent ?? null,
+          tag: card.querySelector('.wc-tag')?.textContent ?? null,
+          shift: shift?.textContent ?? null,
+          shiftLines: shift ? lines(shift) : 0,
+          relationFirst: card.querySelector('.wc-relation p')?.className ?? null,
+          standardMeaning: Array.from(card.querySelectorAll('.wc-relation p')).some((p) => /Standard meaning|Обычное значение/.test(p.textContent ?? '')),
+          inside: rects.every((r) => r.left >= box.left - 0.5 && r.right <= box.right + 0.5),
+          pageWide: document.documentElement.scrollWidth <= window.innerWidth,
+        }
+      })
+      await page.close()
+      return read
+    }
+
+    for (const [language, query, pill, shift] of [
+      ['English', '?lang=en', 'Rioplatense', 'Different meaning in Rioplatense.'],
+      ['Russian', '?lang=ru', 'риоплатское', 'В риоплатском значит другое.'],
+    ] as const) {
+      it(`${language}: "boleto" (a meaning shift) has the pill and says the shift in a line of its own, above the standard meaning, inside the card`, async () => {
+        const m = await marks(query, 'boleto')
+        expect(m).toMatchObject({ headword: 'boleto', pill, tag: null, shift, relationFirst: 'wc-shift', standardMeaning: true, inside: true, pageWide: true })
+        expect(m.shiftLines).toBe(1) // one short line
+      }, 60_000)
+
+      it(`${language}: "gurí" (a local headword) keeps its pill and its UY tag, and says no shift`, async () => {
+        const m = await marks(query, 'gurí')
+        expect(m).toMatchObject({ pill, tag: 'UY', shift: null, inside: true, pageWide: true })
+      }, 60_000)
+
+      it(`${language}: "casa" (an ordinary word) shows nothing Rioplatense: no pill, no tag, no shift`, async () => {
+        const m = await marks(query, 'casa')
+        expect(m).toMatchObject({ headword: 'casa', pill: null, tag: null, shift: null, relationFirst: null, pageWide: true })
+      }, 60_000)
+    }
+  })
+
   describe('custom words', () => {
     type Sent = { words: { kind: string; row?: Record<string, unknown>; esWord?: string; tombstone?: string }[]; settings: Record<string, unknown>[]; order: string[] }
     const sentAll = (page: Page) => page.evaluate(() => (window as never as { __sent: Sent }).__sent)

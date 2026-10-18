@@ -425,6 +425,7 @@ export const ru: Strings = {
     stdUsageHint: { equally_used: 'тоже в ходу', less_common: null, not_used: 'здесь почти не говорят' },
     note: 'Заметка',
     standardMeaning: 'Обычное значение',
+    meaningShift: 'В риоплатском значит другое.',
     register: { informal: 'разговорное', vulgar: 'вульгарное', offensive: 'оскорбительное', pejorative: 'пренебрежительное' },
     tag: { uy: 'UY', ar: 'AR' },
     tagTitle: { uy: 'Употребляется в Уругвае', ar: 'Употребляется в Аргентине' },

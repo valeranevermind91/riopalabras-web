@@ -1,6 +1,6 @@
 import { effectiveExample, headword } from '../data/headword'
 import { posLabel, showPosBadge } from '../data/pos'
-import { headwordRegion, headwordRegister, relationFor, translationsFor } from '../data/relation'
+import { headwordRegion, headwordRegister, isRioplatenseWord, relationFor, translationsFor } from '../data/relation'
 import { translationLines, type TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
@@ -56,7 +56,7 @@ export function WordCard({ word, settings }: { word: Word; settings: Translation
   return (
     <article className="word-card">
       <div className="wc-meta">
-        {head.form === 'rioplatense' && <span className="wc-rio">{strings.rio.pill}</span>}
+        {isRioplatenseWord(word) && <span className="wc-rio">{strings.rio.pill}</span>}
         <RegionTag region={headwordRegion(word)} />
         {showPosBadge(word) && <span className="wc-pos">{posLabel(word.pos)}</span>}
         <RegisterLabel register={headwordRegister(word)} />

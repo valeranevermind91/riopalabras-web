@@ -51,6 +51,13 @@ export function relationFor(word: HeadwordSource): Relation {
   return { ...common, ...(rio.type === 'meaning_shift' && rio.stdMeaning ? { stdMeaning: rio.stdMeaning } : {}) }
 }
 
+/**
+ * Whether the card carries the Rioplatense pill: the headword is the local form, or the word has an overlay entry at all. A word with a shifted
+ * meaning ("boleto") keeps the standard headword, but the fact is the same as for a local one: this word works differently here. A word with
+ * no overlay entry and no local headword (an ordinary dictionary word) carries nothing.
+ */
+export const isRioplatenseWord = (word: HeadwordSource): boolean => headword(word).form === 'rioplatense' || word.rio != null
+
 /** The region tag that belongs next to the headword: not for a replacement whose form is only a note (the note carries its own). */
 export function headwordRegion(word: HeadwordSource): RioRegion | null {
   const rio = word.rio

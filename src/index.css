@@ -963,6 +963,12 @@ mark {
   font-weight: 700;
 }
 
+.wc-relation .wc-shift {
+  /* The one fact a shifted-meaning card must say, in words: a shade stronger than the labels around it. */
+  color: var(--text-2);
+  font-weight: 700;
+}
+
 .wc-relation .wc-hint {
   color: var(--muted);
   font-weight: 400;

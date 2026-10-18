@@ -475,6 +475,8 @@ export const en = {
     stdUsageHint: { equally_used: 'also common', less_common: null, not_used: 'rarely used here' } as Record<string, string | null>,
     note: 'Note',
     standardMeaning: 'Standard meaning',
+    // said on a card whose word looks ordinary and means something else in Rioplatense Spanish (a meaning shift)
+    meaningShift: 'Different meaning in Rioplatense.',
     // how the headword sounds; neutral shows nothing
     register: { informal: 'informal', vulgar: 'vulgar', offensive: 'offensive', pejorative: 'pejorative' } as Record<string, string | undefined>,
     tag: { uy: 'UY', ar: 'AR' },

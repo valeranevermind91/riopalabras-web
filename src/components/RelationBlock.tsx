@@ -18,10 +18,13 @@ export function RelationLines({ relation, settings }: { relation: Relation; sett
   const { t, stdMeanings } = prepare(relation, settings)
   // how common the standard word is: a soft hint after it, never a claim about where it is used
   const hint = relation.standardUsage ? (t.stdUsageHint[relation.standardUsage] ?? null) : null
-  if (!relation.standardWord && !relation.rioForm && !relation.altForm && stdMeanings.length === 0) return null
+  const shifted = relation.type === 'meaning_shift'
+  if (!relation.standardWord && !relation.rioForm && !relation.altForm && stdMeanings.length === 0 && !shifted) return null
 
   return (
     <div className="wc-relation">
+      {/* a shifted meaning is said in words, first, before the standard meaning it differs from */}
+      {shifted && <p className="wc-shift">{t.meaningShift}</p>}
       {relation.standardWord && (
         <p>
           {t.standard}: <span>{relation.standardWord}</span>
@@ -69,7 +72,7 @@ export function RelationNote({ relation, settings }: { relation: Relation; setti
 export function RelationBlock({ relation, settings }: { relation: Relation; settings: TranslationFlags }) {
   if (!relation) return null
   const { stdMeanings, notes } = prepare(relation, settings)
-  if (!relation.standardWord && !relation.rioForm && !relation.altForm && stdMeanings.length === 0 && notes.length === 0) return null
+  if (!relation.standardWord && !relation.rioForm && !relation.altForm && stdMeanings.length === 0 && notes.length === 0 && relation.type !== 'meaning_shift') return null
   return (
     <div className="wc-relation-block">
       <RelationLines relation={relation} settings={settings} />
