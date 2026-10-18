@@ -37,6 +37,10 @@ interface WordDetailProps {
   registerBack?: (handler: (() => boolean) | null) => void
   /** The word is gone (deleted): leave the screen, to where it was opened from. */
   onDeleted?: () => void
+  /** Opens the form to report a problem with this word. Without it (signed out) the action is left out. A word the user typed in is edited, not reported. */
+  onReport?: () => void
+  /** A report about this word has just been sent: a line under the action says so. */
+  reportSent?: boolean
   onBack?: () => void
 }
 
@@ -44,7 +48,7 @@ interface WordDetailProps {
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
  * scheduling numbers in a collapsed footnote, then what can be done with it: set it to learn sooner (a word Learn can still teach), or bring it back if it was marked as known.
  */
-export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack }: WordDetailProps) {
+export function WordDetail({ word, data, queue, registerBack, onDeleted, onReport, reportSent = false, onBack }: WordDetailProps) {
   const now = new Date()
   const state = wordState(word, now)
   const note = noteFor(word, state)
@@ -175,6 +179,19 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack 
           </>
         )}
       </div>
+
+      {onReport && !word.isCustom && (
+        <div className="detail-report">
+          <button type="button" className="link-btn" onClick={onReport}>
+            {strings.feedback.reportWord}
+          </button>
+          {reportSent && (
+            <p className="detail-note" role="status">
+              {strings.feedback.sent}
+            </p>
+          )}
+        </div>
+      )}
 
       {confirming && (
         <BottomSheet label={t.deleteTitle(word.esWord)} onClose={() => setConfirming(false)}>

@@ -7,11 +7,11 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
  * matters here: row-level security only lets `authenticated` users write rows with their own user_id (a write
  * made with the anon key is refused with 401 / 42501), and reads made with the anon key do not fail, they come back empty.
  *
- * review_log is APPEND-ONLY, as the real table is (SELECT and INSERT granted, nothing else): a PATCH or a DELETE, or an upsert that would MERGE
+ * review_log and feedback are APPEND-ONLY, as the real tables are (SELECT and INSERT granted, nothing else): a PATCH or a DELETE, or an upsert that would MERGE
  * into an existing row (that is an UPDATE), is refused with 42501; a plain insert of an id that exists is a 23505 conflict; an insert with
  * `resolution=ignore-duplicates` skips the rows whose id exists and keeps the rest.
  */
-const APPEND_ONLY = new Set(['review_log'])
+const APPEND_ONLY = new Set(['review_log', 'feedback'])
 const b64 = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const unb64 = (text: string) => atob(text.replace(/-/g, '+').replace(/_/g, '/'))
 

@@ -38,6 +38,8 @@ interface WebAppHapticFeedback {
 export interface TelegramWebApp {
   initData: string
   initDataUnsafe: WebAppInitDataUnsafe
+  /** The short name of the Telegram client ('android', 'ios', 'tdesktop', 'macos', 'weba', …). Absent in the dev mock. */
+  platform?: string
   colorScheme: 'light' | 'dark'
   themeParams: WebAppThemeParams
   ready: () => void

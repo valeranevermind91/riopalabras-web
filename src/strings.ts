@@ -274,6 +274,36 @@ export const en = {
     debugLock: 'Lock Debug',
   },
 
+  // A note to the developer: from Settings (anything at all), or from a word (a problem with it). It says what travels with the text.
+  feedback: {
+    open: 'Write to us',
+    openHint: 'A bug, an idea, or anything else you would like to say',
+    titleGeneral: 'Write to us',
+    titleWord: 'Report a problem',
+    reportWord: 'Report a problem with this word',
+    aboutWord: 'The word',
+    fieldGeneral: 'Your message',
+    fieldWord: 'What is wrong with this word?',
+    placeholderGeneral: 'A bug, an idea, anything at all',
+    placeholderWord: 'For example: the translation is wrong, or the example does not fit',
+    count: (used: number, max: number) => `${used} / ${max}`,
+    // the one line that says exactly what goes with the text (the word only for a report about a word)
+    sentWith: (c: { word: string | null; version: string; language: string; screen: string; platform: string }) =>
+      `Sent with your message: ${c.word ? `the word “${c.word}”, ` : ''}your account, app version ${c.version}, interface language ${c.language}, screen ${c.screen}, Telegram platform ${c.platform}.`,
+    languages: { en: 'English', ru: 'Russian' },
+    screens: { settings: 'Settings', word: 'Word' },
+    send: 'Send',
+    sending: 'Sending…',
+    cancel: 'Cancel',
+    empty: 'Write something first.',
+    failed: 'Could not send it. Your message is still here: try again in a moment.',
+    sent: 'Sent. Thank you.',
+    discardTitle: 'Discard your message?',
+    discardBody: 'What you wrote has not been sent.',
+    discard: 'Discard',
+    keepWriting: 'Keep writing',
+  },
+
   // The intro, shown once on a new account and again from Settings. English chrome; Spanish words are marked `es` (set in the display face).
   onboarding: {
     stepOf: (n: number, m: number) => `Step ${n} of ${m}`,

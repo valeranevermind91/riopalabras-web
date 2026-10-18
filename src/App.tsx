@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
+import { sendFeedback, type FeedbackReport } from './data/feedback'
 import { settleStars } from './data/starred'
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { createTombstoneClearer } from './data/customWords'
@@ -26,6 +27,7 @@ import { HomeScreen } from './screens/Home'
 import { ClozeScreen } from './screens/Cloze'
 import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
+import { FeedbackScreen } from './screens/Feedback'
 import { SettingsScreen } from './screens/Settings'
 import { HowItWorks } from './screens/HowItWorks'
 import { PlacementScreen } from './screens/PlacementScreen'
@@ -130,15 +132,25 @@ function App() {
     settleStars({ words: readyData.words, settings: readyData.settings, applyFavorite: readyData.applyFavorite, applySettings: readyData.applySettings, queue })
   }, [queue, readyData, userId])
 
-  const [screen, setScreen] = useState<Screen>('home')
+  const [screen, setScreenNow] = useState<Screen>('home')
+  // A note to the developer: from Settings (esWord null) or about the open word. `feedbackSent` is where one has just gone from, for the line that says so;
+  // it is forgotten as soon as the person goes anywhere else.
+  const [feedback, setFeedback] = useState<{ esWord: string | null }>({ esWord: null })
+  const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'word'; key: string | null } | null>(null)
+  const setScreen = useCallback((to: Screen) => {
+    setScreenNow(to)
+    if (to !== 'settings' && to !== 'word' && to !== 'feedback') setFeedbackSent(null)
+  }, [])
   // A word's detail is opened from the word of the day (back goes Home) or from the Words list (back goes to the list).
   const [open, setOpen] = useState<{ key: string; from: 'home' | 'words' } | null>(null)
   // The Words list as it was left, so it comes back with its search, filters, segment and place while a word is open.
   const [wordsView] = useState(createViewStore)
   // Leaving a screen never asks and never waits: whatever is unsent is held by the queue (and saved on the device), not by the screen.
-  const go = useCallback((to: Screen) => setScreen(to), [])
+  const go = useCallback((to: Screen) => setScreen(to), [setScreen])
+  // Only a signed-in user can send one (the table takes their own rows); without a session the entry points are not there.
+  const sendReport = useMemo(() => (client && userId ? (report: FeedbackReport) => sendFeedback(report, { client, userId, recoverSession: async () => (await recoverSession()) === true }) : null), [client, userId, recoverSession])
   /** Where Back leads from the current screen. */
-  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null)
+  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null, feedback.esWord !== null)
   // A screen opens at the top of the page (the one Back leads to gets its place back), not wherever the last one was scrolled to.
   useScreenScroll(screen, open?.from ?? null)
   // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
@@ -264,6 +276,36 @@ function App() {
         onTakePlacement={() => setScreen('placement')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
+        onOpenFeedback={
+          sendReport
+            ? () => {
+                setFeedback({ esWord: null })
+                setFeedbackSent(null)
+                setScreen('feedback')
+              }
+            : undefined
+        }
+        feedbackSent={feedbackSent?.screen === 'settings'}
+        onBack={inPageBack}
+      />
+    )
+  }
+
+  if (screen === 'feedback' && sendReport) {
+    const about = feedback.esWord
+    return (
+      <FeedbackScreen
+        key={about ?? 'general'}
+        kind={about === null ? 'general' : 'word'}
+        esWord={about}
+        from={about === null ? 'settings' : 'word'}
+        send={sendReport}
+        onSent={() => {
+          setFeedbackSent({ screen: about === null ? 'settings' : 'word', key: about === null ? null : wordKey(about) })
+          go(backTarget)
+        }}
+        onClose={() => go(backTarget)}
+        registerBack={registerBack}
         onBack={inPageBack}
       />
     )
@@ -351,7 +393,26 @@ function App() {
 
   const openedWord = screen === 'word' && open ? readyData?.words.find((w) => wordKey(w.esWord) === open.key) : undefined
   if (openedWord && readyData && queue) {
-    return <WordDetail word={openedWord} data={readyData} queue={queue} registerBack={registerBack} onDeleted={() => go(backTarget)} onBack={inPageBack} />
+    return (
+      <WordDetail
+        word={openedWord}
+        data={readyData}
+        queue={queue}
+        registerBack={registerBack}
+        onDeleted={() => go(backTarget)}
+        onReport={
+          sendReport
+            ? () => {
+                setFeedback({ esWord: openedWord.esWord })
+                setFeedbackSent(null)
+                setScreen('feedback')
+              }
+            : undefined
+        }
+        reportSent={feedbackSent?.screen === 'word' && feedbackSent.key === wordKey(openedWord.esWord)}
+        onBack={inPageBack}
+      />
+    )
   }
 
   if (screen === 'cloze' && readyData && queue) {

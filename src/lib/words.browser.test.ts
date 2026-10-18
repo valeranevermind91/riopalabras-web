@@ -1473,7 +1473,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     expect(app).toMatch(/onViewChange=\{wordsView\.set\}/)
     expect(app).toMatch(/setOpen\(\{ key: wordKey\(esWord\), from: 'words' \}\)/)
     expect(app).toMatch(/setOpen\(\{ key: wordKey\(word\.esWord\), from: 'home' \}\)/)
-    expect(app).toMatch(/const backTarget: Screen = backTargetFor\(screen, screen === 'word' \? \(open\?\.from \?\? null\) : null\)/) // a word goes back to where it was opened (src/lib/nav.ts)
+    expect(app).toMatch(/const backTarget: Screen = backTargetFor\(screen, screen === 'word' \? \(open\?\.from \?\? null\) : null, feedback\.esWord !== null\)/) // a word goes back to where it was opened (src/lib/nav.ts)
     expect(app).toMatch(/const onClick = \(\) => goBack\(\)/)
     expect(app).toMatch(/if \(backInterceptor\.current\?\.\(\)\) return/)
     expect(app).toMatch(/registerBack=\{registerBack\}/)

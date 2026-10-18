@@ -28,6 +28,10 @@ interface SettingsScreenProps {
   onOpenHow?: () => void
   /** Replays the intro from step 1 (About). Without it the row is left out. */
   onRunIntro?: () => void
+  /** Opens the form for a note to the developer (About). Without it (signed out) the row is left out. */
+  onOpenFeedback?: () => void
+  /** A message has just been sent from here: a line under the row says so. */
+  feedbackSent?: boolean
   /** VITE_BOT_USERNAME; no usable value (unset, empty, REPLACE_ME) leaves the link row out. */
   botUsername?: string
   /** Only passed where Telegram's native BackButton isn't available. */
@@ -44,7 +48,7 @@ const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ decli
 
 const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
-export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -264,6 +268,17 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
               </span>
             </button>
           )}
+          {onOpenFeedback && (
+            <button type="button" className="setting-row setting-nav" onClick={onOpenFeedback}>
+              <span className="setting-text">
+                <span className="setting-label">{strings.feedback.open}</span>
+                <span className="setting-hint">{strings.feedback.openHint}</span>
+              </span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
           <div className="setting-row setting-version" onClick={tapVersion}>
             <span className="setting-label">{t.version}</span>
             <span className="setting-value">{VERSION_LABEL}</span>
@@ -275,6 +290,11 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
             </a>
           )}
         </div>
+        {feedbackSent && (
+          <p className="setting-note" role="status">
+            {strings.feedback.sent}
+          </p>
+        )}
         <p className="settings-about">{t.aboutText}</p>
       </section>
 
