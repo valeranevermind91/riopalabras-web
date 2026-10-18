@@ -147,10 +147,10 @@ describe.skipIf(!CHROME)('with the network gone', () => {
         return { interval: row.interval, repetitions: row.repetitions, easeFactor: row.easeFactor, nextReview: row.nextReview.getTime() }
       }, word)
 
-    it('the button says 10 min, and the word comes back at the end of the same session once; a second Again lets it leave, its ten minutes already set', async () => {
+    it('the button says Soon, and the word comes back at the end of the same session once; a second Again lets it leave, its ten minutes already set', async () => {
       const { page } = await open('review', false) // the network is down: every write waits in the queue, where it can be read
       await page.waitForSelector('.flip')
-      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '4d', '8d', '10d']) // the others preview from interval 3, ease 2.5
+      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['Soon', '4d', '8d', '10d']) // the others preview from interval 3, ease 2.5
       expect(await counter(page)).toBe('1 / 6')
       const word = await headword(page)
 
@@ -173,7 +173,7 @@ describe.skipIf(!CHROME)('with the network gone', () => {
       // this time its buttons preview from repetitions 1 at the lowered ease
       await page.click('.flip')
       await page.waitForSelector('.rating:not(.is-hidden) .rate-again')
-      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['10 min', '1d', '2d', '3d'])
+      expect(await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent))).toEqual(['Soon', '1d', '2d', '3d'])
 
       await page.click('.rate-again') // Again a second time: it leaves the session (a word returns once), and the session is over
       await page.waitForSelector('.post-batch')
@@ -188,13 +188,51 @@ describe.skipIf(!CHROME)('with the network gone', () => {
       await page.close()
     }, 60_000)
 
-    it('the Russian label says 10 мин', async () => {
+    for (const [language, again, labels] of [
+      ['English', 'Again', ['Soon', '4d', '8d', '10d']],
+      ['Russian', 'Снова', ['Скоро', '4 д', '8 д', '10 д']],
+    ] as const) {
+      it(`${language}, 320px: the four buttons show ${labels[0]} · ${labels[1]} · ${labels[2]} · ${labels[3]}, each fits its button and none repeats another`, async () => {
+        const { page } = await open('review', false)
+        await page.waitForSelector('.flip')
+        await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        if (language === 'Russian') {
+          await page.evaluate(() => localStorage.setItem('riopalabras.language.v1', 'ru'))
+          await page.reload({ waitUntil: 'networkidle0' })
+          await page.waitForSelector('.flip')
+        }
+        await page.click('.flip')
+        await page.waitForSelector('.rating:not(.is-hidden) .rate-again')
+        const look = await page.$$eval('.rate-btn', (buttons) =>
+          buttons.map((b) => {
+            const box = b.getBoundingClientRect()
+            const label = b.querySelector('.rate-label') as HTMLElement
+            const interval = b.querySelector('.rate-interval') as HTMLElement
+            return { label: label.textContent, interval: interval.textContent, left: box.left, right: box.right, labelFits: label.scrollWidth <= label.clientWidth, intervalFits: interval.scrollWidth <= interval.clientWidth, intervalHeight: interval.getBoundingClientRect().height, page: document.documentElement.scrollWidth <= window.innerWidth }
+          }),
+        )
+        expect(look.map((b) => b.interval)).toEqual(labels)
+        expect(look[0].label).toBe(again)
+        expect(new Set(look.map((b) => b.interval)).size).toBe(4) // "Soon" repeats no other button's number
+        expect(new Set([...look.map((b) => b.label), ...look.map((b) => b.interval)]).size).toBe(8) // and no interval reads like a button's name
+        for (const b of look) {
+          expect(b.labelFits && b.intervalFits).toBe(true)
+          expect(b.left).toBeGreaterThanOrEqual(0)
+          expect(b.right).toBeLessThanOrEqual(320)
+          expect(b.page).toBe(true)
+          expect(b.intervalHeight).toBeLessThan(24) // one line
+        }
+        await page.close()
+      }, 60_000)
+    }
+
+    it('the Russian label says Скоро', async () => {
       const { page } = await open('review', false)
       await page.waitForSelector('.flip')
       await page.evaluate(() => localStorage.setItem('riopalabras.language.v1', 'ru'))
       await page.reload({ waitUntil: 'networkidle0' })
       await page.waitForSelector('.flip')
-      expect((await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent)))[0]).toBe('10 мин')
+      expect((await page.$$eval('.rate-btn .rate-interval', (els) => els.map((e) => e.textContent)))[0]).toBe('Скоро')
       await page.close()
     }, 60_000)
   })

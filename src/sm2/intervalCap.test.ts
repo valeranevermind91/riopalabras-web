@@ -112,9 +112,9 @@ describe('the previews show what the rating writes', () => {
   it('at the cap the buttons read "9mo" in English and "9 мес" in Russian, straight from the existing formatter', () => {
     const atCap = { easeFactor: 2.5, interval: MAX_INTERVAL_DAYS, repetitions: 10 }
     setLanguage('en')
-    expect(labelsOnTheButtons(atCap)).toEqual(['10 min', '9mo', '9mo', '9mo'])
+    expect(labelsOnTheButtons(atCap)).toEqual(['Soon', '9mo', '9mo', '9mo'])
     setLanguage('ru')
-    expect(labelsOnTheButtons(atCap)).toEqual(['10 мин', '9 мес', '9 мес', '9 мес'])
+    expect(labelsOnTheButtons(atCap)).toEqual(['Скоро', '9 мес', '9 мес', '9 мес'])
   })
 
   it('a longer stored interval reads as years only where it is the stored one; the buttons never promise it', () => {

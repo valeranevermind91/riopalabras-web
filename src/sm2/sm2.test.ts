@@ -12,9 +12,9 @@ describe('test environment', () => {
 })
 
 describe('first review of a just-learned word', () => {
-  it('previews Again 10 min, Hard 1d, Good 3d, Easy 3d', () => {
+  it('previews Again Soon, Hard 1d, Good 3d, Easy 3d', () => {
     const labels = [1, 2, 3, 4].map((q) => formatInterval(previewInterval(JUST_LEARNED, q)))
-    expect(labels).toEqual(['10 min', '1d', '3d', '3d'])
+    expect(labels).toEqual(['Soon', '1d', '3d', '3d'])
   })
 
   it('computes the exact ease factors (Again 2.18, Hard 2.36, Good 2.5, Easy 2.6)', () => {
@@ -70,7 +70,7 @@ describe('applyReview', () => {
     const lapsed = applyReview({ easeFactor: 2.5, interval: 40, repetitions: 7 }, 1, NOW) // ease 2.18
     expect(lapsed).toMatchObject({ interval: 0, repetitions: 1 })
     expect([2, 3, 4].map((q) => previewInterval(lapsed, q))).toEqual([1, 2, 3]) // 1×1.2, 1×2.18, 1×2.28×1.3 (Easy raises the ease to 2.28 first)
-    expect([1, 2, 3, 4].map((q) => formatInterval(previewInterval(lapsed, q)))).toEqual(['10 min', '1d', '2d', '3d'])
+    expect([1, 2, 3, 4].map((q) => formatInterval(previewInterval(lapsed, q)))).toEqual(['Soon', '1d', '2d', '3d'])
     expect([2, 3, 4].map((q) => applyReview(lapsed, q, NOW).repetitions)).toEqual([2, 2, 2])
   })
 
@@ -129,8 +129,8 @@ describe('applyReview', () => {
 
 describe('formatInterval', () => {
   it.each([
-    [0, '10 min'],
-    [-3, '10 min'],
+    [0, 'Soon'],
+    [-3, 'Soon'],
     [1, '1d'],
     [2, '2d'],
     [29, '29d'],

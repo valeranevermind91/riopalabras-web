@@ -160,6 +160,25 @@ describe('spelling and address', () => {
   })
 })
 
+describe('the interval on the Again button', () => {
+  it('says "Soon" / «Скоро»: the word is due again, and no clock is promised (the stored wait is untouched)', () => {
+    expect([en.interval.soon, ru.interval.soon]).toEqual(['Soon', 'Скоро'])
+    for (const map of [en, ru]) expect('minutes' in map.interval).toBe(false)
+    expect(RELEARN_MINUTES).toBe(10)
+  })
+
+  it('collides with no other label a rating button shows: the other intervals are numbers, and the four names are different words', () => {
+    for (const map of [en, ru]) {
+      const names = [map.review.again, map.review.hard, map.review.good, map.review.easy]
+      const intervals = [map.interval.soon, map.interval.days(1), map.interval.months(2), map.interval.years(1)]
+      expect(new Set([...names, ...intervals]).size).toBe(8)
+      expect(map.interval.soon).not.toMatch(/\d/)
+    }
+    expect(offenders(enTexts, /\bSoon\b/)).toEqual(['interval.soon: Soon']) // the word is used for nothing else in the interface
+    expect(offenders(ruTexts, /Скоро/)).toEqual(['interval.soon: Скоро'])
+  })
+})
+
 describe('what the text says about the scheduler is what the scheduler does', () => {
   it('"How it works": the longest gap is nine months and Again is ten minutes (the numbers the code has), and it does not say Again starts over', () => {
     expect(MAX_INTERVAL_DAYS).toBe(270) // nine months of 30 days

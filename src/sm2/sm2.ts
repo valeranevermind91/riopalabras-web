@@ -79,7 +79,7 @@ export function previewInterval(card: Sm2Card, quality: Quality): number {
 
 export function formatInterval(days: number): string {
   const t = strings.interval
-  if (days <= 0) return t.minutes(RELEARN_MINUTES) // only an Again previews no days
+  if (days <= 0) return t.soon // only an Again previews no days: the word is due again, which is all the label says (not a promise of ten minutes)
   if (days < 30) return t.days(days)
   if (days < 365) return t.months(Math.round(days / 30))
   return t.years(Math.round(days / 365))

@@ -196,7 +196,7 @@ export const ru: Strings = {
   },
 
   interval: {
-    minutes: (n) => `${n} мин`,
+    soon: 'Скоро',
     days: (n) => `${n} д`,
     months: (n) => `${n} мес`,
     years: (n) => `${n} г`,

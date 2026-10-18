@@ -220,7 +220,8 @@ export const en = {
 
   // The gap before a word comes back, as the rating buttons and the word detail abbreviate it ("3d", "2mo").
   interval: {
-    minutes: (n: number) => `${n} min`,
+    // an Again: the word is due again at once (the stored wait is ten minutes; the label promises no clock)
+    soon: 'Soon',
     days: (n: number) => `${n}d`,
     months: (n: number) => `${n}mo`,
     years: (n: number) => `${n}y`,
