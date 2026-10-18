@@ -82,7 +82,7 @@ describe('wrapping and focus (the polish pass)', () => {
   it('paragraphs avoid a lone last word (pretty), and short blocks are balanced: titles, advice, tile reasons, labels, hints and notes', () => {
     expect(rule('body')).toMatch(/text-wrap: pretty/)
     const balanced = css.match(/([^{}]+)\{\s*text-wrap: balance;\s*\}/)![1].split('*/').pop()!.split(',').map((s) => s.trim())
-    for (const selector of ['h1', 'h2', 'h3', '.subtitle', '.home-advice', '.tile-text', '.setting-label', '.setting-hint', '.words-note', '.post-batch-why', '.intro-note', '.intro-text', '.intro-line', '.wc-translation', '.wc-row-text', '.learn-undo span', '.cz-sentence', '.cz-feedback', '.match-hint', '.cz-instruction']) expect(balanced, selector).toContain(selector)
+    for (const selector of ['h1', 'h2', 'h3', '.subtitle', '.home-advice', '.tile-text', '.setting-label', '.setting-hint', '.words-note', '.post-batch-why', '.intro-note', '.intro-text', '.intro-line', '.wc-translation', '.wc-row-text', '.learn-undo span', '.wc-shift', '.cz-sentence', '.cz-feedback', '.match-hint', '.cz-instruction']) expect(balanced, selector).toContain(selector)
   })
 
   it('the intro list puts the name above its line, so a long name no longer squeezes the text into a narrow column', () => {
@@ -102,11 +102,17 @@ describe('wrapping and focus (the polish pass)', () => {
     expect(rule('.segment')).toMatch(/flex-direction: column/)
   })
 
-  it('the queue pill on a list row never wraps or shrinks (its label is one short word), and has a visible focus ring', () => {
-    expect(rule('.word-row-queue')).toMatch(/white-space: nowrap/)
-    expect(rule('.word-row-queue')).toMatch(/flex: none/)
-    expect(rule('.word-row-queue')).toMatch(/min-height: 32px/)
+  it('the queue control on a list row is an icon in a 40 x 44 tap target that never shrinks, in the Learn colour, with a visible focus ring; the save star beside it rests grey', () => {
+    const queue = rule('.word-row-queue')
+    expect(queue).toMatch(/flex: none/)
+    expect(queue).toMatch(/width: 40px/)
+    expect(queue).toMatch(/height: 44px/)
+    expect(queue).toMatch(/color: var\(--teal\)/)
+    expect(queue).not.toMatch(/padding: [1-9]/) // no padding to widen it
+    expect(rule('.word-row-queue .queue-glyph-mark')).toMatch(/stroke: var\(--teal-ink\)/) // the tick on the filled disc
     expect(css).toMatch(/\.word-row-queue:focus-visible/)
+    expect(rule('.word-row-star')).toMatch(/color: var\(--muted-2\)/) // the star, as it was: grey until it is saved
+    expect(rule('.word-row-star.is-on')).toMatch(/color: var\(--teal\)/)
   })
 
   it('the Cloze instruction is set like the Matching one', () => {

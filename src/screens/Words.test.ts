@@ -147,8 +147,7 @@ describe('the Words screen', () => {
     it('a queued word shows "Queued", pressed, and a word that is not queued shows "Queue": the queue as the list sees it', () => {
       const html = render(all, view({ segment: 'all' }), withPicks(['dos']))
       expect(rowOf(html, 'dos')).toContain('aria-pressed="true" aria-label="Take dos out of the Learn queue"')
-      expect(rowOf(html, 'dos')).toContain('<span>Queued</span>')
-      for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain('<span>Queue</span>')
+      for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain(`aria-pressed="false" aria-label="Queue ${name} for Learn"`)
     })
 
     it('the row and the Queued filter agree: the filter lists exactly the rows that show the marker, and every one of them does', () => {

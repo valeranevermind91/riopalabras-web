@@ -119,10 +119,10 @@ describe('every overlay entry carries the pill, and an ordinary dictionary word 
     for (const word of [...shifts, ...regionalOnly]) expect(cardElsewhere(word), word.esWord).not.toContain('wc-tag')
   })
 
-  it('a meaning shift says so in a line of its own, above the standard meaning it differs from: "Different meaning in Rioplatense."', () => {
+  it('a meaning shift says so in a line of its own, above the standard meaning it differs from: "A different meaning in this region"', () => {
     for (const word of shifts) {
       const card = cardElsewhere(word)
-      expect(card, word.esWord).toContain('<p class="wc-shift">Different meaning in Rioplatense.</p>')
+      expect(card, word.esWord).toContain('<p class="wc-shift">A different meaning in this region</p>')
     }
     const html = learnCard(boleto)
     expect(html.indexOf('wc-shift')).toBeLessThan(html.indexOf('Standard meaning'))
@@ -135,23 +135,26 @@ describe('every overlay entry carries the pill, and an ordinary dictionary word 
     for (const word of [withRegion('uy'), withRegion('ar'), noRegion, ...regionalOnly, ordinary]) expect(cardElsewhere(word), word.esWord).not.toContain('wc-shift')
   })
 
-  it('in Russian: the pill «риоплатское» and the line «В риоплатском значит другое.», above «Обычное значение»', () => {
+  it('in Russian: the pill «риоплатское» and the line «В этом регионе другое значение», above «Обычное значение»', () => {
     setLanguage('ru')
     const html = learnCard(boleto)
     expect(metaOf(html)).toContain('<span class="wc-rio">риоплатское</span>')
-    expect(html).toContain('<p class="wc-shift">В риоплатском значит другое.</p>')
+    expect(html).toContain('<p class="wc-shift">В этом регионе другое значение</p>')
     expect(html.indexOf('wc-shift')).toBeLessThan(html.indexOf('Обычное значение'))
   })
 
-  it('the line is in the app\'s own words: the pill\'s "Rioplatense" and the standard-meaning label it sits beside', () => {
-    expect(strings.rio.meaningShift).toContain(strings.rio.pill)
+  it('the line says "region" and names no country: no UY, no AR, no Uruguay or Argentina (the overlay has no country for a shift, and none is claimed)', () => {
+    for (const text of [strings.rio.meaningShift, ...(['en', 'ru'] as const).map((l) => { setLanguage(l); return strings.rio.meaningShift })]) {
+      expect(text).toMatch(/region|регион/)
+      expect(text).not.toMatch(/\b(UY|AR)\b|Urugua|Argentin|Уругва|Аргентин/)
+    }
   })
 
   it('Review shows the same on its card: the pill on the front and the back, the line on the back', () => {
     const card = (revealed: boolean) => renderToStaticMarkup(createElement(ReviewCard, { word: boleto, settings, revealed, onReveal: () => {} }))
     const html = card(true)
     expect(html.match(/<span class="wc-rio">Rioplatense<\/span>/g)).toHaveLength(2) // front and back
-    expect(html).toContain('<p class="wc-shift">Different meaning in Rioplatense.</p>')
+    expect(html).toContain('<p class="wc-shift">A different meaning in this region</p>')
     const ordinaryHtml = renderToStaticMarkup(createElement(ReviewCard, { word: ordinary, settings, revealed: true, onReveal: () => {} }))
     expect(ordinaryHtml).not.toContain('wc-rio')
     expect(ordinaryHtml).not.toContain('wc-shift')

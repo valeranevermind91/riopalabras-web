@@ -127,13 +127,31 @@ describe('spelling and address', () => {
     for (const text of [ru.words.favourite('x'), ru.words.unfavourite('x'), ru.words.addFavourite, ru.words.removeFavourite]) expect(text).not.toMatch(/learn|очеред|учить|изуч|избранн/i)
   })
 
-  it('the queue action on a row says it is for Learn and what it does: "Queue" / "Queued" (the filter\'s word), «В очередь» / «В очереди»', () => {
-    expect([en.words.queueShort, en.words.queued]).toEqual(['Queue', 'Queued'])
-    expect([ru.words.queueShort, ru.words.queued]).toEqual(['В очередь', 'В очереди'])
+  it('the queue action on a row is icon-only, so its accessible name says it in full and says it is for Learn: «Поставить «x» в очередь Learn» / "Queue x for Learn"; "Queued" is the filter\'s word', () => {
+    expect([en.words.queued, ru.words.queued]).toEqual(['Queued', 'В очереди'])
     expect(en.words.queueRow('x')).toBe('Queue x for Learn')
     expect(en.words.unqueueRow('x')).toBe('Take x out of the Learn queue')
-    expect(ru.words.queueRow('x')).toBe('В очередь Learn: «x»')
+    expect(ru.words.queueRow('x')).toBe('Поставить «x» в очередь Learn')
     expect(ru.words.unqueueRow('x')).toBe('Убрать «x» из очереди Learn')
+    expect('queueShort' in en.words).toBe(false) // no visible label on the row any more
+    expect('queueShort' in ru.words).toBe(false)
+  })
+
+  it('the detail screen keeps the action in words: "Queue for Learn" / "Queued — remove", «В очередь Learn» / «В очереди — убрать»', () => {
+    expect([en.words.queueForLearn, en.words.removeFromQueue]).toEqual(['Queue for Learn', 'Queued — remove'])
+    expect([ru.words.queueForLearn, ru.words.removeFromQueue]).toEqual(['В очередь Learn', 'В очереди — убрать'])
+  })
+
+  it('the short labels on a card carry no full stop, and the meaning-shift line is one of them: pill, standard meaning, usage hints, note label', () => {
+    for (const map of [en, ru]) {
+      const labels = [map.rio.pill, map.rio.standardMeaning, map.rio.meaningShift, map.rio.note, map.rio.standard, map.rio.also, ...Object.values(map.rio.stdUsageHint).filter((x): x is string => typeof x === 'string')]
+      for (const label of labels) expect(label, label).not.toMatch(/[.!?]$/)
+    }
+  })
+
+  it('the meaning-shift line says it in the words you asked for: "A different meaning in this region" / «В этом регионе другое значение»', () => {
+    expect(en.rio.meaningShift).toBe('A different meaning in this region')
+    expect(ru.rio.meaningShift).toBe('В этом регионе другое значение')
   })
 
   it('Russian: formal "вы" throughout: no ты-forms (ты, тебе, тебя, твой, видишь, хочешь…)', () => {

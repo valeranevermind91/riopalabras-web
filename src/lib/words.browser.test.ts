@@ -694,13 +694,13 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       const word = fx.fresh[0]
       await search(page, word)
       await page.waitForSelector('.word-row')
-      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queue', pressed: 'false', label: `Queue ${word} for Learn` }, star: { label: `Save ${word}` } })
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: '', pressed: 'false', label: `Queue ${word} for Learn` }, star: { label: `Save ${word}` } })
 
       await tapRowQueue(page, word)
       await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
       expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [word.toLowerCase()] })
       expect(await page.$('.word-detail')).toBeNull() // the tap acted on the queue and did not open the word
-      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queued', pressed: 'true', label: `Take ${word} out of the Learn queue` } })
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: '', pressed: 'true', label: `Take ${word} out of the Learn queue` } })
 
       // the Queued filter lists it, and the detail says the same
       await page.$eval('.words-search', (el) => void ((el as HTMLInputElement).value = ''))
@@ -710,7 +710,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await chooseFilter(page, 'Filters', 'Queued')
       await page.waitForSelector('.word-row')
       expect((await rows(page)).some((r) => r.startsWith(word))).toBe(true)
-      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queued', pressed: 'true' } })
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { pressed: 'true' } })
       await openRow(page, Math.max(0, (await rows(page)).findIndex((r) => r.startsWith(word))))
       expect(await queueButton(page)).toEqual(['Save word|false', 'Queued — remove|true'])
       await back(page)
@@ -745,16 +745,16 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await tapRowQueue(page, word)
       await page.waitForFunction(() => document.querySelector('.words-note') !== null)
       expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('The queue is full (50 words). Take one out to add another.')
-      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queue', pressed: 'false' } })
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { pressed: 'false' } })
       expect((await sent(page)).settings).toEqual([])
       await page.close()
     }, 60_000)
 
-    for (const [language, query, queue, queued, save] of [
-      ['English', '?lang=en', 'Queue', 'Queued', 'Save'],
-      ['Russian', '?lang=ru', 'В очередь', 'В очереди', 'Сохранить'],
+    for (const [language, query, save] of [
+      ['English', '?lang=en', 'Save'],
+      ['Russian', '?lang=ru', 'Сохранить'],
     ] as const) {
-      it(`${language}, 320px: the save star and the queue control are two different things on the row, each its own tap target, inside the row`, async () => {
+      it(`${language}, 320px: the queue control is a glyph and no words, different from the star in shape and in colour, each its own tap target, and the translation gets the room back`, async () => {
         const page = await open(query)
         await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
         const fx = await fixture(page)
@@ -770,16 +770,24 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
             }
             const queue = row.querySelector('.word-row-queue') as HTMLElement
             const star = row.querySelector('.word-row-star') as HTMLElement
-            const range = document.createRange()
-            range.selectNodeContents(queue.querySelector('span')!)
+            const shape = (e: Element) => Array.from(e.querySelectorAll('svg path, svg circle')).map((n) => n.getAttribute('d') ?? `circle r=${n.getAttribute('r')}`).join(' | ')
+            const paint = (e: Element) => {
+              const style = getComputedStyle(e)
+              const glyph = getComputedStyle(e.querySelector('svg circle, svg path')!)
+              return { color: style.color, fill: glyph.fill, stroke: glyph.stroke }
+            }
             return {
               row: box(row),
               queue: box(queue),
               star: box(star),
+              main: box(row.querySelector('.word-row-main')!),
               head: box(row.querySelector('.word-row-head')!),
               queueText: queue.textContent?.trim(),
-              queueLines: new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size,
               starText: star.textContent?.trim(),
+              queueShape: shape(queue),
+              starShape: shape(star),
+              queuePaint: paint(queue),
+              starPaint: paint(star),
               starLabel: star.getAttribute('aria-label'),
               queueLabel: queue.getAttribute('aria-label'),
               page: document.documentElement.scrollWidth <= window.innerWidth,
@@ -787,31 +795,62 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
           })
         const idle = await look()
         expect(idle.row.height).toBe(72)
-        expect(idle.queueText).toBe(queue) // a word, so it reads as an action
-        expect(idle.starText).toBe('') // an icon only: a bookmark, so it does not read as an action
-        expect(idle.queueLines).toBe(1)
-        expect(idle.starLabel!.startsWith(save)).toBe(true)
-        expect(idle.queueLabel).toContain('Learn') // the one that changes what is taught says it is for Learn; the star's label never does
+        expect(idle.queueText).toBe('') // a glyph, nothing written on it: the translation needs the room
+        expect(idle.starText).toBe('')
+        expect(idle.queueLabel).toContain('Learn') // the accessible name says what it does and that it is for Learn, in full
+        expect(idle.queueLabel).toContain(word)
+        expect(idle.starLabel!.startsWith(save)).toBe(true) // and the star's never says Learn
         expect(idle.starLabel).not.toContain('Learn')
+        // different glyph...
+        expect(idle.queueShape).not.toBe(idle.starShape)
+        expect(idle.queueShape).toContain('M14 8.5v11M8.5 14h11') // a plus in a ring
+        expect(idle.starShape).toContain('M12 3.2l2.7 5.6') // a star
+        // ...and a different colour, with the star as it was: grey until saved, the queue control always in the Learn colour
+        expect(idle.queuePaint.color).not.toBe(idle.starPaint.color)
+        const teal = await page.evaluate(() => {
+          const probe = document.createElement('i')
+          probe.style.color = 'var(--teal)'
+          document.body.append(probe)
+          const muted = document.createElement('i')
+          muted.style.color = 'var(--muted-2)'
+          document.body.append(muted)
+          return { teal: getComputedStyle(probe).color, grey: getComputedStyle(muted).color }
+        })
+        expect(idle.queuePaint.color).toBe(teal.teal)
+        expect(idle.starPaint.color).toBe(teal.grey)
         for (const control of [idle.queue, idle.star]) {
-          expect(control.height).toBeGreaterThanOrEqual(32)
-          expect(control.width).toBeGreaterThanOrEqual(32)
+          expect(control.height).toBeGreaterThanOrEqual(44)
+          expect(control.width).toBeGreaterThanOrEqual(40)
           expect(control.top).toBeGreaterThanOrEqual(idle.row.top)
           expect(control.bottom).toBeLessThanOrEqual(idle.row.bottom)
           expect(control.right).toBeLessThanOrEqual(idle.row.right)
         }
         expect(idle.queue.right).toBeLessThanOrEqual(idle.star.left + 1) // side by side, not on top of each other
-        expect(idle.head.width).toBeGreaterThan(60) // the word is not squeezed away
+        // the room: 280 less a 40 control and a 44 star, in both languages (with the text pill it was about 154 in English and 128 in Russian)
+        expect(Math.round(idle.main.width)).toBe(196)
+        expect(idle.head.width).toBeGreaterThan(60)
         expect(idle.page).toBe(true)
-        // queued: the marker reads "Queued" and still fits
+
+        // queued: a filled disc with a tick, still in the Learn colour, still a different shape from the star
         await tapRowQueue(page, word)
-        await page.waitForFunction((w) => document.querySelector('.word-row-queue')?.textContent?.trim() === w, {}, queued)
+        await page.waitForFunction(() => document.querySelector('.word-row-queue')?.getAttribute('aria-pressed') === 'true')
         const on = await look()
-        expect(on.queueText).toBe(queued)
-        expect(on.queueLines).toBe(1)
+        expect(on.queueText).toBe('')
+        expect(on.queueShape).toContain('M8.5 14.5l3.8 3.8 7.2-7.6') // the tick
+        expect(on.queueShape).not.toContain('M14 8.5v11') // no plus
+        expect(on.queuePaint.color).toBe(teal.teal)
+        expect(on.queuePaint.fill).toBe(teal.teal) // a filled disc where the idle ring was empty
+        expect(idle.queuePaint.fill).toBe('none')
+        expect(on.starPaint.color).toBe(teal.grey) // the star beside it is untouched by queueing
         expect(on.row.height).toBe(72)
-        expect(on.queue.right).toBeLessThanOrEqual(on.star.left + 1)
-        expect(on.head.width).toBeGreaterThan(60)
+        expect(Math.round(on.main.width)).toBe(196)
+
+        // both on: the same hue, so the shapes carry the difference (a disc with a tick, a star), and each still has its own tap target
+        await page.evaluate(() => (document.querySelector('.word-row-star') as HTMLElement).click())
+        await page.waitForFunction(() => document.querySelector('.word-row-star')?.getAttribute('aria-pressed') === 'true')
+        const both = await look()
+        expect(both.queueShape).not.toBe(both.starShape)
+        expect(both.queue.right).toBeLessThanOrEqual(both.star.left + 1)
         await page.close()
       }, 60_000)
     }
@@ -895,13 +934,17 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }
 
     for (const [language, query, pill, shift] of [
-      ['English', '?lang=en', 'Rioplatense', 'Different meaning in Rioplatense.'],
-      ['Russian', '?lang=ru', 'риоплатское', 'В риоплатском значит другое.'],
+      ['English', '?lang=en', 'Rioplatense', 'A different meaning in this region'],
+      ['Russian', '?lang=ru', 'риоплатское', 'В этом регионе другое значение'],
     ] as const) {
       it(`${language}: "boleto" (a meaning shift) has the pill and says the shift in a line of its own, above the standard meaning, inside the card`, async () => {
         const m = await marks(query, 'boleto')
         expect(m).toMatchObject({ headword: 'boleto', pill, tag: null, shift, relationFirst: 'wc-shift', standardMeaning: true, inside: true, pageWide: true })
-        expect(m.shiftLines).toBe(1) // one short line
+        // One line at 320px today (English 223px, Russian 228px of 238). If a wider font or a longer word ever wraps the Russian, it wraps (the meaning comes first,
+        // and the line is balanced so the second line is never a single word): two lines at most.
+        expect(m.shiftLines).toBeGreaterThanOrEqual(1)
+        expect(m.shiftLines).toBeLessThanOrEqual(2)
+        if (language === 'English') expect(m.shiftLines).toBe(1)
       }, 60_000)
 
       it(`${language}: "gurí" (a local headword) keeps its pill and its UY tag, and says no shift`, async () => {

@@ -46,6 +46,7 @@ h3,
 .wc-translation,
 .wc-row-text,
 .learn-undo span,
+.wc-shift,
 .cz-sentence,
 .cz-feedback {
   text-wrap: balance;
@@ -2012,30 +2013,24 @@ mark {
   color: var(--teal);
 }
 
-/* Queue for Learn, beside the star: a text pill, so it reads as an action and not as another bookmark. Pressed, it is the marker that the word is queued. */
+/* Queue for Learn, beside the star: icon only (the translation needs the room). A ring with a plus in the Learn colour (teal), where the save star rests grey;
+   queued, it is a filled teal disc with a tick, which is the marker. The 40 x 44 box is the tap target, the 28px glyph what is drawn. */
 .word-row-queue {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 4px;
-  min-height: 32px;
-  margin-right: 2px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  white-space: nowrap;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--teal);
   cursor: pointer;
 }
 
-.word-row-queue.is-on {
-  border-color: var(--teal-soft-border);
-  background: var(--teal-soft);
-  color: var(--teal-on-soft);
+.word-row-queue .queue-glyph-mark {
+  stroke: var(--teal-ink);
 }
 
 .word-row-bring {

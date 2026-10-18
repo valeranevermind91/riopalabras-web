@@ -235,7 +235,7 @@ describe('highlightTarget', () => {
 
   it('never leaves ** markers in the sentence', () => {
     for (const w of dictionary) expect(highlightTarget(w).sentence).not.toContain('*')
-  })
+  }, 30_000) // the same walk over all 4,753 words as the test above, and the same reason for the longer limit: it timed out at 5 s once the browser tests ran beside it
 })
 
 describe('relationFor', () => {

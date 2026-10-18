@@ -121,8 +121,7 @@ export const en = {
     removeFavourite: 'Remove from saved',
     // the Learn queue: "Queue for Learn" in the detail of a word that is not started
     queueForLearn: 'Queue for Learn',
-    // on a list row, beside the save star: the short form of the detail's button (the pressed state reads "Queued", as the filter does)
-    queueShort: 'Queue',
+    // on a list row, beside the save star: the accessible name of an icon-only control (the detail screen spells the action out in full)
     queueRow: (word: string) => `Queue ${word} for Learn`,
     unqueueRow: (word: string) => `Take ${word} out of the Learn queue`,
     removeFromQueue: 'Queued — remove',
@@ -481,7 +480,7 @@ export const en = {
     note: 'Note',
     standardMeaning: 'Standard meaning',
     // said on a card whose word looks ordinary and means something else in Rioplatense Spanish (a meaning shift)
-    meaningShift: 'Different meaning in Rioplatense.',
+    meaningShift: 'A different meaning in this region',
     // how the headword sounds; neutral shows nothing
     register: { informal: 'informal', vulgar: 'vulgar', offensive: 'offensive', pejorative: 'pejorative' } as Record<string, string | undefined>,
     tag: { uy: 'UY', ar: 'AR' },

@@ -37,20 +37,36 @@ interface WordRowProps {
   onBringBack: (esWord: string) => void
 }
 
-/** A plus (queue it) or a tick (it is queued): drawn small, beside the word "Queue" / "Queued", never alone. */
+/**
+ * The queue control's glyph: a ring with a plus (queue it) that becomes a filled disc with a tick (queued). Drawn in the Learn colour, with no text:
+ * the full label is its accessible name. It is a different shape (a ring, not a star) and a different colour (teal, where the save star rests grey)
+ * from the star beside it.
+ */
 function QueueIcon({ queued }: { queued: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={queued ? 'M5 12.5l4.5 4.5L19 7.5' : 'M12 5v14M5 12h14'} />
+    <svg className="queue-glyph" viewBox="0 0 28 28" width="28" height="28" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {queued ? (
+        <>
+          <circle cx="14" cy="14" r="13" fill="currentColor" stroke="none" />
+          <path className="queue-glyph-mark" d="M8.5 14.5l3.8 3.8 7.2-7.6" strokeWidth="2.4" />
+        </>
+      ) : (
+        <>
+          <circle cx="14" cy="14" r="12.2" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M14 8.5v11M8.5 14h11" stroke="currentColor" strokeWidth="2.2" />
+        </>
+      )}
     </svg>
   )
 }
 
 /**
  * One word in the list: the title (see rowTitle: the form that matched in a search, the headword otherwise), a state dot, a part-of-speech tag, a
- * Due badge, one translation line, and on the right two different things, each acting on its own: a save star (a bookmark: it changes nothing
- * about what is taught), and, for a word that can still be started, "Queue" / "Queued" (it puts the word in the Learn queue, which does change what is
- * taught). A hidden word has "Bring back" instead. Tapping the row opens the word.
+ * Due badge, one translation line, and on the right two different things, each acting on its own: a save star (a bookmark: it changes nothing about
+ * what is taught) and, for a word that can still be started, a teal ring with a plus that becomes a filled disc with a tick when the word is queued
+ * (it puts the word in the Learn queue, which does change what is taught). The queue control has no visible label, because the translation needs
+ * the room; its accessible name says it in full, and the word's detail screen spells it out. A hidden word has "Bring back" instead. Tapping the
+ * row opens the word.
  */
 export function WordRow({ row, settings, onOpen, onToggleFavourite, queueable = false, queued = false, onToggleQueue, onBringBack }: WordRowProps) {
   const { word, state, via } = row
@@ -94,7 +110,6 @@ export function WordRow({ row, settings, onOpen, onToggleFavourite, queueable = 
               onClick={() => onToggleQueue(word.esWord)}
             >
               <QueueIcon queued={queued} />
-              <span>{queued ? t.queued : t.queueShort}</span>
             </button>
           )}
           <button
