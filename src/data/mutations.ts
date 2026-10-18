@@ -27,7 +27,7 @@ export function applySettingsPatch(settings: UserSettings, patch: SettingsPatch)
 }
 
 /** Pure: marks the words in the recovered favorites / hidden lists (matched by wordKey); orphans are ignored. */
-export function applyFlagLists(words: readonly Word[], lists: { favorites?: readonly string[]; hidden?: readonly string[] }): readonly Word[] {
+export function applyFlagLists(words: readonly Word[], lists: { favorites?: readonly string[]; favoriteTimes?: Readonly<Record<string, number>>; hidden?: readonly string[] }): readonly Word[] {
   const favorites = new Set((lists.favorites ?? []).map(wordKey))
   const hidden = new Set((lists.hidden ?? []).map(wordKey))
   if (favorites.size === 0 && hidden.size === 0) return words
@@ -37,7 +37,8 @@ export function applyFlagLists(words: readonly Word[], lists: { favorites?: read
       const key = wordKey(word.esWord)
       const isFavorite = word.isFavorite || favorites.has(key)
       const isHidden = word.isHidden || hidden.has(key)
-      return isFavorite === word.isFavorite && isHidden === word.isHidden ? word : Object.freeze({ ...word, isFavorite, isHidden })
+      const starredAt = isFavorite ? (word.starredAt ?? lists.favoriteTimes?.[key] ?? null) : null
+      return isFavorite === word.isFavorite && isHidden === word.isHidden && starredAt === (word.starredAt ?? null) ? word : Object.freeze({ ...word, isFavorite, isHidden, starredAt })
     }),
   )
 }
@@ -55,15 +56,15 @@ export function applyHiddenFlag(words: readonly Word[], esWords: readonly string
   return changed ? Object.freeze(next) : words
 }
 
-/** Pure: sets (or clears) the favourite flag of the given words (matched by wordKey); the same list back if nothing changes. */
-export function applyFavoriteFlag(words: readonly Word[], esWords: readonly string[], favorite: boolean): readonly Word[] {
+/** Pure: sets (or clears) the favourite flag of the given words (matched by wordKey), noting when it was set; the same list back if nothing changes. */
+export function applyFavoriteFlag(words: readonly Word[], esWords: readonly string[], favorite: boolean, at: number = Date.now()): readonly Word[] {
   const keys = new Set(esWords.map(wordKey))
   if (keys.size === 0) return words
   let changed = false
   const next = words.map((word) => {
     if (!keys.has(wordKey(word.esWord)) || word.isFavorite === favorite) return word
     changed = true
-    return Object.freeze({ ...word, isFavorite: favorite })
+    return Object.freeze({ ...word, isFavorite: favorite, starredAt: favorite ? at : null })
   })
   return changed ? Object.freeze(next) : words
 }

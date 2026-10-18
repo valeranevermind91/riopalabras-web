@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { loadLog, type LoadLog } from './loadLog'
 import { TableLoadError, loadWithRetry, type RetryOptions } from './retry'
+import { wordKey } from './words'
 
 // Supabase caps a single select at 1000 rows by default (the project may set it lower); user_progress alone can exceed that.
 const PAGE_SIZE = 1000
@@ -32,6 +33,8 @@ export interface Overlay {
   customWords: UserWordRow[]
   progress: ProgressRow[]
   favorites: string[]
+  /** When each favourite was starred (ms), by wordKey: the table's created_at, where the database gave one. */
+  favoriteTimes?: Record<string, number>
   hidden: string[]
   settings: Record<string, unknown> | null
 }
@@ -86,6 +89,34 @@ export async function fetchSettingsRow(client: SupabaseClient, userId: string): 
   return { blob: blob && typeof blob === 'object' && !Array.isArray(blob) ? (blob as Record<string, unknown>) : {}, updatedAt: Number.isFinite(stamp) ? stamp : null }
 }
 
+interface FavoriteRow {
+  es_word: string
+  created_at?: string | null
+}
+
+/**
+ * The favourites with the time each was starred (created_at, which the database fills on insert and the Flutter app documents). If the column were ever
+ * missing (Postgres 42703) the list is read without it: the words still load, and Learn teaches them in frequency order instead of oldest star first.
+ */
+async function fetchFavorites(client: SupabaseClient, userId: string): Promise<FavoriteRow[]> {
+  try {
+    return await fetchAll<FavoriteRow>(client, 'user_favorites', 'es_word, created_at', userId)
+  } catch (error) {
+    if (error instanceof TableLoadError && error.code === '42703') return fetchAll<FavoriteRow>(client, 'user_favorites', 'es_word', userId)
+    throw error
+  }
+}
+
+/** wordKey → ms for the rows that have a usable created_at. */
+function timesOf(rows: readonly FavoriteRow[]): Record<string, number> {
+  const times: Record<string, number> = {}
+  for (const row of rows) {
+    const at = typeof row.created_at === 'string' ? Date.parse(row.created_at) : NaN
+    if (Number.isFinite(at)) times[wordKey(row.es_word)] = at
+  }
+  return times
+}
+
 const WORD_COLUMNS =
   'es_word, es_rioplatense, en_translation, ru_translation, example_sentence, example_translation_en, example_translation_ru, is_rioplatense_variant, region, register, es_standard, pos'
 
@@ -135,18 +166,19 @@ export async function loadOverlay(client: SupabaseClient, userId: string, option
     read('user_words', () => fetchAll<UserWordRow>(client, 'user_words', WORD_COLUMNS, userId)),
     read('user_progress', () => fetchAll<ProgressRow>(client, 'user_progress', 'es_word, ease_factor, interval_days, repetitions, next_review', userId)),
     read('user_settings', () => fetchSettings(client, userId)),
-    soft('user_favorites', () => fetchAll<{ es_word: string }>(client, 'user_favorites', 'es_word', userId), []),
+    soft('user_favorites', () => fetchFavorites(client, userId), []),
     soft('user_hidden_words', () => fetchAll<{ es_word: string }>(client, 'user_hidden_words', 'es_word', userId), []),
   ])
 
   return {
-    overlay: { customWords, progress, favorites: favorites.value.map((r) => r.es_word), hidden: hidden.value.map((r) => r.es_word), settings },
+    overlay: { customWords, progress, favorites: favorites.value.map((r) => r.es_word), favoriteTimes: timesOf(favorites.value), hidden: hidden.value.map((r) => r.es_word), settings },
     degraded: [...(favorites.failed ? (['user_favorites'] as const) : []), ...(hidden.failed ? (['user_hidden_words'] as const) : [])],
   }
 }
 
 export interface Recovered {
   favorites?: string[]
+  favoriteTimes?: Record<string, number>
   hidden?: string[]
   /** Still failing. */
   failed: NonCriticalTable[]
@@ -162,10 +194,14 @@ export async function recoverTables(client: SupabaseClient, userId: string, tabl
   await Promise.all(
     tables.map(async (table) => {
       try {
-        const rows = await loadWithRetry(table, () => fetchAll<{ es_word: string }>(client, table, 'es_word', userId), retry)
-        const words = rows.map((r) => r.es_word)
-        if (table === 'user_favorites') out.favorites = words
-        else out.hidden = words
+        if (table === 'user_favorites') {
+          const rows = await loadWithRetry(table, () => fetchFavorites(client, userId), retry)
+          out.favorites = rows.map((r) => r.es_word)
+          out.favoriteTimes = timesOf(rows)
+        } else {
+          const rows = await loadWithRetry(table, () => fetchAll<{ es_word: string }>(client, table, 'es_word', userId), retry)
+          out.hidden = rows.map((r) => r.es_word)
+        }
       } catch {
         out.failed.push(table)
       }

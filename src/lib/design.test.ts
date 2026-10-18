@@ -102,17 +102,15 @@ describe('wrapping and focus (the polish pass)', () => {
     expect(rule('.segment')).toMatch(/flex-direction: column/)
   })
 
-  it('the queue control on a list row is an icon in a 40 x 44 tap target that never shrinks, in the Learn colour, with a visible focus ring; the save star beside it rests grey', () => {
-    const queue = rule('.word-row-queue')
-    expect(queue).toMatch(/flex: none/)
-    expect(queue).toMatch(/width: 40px/)
-    expect(queue).toMatch(/height: 44px/)
-    expect(queue).toMatch(/color: var\(--teal\)/)
-    expect(queue).not.toMatch(/padding: [1-9]/) // no padding to widen it
-    expect(rule('.word-row-queue .queue-glyph-mark')).toMatch(/stroke: var\(--teal-ink\)/) // the tick on the filled disc
-    expect(css).toMatch(/\.word-row-queue:focus-visible/)
-    expect(rule('.word-row-star')).toMatch(/color: var\(--muted-2\)/) // the star, as it was: grey until it is saved
+  it('the "Learn sooner" star on a list row is the only control beside the text: a 44 x 44 tap target that never shrinks, grey until it is on and then teal, with a visible focus ring; the queue control is gone', () => {
+    const star = rule('.word-row-star')
+    expect(star).toMatch(/flex: none/)
+    expect(star).toMatch(/width: 44px/)
+    expect(star).toMatch(/height: 44px/)
+    expect(star).toMatch(/color: var\(--muted-2\)/)
     expect(rule('.word-row-star.is-on')).toMatch(/color: var\(--teal\)/)
+    expect(css).toMatch(/\.word-row-star:focus-visible/)
+    expect(css).not.toMatch(/word-row-queue|queue-glyph/)
   })
 
   it('the Cloze instruction is set like the Matching one', () => {

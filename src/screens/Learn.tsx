@@ -38,7 +38,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
   const finisher = useRef<(() => QueueTicket) | null>(null)
-  const knownDeps = { queue, applyHidden: data.applyHidden, getSettings: data.getSettings, applySettings: data.applySettings }
+  const knownDeps = { queue, applyHidden: data.applyHidden, applyFavorite: data.applyFavorite }
 
   // The review log: a batch is one sitting, so it has a session id of its own (a new batch gets a new one).
   const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
@@ -125,6 +125,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
       getWords: data.getWords,
       applyProgress: data.applyProgress,
       applySettings: data.applySettings,
+      applyFavorite: data.applyFavorite,
       onFinished: () => metrics?.markActiveToday(),
       ...(reviewLog ? { log: reviewLog, sessionId } : {}),
     })

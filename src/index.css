@@ -1619,7 +1619,6 @@ mark {
 .chip:focus-visible,
 .word-row-main:focus-visible,
 .word-row-star:focus-visible,
-.word-row-queue:focus-visible,
 .word-row-bring:focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
@@ -2013,26 +2012,6 @@ mark {
   color: var(--teal);
 }
 
-/* Queue for Learn, beside the star: icon only (the translation needs the room). A ring with a plus in the Learn colour (teal), where the save star rests grey;
-   queued, it is a filled teal disc with a tick, which is the marker. The 40 x 44 box is the tap target, the 28px glyph what is drawn. */
-.word-row-queue {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--teal);
-  cursor: pointer;
-}
-
-.word-row-queue .queue-glyph-mark {
-  stroke: var(--teal-ink);
-}
-
 .word-row-bring {
   flex: none;
   padding: 7px 12px;
@@ -2161,8 +2140,8 @@ mark {
   color: var(--teal);
 }
 
-/* What the Learn queue says under its button: where the word stands, or why it was not added. Quiet, like the state note. */
-.detail-actions .queue-note {
+/* What the last action says under the buttons ("Saved." after an edit). Quiet, like the state note. */
+.detail-actions .detail-note {
   margin: 0;
   color: var(--text-2);
   font-size: 14px;

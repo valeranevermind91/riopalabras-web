@@ -18,8 +18,7 @@ import {
   type WordValues,
 } from './customWords'
 import { customWordFromRow, mergeWords } from './words'
-import { MAX_LEARN_PICKS } from './learnPicks'
-import { applySettingsPatch, removeCustomWord, upsertCustomWord } from './mutations'
+import { applyFavoriteFlag, applySettingsPatch, removeCustomWord, upsertCustomWord } from './mutations'
 import { createQueueStore, type StorageLike } from './queueStore'
 import { mirrorPending } from './startup'
 import { parseSettings } from './settings'
@@ -135,6 +134,7 @@ function spies(words: readonly Word[], raw: Record<string, unknown> = {}) {
   const saves: unknown[] = []
   const deletes: string[] = []
   const progress: unknown[] = []
+  const stars: [string, boolean][] = []
   const deps: CustomWordDeps = {
     words,
     getSettings: () => settings,
@@ -144,7 +144,9 @@ function spies(words: readonly Word[], raw: Record<string, unknown> = {}) {
     },
     upsertCustomWord: (w) => void calls.push(`upsert:${w.esWord}`),
     removeCustomWord: (e) => void calls.push(`remove:${e}`),
+    applyFavorite: (e, on) => void e.forEach((x) => calls.push(`star:${x}:${on}`)),
     queue: {
+      enqueueFavorite: (e, on) => void stars.push([e, on]),
       enqueueSettings: (p) => {
         calls.push('settings')
         patches.push(p)
@@ -160,46 +162,40 @@ function spies(words: readonly Word[], raw: Record<string, unknown> = {}) {
       ...({ enqueueProgress: (u: unknown) => progress.push(u) } as object),
     },
   }
-  return { deps, calls, patches, saves, deletes, progress, settings: () => settings }
+  return { deps, calls, patches, saves, deletes, progress, stars, settings: () => settings }
 }
 
 describe('adding a word', () => {
-  it('saves the row, and in ONE settings patch clears a matching tombstone and appends the word to learn_picks', () => {
-    const s = spies(dictionary, { pending_word_deletes: ['otra', 'zapallito'], learn_picks: ['chico'] })
+  it('saves the row, clears a matching tombstone in one settings patch, and stars the word ("learn sooner")', () => {
+    const s = spies(dictionary, { pending_word_deletes: ['otra', 'zapallito'] })
     const result = addCustomWord(filled(), s.deps)
-    expect(result).toEqual({ status: 'added', queue: 'queued' })
+    expect(result).toEqual({ status: 'added' })
     expect(s.saves).toEqual([rowFromValues(filled())])
-    expect(s.patches).toEqual([{ pending_word_deletes: ['otra'], learn_picks: ['chico', 'zapallito'] }]) // one patch, both keys
+    expect(s.patches).toEqual([{ pending_word_deletes: ['otra'] }])
+    expect(s.stars).toEqual([['Zapallito', true]]) // written, and shown at once
+    expect(s.calls).toContain('star:Zapallito:true')
     expect(s.settings().raw.some_future_key).toEqual({ a: 1 }) // every other key is still there
   })
 
-  it('with no tombstone the patch is only the queue', () => {
+  it('with no tombstone there is no settings write at all, and the old queue key is never written', () => {
     const s = spies(dictionary)
     addCustomWord(filled(), s.deps)
-    expect(s.patches).toEqual([{ learn_picks: ['zapallito'] }])
+    expect(s.patches).toEqual([])
+    expect(s.stars).toEqual([['Zapallito', true]])
   })
 
-  it('stores the key lowercased in learn_picks and the word as typed in the row', () => {
+  it('the star is on the word as typed, and the row keeps the casing', () => {
     const s = spies(dictionary)
     addCustomWord(filled({ esWord: 'Zapallito' }), s.deps)
     expect(s.saves).toMatchObject([{ es_word: 'Zapallito' }])
-    expect(s.patches[0].learn_picks).toEqual(['zapallito'])
+    expect(s.stars[0][0]).toBe('Zapallito')
   })
 
-  it('with the Learn queue at its cap the word is still saved, and not queued', () => {
-    const others = Array.from({ length: MAX_LEARN_PICKS }, (_, i) => makeWord(`otra${i}`, { rank: 10 + i }))
-    const s = spies([...dictionary, ...others], { learn_picks: others.map((w) => w.esWord) })
-    const result = addCustomWord(filled(), s.deps)
-    expect(result).toEqual({ status: 'added', queue: 'full' })
-    expect(s.saves).toHaveLength(1)
-    expect(s.patches).toEqual([]) // no tombstone either, so no settings write at all
-  })
-
-  it('at the cap a tombstone is still cleared', () => {
-    const others = Array.from({ length: MAX_LEARN_PICKS }, (_, i) => makeWord(`otra${i}`, { rank: 10 + i }))
-    const s = spies([...dictionary, ...others], { learn_picks: others.map((w) => w.esWord), pending_word_deletes: ['zapallito'] })
-    addCustomWord(filled(), s.deps)
-    expect(s.patches).toEqual([{ pending_word_deletes: [] }])
+  it('there is no cap: the 51st, the 500th word is starred too', () => {
+    const others = Array.from({ length: 500 }, (_, i) => makeWord(`otra${i}`, { rank: 10 + i, isFavorite: true, starredAt: i }))
+    const s = spies([...dictionary, ...others])
+    expect(addCustomWord(filled(), s.deps)).toEqual({ status: 'added' })
+    expect(s.stars).toEqual([['Zapallito', true]])
   })
 
   it('a duplicate writes NOTHING: no row, no settings, no change in memory', () => {
@@ -273,10 +269,15 @@ describe('deleting a word', () => {
     expect(s.settings().raw.some_future_key).toEqual({ a: 1 })
   })
 
-  it('also takes the word out of the Learn queue, in the same patch', () => {
-    const s = spies([...dictionary, own], { learn_picks: ['chico', 'zapallito', 'coger'] })
-    deleteCustomWord(own, s.deps)
-    expect(s.patches).toEqual([{ learn_picks: ['chico', 'coger'], pending_word_deletes: ['zapallito'] }])
+  it('a starred word also loses its star; one that was not starred writes no star at all', () => {
+    const starred = { ...own, isFavorite: true, starredAt: 5 } as Word
+    const s = spies([...dictionary, starred])
+    deleteCustomWord(starred, s.deps)
+    expect(s.stars).toEqual([['Zapallito', false]])
+    expect(s.calls.indexOf('star:Zapallito:false')).toBeLessThan(s.calls.indexOf('remove:Zapallito'))
+    const plain = spies([...dictionary, own])
+    deleteCustomWord(own, plain.deps)
+    expect(plain.stars).toEqual([])
   })
 
   it('does not duplicate a tombstone that is already there', () => {
@@ -404,6 +405,7 @@ describe('through the write queue', () => {
       applySettings: (p) => void (settings = applySettingsPatch(settings, p)),
       upsertCustomWord: (w) => void (words = upsertCustomWord(words, w)),
       removeCustomWord: (e) => void (words = removeCustomWord(words, e)),
+      applyFavorite: (e, on) => void (words = applyFavoriteFlag(words, e, on)),
       queue,
     }
     return { queue, deps, storage, client, userId: auth.userId, settings: () => settings, words: () => words }
@@ -414,7 +416,7 @@ describe('through the write queue', () => {
 
   it('an added word is ONE upsert on (user_id, es_word) with the typed casing and exactly the intended columns', async () => {
     const a = await app()
-    expect(addCustomWord(filled({ esWord: 'Zapallito', exampleSentence: 'Un zapallito.' }), a.deps)).toEqual({ status: 'added', queue: 'queued' })
+    expect(addCustomWord(filled({ esWord: 'Zapallito', exampleSentence: 'Un zapallito.' }), a.deps)).toEqual({ status: 'added' })
     await idle(a.queue)
     expect(userWords()).toEqual([
       {
@@ -433,7 +435,9 @@ describe('through the write queue', () => {
         pos: 'n',
       },
     ])
-    expect(blob()).toEqual({ daily_new_word_limit: 10, some_future_key: { a: 1 }, learn_picks: ['zapallito'] })
+    expect(blob()).toEqual({ daily_new_word_limit: 10, some_future_key: { a: 1 } }) // the settings blob is untouched: the word is starred in user_favorites instead
+    expect(server.rows('user_favorites').map((r) => r.es_word)).toEqual(['Zapallito'])
+    expect(a.words().find((w) => w.isCustom)).toMatchObject({ isFavorite: true })
   })
 
   it('the three marks are written with the word; an edit that clears one writes null, and the others stay', async () => {
@@ -490,7 +494,7 @@ describe('through the write queue', () => {
     const a = await app(memoryStorage(), { pending_word_deletes: ['zapallito', 'otra'], some_future_key: 1 })
     addCustomWord(filled(), a.deps)
     await idle(a.queue)
-    expect(blob()).toEqual({ pending_word_deletes: ['otra'], some_future_key: 1, learn_picks: ['zapallito'] })
+    expect(blob()).toEqual({ pending_word_deletes: ['otra'], some_future_key: 1 })
     expect(server.log.filter((l) => l.url === '/rest/v1/user_settings' && l.method === 'POST')).toHaveLength(1)
   })
 
@@ -522,10 +526,11 @@ describe('through the write queue', () => {
   })
 
   it('writes the tombstone BEFORE the delete, and clears it once the delete succeeded; the other settings keys stay', async () => {
-    const a = await app(memoryStorage(), { learn_picks: ['zapallito', 'otra'], some_future_key: { a: 1 } })
+    const a = await app(memoryStorage(), { some_future_key: { a: 1 } })
     addCustomWord(filled({ esWord: 'Zapallito' }), a.deps)
     await idle(a.queue)
     expect(userWords()).toHaveLength(1)
+    expect(server.rows('user_favorites')).toHaveLength(1)
 
     // what the server holds at the moment the DELETE arrives
     const atDelete: unknown[] = []
@@ -539,7 +544,7 @@ describe('through the write queue', () => {
     expect(userWords()).toEqual([])
     expect(blob().pending_word_deletes).toEqual([]) // cleared again afterwards
     expect(blob().some_future_key).toEqual({ a: 1 })
-    expect(blob().learn_picks).toEqual(['otra']) // it left the Learn queue too
+    expect(server.rows('user_favorites')).toEqual([]) // and its star went with it
     expect(a.settings().pendingWordDeletes).toEqual([]) // and in memory, so no later write brings the tombstone back
   })
 

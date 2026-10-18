@@ -87,9 +87,6 @@ export function FiltersSheet({ filters, segment, searching, onChange, onClearAll
           <Option active={filters.favourites} onClick={() => onChange({ favourites: !filters.favourites })}>
             {t.favourites}
           </Option>
-          <Option active={filters.queued} onClick={() => onChange({ queued: !filters.queued })}>
-            {t.queued}
-          </Option>
           <Option active={filters.custom} onClick={() => onChange({ custom: !filters.custom })}>
             {t.custom}
           </Option>

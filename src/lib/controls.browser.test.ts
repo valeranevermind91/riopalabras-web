@@ -122,17 +122,17 @@ describe.skipIf(!CHROME)('the Filters and Sort buttons at 320px', () => {
 
         await page.evaluate(() => (document.querySelector('.words-controls .control-btn') as HTMLElement).click())
         await page.waitForSelector('.sheet')
-        // Due now, Favourites, Queued, Custom and a part of speech: five filters at once
+        // Due now, Learn sooner, Custom and a part of speech: four filters at once
         await page.evaluate(() => {
           const chips = Array.from(document.querySelectorAll('.sheet .chip')) as HTMLElement[]
-          for (const i of [4, 5, 6, 7, 8]) chips[i].click()
+          for (const i of [4, 5, 6, 7]) chips[i].click()
         })
-        await page.waitForFunction(() => document.querySelector('.words-controls .control-count')?.textContent === '5')
+        await page.waitForFunction(() => document.querySelector('.words-controls .control-count')?.textContent === '4')
         await page.evaluate(() => (document.querySelector('.sheet-backdrop') as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })))
         await page.waitForFunction(() => document.querySelector('.sheet') === null)
         const [many] = await fits(page)
-        expectFits([many], `${lang} five filters`)
-        expect(many.face).toBe(`${t.filtersButton}5`)
+        expectFits([many], `${lang} four filters`)
+        expect(many.face).toBe(`${t.filtersButton}4`)
         await page.close()
       }, 90_000)
     })

@@ -12,6 +12,8 @@ const NOW = new Date(2026, 9, 8, 9, 0)
 const name = (rank: number) => `w${String(rank).padStart(4, '0')}`
 const dictionary = (n: number): Word[] => Array.from({ length: n }, (_, i) => makeWord(name(i + 1), { rank: i + 1 }))
 const words = dictionary(3000)
+// two stars, one on each side of a start_rank of 1000; the one on rank 40 is the older
+const starredWords = words.map((w) => (w.rank === 2500 ? makeWord(w.esWord, { rank: 2500, isFavorite: true, starredAt: 2 }) : w.rank === 40 ? makeWord(w.esWord, { rank: 40, isFavorite: true, starredAt: 1 }) : w))
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -21,27 +23,27 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-const cases: [string, Record<string, unknown>][] = [
+const cases: [string, Record<string, unknown>, Word[]?][] = [
   ['no start_rank', { daily_new_word_limit: 10 }],
   ['a start_rank', { daily_new_word_limit: 10, start_rank: 1000 }],
-  ['a start_rank and queued words (one from each side)', { daily_new_word_limit: 10, start_rank: 1000, learn_picks: [name(2500), name(40)] }],
+  ['a start_rank and starred words (one from each side)', { daily_new_word_limit: 10, start_rank: 1000 }, starredWords],
   ['a smaller day (4 left)', { daily_new_word_limit: 10, start_rank: 1000, new_words_learned_today_count: 6, new_words_learned_today_date: '2026-10-08' }],
   ['the daily limit reached', { daily_new_word_limit: 10, new_words_learned_today_count: 10, new_words_learned_today_date: '2026-10-08' }],
 ]
 
 describe('the Debug preview of the next Learn batch', () => {
-  it.each(cases)('is exactly the batch Learn would select, in the same order (%s)', (_label, raw) => {
+  it.each(cases)('is exactly the batch Learn would select, in the same order (%s)', (_label, raw, shown = words) => {
     const settings = parseSettings(raw)
-    const batch = selectLearnBatch(words, settings, NOW)
-    const preview = previewLearnBatch(words, settings, NOW)
+    const batch = selectLearnBatch(shown, settings, NOW)
+    const preview = previewLearnBatch(shown, settings, NOW)
     expect(preview.entries.map((e) => e.esWord)).toEqual(batch.words.map((w) => w.esWord))
     expect(preview.entries.map((e) => e.rank)).toEqual(batch.words.map((w) => w.rank))
     expect(preview.startRank).toBe(settings.startRank)
   })
 
-  it('says where each word came from: queued, the window above start_rank, or the range below it', () => {
-    const preview = previewLearnBatch(words, parseSettings({ daily_new_word_limit: 10, start_rank: 1000, learn_picks: [name(2500), name(40)] }), NOW)
-    expect(preview.entries.slice(0, 2).map((e) => [e.rank, e.source])).toEqual([[2500, 'queued'], [40, 'queued']]) // a queued word is "queued" on whichever side of start_rank it is
+  it('says where each word came from: starred, the window above start_rank, or the range below it', () => {
+    const preview = previewLearnBatch(starredWords, parseSettings({ daily_new_word_limit: 10, start_rank: 1000 }), NOW)
+    expect(preview.entries.slice(0, 2).map((e) => [e.rank, e.source])).toEqual([[40, 'starred'], [2500, 'starred']]) // oldest star first; "starred" on whichever side of start_rank it is
     const rest = preview.entries.slice(2)
     expect(rest.filter((e) => e.source === 'window')).toHaveLength(6)
     expect(rest.filter((e) => e.source === 'below')).toHaveLength(2)
@@ -55,15 +57,15 @@ describe('the Debug preview of the next Learn batch', () => {
   })
 
   it('is read-only: it consumes nothing, and Learn selects the same batch before and after', () => {
-    const settings = parseSettings({ daily_new_word_limit: 10, start_rank: 1000, learn_picks: [name(2500)], streak_count: 4 })
+    const settings = parseSettings({ daily_new_word_limit: 10, start_rank: 1000, streak_count: 4 })
     const before = JSON.stringify(settings)
-    const wordsBefore = words.map((w) => w.repetitions)
-    const first = selectLearnBatch(words, settings, NOW).words.map((w) => w.esWord)
-    for (let i = 0; i < 5; i++) previewLearnBatch(words, settings, NOW)
-    expect(JSON.stringify(settings)).toBe(before) // the settings (and so the day's counter and the queue) are untouched
-    expect(words.map((w) => w.repetitions)).toEqual(wordsBefore) // no word moved on
-    expect(selectLearnBatch(words, settings, NOW).words.map((w) => w.esWord)).toEqual(first)
-    expect(previewLearnBatch(words, settings, NOW).entries.map((e) => e.esWord)).toEqual(first)
+    const wordsBefore = starredWords.map((w) => [w.repetitions, w.isFavorite])
+    const first = selectLearnBatch(starredWords, settings, NOW).words.map((w) => w.esWord)
+    for (let i = 0; i < 5; i++) previewLearnBatch(starredWords, settings, NOW)
+    expect(JSON.stringify(settings)).toBe(before) // the settings (and so the day's counter) are untouched
+    expect(starredWords.map((w) => [w.repetitions, w.isFavorite])).toEqual(wordsBefore) // no word moved on, no star cleared
+    expect(selectLearnBatch(starredWords, settings, NOW).words.map((w) => w.esWord)).toEqual(first)
+    expect(previewLearnBatch(starredWords, settings, NOW).entries.map((e) => e.esWord)).toEqual(first)
   })
 
   it('writes nothing: the module takes no queue and no setters, only words and settings', () => {
@@ -72,7 +74,7 @@ describe('the Debug preview of the next Learn batch', () => {
 
   it('a line shows the rank, the word and where it came from; a custom word has no rank', () => {
     expect(previewLine({ esWord: 'casa', rank: 120, source: 'below' })).toBe('120  casa  (below start_rank)')
-    expect(previewLine({ esWord: 'mia', rank: null, source: 'queued' })).toBe('—  mia  (queued)')
+    expect(previewLine({ esWord: 'mia', rank: null, source: 'starred' })).toBe('—  mia  (starred (learn sooner))')
   })
 })
 

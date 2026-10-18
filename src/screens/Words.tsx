@@ -9,7 +9,6 @@ import { blankValues } from '../data/customWords'
 import type { UserData } from '../data/useUserData'
 import { addCustomWord } from '../data/customWords'
 import { noEnrichment, type EnrichResult } from '../data/enrich'
-import { MAX_LEARN_PICKS, isQueueable, livePicks, toggleQueued } from '../data/learnPicks'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
 import { hasProgress } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
@@ -20,7 +19,7 @@ import { strings } from '../strings'
 
 const t = strings.words
 
-/** How long "Added, and queued for Learn." stays: long enough to read, short enough not to still be there when the list has moved on. */
+/** How long "Added, and set to learn sooner." stays: long enough to read, short enough not to still be there when the list has moved on. */
 export const NOTICE_MS = 6000
 
 const SEGMENTS: readonly Segment[] = ['all', 'learned', 'hidden']
@@ -49,7 +48,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null)
   // The add-a-word form takes the screen; it handles Back itself (and asks before throwing away what was typed).
   const [adding, setAdding] = useState(false)
-  // What the last thing done said ("Added, and queued for Learn."), until the list is changed.
+  // What the last thing done said ("Added, and set to learn sooner."), until the list is changed.
   const [notice, setNotice] = useState<string | null>(null)
   // The note is a confirmation, not state: it goes by itself after NOTICE_MS (or at once when the list is changed, below).
   useEffect(() => {
@@ -82,9 +81,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   }
   const setFilters = (patch: Partial<ListFilters>) => change({ filters: { ...latest.current.filters, ...patch } })
 
-  // The words queued for Learn that Learn can still teach (a pick that went stale is not shown as queued).
-  const queuedKeys = useMemo(() => new Set(livePicks(data.words, data.settings.learnPicks).map((w) => wordKey(w.esWord))), [data.words, data.settings.learnPicks])
-  const list = useMemo(() => buildWordList(data.words, view, now, queuedKeys), [data.words, queuedKeys, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
+  const list = useMemo(() => buildWordList(data.words, view, now), [data.words, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(
     () => ({
       learned: data.words.filter((w) => !w.isHidden && hasProgress(w)).length,
@@ -99,14 +96,6 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
     data.applyFavorite([esWord], favourite)
     queue.enqueueFavorite(esWord, favourite)
   }
-  // The Learn queue, from the row: queues a word that can still be started, or takes it out. A full queue says so (the row stays as it was).
-  const toggleQueue = (esWord: string) => {
-    const word = data.words.find((w) => wordKey(w.esWord) === wordKey(esWord))
-    if (!word) return
-    haptic('select')
-    const result = toggleQueued(word, { getSettings: data.getSettings, words: data.words, applySettings: data.applySettings, queue })
-    if (result.done === 'refused' && result.reason === 'full') setNotice(t.queueFull(MAX_LEARN_PICKS))
-  }
   const bringBack = (esWord: string) => {
     haptic('tap')
     data.applyHidden([esWord], false)
@@ -114,10 +103,10 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   }
 
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
-  const anyFilter = view.filters.state || view.filters.favourites || view.filters.queued || view.filters.custom || view.filters.pos
+  const anyFilter = view.filters.state || view.filters.favourites || view.filters.custom || view.filters.pos
   const emptyBecauseFiltered = list.rows.length === 0 && (list.searching || anyFilter)
   const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
-  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.queued}|${view.filters.custom}|${view.filters.pos}`
+  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.custom}|${view.filters.pos}`
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 
@@ -129,11 +118,12 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         applySettings: data.applySettings,
         upsertCustomWord: data.upsertCustomWord,
         removeCustomWord: data.removeCustomWord,
+        applyFavorite: data.applyFavorite,
         queue,
       })
       if (result.status === 'added') {
         haptic('success')
-        setNotice(result.queue === 'queued' ? t.added : t.addedNotQueued(MAX_LEARN_PICKS))
+        setNotice(t.added)
         return { status: 'added' }
       }
       return result
@@ -235,8 +225,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
           }}
           getKey={(i) => wordKey(list.rows[i].word.esWord)}
           renderRow={(i) => {
-            const { word } = list.rows[i]
-            return <WordRow row={list.rows[i]} settings={data.settings} onOpen={onOpen} onToggleFavourite={toggleFavourite} queueable={isQueueable(word)} queued={queuedKeys.has(wordKey(word.esWord))} onToggleQueue={toggleQueue} onBringBack={bringBack} />
+            return <WordRow row={list.rows[i]} settings={data.settings} onOpen={onOpen} onToggleFavourite={toggleFavourite} onBringBack={bringBack} />
           }}
         />
       )}

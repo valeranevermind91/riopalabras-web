@@ -142,12 +142,40 @@ describe('loadOverlay', () => {
   })
 })
 
+describe('the time each star was set (created_at)', () => {
+  const STARS = { ...ROWS, user_favorites: [{ es_word: 'Casa', created_at: '2026-10-01T10:00:00Z' }, { es_word: 'perro', created_at: 'not a date' }, { es_word: 'gato' }] }
+
+  it('is read with the favourites, by lowercased key; a row with no usable time simply has none', async () => {
+    const fake = fakeReadSupabase(STARS)
+    const { overlay } = await loadOverlay(fake.client, 'u1', { log: createLoadLog(), sleep: async () => {} })
+    expect(overlay.favorites).toEqual(['Casa', 'perro', 'gato'])
+    expect(overlay.favoriteTimes).toEqual({ casa: Date.parse('2026-10-01T10:00:00Z') })
+    expect(new Set(fake.selected.user_favorites)).toEqual(new Set(['es_word, created_at'])) // the time is asked for with the word
+  })
+
+  it('a database without the column (42703) still loads the favourites, in frequency order instead of oldest first', async () => {
+    const fake = fakeReadSupabase(STARS)
+    fake.script('user_favorites', httpError(400, 'column user_favorites.created_at does not exist', '42703'))
+    const { overlay, degraded } = await loadOverlay(fake.client, 'u1', { log: createLoadLog(), sleep: async () => {} })
+    expect(degraded).toEqual([])
+    expect(overlay.favorites).toHaveLength(3)
+    expect(overlay.favoriteTimes).toEqual({}) // no times, so Learn falls back to frequency order for the stars
+    expect(fake.selected.user_favorites.slice(0, 2)).toEqual(['es_word, created_at', 'es_word']) // asked with the time first, then without
+  })
+
+  it('comes back from a background retry too', async () => {
+    const fake = fakeReadSupabase(STARS)
+    const result = await recoverTables(fake.client, 'u1', ['user_favorites'], { log: createLoadLog() })
+    expect(result.favoriteTimes).toEqual({ casa: Date.parse('2026-10-01T10:00:00Z') })
+  })
+})
+
 describe('recoverTables (one background attempt)', () => {
   it('returns the lists that loaded now and the tables that still fail', async () => {
     const fake = fakeReadSupabase(ROWS)
     fake.script('user_hidden_words', networkError())
     const result = await recoverTables(fake.client, 'u1', ['user_favorites', 'user_hidden_words'], { log: createLoadLog() })
-    expect(result).toEqual({ favorites: ['casa'], failed: ['user_hidden_words'] })
+    expect(result).toEqual({ favorites: ['casa'], favoriteTimes: {}, failed: ['user_hidden_words'] })
     expect(fake.count('user_hidden_words')).toBe(1) // a single attempt: the caller spaces attempts out
 
     const again = await recoverTables(fake.client, 'u1', ['user_hidden_words'], { log: createLoadLog() })

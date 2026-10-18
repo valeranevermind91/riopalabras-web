@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createLocalMetricsStore, createMetricsRecorder, fetchServerMetricsRow, parseServerRow } from './data/metrics'
+import { settleStars } from './data/starred'
 import { bindClosingConfirmation, bindPersistOnHide, bindReconnectTriggers, bindStuckRetry, retryEverything } from './data/queueTriggers'
 import { createTombstoneClearer } from './data/customWords'
 import { supabaseReminderStore } from './data/reminders'
@@ -118,6 +119,15 @@ function App() {
     if (!queue || !readyData || !userId || mirroredFor.current === userId) return
     mirroredFor.current = userId
     mirrorPending(queue.pending(), readyData)
+  }, [queue, readyData, userId])
+
+  // Once per launch, with the data loaded and nothing degraded: the old Learn queue becomes stars (and goes), and a star that does nothing is cleared.
+  // Waiting for a clean load keeps a failed favourites read from looking like "no stars".
+  const settledFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!queue || !readyData || !userId || settledFor.current === userId || readyData.degraded.length > 0) return
+    settledFor.current = userId
+    settleStars({ words: readyData.words, settings: readyData.settings, applyFavorite: readyData.applyFavorite, applySettings: readyData.applySettings, queue })
   }, [queue, readyData, userId])
 
   const [screen, setScreen] = useState<Screen>('home')

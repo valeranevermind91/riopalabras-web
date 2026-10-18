@@ -73,16 +73,17 @@ async function boot() {
   for (const esWord of ['cigarro', 'cigarrillo']) updates.push({ esWord, easeFactor: 2.5, interval: 6, repetitions: 2, nextReview: new Date(now + 3 * day) })
   const withProgress = applyProgressUpdates(base, updates)
   const hide = applyHiddenFlag(withProgress, [base[100].esWord, base[101].esWord], true)
-  const start = applyFavoriteFlag(hide, [base[0].esWord], true)
-  // Words that can be queued (not started, teachable), after the ones given progress; ?picks=N starts with the first N already queued.
-  const fresh = start.filter(isInLearnPool).map((w) => w.esWord)
-  const preQueued = Number(new URLSearchParams(location.search).get('picks') ?? 0)
-  ;(window as never as { __fixture: unknown }).__fixture = { lapsed: lapsed.esWord, hidden: [base[100].esWord, base[101].esWord], favourite: base[0].esWord, fresh, learned: learned.slice(0, 3).map((w) => w.esWord) }
-  createRoot(document.getElementById('root')!).render(<Harness start={start} picks={fresh.slice(0, preQueued).map((w) => w.toLowerCase())} />)
+  // Words that can carry the "Learn sooner" star (not started, teachable), after the ones given progress; ?stars=N starts with the first N of them
+  // starred (one by default, so the filter has something to list; ?stars=0 for none). Their stars are an hour apart, the first the oldest.
+  const fresh = hide.filter(isInLearnPool).map((w) => w.esWord)
+  const starCount = Number(new URLSearchParams(location.search).get('stars') ?? 1)
+  const start = fresh.slice(0, starCount).reduce((all, esWord, i) => applyFavoriteFlag(all, [esWord], true, now - (starCount - i) * 3600_000), hide)
+  ;(window as never as { __fixture: unknown }).__fixture = { lapsed: lapsed.esWord, hidden: [base[100].esWord, base[101].esWord], favourite: fresh[0], fresh, learned: learned.slice(0, 3).map((w) => w.esWord) }
+  createRoot(document.getElementById('root')!).render(<Harness start={start} />)
   ;(window as never as { __ready: boolean }).__ready = true
 }
 
-export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?: readonly string[] }) {
+export function Harness({ start }: { start: readonly Word[] }) {
   useLanguage() // as App does: everything below re-renders when the language changes
   const [words, setWords] = useState(start)
   const [open, setOpen] = useState<string | null>(null)
@@ -95,7 +96,7 @@ export function Harness({ start, picks = [] }: { start: readonly Word[]; picks?:
   useEffect(() => {
     ;(window as never as { __pressBack: () => string }).__pressBack = () => (backInterceptor.current?.() ? 'closed-sheet' : 'left')
   }, [])
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, ...(picks.length > 0 ? { learn_picks: picks } : {}), a_future_key: { kept: true }, ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, a_future_key: { kept: true }, ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
   useEffect(() => {
     setLanguage(effectiveLanguage(settings.uiLanguage))
   }, [settings.uiLanguage])

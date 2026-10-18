@@ -1,5 +1,5 @@
 import { customRegion, customRegister, type CustomRegister } from './customMarks'
-import { addToQueue, removeKeys } from './learnPicks'
+import { canStar } from './starred'
 import type { RioRegion } from './rio'
 import type { CustomWordRow, SettingsPatch, UserSettings, Word } from './types'
 import { customWordFromRow, wordKey } from './words'
@@ -132,21 +132,22 @@ export function valuesOf(word: Word): WordValues {
 }
 
 export interface CustomWordDeps {
-  /** Every word the client has (for the duplicate check and the queue's cap). */
+  /** Every word the client has (for the duplicate check). */
   words: readonly Word[]
   /** The latest settings, read at the moment of the action. */
   getSettings: () => UserSettings
   applySettings: (patch: SettingsPatch) => void
+  /** Optimistic: mirror a star set / cleared into the in-memory words (a new word is starred, a deleted one loses its star). */
+  applyFavorite: (esWords: readonly string[], favorite: boolean) => void
   upsertCustomWord: (word: Word) => void
   removeCustomWord: (esWord: string) => void
-  queue: Pick<WriteQueue, 'enqueueCustomWord' | 'enqueueCustomDelete' | 'enqueueSettings'>
+  queue: Pick<WriteQueue, 'enqueueCustomWord' | 'enqueueCustomDelete' | 'enqueueSettings' | 'enqueueFavorite'>
 }
 
 export type AddResult =
   | { status: 'invalid'; problem: SaveProblem }
   | { status: 'duplicate'; duplicate: Duplicate }
-  /** `queue`: put on the Learn queue, or not because the queue is full. */
-  | { status: 'added'; queue: 'queued' | 'full' }
+  | { status: 'added' }
 
 const saveSettings = (patch: SettingsPatch, deps: Pick<CustomWordDeps, 'applySettings' | 'queue'>) => {
   if (Object.keys(patch).length === 0) return
@@ -155,10 +156,9 @@ const saveSettings = (patch: SettingsPatch, deps: Pick<CustomWordDeps, 'applySet
 }
 
 /**
- * Adds a word: checks it, looks for a duplicate (nothing is written on a hit), saves it through the write queue, and in ONE
- * settings patch removes a tombstone for its key (a Flutter sync would delete the new row otherwise) and puts it on the Learn
- * queue, where custom words have to be: they have no frequency rank, so the 150-word window would never reach them. A full
- * queue still saves the word.
+ * Adds a word: checks it, looks for a duplicate (nothing is written on a hit), saves it through the write queue, removes a tombstone for its
+ * key in the settings (a Flutter sync would delete the new row otherwise) and stars it ("learn sooner"), where custom words have to be: they have no
+ * frequency rank, so the 150-word window would never reach them, and a word the person typed in is one they want to learn.
  */
 export function addCustomWord(values: WordValues, deps: CustomWordDeps): AddResult {
   const checked = checkSave(values)
@@ -175,11 +175,13 @@ export function addCustomWord(values: WordValues, deps: CustomWordDeps): AddResu
   const key = wordKey(row.es_word)
   const patch: SettingsPatch = {}
   if (settings.pendingWordDeletes.some((k) => wordKey(k) === key)) patch.pending_word_deletes = settings.pendingWordDeletes.filter((k) => wordKey(k) !== key)
-  const queued = addToQueue(settings, [...deps.words, word], word)
-  if (queued.ok) patch.learn_picks = queued.patch.learn_picks
   saveSettings(patch, deps)
+  if (canStar(word)) {
+    deps.applyFavorite([word.esWord], true)
+    deps.queue.enqueueFavorite(word.esWord, true)
+  }
 
-  return { status: 'added', queue: queued.ok || queued.reason === 'already' ? 'queued' : 'full' }
+  return { status: 'added' }
 }
 
 export type EditResult = { status: 'invalid'; problem: SaveProblem } | { status: 'saved' }
@@ -196,16 +198,20 @@ export function editCustomWord(word: Word, values: WordValues, deps: Pick<Custom
 
 /**
  * Deletes a custom word. The tombstone (the lowercased key, in pending_word_deletes, Flutter's shape) is queued in the settings
- * lane, which goes out before the delete does; the delete itself uses the word's stored casing. The word also leaves the Learn
- * queue. Progress, favourite and hidden rows are left alone, as the Flutter app leaves them.
+ * lane, which goes out before the delete does; the delete itself uses the word's stored casing. The word also loses its star. Progress and hidden rows
+ * are left alone, as the Flutter app leaves them.
  */
 export function deleteCustomWord(word: Word, deps: CustomWordDeps): boolean {
   if (!word.isCustom) return false
   const settings = deps.getSettings()
   const key = wordKey(word.esWord)
-  const patch: SettingsPatch = { ...removeKeys(settings, [word.esWord]) }
+  const patch: SettingsPatch = {}
   patch.pending_word_deletes = settings.pendingWordDeletes.some((k) => wordKey(k) === key) ? [...settings.pendingWordDeletes] : [...settings.pendingWordDeletes, key]
   saveSettings(patch, deps)
+  if (word.isFavorite) {
+    deps.applyFavorite([word.esWord], false)
+    deps.queue.enqueueFavorite(word.esWord, false)
+  }
   deps.removeCustomWord(word.esWord)
   deps.queue.enqueueCustomDelete(word.esWord)
   return true

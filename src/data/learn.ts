@@ -3,10 +3,11 @@ import type { ReviewLog } from './reviewLog'
 import { dayPatch, learnedToday, newWordsPatch } from './daily'
 import { nothingDueNow } from './dayCards'
 import { pickBatch, replaceKnown, restoreKnown, type BatchPick } from './learnPick'
-import { livePicks, removeKeys, restoreKey, storedIndex } from './learnPicks'
 import { splitAtStartRank } from './placement'
+import { waitingStars } from './starred'
 import { computeRemainingToday, getLearnPool } from './stats'
 import type { ProgressUpdate, SettingsPatch, UserSettings, Word } from './types'
+import { wordKey } from './words'
 import type { QueueTicket, WriteQueue } from './writeQueue'
 
 export const LEARN_BATCH_SIZE = 10
@@ -42,60 +43,54 @@ const withCount = (pick: BatchPick): LearnBatch => ({ ...pick, newCount: pick.wo
 
 /**
  * Next Learn batch: min(10, remainingToday) new words, mostly from the start rank on when the placement test set one, with about 30% of the filler
- * from the skipped range below it (see splitAtStartRank, pickBatch). The words the user queued (learn_picks) come first, in the
- * order they were queued; the rest is spread over the next 150 candidates instead of taken from the head of the
- * queue (see pickBatch). Known words are hidden, hence never candidates; only words the user actually learns are
- * counted towards the daily limit (newCount is the batch itself). The queue is only read here: a queued word leaves it
- * when the batch is finished (learnSettingsPatch), never when it is drawn.
+ * from the skipped range below it (see splitAtStartRank, pickBatch). The words the user starred (set to "learn sooner") lead it, oldest star first, up to
+ * 70% of the batch (starredSlots); the rest is spread over the next 150 candidates instead of taken from the head of the queue (see pickBatch), with the
+ * below-start share and the Rioplatense guarantee taken of those slots. Known words are hidden, hence never candidates; only words the user actually
+ * learns are counted towards the daily limit (newCount is the batch itself). The stars are only read here: a star goes when the word is learned
+ * (createBatchFinisher) or marked as known (markKnown), never when it is only drawn.
  */
 export function selectLearnBatch(words: readonly Word[], settings: UserSettings, now: Date): LearnBatch {
   const limit = Math.min(LEARN_BATCH_SIZE, computeRemainingToday(settings, now))
   if (limit <= 0) return withCount(pickBatch([], 0, now))
   const { window, below } = splitAtStartRank(getLearnPool(words), settings.startRank)
-  return withCount(pickBatch(window, limit, now, livePicks(words, settings.learnPicks), below))
+  return withCount(pickBatch(window, limit, now, waitingStars(words), below))
 }
 
 export interface KnownDeps {
-  queue: Pick<WriteQueue, 'enqueueHidden' | 'enqueueSettings'>
+  queue: Pick<WriteQueue, 'enqueueHidden' | 'enqueueFavorite'>
   /** Optimistic: mirror the hide / un-hide into the in-memory words at once. */
   applyHidden: (esWords: readonly string[], hidden: boolean) => void
-  /** The latest settings (read at call time): a queued word that is marked as known leaves learn_picks. */
-  getSettings: () => UserSettings
-  applySettings: (patch: SettingsPatch) => void
+  /** Optimistic: mirror a star cleared / put back into the in-memory words at once. */
+  applyFavorite: (esWords: readonly string[], favorite: boolean) => void
 }
 
-const saveQueue = (patch: SettingsPatch | null, deps: Pick<KnownDeps, 'applySettings' | 'queue'>) => {
-  if (!patch) return
-  deps.applySettings(patch)
-  deps.queue.enqueueSettings(patch)
+const setStar = (esWord: string, on: boolean, deps: Pick<KnownDeps, 'applyFavorite' | 'queue'>) => {
+  deps.applyFavorite([esWord], on)
+  deps.queue.enqueueFavorite(esWord, on)
 }
 
 /**
  * "Already know it": the word at `index` is hidden for good (it leaves Learn, Review and the practice
  * exercises) through the write queue, and the next candidate takes its place. The batch keeps its size.
- * A queued word also leaves the Learn queue (through the settings lane).
+ * A starred word also loses its star (a star means "waiting", and this word is not any more); Undo gives it back.
  */
 export function markKnown(batch: LearnBatch, index: number, deps: KnownDeps): LearnBatch {
   const word = batch.words[index]
   if (!word) return batch
   deps.applyHidden([word.esWord], true)
   deps.queue.enqueueHidden(word.esWord, true)
-  const settings = deps.getSettings()
-  const queuedAt = storedIndex(settings, word.esWord)
-  saveQueue(queuedAt >= 0 ? removeKeys(settings, [word.esWord]) : null, deps)
   const next = replaceKnown(batch, index)
-  const known = next.known.slice()
-  known[known.length - 1] = { ...known[known.length - 1], queuedAt: queuedAt >= 0 ? queuedAt : null }
-  return withCount({ ...next, known })
+  if (next.known[next.known.length - 1].wasStarred) setStar(word.esWord, false, deps)
+  return withCount(next)
 }
 
-/** Undo for the last "already know it": the word is shown again (and un-hidden), and back in the queue if it was queued. */
+/** Undo for the last "already know it": the word is shown again (and un-hidden), and starred again if it was. */
 export function undoKnown(batch: LearnBatch, deps: KnownDeps): LearnBatch {
   const last = batch.known[batch.known.length - 1]
   if (!last) return batch
   deps.applyHidden([last.word.esWord], false)
   deps.queue.enqueueHidden(last.word.esWord, false)
-  if (last.queuedAt !== null) saveQueue(restoreKey(deps.getSettings(), last.word.esWord, last.queuedAt), deps)
+  if (last.wasStarred) setStar(last.word.esWord, true, deps)
   return withCount(restoreKnown(batch))
 }
 
@@ -111,26 +106,26 @@ export function learnProgressUpdates(batch: LearnBatch, now: Date): ProgressUpda
 }
 
 /**
- * The settings one finished batch writes: today's new-word counter, the day's cards and (the moment the day first qualifies) the streak, and the
- * queue. The batch's words are cards done (a word replaced by "Already know it" is not in the batch, and is not a card). The words the batch taught
- * leave learn_picks, exactly those (the queued words that did not fit stay, in order); the key is written only when something
- * left it, so a user who never queued anything gets no learn_picks key. `nothingDue`: no review is due once the batch is in (see dayPatch).
+ * The settings one finished batch writes: today's new-word counter, the day's cards and (the moment the day first qualifies) the streak. The batch's
+ * words are cards done (a word replaced by "Already know it" is not in the batch, and is not a card). `nothingDue`: no review is due once the batch is in
+ * (see dayPatch). The words' stars are cleared by the finisher, not here: they are not settings.
  */
 export function learnSettingsPatch(settings: UserSettings, batch: LearnBatch, now: Date, nothingDue: boolean = false): SettingsPatch {
   return {
     ...newWordsPatch(settings, batch.newCount, now),
     ...dayPatch(settings, now, { cards: batch.words.length, nothingDue, learnedNow: learnedToday(settings, now) + batch.newCount }),
-    ...removeKeys(settings, batch.words.map((w) => w.esWord)),
   }
 }
 
 export interface FinishDeps {
-  queue: Pick<WriteQueue, 'enqueueBatch'>
+  queue: Pick<WriteQueue, 'enqueueBatch' | 'enqueueFavorite'>
   /** Always the latest settings (read at call time, not captured). */
   getSettings: () => UserSettings
   /** Optimistic: mirror the new state into the in-memory words / settings right away, as Review does. */
   applyProgress: (updates: readonly ProgressUpdate[]) => void
   applySettings: (patch: SettingsPatch) => void
+  /** Optimistic: mirror the cleared stars into the in-memory words. Without it only the write is queued. */
+  applyFavorite?: (esWords: readonly string[], favorite: boolean) => void
   /** The words as they are now (for "no review is due": a light day counts for the streak). Learn does not change what is due. */
   getWords?: () => readonly Word[]
   /** Called once, after the batch is applied and queued (so today's counters are current). Must not throw. */
@@ -163,6 +158,13 @@ export function createBatchFinisher(batch: LearnBatch, deps: FinishDeps): () => 
     deps.applyProgress(updates)
     if (Object.keys(patch).length > 0) deps.applySettings(patch)
     ticket = deps.queue.enqueueBatch(updates, patch)
+    // A star means "waiting": the words this batch taught are not any more, so they lose it (read from the words as they are now, not as the batch was drawn).
+    const current = new Map((deps.getWords?.() ?? []).map((w) => [wordKey(w.esWord), w.isFavorite] as const))
+    const cleared = batch.words.filter((w) => current.get(wordKey(w.esWord)) ?? w.isFavorite).map((w) => w.esWord)
+    if (cleared.length > 0) {
+      deps.applyFavorite?.(cleared, false)
+      for (const esWord of cleared) deps.queue.enqueueFavorite(esWord, false)
+    }
     // One row per word introduced, after the batch is queued. Their state before is read from the batch's own words (new), so this is not affected by the
     // update just applied. A word marked "already known" instead is not in the batch and is not a rating: nothing is logged for it.
     deps.log?.learned(batch.words, learnedState(now), deps.sessionId ?? null, now)

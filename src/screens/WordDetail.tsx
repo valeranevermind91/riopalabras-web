@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BottomSheet } from '../components/WordsSheets'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { WordForm, type SubmitResult } from '../components/WordForm'
@@ -6,8 +6,7 @@ import { deleteCustomWord, editCustomWord, valuesOf, type WordValues } from '../
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
-import { MAX_LEARN_PICKS, isQueueable, livePicks, queuePosition, toggleQueued } from '../data/learnPicks'
-import { computeRemainingToday } from '../data/stats'
+import { canStar } from '../data/starred'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
 import { wordState, type WordState } from '../data/wordState'
@@ -43,7 +42,7 @@ interface WordDetailProps {
 
 /**
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
- * scheduling numbers in a collapsed footnote, then what can be done with it: favourite it, or bring it back if it was marked as known.
+ * scheduling numbers in a collapsed footnote, then what can be done with it: set it to learn sooner (a word Learn can still teach), or bring it back if it was marked as known.
  */
 export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack }: WordDetailProps) {
   const now = new Date()
@@ -51,17 +50,10 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack 
   const note = noteFor(word, state)
   const head = headword(word).text
 
-  // The Learn queue: only a word that is not started can be in it. `said` is what the last tap said (a confirmation, or why it was refused).
+  // What the last action said (the confirmation after an edit).
   const [said, setSaid] = useState<{ esWord: string; text: string } | null>(null)
-  const live = useMemo(() => livePicks(data.words, data.settings.learnPicks), [data.words, data.settings.learnPicks])
-  const place = queuePosition(live, word)
-  const queueable = isQueueable(word)
-  const beyondToday = place !== null && place > computeRemainingToday(data.settings, now)
-  const toggleQueue = () => {
-    haptic('select')
-    const result = toggleQueued(word, { getSettings: data.getSettings, words: data.words, applySettings: data.applySettings, queue })
-    setSaid(result.done === 'queued' ? { esWord: word.esWord, text: t.queuedAt(result.position) } : result.done === 'refused' && result.reason === 'full' ? { esWord: word.esWord, text: t.queueFull(MAX_LEARN_PICKS) } : null)
-  }
+  // "Learn sooner": only a word Learn can still teach can carry the star, and the control is not there for any other.
+  const starrable = canStar(word)
 
   // The user's own words can be edited and deleted from here.
   const [editing, setEditing] = useState(false)
@@ -81,6 +73,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack 
     applySettings: data.applySettings,
     upsertCustomWord: data.upsertCustomWord,
     removeCustomWord: data.removeCustomWord,
+    applyFavorite: data.applyFavorite,
     queue,
   }
   const submitEdit = (values: WordValues): SubmitResult => {
@@ -156,17 +149,13 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onBack 
       </section>
 
       <div className="detail-actions">
-        <button type="button" className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={word.isFavorite} onClick={toggleFavourite}>
-          <StarIcon filled={word.isFavorite} /> {word.isFavorite ? t.removeFavourite : t.addFavourite}
-        </button>
-        {queueable && (
-          <button type="button" className={place !== null ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={place !== null} onClick={toggleQueue}>
-            {place !== null ? t.removeFromQueue : t.queueForLearn}
+        {starrable && (
+          <button type="button" className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={word.isFavorite} onClick={toggleFavourite}>
+            <StarIcon filled={word.isFavorite} /> {t.learnSooner}
           </button>
         )}
-        {queueable && place !== null && beyondToday && <p className="queue-note">{t.beyondToday}</p>}
         {said && said.esWord === word.esWord && (
-          <p className="queue-note" role="status">
+          <p className="detail-note" role="status">
             {said.text}
           </p>
         )}

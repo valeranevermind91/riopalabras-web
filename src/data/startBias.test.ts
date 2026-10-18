@@ -7,6 +7,7 @@ import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { markKnown, selectLearnBatch, undoKnown, type KnownDeps } from './learn'
 import { LOWER_SHARE, isLowerStratum, lowerShare, pickBatch } from './learnPick'
+import { STARRED_SHARE, starredSlots } from './starred'
 import { applyHiddenFlag } from './mutations'
 import { splitAtStartRank } from './placement'
 import { parseRioOverlay, parseFallbackExamples } from './rio'
@@ -158,27 +159,159 @@ describe('with no start rank nothing changes', () => {
   })
 })
 
-describe('queued words and the Rioplatense guarantee', () => {
-  it('queued words still lead and come out of the total: the rest splits 30/70', () => {
-    const words = dictionary(3000)
-    const queued = [name(2500), name(40)] // one from the window, one from below the start rank
-    for (let d = 0; d < 20; d++) {
-      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000, learn_picks: queued }), day(d))
-      expect(batch.words.slice(0, 2).map((w) => w.esWord), `day ${d}`).toEqual(queued) // in the order they were queued
-      expect(batch.words).toHaveLength(10) // the total is still 10
-      const filler = ranks(batch.words.slice(2))
-      expect(filler).toHaveLength(8)
-      expect(filler.filter((x) => x < 1000), `day ${d}`).toHaveLength(2) // round(0.3 * 8)
-      expect(filler.filter((x) => x >= 1000)).toHaveLength(6)
-      expect(filler).not.toContain(40) // a queued word is never drawn again as filler
+// "Learn sooner": starred words take up to 70% of a batch (round(0.7 x size), at least one), oldest star first. The other slots are the usual pick:
+// the share from below the start rank is taken of THOSE slots, and so is the Rioplatense guarantee.
+const star = (rank: number, order = rank) => ({ isFavorite: true, starredAt: 1_000_000 + order })
+const starred = (n: number, from = 2000) => (r: number) => (r >= from && r < from + n ? star(r) : {})
+
+describe('starred words ("Learn sooner") and the Rioplatense guarantee', () => {
+  it('take round(0.7 x the batch), at least one: 7 of a goal of 10, 4 of 5, 2 of 3, 1 of 1 (and never more than a batch holds)', () => {
+    expect([10, 5, 3, 1, 2, 4, 6, 7, 8, 9, 12].map((size) => starredSlots(size))).toEqual([7, 4, 2, 1, 1, 3, 4, 5, 6, 6, 8])
+    expect(starredSlots(0)).toBe(0)
+    expect(STARRED_SHARE).toBe(0.7)
+    // the two guards are the rule, whatever the share is: at least one slot while there is a batch, and never more slots than the batch has
+    expect([1, 2, 3].map((size) => starredSlots(size, 0.1))).toEqual([1, 1, 1])
+    expect([1, 2, 3].map((size) => starredSlots(size, 1.6))).toEqual([1, 2, 3])
+    const words = dictionary(3000, starred(200)) // 200 starred words: far more than any day holds
+    for (const [goal, lead] of [[10, 7], [5, 4], [3, 2], [1, 1]] as const) {
+      for (let d = 0; d < 10; d++) {
+        const batch = selectLearnBatch(words, settingsOf({ daily_new_word_limit: goal }), day(d))
+        expect(batch.words, `goal ${goal}, day ${d}`).toHaveLength(goal)
+        const stars = batch.words.filter((w) => w.isFavorite)
+        expect(stars, `goal ${goal}, day ${d}`).toHaveLength(lead)
+        expect(batch.words.slice(0, lead).every((w) => w.isFavorite)).toBe(true) // they lead the batch
+        expect(batch.words.slice(lead).some((w) => w.isFavorite)).toBe(false) // and the filler is never starred
+      }
     }
   })
 
-  it('queued words fill the whole batch: nothing is taken from below', () => {
-    const words = dictionary(3000)
-    const queued = Array.from({ length: 10 }, (_, i) => name(2000 + i))
-    const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000, learn_picks: queued }), day(0))
-    expect(batch.words.map((w) => w.esWord)).toEqual(queued)
+  it('are taught oldest star first, not by rank: the rank only breaks a tie or stands in for a missing time', () => {
+    const words = dictionary(3000, (r) => (r >= 2000 && r < 2020 ? star(r, 3000 - r) : {})) // the higher the rank, the older the star
+    const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(0))
+    expect(ranks(batch.words.slice(0, 7))).toEqual([2019, 2018, 2017, 2016, 2015, 2014, 2013])
+    const tied = dictionary(3000, (r) => (r >= 2000 && r < 2020 ? { isFavorite: true, starredAt: 5 } : {}))
+    expect(ranks(selectLearnBatch(tied, settingsOf({ start_rank: 1000 }), day(0)).words.slice(0, 7))).toEqual([2000, 2001, 2002, 2003, 2004, 2005, 2006])
+    const unknown = dictionary(3000, (r) => (r >= 2000 && r < 2020 ? { isFavorite: true, starredAt: r === 2010 ? 7 : null } : {}))
+    expect(ranks(selectLearnBatch(unknown, settingsOf({ start_rank: 1000 }), day(0)).words.slice(0, 3))).toEqual([2010, 2000, 2001]) // a known time first, then by rank
+  })
+
+  it('have no cap: 200 stars are taught over the days, 7 at a time, each one once, in the order they were set', () => {
+    let words = dictionary(3000, (r) => (r >= 1500 && r < 1700 ? star(r, 1700 - r) : {})) // the oldest star is the highest rank
+    const seen: number[] = []
+    for (let d = 0; d < 29; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      const lead = ranks(batch.words.filter((w) => w.isFavorite))
+      expect(lead, `day ${d}`).toHaveLength(Math.min(7, 200 - seen.length))
+      seen.push(...lead)
+      // what Learn does when the batch is finished: the words are learned and their stars go
+      const taught = new Set(batch.words.map((w) => w.esWord))
+      words = words.map((w) => (taught.has(w.esWord) ? makeWord(w.esWord, { rank: w.rank, repetitions: 1, nextReview: day(d + 1), isFavorite: false }) : w))
+    }
+    expect(seen).toHaveLength(200)
+    expect(new Set(seen).size).toBe(200)
+    expect(seen).toEqual(Array.from({ length: 200 }, (_, i) => 1699 - i)) // oldest first, all the way down
+  })
+
+  it('leave the below-start share on the remaining slots: the 3 left of a goal of 10 are 2 from the window and 1 from below, on every day', () => {
+    const words = dictionary(3000, starred(200))
+    for (let d = 0; d < 30; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      const filler = ranks(batch.words.slice(7))
+      expect(filler, `day ${d}`).toHaveLength(3)
+      expect(filler.filter((x) => x < 1000), `day ${d}`).toHaveLength(1) // lowerShare(3)
+      expect(filler.filter((x) => x >= 1000)).toHaveLength(2)
+    }
+  })
+
+  it('a star below the start rank leads like any other and takes nothing from the below-start share of the filler', () => {
+    const words = dictionary(3000, (r) => (r === 40 || r === 2500 ? star(r) : {}))
+    for (let d = 0; d < 20; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      expect(batch.words.slice(0, 2).map((w) => w.esWord), `day ${d}`).toEqual([name(40), name(2500)]) // oldest first: rank 40 was starred first
+      expect(batch.words).toHaveLength(10)
+      const filler = ranks(batch.words.slice(2))
+      expect(filler.filter((x) => x < 1000), `day ${d}`).toHaveLength(2) // round(0.3 x 8), as when nothing is starred
+      expect(filler.filter((x) => x >= 1000)).toHaveLength(6)
+      expect(filler).not.toContain(40) // a starred word is never drawn again as filler
+    }
+  })
+
+  it('fewer stars than the share leave the rest as it always was: 2 stars, 8 slots split 30/70', () => {
+    const words = dictionary(3000, starred(2))
+    const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(0))
+    expect(ranks(batch.words.slice(0, 2))).toEqual([2000, 2001])
+    expect(batch.words).toHaveLength(10)
+    expect(ranks(batch.words.slice(2)).filter((x) => x < 1000)).toHaveLength(2)
+  })
+
+  it('stars that do not fit today are not drawn as filler either: they wait for their turn', () => {
+    const words = dictionary(3000, starred(20))
+    const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(0))
+    expect(ranks(batch.words.slice(0, 7))).toEqual([2000, 2001, 2002, 2003, 2004, 2005, 2006])
+    for (const x of ranks(batch.words.slice(7))) expect(x < 2000 || x >= 2020).toBe(true)
+  })
+
+  it('a Rioplatense word in the window still gets into the batch when 7 stars lead it, on every day (the 3 remaining slots carry the guarantee)', () => {
+    const words = dictionary(3000, (r) => ({ ...starred(200)(r), ...(r === 1100 ? { rio } : {}) }))
+    for (let d = 0; d < 30; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      expect(ranks(batch.words), `day ${d}`).toContain(1100)
+      expect(batch.words).toHaveLength(10)
+    }
+  })
+
+  it('and at goals of 5 and 3, where one slot is left, that slot is the Rioplatense word', () => {
+    const words = dictionary(3000, (r) => ({ ...starred(200)(r), ...(r === 1100 ? { rio } : {}) }))
+    for (const goal of [5, 3]) {
+      for (let d = 0; d < 20; d++) {
+        const batch = selectLearnBatch(words, settingsOf({ daily_new_word_limit: goal, start_rank: 1000 }), day(d))
+        expect(ranks(batch.words), `goal ${goal}, day ${d}`).toContain(1100)
+        expect(batch.words.filter((w) => w.isFavorite)).toHaveLength(goal === 5 ? 4 : 2)
+      }
+    }
+  })
+
+  it('a Rioplatense word only below the start rank is found for the remaining slots too', () => {
+    const words = dictionary(3000, (r) => ({ ...starred(200)(r), ...(r === 300 ? { rio } : {}) }))
+    for (let d = 0; d < 20; d++) expect(ranks(selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d)).words), `day ${d}`).toContain(300)
+  })
+
+  it('a starred Rioplatense word counts: the filler is not forced to add another', () => {
+    // the oldest star is an overlay word, and so is a word in the window; the batch already has one, so the window's is only there when the day's draw picks it
+    const words = dictionary(3000, (r) => ({ ...starred(200)(r), ...(r === 2000 || r === 1100 ? { rio } : {}) }))
+    let forced = 0
+    for (let d = 0; d < 30; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      expect(batch.words[0].rio).not.toBeNull()
+      if (batch.words.filter((w) => w.rio !== null).length > 1) forced++
+    }
+    expect(forced).toBeLessThan(10) // it is not there every day, as it would be if the guarantee ignored the star
+  })
+
+  it('a batch of one is the star alone: the user chose it, and no Rioplatense word is forced in', () => {
+    const words = dictionary(3000, (r) => ({ ...starred(200)(r), ...(r === 1100 ? { rio } : {}) }))
+    for (let d = 0; d < 10; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ daily_new_word_limit: 1, start_rank: 1000 }), day(d))
+      expect(ranks(batch.words)).toEqual([2000])
+    }
+  })
+
+  it('stars below the start rank that do not fit today are not drawn as filler either: 300 of the 999 words below it are starred', () => {
+    const words = dictionary(3000, (r) => (r <= 300 ? star(r) : {}))
+    for (let d = 0; d < 40; d++) {
+      const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(d))
+      expect(ranks(batch.words.slice(0, 7)), `day ${d}`).toEqual([1, 2, 3, 4, 5, 6, 7])
+      expect(batch.words.slice(7).some((w) => w.isFavorite), `day ${d}`).toBe(false)
+      expect(new Set(ranks(batch.words)).size).toBe(10)
+    }
+  })
+
+  it('stars that Learn cannot teach (learned, known, no translation) are not in the line at all', () => {
+    const words = dictionary(3000, (r) =>
+      r === 2000 ? { ...star(r), repetitions: 2, nextReview: day(5) } : r === 2001 ? { ...star(r), isHidden: true } : r === 2002 ? { ...star(r), pos: 'prep' } : r === 2003 ? star(r) : {},
+    )
+    const batch = selectLearnBatch(words, settingsOf({ start_rank: 1000 }), day(0))
+    expect(ranks(batch.words.filter((w) => w.isFavorite))).toEqual([2003])
   })
 
   it('a Rioplatense word in the window is in the batch, whichever day', () => {
@@ -223,10 +356,9 @@ describe('"Already know it" on an easy word', () => {
     const hidden: string[] = []
     return {
       hidden,
-      queue: { enqueueHidden: (w: string) => void hidden.push(w), enqueueSettings: vi.fn() },
+      queue: { enqueueHidden: (w: string) => void hidden.push(w), enqueueFavorite: vi.fn() },
       applyHidden: vi.fn(),
-      getSettings: () => settingsOf({ start_rank: 1000 }),
-      applySettings: vi.fn(),
+      applyFavorite: vi.fn(),
     }
   }
 

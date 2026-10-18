@@ -11,68 +11,62 @@ const BOTH = { showRuTranslation: true, showEnTranslation: true }
 const render = (word: Word, extra: Partial<Parameters<typeof WordRow>[0]> = {}) =>
   renderToStaticMarkup(createElement(WordRow, { row: { word, state: wordState(word, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {}, ...extra }))
 const casa = makeWord('casa', { rank: 1 })
-const queueButton = (html: string) => html.match(/<button[^>]*word-row-queue[^>]*>.*?<\/button>/)![0]
+const starButton = (html: string) => html.match(/<button[^>]*word-row-star[^>]*>.*?<\/button>/)![0]
 
 afterEach(() => setLanguage('en'))
 
-describe('a list row: two actions that are different things', () => {
-  it('a word that can be started has the queue control and the save star, side by side, the queue first', () => {
-    const html = render(casa, { queueable: true, queued: false, onToggleQueue: () => {} })
-    expect(html).toContain('<button type="button" class="word-row-queue" aria-pressed="false" aria-label="Queue casa for Learn">')
-    expect(html).toContain('class="word-row-star" aria-pressed="false" aria-label="Save casa"')
-    expect(html.indexOf('word-row-queue')).toBeLessThan(html.indexOf('word-row-star'))
-  })
-
-  it('a queued word shows the marker: the control reads "Queued", is pressed, and offers to take the word out', () => {
-    const html = render(casa, { queueable: true, queued: true, onToggleQueue: () => {} })
-    expect(html).toContain('<button type="button" class="word-row-queue is-on" aria-pressed="true" aria-label="Take casa out of the Learn queue">')
-    expect(queueButton(html)).not.toMatch(/<span/) // no visible label on the row
-  })
-
-  it('the control is a glyph and no words: a ring with a plus, and a filled disc with a tick once queued; neither is the star\'s shape', () => {
-    const idle = queueButton(render(casa, { queueable: true, queued: false, onToggleQueue: () => {} }))
-    const on = queueButton(render(casa, { queueable: true, queued: true, onToggleQueue: () => {} }))
-    for (const button of [idle, on]) expect(button.replace(/<[^>]*>/g, '')).toBe('') // nothing written on it: the label is the accessible name
-    expect(idle).toContain('d="M14 8.5v11M8.5 14h11"') // the plus
-    expect(idle).toContain('<circle cx="14" cy="14" r="12.2" stroke="currentColor"') // in a ring
-    expect(on).toContain('class="queue-glyph-mark" d="M8.5 14.5l3.8 3.8 7.2-7.6"') // the tick
-    expect(on).toContain('<circle cx="14" cy="14" r="13" fill="currentColor"') // on a filled disc
-    expect(on).not.toContain('M14 8.5v11') // the plus is gone
-    const star = render(casa, { queueable: true, onToggleQueue: () => {} }).match(/<button[^>]*word-row-star[^>]*>.*?<\/button>/)![0]
-    for (const button of [idle, on]) expect(button).not.toContain('M12 3.2l2.7 5.6') // not the star
-    expect(star).toContain('M12 3.2l2.7 5.6')
-  })
-
-  it('a word that cannot be started has no queue control at all, not a disabled one', () => {
-    for (const html of [render(casa), render(casa, { queueable: false, onToggleQueue: () => {} }), render(casa, { queueable: true })]) {
-      expect(html).not.toContain('word-row-queue')
-      expect(html).not.toContain('disabled')
-      expect(html).toContain('word-row-star') // the save star is still there
-    }
-  })
-
-  it('a hidden word has only "Bring back": no star, no queue', () => {
-    const html = render({ ...casa, isHidden: true }, { queueable: true, onToggleQueue: () => {} })
-    expect(html).toContain('word-row-bring')
+describe('a list row: one action, "Learn sooner"', () => {
+  it('a word Learn can still teach has the star, named for what it does, and nothing else beside it', () => {
+    const html = render(casa)
+    expect(html).toContain('class="word-row-star" aria-pressed="false" aria-label="Learn casa sooner"')
     expect(html).not.toContain('word-row-queue')
+    expect(html.match(/<button/g)).toHaveLength(2) // the row itself, and the star
+  })
+
+  it('pressed, the star is filled and looks active, and says the same words: it never claims anything has happened', () => {
+    const on = render({ ...casa, isFavorite: true, starredAt: 1 })
+    expect(on).toContain('class="word-row-star is-on" aria-pressed="true" aria-label="Learn casa sooner"')
+    expect(starButton(on)).toContain('fill="currentColor"')
+    expect(starButton(render(casa))).toContain('fill="none"')
+    // the name is the same pressed or not: the state is carried by aria-pressed
+    expect(on.match(/aria-label="Learn casa sooner"/)).not.toBeNull()
+    expect(on).not.toMatch(/Saved|Queued|Remove casa/)
+  })
+
+  it('the star has no visible label on the row: the translation needs the room', () => {
+    expect(starButton(render(casa)).replace(/<[^>]*>/g, '')).toBe('')
+  })
+
+  it('a word Learn can no longer teach has no star at all, not a disabled one: learned, in progress, known, reference-only, untranslated', () => {
+    const cannot: [string, Word][] = [
+      ['learned', makeWord('casa', { rank: 1, repetitions: 4, interval: 30, nextReview: new Date(2030, 0, 1) })],
+      ['in progress', makeWord('casa', { rank: 1, repetitions: 1, nextReview: new Date(2030, 0, 1) })],
+      ['reference only', makeWord('casa', { rank: 1, pos: 'prep' })],
+      ['untranslated', makeWord('casa', { rank: 1, enTranslation: '', ruTranslation: '' })],
+    ]
+    for (const [label, word] of cannot) {
+      const html = render(word)
+      expect(html, label).not.toContain('word-row-star')
+      expect(html, label).not.toContain('disabled')
+      expect(html, label).not.toContain('Learn casa sooner')
+    }
+    // even a word that still carries a star from before shows no control
+    expect(render({ ...cannot[0][1], isFavorite: true, starredAt: 1 })).not.toContain('word-row-star')
+  })
+
+  it('a hidden word has only "Bring back": no star', () => {
+    const html = render({ ...casa, isHidden: true })
+    expect(html).toContain('word-row-bring')
     expect(html).not.toContain('word-row-star')
   })
 
-  it('the star is a save and says nothing of teaching; the queue says it is for Learn', () => {
-    const html = render({ ...casa, isFavorite: true }, { queueable: true, queued: false, onToggleQueue: () => {} })
-    const star = html.match(/<button[^>]*word-row-star[^>]*>/)![0]
-    const queue = html.match(/<button[^>]*word-row-queue[^>]*>/)![0]
-    expect(star).toContain('aria-label="Remove casa from saved"')
-    expect(star).not.toMatch(/learn|queue/i)
-    expect(queue).toContain('for Learn')
+  it('a word you typed in, not started, has the star like any other', () => {
+    expect(render(makeWord('zapallito', { rank: null, isCustom: true }))).toContain('aria-label="Learn zapallito sooner"')
   })
 
-  it('in Russian: «В очередь» / «В очереди», and «Сохранить» for the star', () => {
+  it('in Russian: «Учить «casa» раньше»', () => {
     setLanguage('ru')
-    const idle = render(casa, { queueable: true, queued: false, onToggleQueue: () => {} })
-    expect(idle).toContain('aria-label="Поставить «casa» в очередь Learn"')
-    expect(idle).toContain('aria-label="Сохранить «casa»"')
-    const queued = render(casa, { queueable: true, queued: true, onToggleQueue: () => {} })
-    expect(queued).toContain('aria-label="Убрать «casa» из очереди Learn"')
+    expect(render(casa)).toContain('aria-label="Учить «casa» раньше"')
+    expect(render({ ...casa, isFavorite: true, starredAt: 1 })).toContain('aria-label="Учить «casa» раньше"')
   })
 })

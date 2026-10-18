@@ -46,6 +46,7 @@ function toBaseWord(entry: unknown, rio: ReadonlyMap<string, RioInfo> | null, fa
     repetitions: 0,
     nextReview: null,
     isFavorite: false,
+    starredAt: null,
     isHidden: false,
     isCustom: false,
     isEnriched: true,

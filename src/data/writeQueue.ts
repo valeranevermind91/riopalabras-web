@@ -432,7 +432,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       notify()
     }
 
-    // Saves go before everything that may refer to the word (its tombstone clearing, its place in the Learn queue).
+    // Saves go before everything that may refer to the word (its tombstone clearing, its star).
     const saves = [...wordOps.values()].filter((op) => op.kind === 'save')
     if (saves.length > 0) {
       if (sender.sendWords) await within(sender.sendWords(saves))

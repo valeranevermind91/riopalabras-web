@@ -70,6 +70,7 @@ export function customWordFromRow(row: UserWordRow): Word {
     repetitions: 0,
     nextReview: null,
     isFavorite: false,
+    starredAt: null,
     isHidden: false,
     isCustom: true,
     isEnriched: enTranslation.trim() !== '' && ruTranslation.trim() !== '',
@@ -126,6 +127,11 @@ export function mergeWords(base: readonly Word[], overlay: Overlay): MergedWords
     return orphans
   }
   const orphanFavorites = applyFlag(overlay.favorites, { isFavorite: true })
+  // when each was starred (the table's created_at), for the order Learn teaches them in
+  for (const [key, at] of Object.entries(overlay.favoriteTimes ?? {})) {
+    const existing = byKey.get(key)
+    if (existing?.isFavorite) byKey.set(key, { ...existing, starredAt: at })
+  }
   const orphanHidden = applyFlag(overlay.hidden, { isHidden: true })
 
   const words = [...byKey.values()].map((w) => Object.freeze(w)).sort(compareByRank)

@@ -25,8 +25,8 @@ const words: Word[] = [
   w('siete', { rank: 7, isHidden: true, repetitions: 2, nextReview: at(5) }), // hidden, with progress
   w('ocho', { rank: 8, isHidden: true }), // hidden, never learned
   w('de', { rank: 9, pos: 'prep' }), // reference-only
-  w('nueve', { rank: 10, pos: 'v', isFavorite: true }), // new verb, favourite
-  w('diez', { rank: 11, pos: 'adj', repetitions: 2, nextReview: at(2), isFavorite: true }), // established adjective, favourite
+  w('nueve', { rank: 10, pos: 'v', isFavorite: true }), // new verb, starred: waiting to be taught
+  w('diez', { rank: 11, pos: 'adj', repetitions: 2, nextReview: at(2), isFavorite: true }), // established adjective with a star left over: Learn has nothing to teach, so the filter does not list it
   w('once', { rank: 12, pos: 'adv', repetitions: 1, nextReview: null }), // learned, no stored schedule: due
   w('mia', { rank: null, isCustom: true }), // custom: no rank
 ]
@@ -90,7 +90,7 @@ describe('sorting', () => {
 
   it('sorts inside the segment and under the filters', () => {
     expect(names(words, { segment: 'learned', sort: 'due' })).toEqual(['cinco', 'cuatro', 'dos', 'diez', 'tres', 'seis', 'once'])
-    expect(names(words, { segment: 'all', sort: 'due', filters: { ...NO_FILTERS, favourites: true } })).toEqual(['diez', 'nueve'])
+    expect(names(words, { segment: 'all', sort: 'due', filters: { ...NO_FILTERS, favourites: true } })).toEqual(['nueve'])
   })
 
   it('a search keeps its own order, how well it matches, whatever the sort', () => {
@@ -114,7 +114,7 @@ describe('sorting', () => {
 
     it('the filtered list is the whole shuffle with the other words taken out: same words, same relative order', () => {
       const whole = random(21)
-      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, favourites: true, queued: false, custom: false, pos: 'noun' as const }]) {
+      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, favourites: true, custom: false, pos: 'noun' as const }]) {
         const filtered = random(21, { filters })
         expect(filtered.length).toBeGreaterThan(0)
         expect(filtered.length).toBeLessThan(whole.length)
@@ -172,9 +172,9 @@ describe('sorting', () => {
 
   it('counts the filters that are on (the state filter does not count where it is not offered)', () => {
     expect(activeFilterCount(NO_FILTERS, 'all')).toBe(0)
-    expect(activeFilterCount({ state: 'due', favourites: true, queued: false, custom: false, pos: 'verb' }, 'all')).toBe(3)
-    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, custom: false, pos: null }, 'hidden')).toBe(0)
-    expect(activeFilterCount({ state: 'due', favourites: false, queued: false, custom: false, pos: null }, 'hidden', true)).toBe(1) // searching shows it again
+    expect(activeFilterCount({ state: 'due', favourites: true, custom: false, pos: 'verb' }, 'all')).toBe(3)
+    expect(activeFilterCount({ state: 'due', favourites: false, custom: false, pos: null }, 'hidden')).toBe(0)
+    expect(activeFilterCount({ state: 'due', favourites: false, custom: false, pos: null }, 'hidden', true)).toBe(1) // searching shows it again
   })
 })
 
@@ -200,9 +200,11 @@ describe('filters', () => {
     expect(learnedWith({ state: 'new' }, 'all')).toEqual(['uno', 'seis', 'nueve', 'mia'])
   })
 
-  it('favourites', () => {
-    expect(learnedWith({ favourites: true }, 'all')).toEqual(['nueve', 'diez'])
-    expect(learnedWith({ favourites: true })).toEqual(['diez']) // only the learned one
+  it('"Learn sooner" lists the words waiting to be taught, and only those: a star on a word Learn can no longer teach is not listed', () => {
+    expect(learnedWith({ favourites: true }, 'all')).toEqual(['nueve']) // diez is learned and still carries a star: nothing is waiting
+    expect(learnedWith({ favourites: true })).toEqual([]) // the Learned list holds no waiting word
+    const hiddenStar = [w('oculta', { rank: 1, isFavorite: true, isHidden: true }), w('de', { rank: 2, pos: 'prep', isFavorite: true })]
+    expect(names(hiddenStar, { segment: 'all', filters: { ...NO_FILTERS, favourites: true } })).toEqual([]) // known, and reference-only
   })
 
   it('part of speech (codes and spelled-out names both count)', () => {
@@ -214,7 +216,7 @@ describe('filters', () => {
   })
 
   it('combine: every filter must hold, inside the segment', () => {
-    expect(learnedWith({ state: 'established', favourites: true })).toEqual(['diez'])
+    expect(learnedWith({ state: 'established', favourites: true })).toEqual([])
     expect(learnedWith({ state: 'established', pos: 'adj' })).toEqual(['diez'])
     expect(learnedWith({ state: 'due', pos: 'adv' })).toEqual(['once'])
     expect(learnedWith({ state: 'new', favourites: true }, 'all')).toEqual(['nueve'])
@@ -284,7 +286,7 @@ describe('search', () => {
     })
 
     it('the chips still narrow the results (and the segment does not)', () => {
-      expect(names(words, { query: 'e', filters: { ...NO_FILTERS, favourites: true } })).toEqual(['nueve', 'diez'])
+      expect(names(words, { query: 'e', filters: { ...NO_FILTERS, favourites: true } })).toEqual(['nueve'])
       expect(names(words, { query: 'o', filters: { ...NO_FILTERS, state: 'due' } })).toEqual(expect.arrayContaining(['cuatro', 'cinco', 'once']))
     })
 

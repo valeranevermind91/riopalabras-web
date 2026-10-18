@@ -1,6 +1,7 @@
 import { rowTitle } from '../data/rowTitle'
 import { translationsFor } from '../data/relation'
 import { firstTranslation, translationLines, type TranslationFlags } from '../data/translations'
+import { canStar } from '../data/starred'
 import type { ListRow } from '../data/wordList'
 import { wordStage, type WordState } from '../data/wordState'
 import { strings } from '../strings'
@@ -29,46 +30,16 @@ interface WordRowProps {
   settings: TranslationFlags
   onOpen: (esWord: string) => void
   onToggleFavourite: (esWord: string, favourite: boolean) => void
-  /** Whether the word can still be started, and so can be queued for Learn. False: the row has no queue control at all (not a dead one). */
-  queueable?: boolean
-  /** Whether it is in the Learn queue now (the same set the "Queued" filter lists). */
-  queued?: boolean
-  onToggleQueue?: (esWord: string) => void
   onBringBack: (esWord: string) => void
 }
 
 /**
- * The queue control's glyph: a ring with a plus (queue it) that becomes a filled disc with a tick (queued). Drawn in the Learn colour, with no text:
- * the full label is its accessible name. It is a different shape (a ring, not a star) and a different colour (teal, where the save star rests grey)
- * from the star beside it.
- */
-function QueueIcon({ queued }: { queued: boolean }) {
-  return (
-    <svg className="queue-glyph" viewBox="0 0 28 28" width="28" height="28" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {queued ? (
-        <>
-          <circle cx="14" cy="14" r="13" fill="currentColor" stroke="none" />
-          <path className="queue-glyph-mark" d="M8.5 14.5l3.8 3.8 7.2-7.6" strokeWidth="2.4" />
-        </>
-      ) : (
-        <>
-          <circle cx="14" cy="14" r="12.2" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M14 8.5v11M8.5 14h11" stroke="currentColor" strokeWidth="2.2" />
-        </>
-      )}
-    </svg>
-  )
-}
-
-/**
  * One word in the list: the title (see rowTitle: the form that matched in a search, the headword otherwise), a state dot, a part-of-speech tag, a
- * Due badge, one translation line, and on the right two different things, each acting on its own: a save star (a bookmark: it changes nothing about
- * what is taught) and, for a word that can still be started, a teal ring with a plus that becomes a filled disc with a tick when the word is queued
- * (it puts the word in the Learn queue, which does change what is taught). The queue control has no visible label, because the translation needs
- * the room; its accessible name says it in full, and the word's detail screen spells it out. A hidden word has "Bring back" instead. Tapping the
- * row opens the word.
+ * Due badge, one translation line, and on the right one control: the "Learn sooner" star, only for a word Learn can still teach (any other word has none,
+ * not a dead one). It has no visible label, because the translation needs the room; its accessible name says it in full and is the same pressed or
+ * not, and the word's detail screen spells it out. A hidden word has "Bring back" instead. Tapping the row opens the word.
  */
-export function WordRow({ row, settings, onOpen, onToggleFavourite, queueable = false, queued = false, onToggleQueue, onBringBack }: WordRowProps) {
+export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
   const { word, state, via } = row
   const { title: head, alt } = rowTitle(word, via)
   // One muted line: every enabled language that has text, RU then EN, joined with " · " (the line truncates with an ellipsis
@@ -100,28 +71,17 @@ export function WordRow({ row, settings, onOpen, onToggleFavourite, queueable = 
           {t.bringBack}
         </button>
       ) : (
-        <>
-          {queueable && onToggleQueue && (
-            <button
-              type="button"
-              className={queued ? 'word-row-queue is-on' : 'word-row-queue'}
-              aria-pressed={queued}
-              aria-label={queued ? t.unqueueRow(head) : t.queueRow(head)}
-              onClick={() => onToggleQueue(word.esWord)}
-            >
-              <QueueIcon queued={queued} />
-            </button>
-          )}
+        canStar(word) && (
           <button
             type="button"
             className={word.isFavorite ? 'word-row-star is-on' : 'word-row-star'}
             aria-pressed={word.isFavorite}
-            aria-label={word.isFavorite ? t.unfavourite(head) : t.favourite(head)}
+            aria-label={t.learnSoonerRow(head)}
             onClick={() => onToggleFavourite(word.esWord, !word.isFavorite)}
           >
             <StarIcon filled={word.isFavorite} />
           </button>
-        </>
+        )
       )}
     </div>
   )

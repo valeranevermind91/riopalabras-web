@@ -1,4 +1,4 @@
-/** A stored settings value on one line: JSON, cut so a long list (learn_picks) doesn't fill the screen. */
+/** A stored settings value on one line: JSON, cut so a long list doesn't fill the screen. */
 function showValue(value: unknown): string {
   const json = JSON.stringify(value) ?? String(value)
   return json.length > 80 ? `${json.slice(0, 77)}…` : json

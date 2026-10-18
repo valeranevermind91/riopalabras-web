@@ -15,13 +15,17 @@ export const networkError = (): ScriptedResult => httpError(0, 'TypeError: Faile
 export function fakeReadSupabase(rows: Record<string, unknown[]> = {}, options: { maxRows?: number } = {}) {
   const scripts: Record<string, ScriptedResult[]> = {}
   const requests: string[] = []
+  /** The columns each request asked for, per table (select('es_word, created_at') → 'es_word, created_at'). */
+  const selected: Record<string, string[]> = {}
   const state = { refreshCalls: 0, refreshError: null as { message: string } | null }
 
-  const respond = async (table: string, single: boolean, range?: [number, number]): Promise<ScriptedResult> => {
+  const respond = async (table: string, single: boolean, range?: [number, number], columns?: string): Promise<ScriptedResult> => {
     requests.push(table)
     const scripted = scripts[table]?.shift()
     if (scripted) return scripted
-    const data = rows[table] ?? []
+    // Like PostgREST, only the columns asked for come back (select() with none, or '*', is every column).
+    const keep = columns && columns !== '*' ? columns.split(',').map((c) => c.trim()) : null
+    const data = (rows[table] ?? []).map((row) => (keep && row && typeof row === 'object' ? Object.fromEntries(Object.entries(row).filter(([key]) => keep.includes(key))) : row))
     if (single) return { data: data[0] ?? null, error: null, status: 200 }
     // Like PostgREST: the requested range, cut down to the server's max-rows setting.
     const [from, to] = range ?? [0, data.length - 1]
@@ -31,12 +35,17 @@ export function fakeReadSupabase(rows: Record<string, unknown[]> = {}, options: 
 
   const client = {
     from(table: string) {
+      let columns: string | undefined
       const chain = {
-        select: () => chain,
+        select: (asked?: string) => {
+          columns = asked
+          if (asked !== undefined) (selected[table] ??= []).push(asked)
+          return chain
+        },
         eq: () => chain,
         order: () => chain,
-        range: (from: number, to: number) => respond(table, false, [from, to]),
-        maybeSingle: () => respond(table, true),
+        range: (from: number, to: number) => respond(table, false, [from, to], columns),
+        maybeSingle: () => respond(table, true, undefined, columns),
       }
       return chain
     },
@@ -55,6 +64,7 @@ export function fakeReadSupabase(rows: Record<string, unknown[]> = {}, options: 
       scripts[table] = [...(scripts[table] ?? []), ...results]
     },
     requests,
+    selected,
     count: (table: string) => requests.filter((r) => r === table).length,
     state,
   }

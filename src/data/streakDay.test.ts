@@ -159,11 +159,11 @@ describe('what is a card', () => {
     const a = app()
     let batch = selectLearnBatch(pool, a.settings(), NOW)
     expect(batch.words).toHaveLength(10)
-    const known: KnownDeps = { queue: { enqueueHidden: vi.fn(), enqueueSettings: vi.fn() }, applyHidden: vi.fn(), getSettings: a.deps.getSettings, applySettings: a.deps.applySettings }
+    const known: KnownDeps = { queue: { enqueueHidden: vi.fn(), enqueueFavorite: vi.fn() }, applyHidden: vi.fn(), applyFavorite: vi.fn() }
     for (let i = 0; i < 3; i++) batch = markKnown(batch, 0, known)
     expect(batch.words).toHaveLength(7)
     // marking a word as known writes nothing toward the streak
-    expect(known.queue.enqueueSettings).not.toHaveBeenCalled()
+    expect(known.queue.enqueueFavorite).not.toHaveBeenCalled() // and no star was touched: none was set
     expect(a.settings().cardsDoneTodayCount).toBe(0)
     // finishing the seven counts seven cards: not ten, and not thirteen
     const patch = learnSettingsPatch(a.settings(), batch, NOW)

@@ -11,6 +11,7 @@ import { ru } from './strings.ru'
  *   well learned the progress state that used to be called "Known well" (it clashed with Known)
  *   session     one run of Review, Matching or Cloze: "Session complete" / "New session" (never "group", never "done for now")
  *   batch       one go at Learn: "Finish batch" (Russian: подборка, never порция)
+ *   learn sooner the star on a word: "Learn sooner" (Russian: «Учить раньше»), on the row, the detail, the filter and every notice; never saved, favourite or queued
  */
 
 /** Every string in a map, with the function ones called on a few sample arguments (the debug screen is a developer tool and is left out). */
@@ -113,33 +114,26 @@ describe('one name for the end of a run of Matching, Cloze and Review', () => {
 })
 
 describe('spelling and address', () => {
-  it('a bookmarked word is a "saved" word, in what a person reads: never "favourite" or "favorite" (the code and the table keep the old name), and no «избранное»', () => {
-    expect(offenders(enTexts, /favou?rite/i)).toEqual([])
-    expect(offenders(ruTexts, /избранн/i)).toEqual([])
-    expect(en.home.degradedTables.user_favorites).toBe('saved words')
-    expect(ru.home.degradedTables.user_favorites).toBe('сохранённые слова')
+  it('the star is "Learn sooner" / «Учить раньше» in every place it appears: the filter, the detail button, the row, the notice after adding a word, the load notice', () => {
+    expect([en.words.favourites, en.words.learnSooner]).toEqual(['Learn sooner', 'Learn sooner']) // the filter chip and the detail button: the same words
+    expect([ru.words.favourites, ru.words.learnSooner]).toEqual(['Учить раньше', 'Учить раньше'])
+    expect(en.words.learnSoonerRow('x')).toBe('Learn x sooner') // the row's icon has this as its name, pressed or not
+    expect(ru.words.learnSoonerRow('x')).toBe('Учить «x» раньше')
+    expect(en.words.added).toBe('Added, and set to learn sooner.')
+    expect(ru.words.added).toBe('Слово добавлено и отмечено «Учить раньше».')
+    expect(en.home.degradedTables.user_favorites).toBe('words set to learn sooner')
+    expect(ru.home.degradedTables.user_favorites).toBe('слова «Учить раньше»')
   })
 
-  it('the save star promises nothing: Save / Saved, never a request to be taught the word', () => {
-    expect([en.words.addFavourite, en.words.removeFavourite, en.words.favourites]).toEqual(['Save word', 'Remove from saved', 'Saved'])
-    expect([ru.words.addFavourite, ru.words.removeFavourite, ru.words.favourites]).toEqual(['Сохранить слово', 'Убрать из сохранённых', 'Сохранённые'])
-    for (const text of [en.words.favourite('x'), en.words.unfavourite('x'), en.words.addFavourite, en.words.removeFavourite]) expect(text).not.toMatch(/learn|queue|teach|study|practi[cs]e|favou?rite/i)
-    for (const text of [ru.words.favourite('x'), ru.words.unfavourite('x'), ru.words.addFavourite, ru.words.removeFavourite]) expect(text).not.toMatch(/learn|очеред|учить|изуч|избранн/i)
+  it('one idea, one word: the star never reads as a bookmark, a favourite, a save or a queue, in either language', () => {
+    expect(offenders(enTexts, /favou?rite|bookmark|queue|saved word|save word|\bsaved\b$/i)).toEqual([])
+    expect(offenders(ruTexts, /избранн|закладк|очеред|сохранённые|сохранённых слов|сохранить слово/i)).toEqual([])
+    for (const map of [en, ru]) for (const gone of ['queued', 'queueForLearn', 'queueRow', 'unqueueRow', 'removeFromQueue', 'queuedAt', 'queueFull', 'beyondToday', 'addedNotQueued', 'favourite', 'unfavourite', 'addFavourite', 'removeFavourite', 'queueShort']) expect(gone in map.words, gone).toBe(false)
   })
 
-  it('the queue action on a row is icon-only, so its accessible name says it in full and says it is for Learn: «Поставить «x» в очередь Learn» / "Queue x for Learn"; "Queued" is the filter\'s word', () => {
-    expect([en.words.queued, ru.words.queued]).toEqual(['Queued', 'В очереди'])
-    expect(en.words.queueRow('x')).toBe('Queue x for Learn')
-    expect(en.words.unqueueRow('x')).toBe('Take x out of the Learn queue')
-    expect(ru.words.queueRow('x')).toBe('Поставить «x» в очередь Learn')
-    expect(ru.words.unqueueRow('x')).toBe('Убрать «x» из очереди Learn')
-    expect('queueShort' in en.words).toBe(false) // no visible label on the row any more
-    expect('queueShort' in ru.words).toBe(false)
-  })
-
-  it('the detail screen keeps the action in words: "Queue for Learn" / "Queued — remove", «В очередь Learn» / «В очереди — убрать»', () => {
-    expect([en.words.queueForLearn, en.words.removeFromQueue]).toEqual(['Queue for Learn', 'Queued — remove'])
-    expect([ru.words.queueForLearn, ru.words.removeFromQueue]).toEqual(['В очередь Learn', 'В очереди — убрать'])
+  it('the pressed star promises nothing that has not happened: no "Learning sooner", no «Учу раньше», no "queued", no "added"', () => {
+    for (const text of [en.words.learnSooner, en.words.learnSoonerRow('x'), en.words.favourites]) expect(text).not.toMatch(/learning|queued|added|scheduled|will/i)
+    for (const text of [ru.words.learnSooner, ru.words.learnSoonerRow('x'), ru.words.favourites]) expect(text).not.toMatch(/учу |добавлен|запланирован|будет/i)
   })
 
   it('the short labels on a card carry no full stop, and the meaning-shift line is one of them: pill, standard meaning, usage hints, note label', () => {
@@ -204,11 +198,6 @@ describe('what a disabled tile and an empty state tell the person to do', () => 
 
   it('the search placeholder in Russian is «Поиск слова»: a field for a word, not a count of languages', () => {
     expect(ru.words.searchPlaceholder).toBe('Поиск слова')
-  })
-
-  it('the queue place reads «В очереди: N-е место.» (English: "Queued — 3rd in line.")', () => {
-    expect(ru.words.queuedAt(3)).toBe('В очереди: 3-е место.')
-    expect(en.words.queuedAt(3)).toBe('Queued — 3rd in line.')
   })
 
   it('the Learn tile says more comes tomorrow, and says so differently for a goal of 0', () => {

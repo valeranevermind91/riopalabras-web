@@ -8,7 +8,7 @@ import { parseDictionary } from './dictionary'
 import { headword } from './headword'
 import { learnSettingsPatch, markKnown, selectLearnBatch, undoKnown, createBatchFinisher } from './learn'
 import { WINDOW_SIZE, pickBatch, replaceKnown, restoreKnown, strataBounds, stratumOf } from './learnPick'
-import { applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { clozePool, isPracticeWord, matchingPool } from './practice'
 import { parseFallbackExamples, parseRioOverlay } from './rio'
 import { parseSettings } from './settings'
@@ -363,6 +363,7 @@ describe('the daily counter counts only words actually learned', () => {
     const deps = {
       queue,
       applyHidden: (esWords: readonly string[], hidden: boolean) => (words = applyHiddenFlag(words, esWords, hidden)),
+      applyFavorite: (esWords: readonly string[], favorite: boolean) => (words = applyFavoriteFlag(words, esWords, favorite)),
       getSettings,
       applySettings,
     }

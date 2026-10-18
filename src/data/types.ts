@@ -33,7 +33,10 @@ export interface Word {
   readonly interval: number
   readonly repetitions: number
   readonly nextReview: Date | null
+  /** Set to "learn sooner": the word is starred (the user_favorites table keeps the old name). Only a word Learn can still teach carries one. */
   readonly isFavorite: boolean
+  /** When it was starred (ms), from the table's created_at; the order Learn teaches starred words in (oldest first). Null when not starred or the time is not known. */
+  readonly starredAt: number | null
   readonly isHidden: boolean
   readonly isCustom: boolean
   readonly isEnriched: boolean
@@ -56,7 +59,6 @@ export interface UserSettings {
   readonly uiLanguage: UiLanguage | null
   /** Where Learn starts in the frequency order (the placement test's result); null for the default start. */
   readonly startRank: number | null
-  readonly learnPicks: readonly string[]
   readonly pendingWordDeletes: readonly string[]
   /** The offer to turn on the daily reminder has been shown (once, after the first finished Learn session): it is never made again. */
   readonly reminderOfferShown: boolean

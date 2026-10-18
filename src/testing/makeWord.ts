@@ -24,6 +24,7 @@ export function makeWord(esWord: string, overrides: Partial<Word> = {}): Word {
     repetitions: 0,
     nextReview: null,
     isFavorite: false,
+    starredAt: null,
     isHidden: false,
     isCustom: false,
     isEnriched: true,

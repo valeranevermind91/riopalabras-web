@@ -78,7 +78,7 @@ export async function upsertProgress(
 
 /**
  * Writes `patch` over the user's WHOLE settings blob, merged from the in-memory copy so keys this
- * client doesn't own (learn_picks, pending_word_deletes, …) are preserved, and a key patched to null is removed. Returns the blob written.
+ * client doesn't own (pending_word_deletes, a key from a newer version, …) are preserved, and a key patched to null is removed. Returns the blob written.
  */
 export async function writeSettings(
   client: SupabaseClient,

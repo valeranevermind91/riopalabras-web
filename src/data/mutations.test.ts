@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { applyFavoriteFlag, applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { parseSettings } from './settings'
 import type { Word } from './types'
 
@@ -27,6 +27,7 @@ function word(esWord: string, rank: number, overrides: Partial<Word> = {}): Word
     repetitions: 0,
     nextReview: null,
     isFavorite: false,
+    starredAt: null,
     isHidden: false,
     isCustom: false,
     isEnriched: true,
@@ -68,15 +69,13 @@ describe('applyProgressUpdates', () => {
 
 describe('applySettingsPatch', () => {
   it('merges over the blob, re-parses typed fields and keeps unknown keys', () => {
-    const settings = parseSettings({ daily_new_word_limit: 12, learn_picks: ['ser'], some_future_key: { a: 1 } })
+    const settings = parseSettings({ daily_new_word_limit: 12, some_future_key: { a: 1 } })
     const next = applySettingsPatch(settings, { streak_count: 5, streak_last_activity_date: '2026-10-02' })
     expect(next.streakCount).toBe(5)
     expect(next.streakLastActivityDate).toBe('2026-10-02')
     expect(next.dailyNewWordLimit).toBe(12)
-    expect(next.learnPicks).toEqual(['ser'])
     expect(next.raw).toEqual({
       daily_new_word_limit: 12,
-      learn_picks: ['ser'],
       some_future_key: { a: 1 },
       streak_count: 5,
       streak_last_activity_date: '2026-10-02',
@@ -111,5 +110,32 @@ describe('applyFlagLists (favorites / hidden words recovered in the background)'
     const flagged = [word('casa', 1, { isFavorite: true, isHidden: true })]
     expect(applyFlagLists(flagged, { favorites: ['otra'] })[0].isHidden).toBe(true)
     expect(applyFlagLists(flagged, { favorites: ['casa'] })[0]).toBe(flagged[0]) // already flagged: the same word object
+  })
+
+  it('carries the time each recovered star was set, and keeps the time a word already had', () => {
+    const at = Date.parse('2026-10-01T10:00:00Z')
+    const next = applyFlagLists(words, { favorites: ['casa'], favoriteTimes: { casa: at, gato: at + 1 } })
+    expect(next[0].starredAt).toBe(at)
+    expect(next[2].starredAt).toBeNull() // gato has a time but is not a favourite
+    const kept = applyFlagLists([word('casa', 1, { isFavorite: true, starredAt: 5 })], { favorites: ['casa'], favoriteTimes: { casa: at } })
+    expect(kept[0].starredAt).toBe(5)
+  })
+})
+
+describe('applyFavoriteFlag (the star, optimistic)', () => {
+  const words = [word('casa', 1), word('Perro', 2)]
+
+  it('stamps the moment a star is set and clears the stamp when it is taken off', () => {
+    const on = applyFavoriteFlag(words, ['perro'], true, 1234)
+    expect(on[1]).toMatchObject({ isFavorite: true, starredAt: 1234 })
+    expect(on[0]).toBe(words[0])
+    const off = applyFavoriteFlag(on, ['PERRO'], false, 9999)
+    expect(off[1]).toMatchObject({ isFavorite: false, starredAt: null })
+  })
+
+  it('does not restamp a word that is already starred, and returns the same list when nothing changes', () => {
+    const on = applyFavoriteFlag(words, ['casa'], true, 100)
+    expect(applyFavoriteFlag(on, ['casa'], true, 200)).toBe(on)
+    expect(applyFavoriteFlag(on, ['Perro'], false, 200)).toBe(on)
   })
 })

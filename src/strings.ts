@@ -17,13 +17,6 @@ import { ru } from './strings.ru'
 
 export { plural }
 
-/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st. */
-export function ordinal(n: number): string {
-  const teen = n % 100 >= 11 && n % 100 <= 13
-  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'
-  return `${n}${suffix}`
-}
-
 export const en = {
   appTitle: 'Riopalabras',
 
@@ -47,7 +40,7 @@ export const en = {
     learnPoolEmpty: 'No new words available',
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
-    degradedTables: { user_favorites: 'saved words', user_hidden_words: 'known words' } as Record<string, string>,
+    degradedTables: { user_favorites: 'words set to learn sooner', user_hidden_words: 'known words' } as Record<string, string>,
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you marked as known may still show up until it loads.',
     retryNow: 'Retry now',
@@ -105,9 +98,9 @@ export const en = {
     },
     // what the learning states are called to the user (the code keeps new / learning / established / due)
     states: { new: 'Not started', learning: 'In progress', established: 'Well learned', due: 'Due now' },
-    // A saved word is a bookmark: it marks a word for the list's "Saved" filter and changes nothing about what is taught. The Learn queue is the action that does.
-    favourites: 'Saved',
-    queued: 'Queued',
+    // One action, one name everywhere (the row's star, the detail button, the filter): "Learn sooner". The star puts a word ahead in Learn and
+    // clears itself when Learn has taught the word. It is not a bookmark and not a queue.
+    favourites: 'Learn sooner',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
     sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned', random: 'Random' },
     bestMatch: 'Best match',
@@ -115,27 +108,17 @@ export const en = {
     posTag: { n: 'noun', v: 'verb', adj: 'adj', adv: 'adv', pron: 'pron', num: 'num', prep: 'prep', determiner: 'det', conj: 'conj', interj: 'interj', letter: 'letter', contraction: 'contr', art: 'art' } as Record<string, string>,
     due: 'Due now',
     stateName: { hidden: 'Known', reference: 'Reference only', due: 'Due now', established: 'Well learned', learning: 'In progress', new: 'Not started' } as Record<string, string>,
-    favourite: (word: string) => `Save ${word}`,
-    unfavourite: (word: string) => `Remove ${word} from saved`,
-    addFavourite: 'Save word',
-    removeFavourite: 'Remove from saved',
-    // the Learn queue: "Queue for Learn" in the detail of a word that is not started
-    queueForLearn: 'Queue for Learn',
-    // on a list row, beside the save star: the accessible name of an icon-only control (the detail screen spells the action out in full)
-    queueRow: (word: string) => `Queue ${word} for Learn`,
-    unqueueRow: (word: string) => `Take ${word} out of the Learn queue`,
-    removeFromQueue: 'Queued — remove',
-    queuedAt: (place: number) => `Queued — ${ordinal(place)} in line.`,
-    queueFull: (max: number) => `The queue is full (${max} ${plural(max, { one: 'word', other: 'words' })}). Take one out to add another.`,
-    beyondToday: "Beyond today's batch",
+    // The star on a list row has no visible text (the translation needs the room); this is its accessible name, the same whether it is pressed or not.
+    learnSoonerRow: (word: string) => `Learn ${word} sooner`,
+    // The same words on the detail screen's button, pressed or not: the button only looks active, it never claims something happened.
+    learnSooner: 'Learn sooner',
     // the user's own words: add (the "+" in the header), edit and delete from the detail
     custom: 'Custom',
     addWord: 'Add a word',
     customMark: 'Added by you',
     editWord: 'Edit',
     deleteWord: 'Delete',
-    added: 'Added, and queued for Learn.',
-    addedNotQueued: (max: number) => `Added. The Learn queue is full (${max} ${plural(max, { one: 'word', other: 'words' })}), so it was not queued.`,
+    added: 'Added, and set to learn sooner.',
     saved: 'Saved.',
     deleteTitle: (word: string) => `Delete “${word}”?`,
     deleteBody: 'The word is removed from your list. If you add the same word again later, the progress you made with it comes back.',
@@ -306,7 +289,7 @@ export const en = {
         { id: 'learn', name: 'Learn', text: 'new words, each shown in a real sentence rather than a bare list.', tone: 'learn' },
         { id: 'review', name: 'Review', text: 'self-check cards: you say whether you remembered, and the app decides when the word comes back.', tone: 'learn' },
         { id: 'practice', name: 'Matching and Cloze', text: 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.', tone: 'practice' },
-        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, saved words, and words you add yourself.', tone: 'learn' },
+        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, words set to learn sooner, and words you add yourself.', tone: 'learn' },
       ] as const,
     },
     translation: {

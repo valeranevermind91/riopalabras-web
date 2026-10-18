@@ -46,6 +46,7 @@ function synthetic(esWord: string, rank: number, overrides: Partial<Word> = {}):
     repetitions: 0,
     nextReview: null,
     isFavorite: false,
+    starredAt: null,
     isHidden: false,
     isCustom: false,
     isEnriched: true,

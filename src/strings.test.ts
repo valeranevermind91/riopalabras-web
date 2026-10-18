@@ -77,8 +77,7 @@ describe('the two maps', () => {
       ['loadFailed', () => ru.common.loadFailed('x')],
       ['degraded', () => ru.home.degraded(['a', 'b'])],
       ['streak', () => ru.home.streak(5)],
-      ['queuedAt', () => ru.words.queuedAt(3)],
-      ['queueFull', () => ru.words.queueFull(50)],
+      ['learnSoonerRow', () => ru.words.learnSoonerRow('x')],
       ['dailyQuota', () => ru.words.enrich.dailyQuota(99, 100)],
       ['other', () => ru.words.enrich.other(500)],
       ['practice.wrong', () => ru.practice.wrong('x')],
@@ -173,13 +172,6 @@ describe('plurals: English has two forms, Russian three', () => {
     expect([1, 2, 5, 21].map((n) => strings.words.filtersActive(n))).toEqual(['1 filter on', '2 filters on', '5 filters on', '21 filters on'])
     setLanguage('ru')
     expect([1, 2, 5, 21].map((n) => strings.home.streak(n))).toEqual(['1 день подряд', '2 дня подряд', '5 дней подряд', '21 день подряд'])
-    expect([1, 2, 5, 21].map((n) => strings.words.queueFull(n))).toEqual([
-      'Очередь заполнена (1 слово). Уберите одно слово, чтобы добавить другое.',
-      'Очередь заполнена (2 слова). Уберите одно слово, чтобы добавить другое.',
-      'Очередь заполнена (5 слов). Уберите одно слово, чтобы добавить другое.',
-      'Очередь заполнена (21 слово). Уберите одно слово, чтобы добавить другое.',
-    ])
-    expect(strings.words.addedNotQueued(50)).toContain('(50 слов)')
     expect(strings.words.enrich.dailyQuota(99, 100)).toContain('из 100 автоматических переводов')
     expect(strings.words.enrich.dailyQuota(1, 21)).toContain('из 21 автоматического перевода')
     expect(strings.words.enrich.dailyQuota(1, 3)).toContain('из 3 автоматических переводов')
