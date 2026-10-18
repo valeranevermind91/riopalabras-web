@@ -650,7 +650,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     setLanguage('ru')
     try {
       expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова')
-      expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно выучить 10 новых слов')
+      expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно изучить 10 новых слов')
       expect(adviceOf(states.allDoneToday())).toBe('На сегодня всё')
       expect(adviceOf(states.poolEmpty())).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
       expect(adviceOf(states.allClear())).toBe('Всё повторено')

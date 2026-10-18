@@ -90,6 +90,9 @@ describe('the seven steps', () => {
     expect(html).toContain('aria-label="Increase the daily goal"')
     expect(html).not.toContain('batches of 10 words')
     expect(step('goal', { daily_new_word_limit: 18 })).toContain('split into batches of 10 words')
+    // the step has room for the reasoning: under the stepper, the same two sentences Settings shows
+    expect(html).toContain('<p class="intro-note">Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.</p>')
+    expect(html.indexOf('class="stepper"')).toBeLessThan(html.indexOf('Every word you learn comes back'))
   })
 
   it('6: pronunciation: two facts with the Spanish words in the display face, a link to "How it works"', () => {

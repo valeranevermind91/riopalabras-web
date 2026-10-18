@@ -69,6 +69,25 @@ describe('the Settings screen', () => {
       expect(button(render({ daily_new_word_limit: 20 }), 'Decrease the daily goal')).not.toContain('disabled')
     })
 
+    it('says what the goal means, under the stepper, at every value: the arithmetic, then that a smaller goal is a real choice', () => {
+      const why = 'Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.'
+      for (const limit of [0, 5, 10, 20]) {
+        const html = render({ daily_new_word_limit: limit })
+        expect(html, String(limit)).toContain(`<p class="setting-note">${why}</p>`)
+        expect(html.indexOf('class="stepper"')).toBeLessThan(html.indexOf(why)) // under the stepper
+      }
+      expect(render({}).match(/class="setting-note"/g)).toHaveLength(1) // the one note, until the sessions note joins it from 16
+    })
+
+    it('in Russian too', () => {
+      setLanguage('ru')
+      try {
+        expect(render({})).toContain('<p class="setting-note">Каждое выученное слово возвращается на повторение: при десяти новых словах в день это примерно 40–60 повторений в день через пару месяцев. Меньшая цель — полноценный выбор, а не уступка: при пяти словах в день повторений вдвое меньше.</p>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+
     it('the note about sessions of 10 appears above 15, and not at or below it', () => {
       const note = 'split into batches of 10 words'
       for (const limit of [0, 10, 14, 15]) expect(render({ daily_new_word_limit: limit }), String(limit)).not.toContain(note)

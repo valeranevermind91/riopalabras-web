@@ -249,6 +249,8 @@ export const en = {
     learning: 'Learning',
     dailyGoal: 'Daily goal',
     dailyGoalHint: 'New words per day',
+    // the arithmetic behind the number, not advice: every learned word comes back, so the goal sets the review load (checked against the scheduler in reviewLoad.test.ts)
+    dailyGoalWhy: 'Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.',
     decrease: 'Decrease the daily goal',
     increase: 'Increase the daily goal',
     // from 16 up the day is split into Learn batches of 10 (as in the Flutter app)

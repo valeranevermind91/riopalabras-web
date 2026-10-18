@@ -115,6 +115,7 @@ export function GoalStep({ settings, stepGoal }: StepProps) {
         </span>
         <GoalStepper goal={goal} onStep={stepGoal} labelledBy="intro-goal-label" />
       </div>
+      <p className="intro-note">{strings.settings.dailyGoalWhy}</p>
       {goal >= SESSIONS_NOTE_FROM && <p className="intro-note">{strings.settings.sessionsNote}</p>}
     </div>
   )

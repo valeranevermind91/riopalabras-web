@@ -99,6 +99,7 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
             </div>
             <GoalStepper goal={goal} onStep={step} labelledBy="goal-label" />
           </div>
+          <p className="setting-note">{t.dailyGoalWhy}</p>
           {goal >= SESSIONS_NOTE_FROM && <p className="setting-note">{t.sessionsNote}</p>}
 
           <div className="setting-row setting-row-head">

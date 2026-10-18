@@ -62,7 +62,7 @@ describe.skipIf(!CHROME)('the polish pass in a browser, at 320px', () => {
       return found
     }, selector)
 
-  const SETTINGS_TEXT = '.setting-label, .setting-hint, .settings-label'
+  const SETTINGS_TEXT = '.setting-label, .setting-hint, .settings-label, .setting-note'
   const INTRO_TEXT = '.intro-text, .intro-note, .intro-line, .intro-title'
   const END_TEXT = '.post-batch h2, .post-batch .subtitle, .post-batch-why'
   const HOME_TEXT = '.home-advice, .tile-text'
@@ -91,6 +91,21 @@ describe.skipIf(!CHROME)('the polish pass in a browser, at 320px', () => {
       await page.waitForSelector('.intro-list')
       expect(await page.$$eval('.intro-list li', (els) => els.length)).toBe(4)
       expect(await loneLastWords(page, INTRO_TEXT)).toEqual([])
+      await page.close()
+    }, 60_000)
+
+    it(`${name}: the goal step of the intro, with its explanation under the stepper, has none and fits the screen`, async () => {
+      const page = await open('settingsHarness', `fresh=1&goal=default&lang=${language}`, lang)
+      await page.waitForSelector('.intro-title')
+      for (let n = 0; n < 4; n++) await page.evaluate(() => (document.querySelector('.intro-footer .btn:last-child') as HTMLElement).click())
+      await page.waitForSelector('[data-step="placement"]')
+      await page.evaluate(() => ((document.querySelector('.place-skip .link-btn') ?? document.querySelector('.place-footer .btn-primary')) as HTMLElement).click()) // the test has its own buttons (with no dictionary loaded here it says it is unavailable): either goes on
+      await page.waitForSelector('[data-step="goal"]')
+      const notes = await page.$$eval('[data-step="goal"] .intro-note', (els) => els.map((e) => e.textContent))
+      expect(notes).toHaveLength(1) // the explanation; the sessions note only joins it from 16
+      expect(notes[0]).toMatch(language === 'en' ? /^Every word you learn comes back for review/ : /^Каждое выученное слово возвращается на повторение/)
+      expect(await loneLastWords(page, INTRO_TEXT)).toEqual([])
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await page.close()
     }, 60_000)
 

@@ -359,11 +359,13 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     }
   })
 
+  // the sessions note is one of the goal's notes (the other, saying what a goal means, is always there): it is the one about batches of 10
+  const sessionsNote = (p: Page) => p.evaluateHandle(() => Array.from(document.querySelectorAll('.setting-note')).find((e) => e.textContent?.includes('batches of 10')) ?? null).then((h) => h.asElement())
   it('the stepper stops at 20 and at 0, writes daily_new_word_limit each step, and the note shows from 16 up', async () => {
     const page = await open('goal=18')
     await toSettings(page)
     expect(await goal(page)).toBe(18)
-    expect(await page.$('.setting-note')).not.toBeNull() // 18 ≥ 16
+    expect(await sessionsNote(page)).not.toBeNull() // 18 ≥ 16
 
     await page.click('button[aria-label="Increase the daily goal"]')
     await page.click('button[aria-label="Increase the daily goal"]')
@@ -374,9 +376,9 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
 
     for (let i = 0; i < 5; i++) await page.click('button[aria-label="Decrease the daily goal"]') // down to 15
     expect(await goal(page)).toBe(15)
-    expect(await page.$('.setting-note')).toBeNull() // at 15 the note is gone
+    expect(await sessionsNote(page)).toBeNull() // at 15 the note is gone
     await page.click('button[aria-label="Increase the daily goal"]')
-    expect(await page.$('.setting-note')).not.toBeNull() // and back at 16
+    expect(await sessionsNote(page)).not.toBeNull() // and back at 16
     await page.close()
 
     const low = await open('goal=1')
