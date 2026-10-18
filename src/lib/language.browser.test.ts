@@ -189,7 +189,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
         ['Learn', 'new words, each shown in a real sentence rather than a bare list.'],
         ['Review', 'self-check cards: you say whether you remembered, and the app decides when the word comes back.'],
         ['Matching and Cloze', 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.'],
-        ['Words', 'the whole dictionary, with search, filters, favourites, and words you add yourself.'],
+        ['Words', 'the whole dictionary, with search, filters, saved words, and words you add yourself.'],
       ])
       await clickText(page, '.intro-footer .btn', 'Back')
       await clickText(page, '.intro-footer .btn', 'Back')
@@ -201,7 +201,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
         ['Learn', 'новые слова, каждое сразу в живом предложении, а не списком.'],
         ['Review', 'карточки для самопроверки: вы отмечаете, вспомнили или нет, а приложение решает, когда показать слово снова.'],
         ['Matching и Cloze', 'два других способа повторить: собрать пары слово — перевод или вставить пропущенное слово в предложение.'],
-        ['Words', 'весь словарь: поиск, фильтры, избранное и слова, которые вы добавили сами.'],
+        ['Words', 'весь словарь: поиск, фильтры, сохранённые слова и слова, которые вы добавили сами.'],
       ])
       await ctx.close()
     }, 90_000)
@@ -374,7 +374,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
       await clickText(page, '.control-btn', 'Фильтры')
       await page.waitForSelector('.sheet')
       expect(await page.$$eval('.sheet h3', (els) => els.map((e) => e.textContent))).toEqual(['Прогресс', 'Показывать только', 'Часть речи'])
-      expect(await page.$$eval('.sheet .chip', (els) => els.map((e) => e.textContent))).toEqual(['Любой', 'Не начато', 'В процессе', 'Хорошо выучено', 'Пора повторить', 'Избранное', 'В очереди', 'Мои слова', 'Глаголы', 'Существительные', 'Прилагательные', 'Наречия'])
+      expect(await page.$$eval('.sheet .chip', (els) => els.map((e) => e.textContent))).toEqual(['Любой', 'Не начато', 'В процессе', 'Хорошо выучено', 'Пора повторить', 'Сохранённые', 'В очереди', 'Мои слова', 'Глаголы', 'Существительные', 'Прилагательные', 'Наречия'])
       expect(latin(await everything(page, '.sheet'))).toEqual([])
       await page.click('.sheet-backdrop', { offset: { x: 20, y: 20 } })
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
@@ -390,7 +390,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
       expect(await page.$eval('h1', (e) => e.textContent)).toBe('Слово')
       expect(latin(await everything(page, CHROME_SELECTORS.join(',')))).toEqual([])
       expect(await page.$$eval('.wc-row-label', (els) => els.map((e) => e.textContent))).toEqual(['EN:']) // the translation row is content: it follows the flags
-      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toContain('В избранное')
+      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toContain('Сохранить слово')
       await ctx.close()
     }, 120_000)
 

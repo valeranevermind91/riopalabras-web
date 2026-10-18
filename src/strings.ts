@@ -47,7 +47,7 @@ export const en = {
     learnPoolEmpty: 'No new words available',
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
-    degradedTables: { user_favorites: 'favourites', user_hidden_words: 'known words' } as Record<string, string>,
+    degradedTables: { user_favorites: 'saved words', user_hidden_words: 'known words' } as Record<string, string>,
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you marked as known may still show up until it loads.',
     retryNow: 'Retry now',
@@ -105,7 +105,8 @@ export const en = {
     },
     // what the learning states are called to the user (the code keeps new / learning / established / due)
     states: { new: 'Not started', learning: 'In progress', established: 'Well learned', due: 'Due now' },
-    favourites: 'Favourites',
+    // A saved word is a bookmark: it marks a word for the list's "Saved" filter and changes nothing about what is taught. The Learn queue is the action that does.
+    favourites: 'Saved',
     queued: 'Queued',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
     sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned', random: 'Random' },
@@ -114,12 +115,16 @@ export const en = {
     posTag: { n: 'noun', v: 'verb', adj: 'adj', adv: 'adv', pron: 'pron', num: 'num', prep: 'prep', determiner: 'det', conj: 'conj', interj: 'interj', letter: 'letter', contraction: 'contr', art: 'art' } as Record<string, string>,
     due: 'Due now',
     stateName: { hidden: 'Known', reference: 'Reference only', due: 'Due now', established: 'Well learned', learning: 'In progress', new: 'Not started' } as Record<string, string>,
-    favourite: (word: string) => `Add ${word} to favourites`,
-    unfavourite: (word: string) => `Remove ${word} from favourites`,
-    addFavourite: 'Add to favourites',
-    removeFavourite: 'Remove from favourites',
+    favourite: (word: string) => `Save ${word}`,
+    unfavourite: (word: string) => `Remove ${word} from saved`,
+    addFavourite: 'Save word',
+    removeFavourite: 'Remove from saved',
     // the Learn queue: "Queue for Learn" in the detail of a word that is not started
     queueForLearn: 'Queue for Learn',
+    // on a list row, beside the save star: the short form of the detail's button (the pressed state reads "Queued", as the filter does)
+    queueShort: 'Queue',
+    queueRow: (word: string) => `Queue ${word} for Learn`,
+    unqueueRow: (word: string) => `Take ${word} out of the Learn queue`,
     removeFromQueue: 'Queued — remove',
     queuedAt: (place: number) => `Queued — ${ordinal(place)} in line.`,
     queueFull: (max: number) => `The queue is full (${max} ${plural(max, { one: 'word', other: 'words' })}). Take one out to add another.`,
@@ -302,7 +307,7 @@ export const en = {
         { id: 'learn', name: 'Learn', text: 'new words, each shown in a real sentence rather than a bare list.', tone: 'learn' },
         { id: 'review', name: 'Review', text: 'self-check cards: you say whether you remembered, and the app decides when the word comes back.', tone: 'learn' },
         { id: 'practice', name: 'Matching and Cloze', text: 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.', tone: 'practice' },
-        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, favourites, and words you add yourself.', tone: 'learn' },
+        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, saved words, and words you add yourself.', tone: 'learn' },
       ] as const,
     },
     translation: {

@@ -29,15 +29,30 @@ interface WordRowProps {
   settings: TranslationFlags
   onOpen: (esWord: string) => void
   onToggleFavourite: (esWord: string, favourite: boolean) => void
+  /** Whether the word can still be started, and so can be queued for Learn. False: the row has no queue control at all (not a dead one). */
+  queueable?: boolean
+  /** Whether it is in the Learn queue now (the same set the "Queued" filter lists). */
+  queued?: boolean
+  onToggleQueue?: (esWord: string) => void
   onBringBack: (esWord: string) => void
+}
+
+/** A plus (queue it) or a tick (it is queued): drawn small, beside the word "Queue" / "Queued", never alone. */
+function QueueIcon({ queued }: { queued: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={queued ? 'M5 12.5l4.5 4.5L19 7.5' : 'M12 5v14M5 12h14'} />
+    </svg>
+  )
 }
 
 /**
  * One word in the list: the title (see rowTitle: the form that matched in a search, the headword otherwise), a state dot, a part-of-speech tag, a
- * Due badge, one translation line, and on the right a favourite star, or "Bring back" for a hidden word. Tapping the row
- * opens the word; the star and the button act on their own.
+ * Due badge, one translation line, and on the right two different things, each acting on its own: a save star (a bookmark: it changes nothing
+ * about what is taught), and, for a word that can still be started, "Queue" / "Queued" (it puts the word in the Learn queue, which does change what is
+ * taught). A hidden word has "Bring back" instead. Tapping the row opens the word.
  */
-export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
+export function WordRow({ row, settings, onOpen, onToggleFavourite, queueable = false, queued = false, onToggleQueue, onBringBack }: WordRowProps) {
   const { word, state, via } = row
   const { title: head, alt } = rowTitle(word, via)
   // One muted line: every enabled language that has text, RU then EN, joined with " · " (the line truncates with an ellipsis
@@ -69,15 +84,29 @@ export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack 
           {t.bringBack}
         </button>
       ) : (
-        <button
-          type="button"
-          className={word.isFavorite ? 'word-row-star is-on' : 'word-row-star'}
-          aria-pressed={word.isFavorite}
-          aria-label={word.isFavorite ? t.unfavourite(head) : t.favourite(head)}
-          onClick={() => onToggleFavourite(word.esWord, !word.isFavorite)}
-        >
-          <StarIcon filled={word.isFavorite} />
-        </button>
+        <>
+          {queueable && onToggleQueue && (
+            <button
+              type="button"
+              className={queued ? 'word-row-queue is-on' : 'word-row-queue'}
+              aria-pressed={queued}
+              aria-label={queued ? t.unqueueRow(head) : t.queueRow(head)}
+              onClick={() => onToggleQueue(word.esWord)}
+            >
+              <QueueIcon queued={queued} />
+              <span>{queued ? t.queued : t.queueShort}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={word.isFavorite ? 'word-row-star is-on' : 'word-row-star'}
+            aria-pressed={word.isFavorite}
+            aria-label={word.isFavorite ? t.unfavourite(head) : t.favourite(head)}
+            onClick={() => onToggleFavourite(word.esWord, !word.isFavorite)}
+          >
+            <StarIcon filled={word.isFavorite} />
+          </button>
+        </>
       )}
     </div>
   )

@@ -9,7 +9,7 @@ import { blankValues } from '../data/customWords'
 import type { UserData } from '../data/useUserData'
 import { addCustomWord } from '../data/customWords'
 import { noEnrichment, type EnrichResult } from '../data/enrich'
-import { MAX_LEARN_PICKS, livePicks } from '../data/learnPicks'
+import { MAX_LEARN_PICKS, isQueueable, livePicks, toggleQueued } from '../data/learnPicks'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
 import { hasProgress } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
@@ -98,6 +98,14 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
     haptic('select')
     data.applyFavorite([esWord], favourite)
     queue.enqueueFavorite(esWord, favourite)
+  }
+  // The Learn queue, from the row: queues a word that can still be started, or takes it out. A full queue says so (the row stays as it was).
+  const toggleQueue = (esWord: string) => {
+    const word = data.words.find((w) => wordKey(w.esWord) === wordKey(esWord))
+    if (!word) return
+    haptic('select')
+    const result = toggleQueued(word, { getSettings: data.getSettings, words: data.words, applySettings: data.applySettings, queue })
+    if (result.done === 'refused' && result.reason === 'full') setNotice(t.queueFull(MAX_LEARN_PICKS))
   }
   const bringBack = (esWord: string) => {
     haptic('tap')
@@ -226,7 +234,10 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
             onViewChange(latest.current)
           }}
           getKey={(i) => wordKey(list.rows[i].word.esWord)}
-          renderRow={(i) => <WordRow row={list.rows[i]} settings={data.settings} onOpen={onOpen} onToggleFavourite={toggleFavourite} onBringBack={bringBack} />}
+          renderRow={(i) => {
+            const { word } = list.rows[i]
+            return <WordRow row={list.rows[i]} settings={data.settings} onOpen={onOpen} onToggleFavourite={toggleFavourite} queueable={isQueueable(word)} queued={queuedKeys.has(wordKey(word.esWord))} onToggleQueue={toggleQueue} onBringBack={bringBack} />
+          }}
         />
       )}
 

@@ -185,7 +185,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
   it('the Favourites filter lists the favourites', async () => {
     const page = await open()
-    await chooseFilter(page, 'Filters', 'Favourites')
+    await chooseFilter(page, 'Filters', 'Saved')
     await page.waitForSelector('.vlist')
     const fx = await fixture(page)
     expect(await page.$$eval('.word-row-star.is-on', (els) => els.length)).toBe(1)
@@ -489,7 +489,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         await back(page)
         expect(await rows(page)).toEqual(order) // a word opened and closed
 
-        await chooseFilter(page, 'Filters', 'Favourites')
+        await chooseFilter(page, 'Filters', 'Saved')
         await page.waitForSelector('.vlist')
         await control(page, 'Filters')
         await page.waitForSelector('.sheet')
@@ -516,7 +516,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         // star five learned words, then look at them in a random order, favourites only
         for (const i of [0, 1, 2, 3, 4]) await page.evaluate((n) => (document.querySelectorAll('.word-row-star')[n] as HTMLElement).click(), i)
         await chooseSort(page, 'Random')
-        await chooseFilter(page, 'Filters', 'Favourites')
+        await chooseFilter(page, 'Filters', 'Saved')
         await page.waitForFunction(() => document.querySelectorAll('.word-row-star.is-on').length >= 5)
         const before = await rows(page)
         expect(before.length).toBeGreaterThanOrEqual(5)
@@ -602,7 +602,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await control(page, 'Sort')
       await press(page, '.sheet-row', 'Recently learned')
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
-      await chooseFilter(page, 'Filters', 'Favourites')
+      await chooseFilter(page, 'Filters', 'Saved')
       await page.waitForSelector('.vlist')
       await openRow(page, 0)
       await back(page)
@@ -628,19 +628,19 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       const page = await open()
       const fx = await fixture(page)
       await openWord(page, fx.fresh[0])
-      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queue for Learn|false'])
       expect(await note(page)).toEqual([])
 
       await tapQueue(page)
       await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') !== null)
-      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queued — remove|true'])
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queued — remove|true'])
       expect(await note(page)).toEqual(['Queued — 1st in line.|status'])
       await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
       expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [fx.fresh[0].toLowerCase()] })
 
       await tapQueue(page)
       await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') === null)
-      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queue for Learn|false'])
       await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
       expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [] })
       await page.close()
@@ -665,7 +665,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.waitForFunction(() => (document.querySelector('.words-search') as HTMLInputElement).value === '')
       await control(page, 'Filters')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued', 'Custom'])
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Saved', 'Queued', 'Custom'])
       await press(page, '.sheet .chip', 'Queued')
       await closeSheet(page)
       await page.waitForSelector('.vlist')
@@ -674,12 +674,153 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 90_000)
 
-    it('has no such action on a word that is in progress or known well, and none on the list row', async () => {
+    // The queue from the list row, beside the save star: no need to open the word.
+    const rowButtons = (page: Page, esWord: string) =>
+      page.evaluate((w) => {
+        const row = Array.from(document.querySelectorAll('.word-row')).find((r) => (r.querySelector('.word-row-head')?.textContent ?? '').toLowerCase() === w.toLowerCase())
+        if (!row) return null
+        const read = (e: Element | null) => (e ? { label: e.getAttribute('aria-label'), text: e.textContent?.trim() ?? '', pressed: e.getAttribute('aria-pressed') } : null)
+        return { queue: read(row.querySelector('.word-row-queue')), star: read(row.querySelector('.word-row-star')) }
+      }, esWord)
+    const tapRowQueue = (page: Page, esWord: string) =>
+      page.evaluate((w) => {
+        const row = Array.from(document.querySelectorAll('.word-row')).find((r) => (r.querySelector('.word-row-head')?.textContent ?? '').toLowerCase() === w.toLowerCase())!
+        ;(row.querySelector('.word-row-queue') as HTMLElement).click()
+      }, esWord)
+
+    it('queues a word from its row without opening it, marks the row "Queued", and takes it out again: the row, the Queued filter and the detail agree', async () => {
       const page = await open()
       const fx = await fixture(page)
-      expect(await page.$$eval('.word-row button', (els) => els.map((e) => e.getAttribute('aria-label') ?? ''))).not.toContain('Queue for Learn')
+      const word = fx.fresh[0]
+      await search(page, word)
+      await page.waitForSelector('.word-row')
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queue', pressed: 'false', label: `Queue ${word} for Learn` }, star: { label: `Save ${word}` } })
+
+      await tapRowQueue(page, word)
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 0)
+      expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [word.toLowerCase()] })
+      expect(await page.$('.word-detail')).toBeNull() // the tap acted on the queue and did not open the word
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queued', pressed: 'true', label: `Take ${word} out of the Learn queue` } })
+
+      // the Queued filter lists it, and the detail says the same
+      await page.$eval('.words-search', (el) => void ((el as HTMLInputElement).value = ''))
+      await page.click('.words-search')
+      await page.keyboard.press('Backspace')
+      await page.waitForSelector('.vlist, .words-empty')
+      await chooseFilter(page, 'Filters', 'Queued')
+      await page.waitForSelector('.word-row')
+      expect((await rows(page)).some((r) => r.startsWith(word))).toBe(true)
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queued', pressed: 'true' } })
+      await openRow(page, Math.max(0, (await rows(page)).findIndex((r) => r.startsWith(word))))
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queued — remove|true'])
+      await back(page)
+
+      await tapRowQueue(page, word) // and out again from the row
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length > 1)
+      expect((await sent(page)).settings.at(-1)).toEqual({ learn_picks: [] })
+      await page.waitForFunction(() => document.querySelector('.words-empty') !== null) // it left the Queued list
+      await page.close()
+    }, 90_000)
+
+    it('a word in progress or known well has no queue control on its row, only the star; an unstarted word has both', async () => {
+      const page = await open()
+      const fx = await fixture(page)
+      await search(page, fx.learned[0])
+      await page.waitForSelector('.word-row')
+      expect(await rowButtons(page, fx.learned[0])).toMatchObject({ queue: null, star: { text: '' } })
+      await search(page, fx.fresh[0])
+      await page.waitForSelector('.word-row')
+      const fresh = await rowButtons(page, fx.fresh[0])
+      expect(fresh?.queue).not.toBeNull()
+      expect(fresh?.star).not.toBeNull()
+      await page.close()
+    }, 60_000)
+
+    it('with the queue full the row says so and changes nothing: no marker, nothing sent', async () => {
+      const page = await open('?picks=50')
+      const fx = await fixture(page)
+      const word = fx.fresh[50]
+      await search(page, word)
+      await page.waitForSelector('.word-row')
+      await tapRowQueue(page, word)
+      await page.waitForFunction(() => document.querySelector('.words-note') !== null)
+      expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('The queue is full (50 words). Take one out to add another.')
+      expect(await rowButtons(page, word)).toMatchObject({ queue: { text: 'Queue', pressed: 'false' } })
+      expect((await sent(page)).settings).toEqual([])
+      await page.close()
+    }, 60_000)
+
+    for (const [language, query, queue, queued, save] of [
+      ['English', '?lang=en', 'Queue', 'Queued', 'Save'],
+      ['Russian', '?lang=ru', 'В очередь', 'В очереди', 'Сохранить'],
+    ] as const) {
+      it(`${language}, 320px: the save star and the queue control are two different things on the row, each its own tap target, inside the row`, async () => {
+        const page = await open(query)
+        await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const fx = await fixture(page)
+        const word = fx.fresh.find((w) => w.length >= 11) ?? fx.fresh[0] // a long word: the one most likely to be squeezed by the two controls
+        await search(page, word)
+        await page.waitForSelector('.word-row')
+        const look = async () =>
+          page.evaluate(() => {
+            const row = document.querySelector('.word-row') as HTMLElement
+            const box = (e: Element) => {
+              const r = e.getBoundingClientRect()
+              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }
+            }
+            const queue = row.querySelector('.word-row-queue') as HTMLElement
+            const star = row.querySelector('.word-row-star') as HTMLElement
+            const range = document.createRange()
+            range.selectNodeContents(queue.querySelector('span')!)
+            return {
+              row: box(row),
+              queue: box(queue),
+              star: box(star),
+              head: box(row.querySelector('.word-row-head')!),
+              queueText: queue.textContent?.trim(),
+              queueLines: new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size,
+              starText: star.textContent?.trim(),
+              starLabel: star.getAttribute('aria-label'),
+              queueLabel: queue.getAttribute('aria-label'),
+              page: document.documentElement.scrollWidth <= window.innerWidth,
+            }
+          })
+        const idle = await look()
+        expect(idle.row.height).toBe(72)
+        expect(idle.queueText).toBe(queue) // a word, so it reads as an action
+        expect(idle.starText).toBe('') // an icon only: a bookmark, so it does not read as an action
+        expect(idle.queueLines).toBe(1)
+        expect(idle.starLabel!.startsWith(save)).toBe(true)
+        expect(idle.queueLabel).toContain('Learn') // the one that changes what is taught says it is for Learn; the star's label never does
+        expect(idle.starLabel).not.toContain('Learn')
+        for (const control of [idle.queue, idle.star]) {
+          expect(control.height).toBeGreaterThanOrEqual(32)
+          expect(control.width).toBeGreaterThanOrEqual(32)
+          expect(control.top).toBeGreaterThanOrEqual(idle.row.top)
+          expect(control.bottom).toBeLessThanOrEqual(idle.row.bottom)
+          expect(control.right).toBeLessThanOrEqual(idle.row.right)
+        }
+        expect(idle.queue.right).toBeLessThanOrEqual(idle.star.left + 1) // side by side, not on top of each other
+        expect(idle.head.width).toBeGreaterThan(60) // the word is not squeezed away
+        expect(idle.page).toBe(true)
+        // queued: the marker reads "Queued" and still fits
+        await tapRowQueue(page, word)
+        await page.waitForFunction((w) => document.querySelector('.word-row-queue')?.textContent?.trim() === w, {}, queued)
+        const on = await look()
+        expect(on.queueText).toBe(queued)
+        expect(on.queueLines).toBe(1)
+        expect(on.row.height).toBe(72)
+        expect(on.queue.right).toBeLessThanOrEqual(on.star.left + 1)
+        expect(on.head.width).toBeGreaterThan(60)
+        await page.close()
+      }, 60_000)
+    }
+
+    it('has no such action on a word that is in progress or known well', async () => {
+      const page = await open()
+      const fx = await fixture(page)
       await openWord(page, fx.learned[0])
-      expect(await queueButton(page)).toEqual(['Add to favourites|false'])
+      expect(await queueButton(page)).toEqual(['Save word|false'])
       await page.close()
     }, 60_000)
 
@@ -690,12 +831,12 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await tapQueue(page)
       await page.waitForFunction(() => document.querySelector('.detail-actions .queue-note') !== null)
       expect(await note(page)).toEqual(['The queue is full (50 words). Take one out to add another.|status'])
-      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queue for Learn|false'])
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queue for Learn|false'])
       expect((await sent(page)).settings).toEqual([])
       // taking one out makes room
       await back(page)
       await openWord(page, fx.fresh[0])
-      expect(await queueButton(page)).toEqual(['Add to favourites|false', 'Queued — remove|true'])
+      expect(await queueButton(page)).toEqual(['Save word|false', 'Queued — remove|true'])
       await tapQueue(page)
       await back(page)
       await openWord(page, fx.fresh[50])
@@ -860,7 +1001,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
       await openByName(page, 'Zapallito')
       expect(await page.$eval('.custom-mark', (e) => e.textContent)).toBe('Added by you')
-      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toEqual(['Add to favourites', 'Queued — remove', 'Edit', 'Delete'])
+      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toEqual(['Save word', 'Queued — remove', 'Edit', 'Delete'])
       await page.close()
     }, 90_000)
 
@@ -1375,7 +1516,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await addWord(page)
       await control(page, 'Filters')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Favourites', 'Queued', 'Custom'])
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Saved', 'Queued', 'Custom'])
       await press(page, '.sheet .chip', 'Custom')
       await closeSheet(page)
       await page.waitForSelector('.vlist')

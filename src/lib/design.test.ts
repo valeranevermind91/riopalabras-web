@@ -102,6 +102,13 @@ describe('wrapping and focus (the polish pass)', () => {
     expect(rule('.segment')).toMatch(/flex-direction: column/)
   })
 
+  it('the queue pill on a list row never wraps or shrinks (its label is one short word), and has a visible focus ring', () => {
+    expect(rule('.word-row-queue')).toMatch(/white-space: nowrap/)
+    expect(rule('.word-row-queue')).toMatch(/flex: none/)
+    expect(rule('.word-row-queue')).toMatch(/min-height: 32px/)
+    expect(css).toMatch(/\.word-row-queue:focus-visible/)
+  })
+
   it('the Cloze instruction is set like the Matching one', () => {
     expect(css).toMatch(/\.match-hint,\s*\.cz-instruction \{/)
   })

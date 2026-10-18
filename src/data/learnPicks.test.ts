@@ -398,9 +398,9 @@ describe('the word detail', () => {
     renderToStaticMarkup(createElement(WordDetail, { word, data: { words, settings, getSettings: () => settings, applyFavorite: noop, applyHidden: noop, applySettings: noop } as never, queue }))
   const base = makeWord('casa', { rank: 1 })
 
-  it('offers "Queue for Learn" next to "Add to favourites" for a word that is not started', () => {
+  it('offers "Queue for Learn" next to "Save word" for a word that is not started', () => {
     const html = detail(base, [base])
-    expect(html).toMatch(/Add to favourites<\/button><button[^>]*aria-pressed="false"[^>]*>Queue for Learn<\/button>/)
+    expect(html).toMatch(/Save word<\/button><button[^>]*aria-pressed="false"[^>]*>Queue for Learn<\/button>/)
   })
 
   it('reads "Queued — remove" when the word is already queued', () => {
@@ -431,8 +431,11 @@ describe('the word detail', () => {
     expect(detail(base, [base])).not.toContain('in line')
   })
 
-  it('the queue does not become a control on the list row', () => {
+  it('the list row has the queue as a control too, but only for a word that can still be started (the checks are in WordRow.test.ts and Words.test.ts)', () => {
     const row = readFileSync('src/components/WordRow.tsx', 'utf8')
-    expect(row).not.toMatch(/queue/i)
+    expect(row).toMatch(/\{queueable && onToggleQueue && \(/)
+    const screen = readFileSync('src/screens/Words.tsx', 'utf8')
+    expect(screen).toContain('queueable={isQueueable(word)}') // the same rule the detail screen uses
+    expect(screen).toContain('queued={queuedKeys.has(wordKey(word.esWord))}') // the same set the Queued filter lists
   })
 })

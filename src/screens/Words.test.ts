@@ -95,7 +95,7 @@ describe('the Words screen', () => {
     expect(html).toContain('<span class="word-row-line">') // one line, not two
     expect(html).toContain(ordinary[0].ruTranslation) // Russian by default
     expect(html).not.toContain(`>${ordinary[0].enTranslation}</span>`)
-    expect(html).toContain(`aria-pressed="false" aria-label="Add ${ordinary[0].esWord} to favourites"`)
+    expect(html).toContain(`aria-pressed="false" aria-label="Save ${ordinary[0].esWord}"`)
   })
 
   it('shows the English line instead when the user has switched Russian off', () => {
@@ -108,7 +108,7 @@ describe('the Words screen', () => {
     const words = learnedSome().map((w) => (w.esWord === ordinary[2].esWord ? ({ ...w, isFavorite: true } as Word) : w))
     const html = render(words, view({ segment: 'learned' }))
     expect(html).toContain('<span class="word-row-due">Due now</span>')
-    expect(html).toMatch(/word-row-star is-on" aria-pressed="true" aria-label="Remove [^"]+ from favourites"/)
+    expect(html).toMatch(/word-row-star is-on" aria-pressed="true" aria-label="Remove [^"]+ from saved"/)
   })
 
   it('the Known list has "Bring back" on each row in place of the star', () => {
@@ -118,6 +118,59 @@ describe('the Words screen', () => {
     expect(html).toContain('aria-label="Bring back siete"')
     expect(html).not.toContain('word-row-star')
     expect(html.match(/class="word-row"/g)).toHaveLength(1)
+  })
+
+  describe('the queue on the row', () => {
+    const fresh = [makeWord('uno', { rank: 1 }), makeWord('dos', { rank: 2 }), makeWord('tres', { rank: 3 })]
+    const learnedWord = makeWord('cuatro', { rank: 4, repetitions: 3, nextReview: new Date(Date.now() + 5 * day) })
+    const reference = makeWord('de', { rank: 5, pos: 'prep' }) // a word that is never taught
+    const hiddenWord = makeWord('seis', { rank: 6, isHidden: true })
+    const noTranslation = makeWord('siete', { rank: 7, enTranslation: '', ruTranslation: '' })
+    const all = [...fresh, learnedWord, reference, hiddenWord, noTranslation]
+    const rowOf = (html: string, name: string) => html.match(new RegExp(`<div class="word-row">(?:(?!<div class="word-row">).)*?>${name}</span>.*?</div>(?=<div class="word-row">|</div></div>|$)`, 's'))?.[0] ?? ''
+    const queueRows = (html: string) => [...html.matchAll(/class="word-row-queue( is-on)?" aria-pressed="(true|false)" aria-label="[^"]*"/g)].map((m) => m[2])
+    const withPicks = (picks: string[]) => parseSettings({ learn_picks: picks })
+
+    it('only words that can still be started have it: not a learned word, not a never-taught one, not a hidden one, not one with no translation', () => {
+      const html = render(all, view({ segment: 'all' }), withPicks([]))
+      for (const name of ['uno', 'dos', 'tres']) expect(rowOf(html, name), name).toContain('word-row-queue')
+      for (const name of ['cuatro', 'de', 'siete']) {
+        expect(rowOf(html, name), name).toContain('word-row-star') // the row is found, and has its star
+        expect(rowOf(html, name), name).not.toContain('word-row-queue') // and no dead control beside it
+      }
+      expect(html.match(/word-row-queue/g)).toHaveLength(3)
+      const known = render(all, view({ segment: 'hidden' }), withPicks([]))
+      expect(known).not.toContain('word-row-queue') // a hidden word has "Bring back" only
+      expect(known).toContain('word-row-bring')
+    })
+
+    it('a queued word shows "Queued", pressed, and a word that is not queued shows "Queue": the queue as the list sees it', () => {
+      const html = render(all, view({ segment: 'all' }), withPicks(['dos']))
+      expect(rowOf(html, 'dos')).toContain('aria-pressed="true" aria-label="Take dos out of the Learn queue"')
+      expect(rowOf(html, 'dos')).toContain('<span>Queued</span>')
+      for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain('<span>Queue</span>')
+    })
+
+    it('the row and the Queued filter agree: the filter lists exactly the rows that show the marker, and every one of them does', () => {
+      const picks = ['tres', 'uno']
+      const everything = render(all, view({ segment: 'all' }), withPicks(picks))
+      const filtered = render(all, view({ segment: 'all', filters: { ...NO_FILTERS, queued: true } }), withPicks(picks))
+      const markedInAll = [...everything.matchAll(/class="word-row-queue is-on"[^>]*aria-label="Take ([^ ]+) out/g)].map((m) => m[1]).sort()
+      const listedByFilter = [...filtered.matchAll(/aria-label="Open ([^"]+)"/g)].map((m) => m[1]).sort()
+      expect(markedInAll).toEqual(['tres', 'uno'])
+      expect(listedByFilter).toEqual(markedInAll)
+      expect(queueRows(filtered)).toEqual(['true', 'true']) // and each row in it is marked
+    })
+
+    it('a queued word that can no longer be taught (learned since) is not shown as queued, as the filter does not list it', () => {
+      const html = render([...fresh, { ...learnedWord, esWord: 'cinco' }], view({ segment: 'all' }), withPicks(['cinco']))
+      expect(html).not.toContain('is-on" aria-pressed="true" aria-label="Take')
+    })
+
+    it('the star next to it is the save, in its own words', () => {
+      const html = render(all, view({ segment: 'all' }), withPicks([]))
+      expect(rowOf(html, 'uno')).toContain('aria-label="Save uno"')
+    })
   })
 
   it('a list empty because of the search or the filters offers to clear them; one empty by nature does not', () => {
@@ -199,11 +252,11 @@ describe('the filters sheet', () => {
     expect(headings).toEqual(['Progress', 'Show only', 'Part of speech'])
   })
 
-  it('Progress: Any · Not started · In progress · Well learned · Due now; Show only: Favourites · Queued · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
+  it('Progress: Any · Not started · In progress · Well learned · Due now; Show only: Saved · Queued · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
     const html = sheet()
     const group = (id: string) => [...html.match(new RegExp(`aria-labelledby="${id}">.*?</section>`))![0].matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
     expect(group('sheet-progress')).toEqual(['Any', 'Not started', 'In progress', 'Well learned', 'Due now'])
-    expect(group('sheet-show-only')).toEqual(['Favourites', 'Queued', 'Custom'])
+    expect(group('sheet-show-only')).toEqual(['Saved', 'Queued', 'Custom'])
     expect(group('sheet-pos')).toEqual(['Verbs', 'Nouns', 'Adjectives', 'Adverbs'])
   })
 
@@ -212,7 +265,7 @@ describe('the filters sheet', () => {
     const on = sheet({ filters: { state: 'due', favourites: true, queued: false, custom: false, pos: 'adj' } })
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Due now/)
     expect(on).toMatch(/class="chip" aria-pressed="false">Any/)
-    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Favourites/)
+    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Saved/)
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Adjectives/)
   })
 
@@ -255,7 +308,7 @@ describe('the word detail', () => {
     const html = detail(base)
     expect(html.indexOf('wc-headword')).toBeLessThan(html.indexOf('state-block'))
     expect(html.indexOf('state-block')).toBeLessThan(html.indexOf('detail-actions'))
-    expect(html).toContain('Add to favourites')
+    expect(html).toContain('Save word')
     expect(html).not.toContain('Bring back')
   })
 
@@ -344,7 +397,7 @@ describe('the word detail', () => {
     expect(html).toContain('<dd>Known</dd>')
     expect(html).toContain('Its progress is kept')
     expect(html).toContain('aria-label="Bring back casa"')
-    expect(html).toContain('Remove from favourites')
+    expect(html).toContain('Remove from saved')
     expect(html).toContain('aria-pressed="true"')
   })
 

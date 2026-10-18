@@ -113,9 +113,27 @@ describe('one name for the end of a run of Matching, Cloze and Review', () => {
 })
 
 describe('spelling and address', () => {
-  it('English: favourites, with a u, like practise and recognised (never "favorites" in what a person reads)', () => {
-    expect(offenders(enTexts, /favorite/i)).toEqual([])
-    expect(en.home.degradedTables.user_favorites).toBe('favourites')
+  it('a bookmarked word is a "saved" word, in what a person reads: never "favourite" or "favorite" (the code and the table keep the old name), and no «избранное»', () => {
+    expect(offenders(enTexts, /favou?rite/i)).toEqual([])
+    expect(offenders(ruTexts, /избранн/i)).toEqual([])
+    expect(en.home.degradedTables.user_favorites).toBe('saved words')
+    expect(ru.home.degradedTables.user_favorites).toBe('сохранённые слова')
+  })
+
+  it('the save star promises nothing: Save / Saved, never a request to be taught the word', () => {
+    expect([en.words.addFavourite, en.words.removeFavourite, en.words.favourites]).toEqual(['Save word', 'Remove from saved', 'Saved'])
+    expect([ru.words.addFavourite, ru.words.removeFavourite, ru.words.favourites]).toEqual(['Сохранить слово', 'Убрать из сохранённых', 'Сохранённые'])
+    for (const text of [en.words.favourite('x'), en.words.unfavourite('x'), en.words.addFavourite, en.words.removeFavourite]) expect(text).not.toMatch(/learn|queue|teach|study|practi[cs]e|favou?rite/i)
+    for (const text of [ru.words.favourite('x'), ru.words.unfavourite('x'), ru.words.addFavourite, ru.words.removeFavourite]) expect(text).not.toMatch(/learn|очеред|учить|изуч|избранн/i)
+  })
+
+  it('the queue action on a row says it is for Learn and what it does: "Queue" / "Queued" (the filter\'s word), «В очередь» / «В очереди»', () => {
+    expect([en.words.queueShort, en.words.queued]).toEqual(['Queue', 'Queued'])
+    expect([ru.words.queueShort, ru.words.queued]).toEqual(['В очередь', 'В очереди'])
+    expect(en.words.queueRow('x')).toBe('Queue x for Learn')
+    expect(en.words.unqueueRow('x')).toBe('Take x out of the Learn queue')
+    expect(ru.words.queueRow('x')).toBe('В очередь Learn: «x»')
+    expect(ru.words.unqueueRow('x')).toBe('Убрать «x» из очереди Learn')
   })
 
   it('Russian: formal "вы" throughout: no ты-forms (ты, тебе, тебя, твой, видишь, хочешь…)', () => {

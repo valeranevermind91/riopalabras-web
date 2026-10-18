@@ -58,7 +58,7 @@ describe('the seven steps', () => {
       ['Learn', 'learn', 'new words, each shown in a real sentence rather than a bare list.'],
       ['Review', 'learn', 'self-check cards: you say whether you remembered, and the app decides when the word comes back.'],
       ['Matching and Cloze', 'practice', 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.'],
-      ['Words', 'learn', 'the whole dictionary, with search, filters, favourites, and words you add yourself.'],
+      ['Words', 'learn', 'the whole dictionary, with search, filters, saved words, and words you add yourself.'],
     ])
     expect(html.match(/<li>/g)).toHaveLength(4)
   })
