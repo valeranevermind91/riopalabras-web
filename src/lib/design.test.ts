@@ -97,6 +97,11 @@ describe('wrapping and focus (the polish pass)', () => {
     expect(rule('.cz-secondary.is-spent')).toMatch(/visibility: hidden/) // hidden, not display: none: Continue stays where Check was
   })
 
+  it('a segment of the word list is a column: the label, and the count on its own line under it, whatever the width', () => {
+    expect(rule('.segment')).toMatch(/display: flex/)
+    expect(rule('.segment')).toMatch(/flex-direction: column/)
+  })
+
   it('the Cloze instruction is set like the Matching one', () => {
     expect(css).toMatch(/\.match-hint,\s*\.cz-instruction \{/)
   })

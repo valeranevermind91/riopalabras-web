@@ -210,6 +210,33 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }
   }, 60_000)
 
+  it('every segment puts its count on its own line under the label, the same way on all three, in both languages and at 320, 390 and 480px', async () => {
+    for (const query of ['?lang=en', '?lang=ru&ru=0']) {
+      for (const width of [320, 390, 480]) {
+        const page = await open(query)
+        await page.setViewport({ width, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const segments = await page.$$eval('.segment', (els) =>
+          els.map((e) => {
+            const count = e.querySelector('.segment-count')!.getBoundingClientRect()
+            const range = document.createRange()
+            range.selectNodeContents(e.firstChild!) // the label's own text node
+            const label = range.getBoundingClientRect()
+            const box = e.getBoundingClientRect()
+            return { text: e.textContent, labelBottom: label.bottom, countTop: count.top, countOffset: Math.round(count.top - box.top), labelOffset: Math.round(label.top - box.top), height: Math.round(box.height), labelHeight: label.height, font: parseFloat(getComputedStyle(e).fontSize) }
+          }),
+        )
+        const where = `${query} at ${width}px: ${segments.map((s) => s.text).join(' | ')}`
+        for (const s of segments) expect(s.countTop, where).toBeGreaterThanOrEqual(s.labelBottom - 1) // under the label, never beside it
+        for (const s of segments) expect(s.labelHeight, where).toBeLessThan(s.font * 1.7) // the label itself is one line
+        expect(new Set(segments.map((s) => s.countOffset)).size, where).toBe(1) // the counts sit at the same height
+        expect(new Set(segments.map((s) => s.labelOffset)).size, where).toBe(1) // and so do the labels
+        expect(new Set(segments.map((s) => s.height)).size, where).toBe(1) // and the three are one height
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), where).toBe(true)
+        await page.close()
+      }
+    }
+  }, 120_000)
+
   it('the clear (×) in the search field is drawn in the app\'s muted ink, not the browser\'s blue (read off a screenshot of the field\'s right end)', async () => {
     const page = await open()
     await page.type('.words-search', 'ca')
