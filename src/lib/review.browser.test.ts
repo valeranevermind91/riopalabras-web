@@ -279,7 +279,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — можно выучить 10 новых слов' },
       { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Done for today', ru: 'На сегодня всё' },
       { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова закончились — добавьте свои или потренируйтесь' },
-      { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All clear', ru: 'Всё в порядке' },
+      { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All caught up', ru: 'Всё повторено' },
     ] as const
 
     /** How the line and the tiles look right now: its text, whether it overflows or runs past the screen, how many lines it takes, and which tile is filled. */

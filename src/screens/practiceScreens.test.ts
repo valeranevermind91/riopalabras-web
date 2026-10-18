@@ -44,14 +44,14 @@ const home = (list: Word[], raw: Record<string, unknown> = {}) =>
   )
 
 describe('Home: the two practice buttons', () => {
-  it('are disabled with "Learn 5+ words first" below 5 eligible words, in English whatever the translation language', () => {
+  it('are disabled with "At least 5 words" below 5 eligible words, in English whatever the translation language', () => {
     const en = home(words(4), { show_ru_translation: false, show_en_translation: true })
-    expect(en.match(/Learn 5\+ words first/g)).toHaveLength(2)
+    expect(en.match(/At least 5 words/g)).toHaveLength(2)
     expect(en).not.toContain('Practice Matching')
     const ru = home(words(4)) // Russian translations are the default: the buttons are still English
-    expect(ru.match(/Learn 5\+ words first/g)).toHaveLength(2)
+    expect(ru.match(/At least 5 words/g)).toHaveLength(2)
     expect(ru).not.toMatch(/[А-Яа-яЁё]/)
-    const needs = en.split('<button').filter((b) => b.includes('Learn 5+ words first'))
+    const needs = en.split('<button').filter((b) => b.includes('At least 5 words'))
     expect(needs.every((b) => b.includes('disabled'))).toBe(true)
   })
 
@@ -59,7 +59,7 @@ describe('Home: the two practice buttons', () => {
     const en = home(words(6), { show_ru_translation: false, show_en_translation: true })
     expect(en).toContain('tile-label">Matching<')
     expect(en).toContain('tile-label">Cloze<')
-    expect(en).not.toContain('Learn 5+ words first')
+    expect(en).not.toContain('At least 5 words')
     const ru = home(words(6)) // default settings: Russian translations
     expect(ru).toContain('tile-label">Matching<')
     expect(ru).toContain('tile-label">Cloze<')

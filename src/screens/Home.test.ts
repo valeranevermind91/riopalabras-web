@@ -257,10 +257,10 @@ describe('the action tiles', () => {
       expect(tile(html, 'review')).not.toContain('tile-count')
     })
 
-    it('Learn 5+ words first, on each practice tile', () => {
+    it('At least 5 words, on each practice tile', () => {
       const html = render({}, [...learnedWords(4, 4), ...unlearned(5)])
       for (const id of ['matching', 'cloze']) {
-        expect(part(html, id, 'tile-sub')).toBe('Learn 5+ words first')
+        expect(part(html, id, 'tile-sub')).toBe('At least 5 words')
         expect(tile(html, id)).toContain('disabled=""')
         expect(tile(html, id)).not.toContain('parejas')
         expect(tile(html, id)).not.toContain('completar')
@@ -625,7 +625,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     expect(adviceOf(states.learnNew())).toBe('Nothing to review — 10 new words ready') // the 10 a batch would offer, not the 20 in the pool
     expect(adviceOf(states.allDoneToday())).toBe('Done for today')
     expect(adviceOf(states.poolEmpty())).toBe('No new words left — add your own, or practise')
-    expect(adviceOf(states.allClear())).toBe('All clear')
+    expect(adviceOf(states.allClear())).toBe('All caught up')
   })
 
   it('the number due in review first is the real total, not one session\'s worth', () => {
@@ -653,7 +653,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
       expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно выучить 10 новых слов')
       expect(adviceOf(states.allDoneToday())).toBe('На сегодня всё')
       expect(adviceOf(states.poolEmpty())).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
-      expect(adviceOf(states.allClear())).toBe('Всё в порядке')
+      expect(adviceOf(states.allClear())).toBe('Всё повторено')
     } finally {
       setLanguage('en')
     }

@@ -130,7 +130,7 @@ describe('the Words screen', () => {
   })
 
   it('an empty list says what goes there', () => {
-    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No known words yet. Words you mark as known appear here.')
+    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No known words yet. Words you mark with “I already know this word”, or tick in the placement test, appear here.')
     expect(render([makeWord('uno')], view({ segment: 'learned' }))).toContain('Nothing learned yet.')
     expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain('No words match.')
   })

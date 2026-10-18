@@ -58,7 +58,7 @@ export const en = {
       learnNew: (n: number) => `Nothing to review — ${n} new ${plural(n, { one: 'word', other: 'words' })} ready`,
       allDoneToday: 'Done for today',
       poolEmpty: 'No new words left — add your own, or practise',
-      allClear: 'All clear',
+      allClear: 'All caught up',
     },
     // How far today is from counting for the streak (10 cards): shown until the day counts, then nothing.
     streakToday: (done: number, needed: number) => `${done} / ${needed} today`,
@@ -209,7 +209,7 @@ export const en = {
     bringBackWord: (word: string) => `Bring back ${word}`,
     emptyLearned: 'Nothing learned yet. Start with Learn on the home screen.',
     emptyAll: 'No words.',
-    emptyHidden: 'No known words yet. Words you mark as known appear here.',
+    emptyHidden: 'No known words yet. Words you mark with “I already know this word”, or tick in the placement test, appear here.',
     emptyFiltered: 'No words match. Try another search, or clear the filters.',
     clearSearchAndFilters: 'Clear search and filters',
     count: (shown: number) => `${shown} ${plural(shown, { one: 'word', other: 'words' })}`,
@@ -427,7 +427,7 @@ export const en = {
   practice: {
     matchingButton: 'Practice Matching',
     clozeButton: 'Practice Cloze',
-    needWords: 'Learn 5+ words first',
+    needWords: 'At least 5 words',
     matchingTitle: 'Matching',
     matchingHint: 'Tap a word, then its translation.',
     clozeHint: 'Type the missing word.',

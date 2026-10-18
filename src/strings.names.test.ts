@@ -67,8 +67,8 @@ describe('known, not hidden', () => {
   it('the tab is the one the placement note and the empty list send people to', () => {
     expect(en.onboarding.placement.hidesNote).toContain(`the ${en.words.segments.hidden} tab`)
     expect(ru.onboarding.placement.hidesNote).toContain(`«${ru.words.segments.hidden}»`)
-    expect(en.words.emptyHidden).toContain('mark as known')
-    expect(ru.words.emptyHidden).toContain('отметили как известные')
+    expect(en.words.emptyHidden).toContain(en.learn.alreadyKnow) // it names the button that puts a word there
+    expect(ru.words.emptyHidden).toContain(ru.learn.alreadyKnow)
   })
 
   it('"Known well" is "Well learned" (Хорошо выучено), so Known means one thing', () => {
@@ -144,9 +144,34 @@ describe('what the text says about the scheduler is what the scheduler does', ()
 })
 
 describe('what a disabled tile and an empty state tell the person to do', () => {
-  it('the practice tiles say what to do (learn words first), not only what is missing', () => {
-    expect(en.practice.needWords).toBe('Learn 5+ words first')
-    expect(ru.practice.needWords).toBe('Выучите 5+ слов')
+  it('the practice tiles give their reason as a status, like the tiles beside them ("Nothing to review", "More tomorrow"), not as an order', () => {
+    expect(en.practice.needWords).toBe('At least 5 words')
+    expect(ru.practice.needWords).toBe('Не менее 5 слов')
+  })
+
+  it('"All caught up" is one phrase on Home and at the end of Review, in both languages (the old "All clear" / «Всё чисто» said nothing)', () => {
+    expect(en.home.advice.allClear).toBe(en.review.allCaughtUp.replace(/!$/, ''))
+    expect(ru.home.advice.allClear).toBe(ru.review.allCaughtUp)
+  })
+
+  it('the Known tab\'s empty text does not say "known" twice: its second sentence names the actual buttons, Learn\'s and the placement test\'s', () => {
+    for (const [text, button, test, word] of [
+      [en.words.emptyHidden, en.learn.alreadyKnow, 'placement test', /known/gi],
+      [ru.words.emptyHidden, ru.learn.alreadyKnow, 'входном тесте', /известн/gi],
+    ] as const) {
+      expect(text).toContain(button)
+      expect(text).toContain(test)
+      expect(text.match(word)).toHaveLength(1) // the first sentence says it; the second does not repeat it
+    }
+  })
+
+  it('the search placeholder in Russian is «Поиск слова»: a field for a word, not a count of languages', () => {
+    expect(ru.words.searchPlaceholder).toBe('Поиск слова')
+  })
+
+  it('the queue place reads «В очереди: N-е место.» (English: "Queued — 3rd in line.")', () => {
+    expect(ru.words.queuedAt(3)).toBe('В очереди: 3-е место.')
+    expect(en.words.queuedAt(3)).toBe('Queued — 3rd in line.')
   })
 
   it('the Learn tile says more comes tomorrow, and says so differently for a goal of 0', () => {

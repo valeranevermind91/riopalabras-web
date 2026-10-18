@@ -64,7 +64,7 @@ describe('the wording', () => {
   it('English', () => {
     expect(a().allDoneToday).toBe('Done for today')
     expect(a().poolEmpty).toBe('No new words left — add your own, or practise')
-    expect(a().allClear).toBe('All clear')
+    expect(a().allClear).toBe('All caught up')
     expect(a().reviewFirst(40)).toBe('Review first — 40 words are waiting')
     expect(a().learnNew(10)).toBe('Nothing to review — 10 new words ready')
   })
@@ -73,7 +73,7 @@ describe('the wording', () => {
     setLanguage('ru')
     expect(a().allDoneToday).toBe('На сегодня всё')
     expect(a().poolEmpty).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
-    expect(a().allClear).toBe('Всё в порядке')
+    expect(a().allClear).toBe('Всё повторено')
     expect(a().reviewFirst(40)).toBe('Сначала повторение — ждут 40 слов')
     expect(a().learnNew(10)).toBe('Повторять нечего — можно выучить 10 новых слов')
   })
@@ -118,9 +118,10 @@ describe('the wording', () => {
   })
 
   it('never mentions reviews when none are due (the Flutter app\'s "or catch up on reviews" with nothing to review)', () => {
+    // A line may say that nothing is left ("Nothing to review", «Повторять нечего», «Всё повторено»); it may not send anyone to a review.
     for (const language of ['en', 'ru'] as const) {
       setLanguage(language)
-      for (const text of [a().allDoneToday, a().poolEmpty, a().allClear, a().learnNew(5)]) expect(text.toLowerCase().replace('nothing to review', '').replace('повторять нечего', '')).not.toMatch(/review|catch up|повтор/)
+      for (const text of [a().allDoneToday, a().poolEmpty, a().allClear, a().learnNew(5)]) expect(text.toLowerCase().replace('nothing to review', '').replace('повторять нечего', '').replace('всё повторено', '')).not.toMatch(/review|catch up|повтор/)
     }
   })
 })
