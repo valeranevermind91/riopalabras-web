@@ -396,7 +396,7 @@ export const en = {
       {
         id: 'spaced',
         heading: 'Why a word comes back',
-        text: 'Words come back on a schedule. A word you have just learned is due the next day. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again does not wipe the word: it comes back in ten minutes, and the gaps start again from one day. The small number on each rating button is the gap that answer gives.',
+        text: 'Words come back on a schedule. A word you have just learned is due the next day. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again does not wipe the word: it is due again within the day, so it returns later in this session if you keep going, and counts as due the next time you open the app. The gaps start again from one day. The small number on each rating button is the gap that answer gives.',
       },
     ],
   },

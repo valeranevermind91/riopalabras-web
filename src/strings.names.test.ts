@@ -180,16 +180,24 @@ describe('the interval on the Again button', () => {
 })
 
 describe('what the text says about the scheduler is what the scheduler does', () => {
-  it('"How it works": the longest gap is nine months and Again is ten minutes (the numbers the code has), and it does not say Again starts over', () => {
+  const spaced = (map: { howItWorks: { sections: readonly { id: string; text: string }[] } }) => map.howItWorks.sections.find((s) => s.id === 'spaced')!.text
+
+  it('"How it works": the longest gap is nine months (the number the code has), and it does not say Again starts over', () => {
     expect(MAX_INTERVAL_DAYS).toBe(270) // nine months of 30 days
-    expect(RELEARN_MINUTES).toBe(10)
-    const spaced = (map: { howItWorks: { sections: readonly { id: string; text: string }[] } }) => map.howItWorks.sections.find((s) => s.id === 'spaced')!.text
     expect(spaced(en)).toContain('nine months')
-    expect(spaced(en)).toContain('ten minutes')
     expect(spaced(en)).not.toMatch(/each one longer than the last|starts the word over/i)
     expect(spaced(ru)).toContain('девяти месяцев')
-    expect(spaced(ru)).toContain('десять минут')
     expect(spaced(ru)).not.toMatch(/каждый длиннее предыдущего|начинает слово заново/i)
+  })
+
+  it('"How it works" explains what Again does without naming a clock: the word is not wiped, it is due again within the day, comes back in this session and is due next time the app opens; the button says "Soon" and the text promises nothing it cannot keep', () => {
+    expect(RELEARN_MINUTES).toBe(10) // the stored wait is a detail: the text does not repeat it
+    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/\d+\s*(min|мин)|minute|минут|\bten\b|десят/i)
+    expect(spaced(en)).toContain('Again does not wipe the word: it is due again within the day, so it returns later in this session if you keep going, and counts as due the next time you open the app.')
+    expect(spaced(en)).toContain('The gaps start again from one day.')
+    expect(spaced(ru)).toContain('Ответ «Снова» не стирает слово: его снова пора повторять в тот же день, поэтому оно вернётся позже в этой сессии, если вы продолжите, и будет ждать повторения, когда вы в следующий раз откроете приложение.')
+    expect(spaced(ru)).toContain('Промежутки снова начнутся с одного дня.')
+    expect(spaced(en)).not.toMatch(/front of the queue/i) // a session takes the most overdue words, and a word that has just come due is the least overdue: no promise of its place
   })
 })
 

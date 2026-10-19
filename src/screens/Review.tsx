@@ -9,6 +9,7 @@ import type { ReviewLog } from '../data/reviewLog'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { useCardTimer } from '../lib/cardTimer'
+import { useDueClock } from '../lib/useDueClock'
 import { haptic } from '../lib/telegram'
 import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { isAgain } from '../sm2/sm2'
@@ -81,6 +82,7 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
     }
 
     if (index >= cards.length - 1) {
+      clock.refresh() // the count on the end screen is taken as of now, not as of when the screen opened
       setCompleted(true)
       // Ask the queue to send what is still waiting. Nothing here waits for it: the ratings are already applied in memory,
       // and if the network is gone they stay queued (and saved on the device) until it can be sent.
@@ -92,8 +94,11 @@ export function ReviewScreen({ data, queue, metrics, reviewLog, onHome, onLearn,
     }
   }
 
-  // When a session ends, how many words are still due (taken from the words as they are after the last rating, so anything that came due meanwhile counts).
-  const left = useMemo(() => (completed ? dueWords(data.words, new Date()).length : 0), [completed, data.words])
+  // When a session ends, how many words are still due, and it stays true while the person sits on that screen: the count is taken at the moment of the
+  // last rating (so anything that came due meanwhile counts), again when the next word rated Again comes due, and again when the app returns to the
+  // foreground. It is the same clock Home counts from (useDueClock), and the same rule Continue draws its next session by (dueWords at the moment).
+  const clock = useDueClock(data.words, { timed: completed })
+  const left = useMemo(() => (completed ? dueWords(data.words, clock.asOf).length : 0), [completed, data.words, clock.asOf])
 
   // "Continue" and "Refresh": the next session, drawn from what is due now.
   const refresh = () => {

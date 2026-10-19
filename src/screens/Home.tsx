@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
-import { computeStats, nextDueWithin, type Stats } from '../data/stats'
+import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
 import { STREAK_CARDS, cardsToday, streakCountedToday } from '../data/daily'
 import { activityDots } from '../data/streakDots'
@@ -14,8 +14,7 @@ import { wordOfTheDay, type WordOfTheDay } from '../data/wordOfDay'
 import type { WriteQueue } from '../data/writeQueue'
 import type { AuthState } from '../lib/auth'
 import { haptic } from '../lib/telegram'
-import { useForeground } from '../lib/useForeground'
-import { RELEARN_MS } from '../sm2/sm2'
+import { useDueClock } from '../lib/useDueClock'
 import { strings } from '../strings'
 
 interface HomeScreenProps {
@@ -42,19 +41,12 @@ interface HomeScreenProps {
 export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
   // The time the counts are taken at: when Home is shown (it remounts on navigation), so "due" and "today" are never stale. A word rated Again is
   // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
-  // was while Home stays open, the counts are taken again the moment the next such word comes due.
-  const [asOf, setAsOf] = useState(() => new Date())
-  // And again when the app comes back to the foreground: a Mini App left open overnight would otherwise keep yesterday's date, and with it
-  // yesterday's word of the day and yesterday's counts.
-  useForeground(() => setAsOf(new Date()))
+  // was while Home stays open, the counts are taken again the moment the next such word comes due, and when the app comes back to the foreground
+  // (a Mini App left open overnight would otherwise keep yesterday's date, and with it yesterday's word of the day and yesterday's counts).
+  // The same clock the Review end screen counts from (useDueClock).
+  const { asOf } = useDueClock(data.status === 'ready' ? data.data.words : null, { timed: !nowProp })
   const at = nowProp ?? asOf
   const stats = useMemo(() => (data.status === 'ready' ? computeStats(data.data.words, data.data.settings, at) : null), [data, at])
-  const comesDueAt = useMemo(() => (data.status === 'ready' && !nowProp ? nextDueWithin(data.data.words, at, RELEARN_MS)?.getTime() ?? null : null), [data, nowProp, at])
-  useEffect(() => {
-    if (comesDueAt === null) return
-    const timer = setTimeout(() => setAsOf(new Date()), Math.max(0, comesDueAt - Date.now()) + 250)
-    return () => clearTimeout(timer)
-  }, [comesDueAt])
 
   // How many words each practice exercise can use, and today's word.
   const extras = useMemo(() => {

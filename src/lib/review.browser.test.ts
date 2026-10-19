@@ -216,6 +216,36 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     expect([...next].sort()).toEqual([...range(1, 5), 'pronta'].sort())
     await page.close()
   }, 180_000)
+  it('the end screen keeps its count true while it is on screen: a word that comes due there turns "All caught up" into "1 word is still due", and Continue finds that same word', async () => {
+    const page = await open('due=1&soon=4')
+    await page.click('[data-tile="review"]')
+    await page.waitForSelector('.flip')
+    await rate(page)
+    await page.waitForSelector('.post-batch')
+    expect(await postBatch(page)).toMatchObject({ title: 'All caught up!', buttons: ['Back to home', 'Refresh'] }) // nothing is due at the moment the session ends
+    await page.waitForFunction(() => document.querySelector('.post-batch .subtitle')?.textContent === '1 word is still due.', { timeout: 10_000 }) // "pronta" comes due, with nobody touching the screen
+    expect(await postBatch(page)).toMatchObject({ title: 'Session complete', subtitle: '1 word is still due.', buttons: ['Continue', 'Back to home'] })
+    await page.evaluate(() => (Array.from(document.querySelectorAll('.post-batch button')).find((b) => b.textContent?.trim() === 'Continue') as HTMLElement).click())
+    await page.waitForSelector('.flip')
+    expect(await counter(page)).toBe('1 / 1')
+    expect(await headword(page)).toBe('pronta') // what the count said is what Continue drew
+    await page.close()
+  }, 60_000)
+
+  it('the end screen agrees with Refresh too: when the count says nothing is due, a Refresh finds nothing', async () => {
+    const page = await open('due=1')
+    await page.click('[data-tile="review"]')
+    await page.waitForSelector('.flip')
+    await rate(page)
+    await page.waitForSelector('.post-batch')
+    expect((await postBatch(page)).title).toBe('All caught up!')
+    await page.evaluate(() => (Array.from(document.querySelectorAll('.post-batch button')).find((b) => b.textContent?.trim() === 'Refresh') as HTMLElement).click())
+    await page.waitForSelector('.post-batch, .flip')
+    expect(await page.$('.flip')).toBeNull()
+    expect((await postBatch(page)).title).toBe('No cards to review')
+    await page.close()
+  }, 60_000)
+
   describe('what counts the day for the streak', () => {
     /** The streak row's words: the streak and, until the day counts, how far today is. */
     const statusWords = (page: Page) => page.$$eval('.streak > span:not(.streak-dots)', (els) => els.map((e) => e.textContent))
