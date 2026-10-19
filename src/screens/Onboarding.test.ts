@@ -174,7 +174,7 @@ describe('How it works', () => {
     expect(html).toContain('<h1>How it works</h1>')
     expect([...html.matchAll(/<h2 id="how-\w+">([^<]+)<\/h2>/g)].map((m) => m[1])).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'Why a word comes back'])
     expect(html.match(/<p>/g)).toHaveLength(5)
-    expect(html).toContain('due the next day')
+    expect(html).toContain('for the first time tomorrow')
     expect(html).toContain('about a week')
   })
 

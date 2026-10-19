@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LOWER_SHARE } from './data/learnPick'
-import { MAX_INTERVAL_DAYS, RELEARN_MINUTES, learnedState } from './sm2/sm2'
+import { MAX_INTERVAL_DAYS, RELEARN_MINUTES, formatInterval, learnedState, previewInterval } from './sm2/sm2'
 import { learnProgressUpdates } from './data/learn'
+import { REVIEW_SESSION_SIZE, buildReviewSession } from './data/review'
+import { STARRED_SHARE, starredSlots } from './data/starred'
 import { makeWord } from './testing/makeWord'
 import { en } from './strings'
 import { ru } from './strings.ru'
@@ -214,6 +217,59 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(section(en, 'learn')).toContain('When a batch is finished, the words go on to review. They come back for the first time tomorrow.')
     expect(section(ru, 'learn')).toContain('Когда подборка закончена, слова встают на повторение. Первый раз они придут завтра.')
     for (const text of [section(en, 'learn'), section(ru, 'learn')]) expect(text).not.toMatch(/schedule|расписани/i)
+  })
+
+  it('"How it works", Spaced: the first-day fact is Learn\'s alone, and the line about the rating buttons is true of all four, "Soon" included', () => {
+    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/next day|tomorrow|следующий день|завтра/i)
+    expect(spaced(en)).toMatch(/^Words come back on a schedule\. Each time you get it right/)
+    expect(spaced(ru)).toMatch(/^Слова возвращаются по расписанию\. Каждый раз, когда/)
+    expect(spaced(en)).toContain('The small label on each rating button tells you when that answer brings the word back.')
+    expect(spaced(ru)).toContain('Маленькая подпись на каждой кнопке оценки показывает, когда этот ответ вернёт слово.')
+    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/small number|gap that answer gives|маленькое число|промежуток, который даёт/i)
+    // what the buttons show: Again says when in words, the other three in days
+    const card = { easeFactor: 2.5, interval: 3, repetitions: 2, nextReview: null } as never
+    const labels = [1, 2, 3, 4].map((q) => formatInterval(previewInterval(card, q)))
+    expect(labels[0]).toBe(en.interval.soon)
+    for (const label of labels.slice(1)) expect(label).toMatch(/^\d+d$/)
+  })
+
+  it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called', () => {
+    const learn = [section(en, 'learn'), section(ru, 'learn')]
+    expect(section(en, 'learn')).toContain(`Star a word with ${en.words.learnSooner} and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them.`)
+    expect(section(ru, 'learn')).toContain(`Отметьте слово звёздочкой «${ru.words.learnSooner}», и Learn возьмёт его раньше других: отмеченные слова составляют большую часть новых слов дня, пока их хватает.`)
+    for (const text of learn) expect(text).not.toMatch(/\d|%|percent|процент/)
+    // and it is true of the code, for the sizes a day has: the stars take more than half of a batch (a batch of two is the one exception, exactly half)
+    expect(STARRED_SHARE).toBeGreaterThan(0.5)
+    for (let size = 1; size <= 30; size++) if (size !== 2) expect(starredSlots(size), `a batch of ${size}`).toBeGreaterThan(size / 2)
+    expect(starredSlots(2)).toBe(1)
+  })
+
+  it('"How it works", Learn: a card also marks a word that is Rioplatense and a word that means something different here, in both languages, on every card that says it', () => {
+    expect(section(en, 'learn')).toContain('Each card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here.')
+    expect(section(ru, 'learn')).toContain('На карточке слово, пример предложения и перевод; если слово риоплатское или здесь значит другое, карточка это показывает.')
+    expect(en.rio.pill).toBe('Rioplatense')
+    expect(ru.rio.pill).toBe('риоплатское')
+    expect([en.rio.meaningShift, ru.rio.meaningShift]).toEqual(['A different meaning in this region', 'В этом регионе другое значение'])
+    // the cards that show them: Learn's, the word's, and Review's answer
+    const pills = (file: string) => (readFileSync(file, 'utf8').match(/isRioplatenseWord\(word\) && <span className="wc-rio">\{strings\.rio\.pill\}<\/span>/g) ?? []).length
+    expect(pills('src/components/WordCard.tsx')).toBe(1)
+    expect(pills('src/components/ReviewCard.tsx')).toBe(2) // the question side and the answer side
+    for (const file of ['src/components/WordCard.tsx', 'src/components/ReviewCard.tsx']) expect(readFileSync(file, 'utf8'), file).toContain('<RelationLines')
+    expect(readFileSync('src/components/RelationBlock.tsx', 'utf8')).toContain('{shifted && <p className="wc-shift">{t.meaningShift}</p>}')
+  })
+
+  it('"How it works", Review: a session takes the most overdue words, about twenty at a time, and Continue starts another', () => {
+    expect(REVIEW_SESSION_SIZE).toBe(20)
+    expect(section(en, 'review')).toContain('A session takes the most overdue words, about twenty at a time; while more are due, Continue starts another.')
+    expect(section(ru, 'review')).toContain('За один раз берутся самые просроченные слова, около двадцати; пока есть что повторять, «Продолжить» начинает следующую сессию.')
+    expect(en.review.continue).toBe('Continue') // the buttons the sentence names
+    expect(ru.review.continue).toBe('Продолжить')
+    // the most overdue: of 30 due words (w30 has waited longest, w1 least), the session is the 20 that waited longest
+    const now = new Date(2026, 9, 18, 12)
+    const due = Array.from({ length: 30 }, (_, i) => makeWord(`w${i + 1}`, { repetitions: 2, nextReview: new Date(now.getTime() - (i + 1) * 3_600_000) }))
+    const session = buildReviewSession(due, now)
+    expect(session).toHaveLength(20)
+    expect(session.map((w) => w.esWord).sort()).toEqual(due.slice(10).map((w) => w.esWord).sort())
   })
 
   it('"How it works", Cloze: one sentence for what it shows and what you do, then the hint and the answer, then where the words come from', () => {

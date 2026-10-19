@@ -376,12 +376,12 @@ export const en = {
       {
         id: 'learn',
         heading: 'Learn',
-        text: 'Learn brings new words, a few at a time, up to your daily goal. Each card has the word, an example sentence and the translation. When a batch is finished, the words go on to review. They come back for the first time tomorrow. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. Star a word with Learn sooner and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them. Each card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
       },
       {
         id: 'review',
         heading: 'Review',
-        text: 'Review shows the words that are due. Turn a card over, then say how well you knew it: Again, Hard, Good or Easy. That answer decides when the word comes back.',
+        text: 'Review shows the words that are due. Turn a card over, then say how well you knew it: Again, Hard, Good or Easy. That answer decides when the word comes back. A session takes the most overdue words, about twenty at a time; while more are due, Continue starts another.',
       },
       {
         id: 'matching',
@@ -396,7 +396,7 @@ export const en = {
       {
         id: 'spaced',
         heading: 'Why a word comes back',
-        text: 'Words come back on a schedule. A word you have just learned is due the next day. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day. The small number on each rating button is the gap that answer gives.',
+        text: 'Words come back on a schedule. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day. The small label on each rating button tells you when that answer brings the word back.',
       },
     ],
   },
