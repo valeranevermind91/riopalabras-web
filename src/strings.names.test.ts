@@ -41,6 +41,8 @@ function texts(node: unknown, path = ''): { path: string; text: string }[] {
   }
   return []
 }
+/** The strings of one group (functions called on sample arguments), as plain text. */
+const textsIn = (node: unknown) => texts(node).map((t) => t.text)
 const enTexts = texts(en)
 const ruTexts = texts(ru)
 const offenders = (list: { path: string; text: string }[], pattern: RegExp) => list.filter((t) => pattern.test(t.text)).map((t) => `${t.path}: ${t.text}`)
@@ -165,6 +167,33 @@ describe('spelling and address', () => {
   })
 })
 
+describe('the Russian interface does not say «риоплатск-»', () => {
+  // The adjective is awkward in Russian, so the text goes round it («местное»). It is gone from every paragraph of the intro and of "How it works" for good.
+  // SEVEN strings elsewhere still use it (the pill and the relation label on a card; the word form's check, hints and form line; the duplicate message); they are named here, so a seventh cannot appear, and the day
+  // one is reworded this test fails until it is taken off the list. Dictionary content (a word's own translation) is data, not interface.
+  const REMAINING = ['duplicate', 'pill', 'regionHint', 'rioplatense', 'rioplatenseCheck', 'rioplatenseForm', 'standardHint']
+
+  it('not in the intro or in "How it works"', () => {
+    for (const text of textsIn(ru.howItWorks).concat(textsIn(ru.onboarding))) expect(text, text).not.toMatch(/риоплатск/i)
+  })
+
+  it('and in the rest of the Russian strings only in the seven named ones', () => {
+    const lines = readFileSync('src/strings.ru.ts', 'utf8').split('\n')
+    const keys = new Set<string>()
+    lines.forEach((line, i) => {
+      if (line.trim().startsWith('//') || !/риоплатск/i.test(line)) return
+      for (let j = i; j >= 0; j--) {
+        const key = lines[j].match(/^\s{2,}(\w+):/)
+        if (key) {
+          keys.add(key[1])
+          return
+        }
+      }
+    })
+    expect([...keys].sort()).toEqual(REMAINING)
+  })
+})
+
 describe('the interval on the Again button', () => {
   it('says "Soon" / «Скоро»: the word is due again, and no clock is promised (the stored wait is untouched)', () => {
     expect([en.interval.soon, ru.interval.soon]).toEqual(['Soon', 'Скоро'])
@@ -224,7 +253,7 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(spaced(en)).toMatch(/^Words come back on a schedule\. Each time you get it right/)
     expect(spaced(ru)).toMatch(/^Слова возвращаются по расписанию\. Каждый раз, когда/)
     expect(spaced(en)).toContain('The small label on each rating button tells you when that answer brings the word back.')
-    expect(spaced(ru)).toContain('Маленькая подпись на каждой кнопке оценки показывает, когда этот ответ вернёт слово.')
+    expect(spaced(ru)).toContain('Подпись на кнопке показывает, когда слово вернётся после такого ответа.')
     for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/small number|gap that answer gives|маленькое число|промежуток, который даёт/i)
     // what the buttons show: Again says when in words, the other three in days
     const card = { easeFactor: 2.5, interval: 3, repetitions: 2, nextReview: null } as never
@@ -236,7 +265,7 @@ describe('what the text says about the scheduler is what the scheduler does', ()
   it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called', () => {
     const learn = [section(en, 'learn'), section(ru, 'learn')]
     expect(section(en, 'learn')).toContain(`Star a word with ${en.words.learnSooner} and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them.`)
-    expect(section(ru, 'learn')).toContain(`Отметьте слово звёздочкой «${ru.words.learnSooner}», и Learn возьмёт его раньше других: отмеченные слова составляют большую часть новых слов дня, пока их хватает.`)
+    expect(section(ru, 'learn')).toContain(`Отметьте слово «${ru.words.learnSooner}» — и оно пойдёт в Learn раньше остальных: из отмеченных набирается большая часть новых слов дня, пока они есть.`)
     for (const text of learn) expect(text).not.toMatch(/\d|%|percent|процент/)
     // and it is true of the code, for the sizes a day has: the stars take more than half of a batch (a batch of two is the one exception, exactly half)
     expect(STARRED_SHARE).toBeGreaterThan(0.5)
@@ -246,7 +275,7 @@ describe('what the text says about the scheduler is what the scheduler does', ()
 
   it('"How it works", Learn: a card also marks a word that is Rioplatense and a word that means something different here, in both languages, on every card that says it', () => {
     expect(section(en, 'learn')).toContain('Each card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here.')
-    expect(section(ru, 'learn')).toContain('На карточке слово, пример предложения и перевод; если слово риоплатское или здесь значит другое, карточка это показывает.')
+    expect(section(ru, 'learn')).toContain('На карточке слово, пример предложения и перевод; если слово местное или здесь значит другое, карточка это показывает.')
     expect(en.rio.pill).toBe('Rioplatense')
     expect(ru.rio.pill).toBe('риоплатское')
     expect([en.rio.meaningShift, ru.rio.meaningShift]).toEqual(['A different meaning in this region', 'В этом регионе другое значение'])
@@ -270,6 +299,13 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     const session = buildReviewSession(due, now)
     expect(session).toHaveLength(20)
     expect(session.map((w) => w.esWord).sort()).toEqual(due.slice(10).map((w) => w.esWord).sort())
+  })
+
+  it('"How it works", Spaced and Learn: no two sentences in a row each carry a colon, in either language', () => {
+    for (const [name, text] of [['en spaced', spaced(en)], ['ru spaced', spaced(ru)], ['en learn', section(en, 'learn')], ['ru learn', section(ru, 'learn')]]) {
+      const sentences = text.split(/(?<=[.!?])\s+/)
+      for (let i = 1; i < sentences.length; i++) expect(sentences[i - 1].includes(':') && sentences[i].includes(':'), `${name}: "${sentences[i - 1]}" / "${sentences[i]}"`).toBe(false)
+    }
   })
 
   it('"How it works", Cloze: one sentence for what it shows and what you do, then the hint and the answer, then where the words come from', () => {
