@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUSTOM_REGIONS, CUSTOM_REGISTERS, customRegion, customRegister } from '../data/customMarks'
-import { POS_CODES, checkSpanish, findDuplicate, type Duplicate, type PosCode, type WordValues } from '../data/customWords'
+import { POS_CODES, checkSpanish, fillBlanks, findDuplicate, type Duplicate, type PosCode, type WordValues } from '../data/customWords'
 import { BottomSheet } from './WordsSheets'
 import { SpellingNote } from './SpellingNote'
-import { enrichFailureMessage, noEnrichment, type EnrichResult } from '../data/enrich'
+import { enrichFailureMessage, isRetryable, noEnrichment, type EnrichFailure, type EnrichResult } from '../data/enrich'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
 
@@ -48,6 +48,8 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
   const [notice, setNotice] = useState<Notice | null>(null)
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null)
   const [looking, setLooking] = useState(false)
+  // Why the last lookup failed (null: it did not, or none was made): the details step offers to ask again when asking again could help.
+  const [failure, setFailure] = useState<EnrichFailure | null>(null)
   const [spelling, setSpelling] = useState<Spelling | null>(null)
   // Every word this form has looked up (lowercased): a suggestion for one of them is not offered again, so "Did you mean" cannot go back and forth.
   const tried = useRef(new Set<string>())
@@ -96,10 +98,12 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
     </BottomSheet>
   )
 
-  const runLookup = async (current: WordValues) => {
+  // `again`: asked for by tapping "Try the lookup again" on the details step. The form is already on screen with whatever the person has typed, so the
+  // answer only fills the blanks (fillBlanks) and the form is not replaced.
+  const runLookup = async (current: WordValues, again = false) => {
     const id = ++lookup.current
     setLooking(true)
-    setNotice(null)
+    setNotice(again ? { tone: 'info', text: f.looking } : null)
     setSpelling(null)
     tried.current.add(current.esWord.trim().toLowerCase())
     const result = await enrich({ word: current.esWord.trim(), pos: current.pos })
@@ -107,7 +111,8 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
     setLooking(false)
     if (result.ok) {
       const { value, notRecognised } = result
-      setValues({ ...current, ...value })
+      setFailure(null)
+      setValues(again ? (held) => fillBlanks(held, value) : { ...current, ...value })
       if (notRecognised) {
         // The fields are for the word the proxy believes was meant; the word itself stays as typed until the user decides.
         const offered = notRecognised.suggestion !== null && !tried.current.has(notRecognised.suggestion.toLowerCase()) ? notRecognised.suggestion : null
@@ -116,6 +121,7 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
         setNotice({ tone: 'info', text: f.filled })
       }
     } else {
+      setFailure(result.failure)
       setNotice({ tone: 'error', text: enrichFailureMessage(result.failure) })
     }
     setPhase('details')
@@ -280,6 +286,11 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
         <p className={notice.tone === 'error' ? 'form-note is-error' : 'form-note'} role={notice.tone === 'error' ? 'alert' : 'status'}>
           {notice.text}
         </p>
+      )}
+      {!editing && failure && isRetryable(failure) && !looking && (
+        <button type="button" className="btn btn-secondary" onClick={() => void runLookup(values, true)}>
+          {f.retry}
+        </button>
       )}
       <label className="form-field">
         <span className="form-label">{f.ru}</span>

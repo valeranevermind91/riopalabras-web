@@ -79,6 +79,27 @@ export function checkSave(values: WordValues): { ok: true } | { ok: false; probl
   return { ok: true }
 }
 
+/**
+ * A second lookup's answer laid over what the form holds NOW: what the person typed (or an earlier answer filled in) stays, and only the blanks are filled.
+ * The word and its part of speech are never touched. Without this a retry would overwrite translations typed by hand while the lookup was on its way.
+ */
+export function fillBlanks(typed: WordValues, found: Partial<WordValues>): WordValues {
+  const text = (mine: string, theirs: string | undefined) => (mine.trim() !== '' ? mine : (theirs ?? mine))
+  return {
+    ...typed,
+    enTranslation: text(typed.enTranslation, found.enTranslation),
+    ruTranslation: text(typed.ruTranslation, found.ruTranslation),
+    exampleSentence: text(typed.exampleSentence, found.exampleSentence),
+    exampleTranslationEn: text(typed.exampleTranslationEn, found.exampleTranslationEn),
+    exampleTranslationRu: text(typed.exampleTranslationRu, found.exampleTranslationRu),
+    esRioplatense: typed.esRioplatense ?? found.esRioplatense ?? null,
+    isRioplatenseVariant: typed.isRioplatenseVariant || found.isRioplatenseVariant === true,
+    region: typed.region ?? found.region ?? null,
+    register: typed.register ?? found.register ?? null,
+    esStandard: typed.esStandard ?? found.esStandard ?? null,
+  }
+}
+
 /** The row to write: exactly the twelve columns the client owns, es_word as typed (trimmed), text trimmed. */
 export function rowFromValues(values: WordValues): CustomWordRow {
   return {

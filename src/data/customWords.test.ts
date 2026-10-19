@@ -10,6 +10,7 @@ import {
   createTombstoneClearer,
   deleteCustomWord,
   editCustomWord,
+  fillBlanks,
   findDuplicate,
   rowFromValues,
   tombstoneClearPatch,
@@ -612,5 +613,33 @@ describe('through the write queue', () => {
     server.break.networkDown = false
     await a.queue.retry()
     expect(userWords().map((r) => r.es_word)).toEqual(['Zapallito'])
+  })
+})
+
+describe('a second lookup laid over the form (fillBlanks)', () => {
+  const typed = (over: Partial<WordValues> = {}): WordValues => ({ ...blankValues(), esWord: 'Zapallito', pos: 'n', ...over })
+  const found: Partial<WordValues> = { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: 'Me gusta.', exampleTranslationEn: 'I like it.', exampleTranslationRu: 'Мне нравится.', esRioplatense: null, isRioplatenseVariant: true, region: 'uy', register: 'informal', esStandard: 'calabacín' }
+
+  it('fills every blank from the answer', () => {
+    expect(fillBlanks(typed(), found)).toMatchObject({ ...found, esWord: 'Zapallito', pos: 'n' })
+  })
+
+  it('keeps everything that is filled: what the person typed, and what an earlier answer put there', () => {
+    const mine = typed({ ruTranslation: 'тыковка', enTranslation: 'baby squash', exampleSentence: 'Mi ejemplo.', region: 'ar', register: 'vulgar', esStandard: 'mi estándar', esRioplatense: 'mi rio' })
+    expect(fillBlanks(mine, found)).toMatchObject({ ruTranslation: 'тыковка', enTranslation: 'baby squash', exampleSentence: 'Mi ejemplo.', region: 'ar', register: 'vulgar', esStandard: 'mi estándar', esRioplatense: 'mi rio' })
+  })
+
+  it('a field holding only spaces is a blank', () => {
+    expect(fillBlanks(typed({ ruTranslation: '   ' }), found).ruTranslation).toBe('кабачок')
+  })
+
+  it('never changes the word or its part of speech, and a variant flag once set stays set', () => {
+    const out = fillBlanks(typed({ esWord: 'Mía', pos: 'v', isRioplatenseVariant: true }), { esWord: 'other', pos: 'n', isRioplatenseVariant: false })
+    expect(out).toMatchObject({ esWord: 'Mía', pos: 'v', isRioplatenseVariant: true })
+  })
+
+  it('an empty answer changes nothing', () => {
+    const mine = typed({ ruTranslation: 'тыковка' })
+    expect(fillBlanks(mine, {})).toEqual(mine)
   })
 })

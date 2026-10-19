@@ -8,8 +8,9 @@ import { strings } from '../strings'
 // Same call the Flutter app makes (EnrichmentService): a Supabase JWT as the Bearer token, { words: [{ word, pos? }] },
 // and { words: [{ word, en_translation, ru_translation, es_rioplatense, is_rioplatense_variant, example_sentence,
 // example_translation_en, example_translation_ru, word_form_in_example, is_real_word, suggested_spelling }] } back (the last two say
-// whether the typed word is a Spanish word and what was probably meant; a proxy that does not send them reads as "a real word"). The proxy limits a user to 100 words a day
-// and 10 requests a minute, and the whole service to a daily number of calls.
+// whether the typed word is a Spanish word and what was probably meant; a proxy that does not send them reads as "a real word"). The proxy limits a user to a
+// number of words a day (it says which, in the answer: `limit`; nothing here knows the number) and 10 requests a minute, one word to a request, and the whole
+// service to a daily number of calls. Its errors carry a `code`, which is how the cases are told apart (a Gemini 503 and our own cap are both 503).
 //
 // Nothing here waits for long or throws: every outcome is a value, so the screen can say what happened and still be usable.
 
@@ -40,7 +41,11 @@ export type EnrichFailure =
   | { kind: 'daily-quota'; usage: number; limit: number }
   /** 429 without them: the per-minute limit. */
   | { kind: 'rate-limit' }
-  /** 503: the service's own daily cap. */
+  /** 503 with code `capacity`: the service's own daily cap, which starts again at `resetsAt` (ms since the epoch; null when the proxy did not say). */
+  | { kind: 'capacity'; resetsAt: number | null }
+  /** 503 with code `upstream_unavailable`: the translation provider's own quota is gone for now. */
+  | { kind: 'unavailable' }
+  /** Any other 503: busy for a moment (the provider overloaded). */
   | { kind: 'busy' }
   | { kind: 'timeout' }
   /** The request could not be made at all (DNS, connection). */
@@ -151,7 +156,16 @@ export async function enrichWord(input: { word: string; pos: string | null }, de
       if (isObject(body) && typeof body.usage === 'number' && typeof body.limit === 'number') return fail({ kind: 'daily-quota', usage: body.usage, limit: body.limit })
       return fail({ kind: 'rate-limit' })
     }
-    if (res.status === 503) return fail({ kind: 'busy' })
+    if (res.status === 503) {
+      const body: unknown = await res.json().catch(() => null)
+      const code = isObject(body) ? body.code : null
+      if (code === 'capacity') {
+        const at = isObject(body) && typeof body.resets_at === 'string' ? Date.parse(body.resets_at) : NaN
+        return fail({ kind: 'capacity', resetsAt: Number.isFinite(at) ? at : null })
+      }
+      if (code === 'upstream_unavailable') return fail({ kind: 'unavailable' })
+      return fail({ kind: 'busy' })
+    }
     if (!res.ok) return fail({ kind: 'other', status: res.status })
 
     const payload: unknown = await res.json().catch(() => null)
@@ -197,8 +211,20 @@ export function enrichDepsFor(client: SupabaseClient, recoverSession?: EnrichDep
   }
 }
 
-/** What to tell the user when a translation could not be filled in: one message per kind of failure. */
-export function enrichFailureMessage(failure: EnrichFailure): string {
+/** The next 00:00 UTC after `now`, in ms: when the proxy's daily counters start again (the day is the UTC day, whatever time zone the person is in). */
+export const nextUtcMidnight = (now: Date): number => Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+
+/** Whole hours until `resetsAt`, rounded to the nearest; 0 means less than an hour. Without a time from the proxy, the next 00:00 UTC. */
+export function hoursUntilReset(resetsAt: number | null, now: Date): number {
+  const at = resetsAt ?? nextUtcMidnight(now)
+  return Math.max(0, Math.round((at - now.getTime()) / 3_600_000))
+}
+
+/** Whether asking again could help: not when the answer was "your day is used up", "the service's day is used up" or "the provider is out for now". */
+export const isRetryable = (failure: EnrichFailure): boolean => failure.kind !== 'daily-quota' && failure.kind !== 'capacity' && failure.kind !== 'unavailable'
+
+/** What to tell the user when a translation could not be filled in: one message per kind of failure. `now` is for the hours a cap has left. */
+export function enrichFailureMessage(failure: EnrichFailure, now: Date = new Date()): string {
   const m = strings.words.enrich
   switch (failure.kind) {
     case 'offline':
@@ -209,6 +235,10 @@ export function enrichFailureMessage(failure: EnrichFailure): string {
       return m.dailyQuota(failure.usage, failure.limit)
     case 'rate-limit':
       return m.rateLimit
+    case 'capacity':
+      return m.capacity(hoursUntilReset(failure.resetsAt, now))
+    case 'unavailable':
+      return m.unavailable
     case 'busy':
       return m.busy
     case 'timeout':

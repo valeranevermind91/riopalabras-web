@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { NOTICE_MS } from '../screens/Words'
 import { strings } from '../strings'
+import { ru } from '../strings.ru'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
 
@@ -1123,8 +1124,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       const failures: [unknown, string][] = [
         [{ kind: 'offline' }, strings.words.enrich.offline],
         [{ kind: 'unauthorized' }, strings.words.enrich.unauthorized],
-        [{ kind: 'daily-quota', usage: 100, limit: 100 }, strings.words.enrich.dailyQuota(100, 100)],
+        [{ kind: 'daily-quota', usage: 10, limit: 10 }, strings.words.enrich.dailyQuota(10, 10)],
         [{ kind: 'rate-limit' }, strings.words.enrich.rateLimit],
+        [{ kind: 'capacity', resetsAt: Date.now() + 5 * 3_600_000 }, strings.words.enrich.capacity(5)],
+        [{ kind: 'unavailable' }, strings.words.enrich.unavailable],
         [{ kind: 'busy' }, strings.words.enrich.busy],
         [{ kind: 'timeout' }, strings.words.enrich.timeout],
         [{ kind: 'network' }, strings.words.enrich.network],
@@ -1156,6 +1159,110 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect((await sentAll(page)).words).toMatchObject([{ kind: 'save', row: { es_word: 'Zapallito', ru_translation: 'кабачок', en_translation: 'squash', es_rioplatense: null, is_rioplatense_variant: false } }])
       await page.close()
     }, 120_000)
+
+    describe('"Try the lookup again" on the details step after a failure', () => {
+      /** The lookup answers from a list, one answer to a call, the last one repeating. */
+      const answers = (page: Page, list: unknown[]) =>
+        page.evaluate((all) => {
+          let n = 0
+          ;(window as never as { __enrichImpl: unknown }).__enrichImpl = async () => all[Math.min(n++, all.length - 1)]
+        }, list)
+      const retryButtons = (page: Page) => page.$$eval('.word-form > button.btn-secondary', (els) => els.map((e) => e.textContent?.trim()))
+      const GOOD = { ok: true, value: { enTranslation: 'little squash', ruTranslation: 'кабачок', exampleSentence: 'Me gusta el zapallito.', exampleTranslationEn: 'I like little squash.', exampleTranslationRu: 'Мне нравится кабачок.', esRioplatense: null, isRioplatenseVariant: false, region: null, register: null, esStandard: null } }
+
+      it('is offered after a failure that asking again could cure, is never pressed for the person, and one tap asks once more', async () => {
+        const page = await open()
+        await answers(page, [{ ok: false, failure: { kind: 'timeout' } }, GOOD])
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await notes(page)).toEqual([strings.words.enrich.timeout])
+        expect(await retryButtons(page)).toEqual([f.retry])
+        await new Promise((resolve) => setTimeout(resolve, 1500)) // never automatic
+        expect(await enrichCalls(page)).toHaveLength(1)
+
+        await clickText(page, 'button', f.retry)
+        await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in automatically'))
+        expect(await enrichCalls(page)).toHaveLength(2) // one tap, one call
+        expect(await enrichCalls(page)).toEqual([{ word: 'Zapallito', pos: 'n' }, { word: 'Zapallito', pos: 'n' }])
+        expect(await fieldValue(page, f.ru)).toBe('кабачок')
+        expect(await fieldValue(page, f.en)).toBe('little squash')
+        expect(await retryButtons(page)).toEqual([]) // it worked: nothing to press
+        await page.close()
+      }, 90_000)
+
+      it('what the person typed while the lookup was failing or on its way is kept; only the blanks are filled', async () => {
+        const page = await open()
+        await answers(page, [{ ok: false, failure: { kind: 'network' } }, GOOD])
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        await typeIn(page, f.ru, 'тыковка') // by hand, before the retry
+        await clickText(page, 'button', f.retry)
+        await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Filled in automatically'))
+        expect(await fieldValue(page, f.ru)).toBe('тыковка') // not overwritten by 'кабачок'
+        expect(await fieldValue(page, f.en)).toBe('little squash') // the blank was filled
+        expect(await fieldValue(page, f.example)).toBe('Me gusta el zapallito.')
+        await page.close()
+      }, 90_000)
+
+      it('while it is looking the button is gone and the form says so; a second failure brings it back', async () => {
+        const page = await open()
+        await answers(page, [{ ok: false, failure: { kind: 'busy' } }])
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await retryButtons(page)).toEqual([f.retry])
+        await page.evaluate(() => void ((window as never as { __enrichImpl: unknown }).__enrichImpl = () => new Promise(() => {}))) // the next one never answers
+        await clickText(page, 'button', f.retry)
+        await page.waitForFunction(() => document.querySelector('.form-note')?.textContent?.includes('Looking up'))
+        expect(await retryButtons(page)).toEqual([]) // no second tap while one is on its way
+        expect(await enrichCalls(page)).toHaveLength(2)
+        await page.close()
+
+        const again = await open()
+        await answers(again, [{ ok: false, failure: { kind: 'busy' } }])
+        await startAdding(again, 'Zapallito', 'Noun')
+        await again.waitForSelector('.form-word')
+        await clickText(again, 'button', f.retry)
+        await again.waitForFunction(() => (window as never as { __enrichCalls: unknown[] }).__enrichCalls.length === 2)
+        await again.waitForFunction((label) => Array.from(document.querySelectorAll('.word-form > button.btn-secondary')).some((b) => b.textContent?.trim() === label), {}, f.retry)
+        expect(await notes(again)).toEqual([strings.words.enrich.busy])
+        await again.close()
+      }, 90_000)
+
+      it('is not offered when asking again cannot help: the person\'s day used up, the service\'s day used up, the provider out for now', async () => {
+        const page = await open()
+        for (const failure of [{ kind: 'daily-quota', usage: 10, limit: 10 }, { kind: 'capacity', resetsAt: Date.now() + 3_600_000 }, { kind: 'unavailable' }]) {
+          await stub(page, { ok: false, failure })
+          await startAdding(page, 'Zapallito', 'Noun')
+          await page.waitForSelector('.form-word')
+          expect(await retryButtons(page), JSON.stringify(failure)).toEqual([])
+          await cancelAndDiscard(page)
+          await page.waitForSelector('.words-search')
+        }
+        await page.close()
+      }, 120_000)
+
+      it('is not on a word that is being edited, and not when the first lookup worked', async () => {
+        const page = await open()
+        await answers(page, [GOOD])
+        await startAdding(page, 'Zapallito', 'Noun')
+        await page.waitForSelector('.form-word')
+        expect(await retryButtons(page)).toEqual([])
+        await page.close()
+      }, 60_000)
+
+      it('in Russian the button says «Повторить поиск перевода»', async () => {
+        const page = await open('?lang=ru')
+        await answers(page, [{ ok: false, failure: { kind: 'timeout' } }])
+        await page.click('button[aria-label="Добавить слово"]')
+        await page.waitForSelector('.word-form')
+        await typeIn(page, ru.words.form.spanish, 'Zapallito')
+        await clickText(page, '[role="radio"]', ru.words.form.posNames.n)
+        await clickText(page, 'button', ru.words.form.continue)
+        await page.waitForSelector('.form-word')
+        expect(await retryButtons(page)).toEqual(['Повторить поиск перевода'])
+        await page.close()
+      }, 60_000)
+    })
 
     it('a lookup that never answers is never a dead end: "Fill it in myself" opens the form', async () => {
       const page = await open()

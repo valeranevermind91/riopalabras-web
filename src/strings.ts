@@ -145,6 +145,7 @@ export const en = {
         via === 'es_word' ? `“${existing}” is already in your words.` : `“${typed}” is already in your words, as the Rioplatense form of “${existing}”.`,
       openExisting: (word: string) => `Open “${word}”`,
       looking: 'Looking up a translation…',
+      retry: 'Try the lookup again',
       fillMyself: 'Fill it in myself',
       ru: 'Russian translation',
       en: 'English translation',
@@ -186,7 +187,13 @@ export const en = {
       unauthorized: "Your sign-in wasn't accepted, so the translation can't be filled in. Type it yourself, or close and reopen the app.",
       dailyQuota: (usage: number, limit: number) => `You've used ${usage} of ${limit} automatic ${plural(limit, { one: 'translation', other: 'translations' })} today. Type it yourself, or try again tomorrow.`,
       rateLimit: 'Too many requests. Try again in a minute, or type it yourself.',
-      busy: 'The translation service is busy right now. Try again later, or type it yourself.',
+      busy: 'The translation service is busy right now. Try again in a little while, or type it yourself.',
+      // the service's own daily limit: said with the hours left until it starts again (00:00 UTC, so the same moment for everyone)
+      capacity: (hours: number) =>
+        hours < 1
+          ? 'Automatic translation is used up for today. It comes back in less than an hour. Type it yourself, or try again then.'
+          : `Automatic translation is used up for today. It comes back in about ${hours} ${plural(hours, { one: 'hour', other: 'hours' })}. Type it yourself, or try again then.`,
+      unavailable: 'Automatic translation is unavailable for now. Type the translation yourself.',
       timeout: "The translation service didn't answer in time. Type the translation yourself.",
       network: "Couldn't reach the translation service. Type the translation yourself.",
       noResult: 'The service had no translation for this word. Type it yourself.',

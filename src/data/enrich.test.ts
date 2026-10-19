@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { setLanguage } from '../lib/language'
-import { enrichFailureMessage, enrichWord, type EnrichDeps, type EnrichFailure } from './enrich'
+import { enrichFailureMessage, enrichWord, hoursUntilReset, isRetryable, type EnrichDeps, type EnrichFailure } from './enrich'
 
 const PROXY = 'https://proxy.test'
 const entry = {
@@ -277,10 +277,26 @@ describe('every failure is a value with its own message, and the form stays usab
     })
   })
 
-  it('429 with usage and limit is the daily word quota, with the numbers', async () => {
-    const failure = await failureOf(deps(async () => reply(429, { error: 'Daily limit reached (100 words/day). Try again tomorrow.', usage: 100, limit: 100 })))
-    expect(failure).toEqual({ kind: 'daily-quota', usage: 100, limit: 100 })
-    expect(enrichFailureMessage(failure)).toContain('100 of 100')
+  it('429 with usage and limit is the daily word quota, with the numbers the proxy sent: the app knows no limit of its own (ten today, whatever it is tomorrow)', async () => {
+    const failure = await failureOf(deps(async () => reply(429, { error: 'Daily limit reached (10 words/day). Try again tomorrow.', code: 'daily_limit', usage: 10, limit: 10, resets_at: '2026-10-19T00:00:00.000Z' })))
+    expect(failure).toEqual({ kind: 'daily-quota', usage: 10, limit: 10 })
+    expect(enrichFailureMessage(failure)).toBe("You've used 10 of 10 automatic translations today. Type it yourself, or try again tomorrow.")
+    // and any other number is said as it came
+    const other = await failureOf(deps(async () => reply(429, { usage: 25, limit: 25 })))
+    expect(enrichFailureMessage(other)).toContain('25 of 25')
+    setLanguage('ru')
+    try {
+      expect(enrichFailureMessage(failure)).toBe('Сегодня использовано 10 из 10 автоматических переводов. Введите перевод сами или попробуйте завтра.')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('the app\'s source has no daily limit in it: the number is read from the answer', async () => {
+    const { readFileSync } = await import('node:fs')
+    const source = readFileSync('src/data/enrich.ts', 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(source).not.toMatch(/\b(100|10)\b.*(words|слов)/)
+    expect(source).toMatch(/usage: body\.usage, limit: body\.limit/)
   })
 
   it('429 without them is the per-minute limit', async () => {
@@ -288,8 +304,22 @@ describe('every failure is a value with its own message, and the form stays usab
     expect(await failureOf(deps(async () => new Response('too many', { status: 429 })))).toEqual({ kind: 'rate-limit' })
   })
 
-  it('503 is the service being busy', async () => {
+  it('503 with code capacity is the service\'s own daily cap, with the moment it starts again', async () => {
+    const failure = await failureOf(deps(async () => reply(503, { error: 'Service temporarily at capacity. Please try again later.', code: 'capacity', resets_at: '2026-10-19T00:00:00.000Z' })))
+    expect(failure).toEqual({ kind: 'capacity', resetsAt: Date.parse('2026-10-19T00:00:00.000Z') })
+    // a missing or unreadable time is not an error: the client works it out from the UTC day
+    expect(await failureOf(deps(async () => reply(503, { code: 'capacity' })))).toEqual({ kind: 'capacity', resetsAt: null })
+    expect(await failureOf(deps(async () => reply(503, { code: 'capacity', resets_at: 'tomorrow-ish' })))).toEqual({ kind: 'capacity', resetsAt: null })
+  })
+
+  it('503 with code upstream_unavailable is the translation provider being out for now: not our cap, and not a minute\'s wait', async () => {
+    expect(await failureOf(deps(async () => reply(503, { error: 'Automatic translation is unavailable for now.', code: 'upstream_unavailable' })))).toEqual({ kind: 'unavailable' })
+  })
+
+  it('any other 503 (the provider overloaded, an older proxy) is the service being busy, with no hours promised', async () => {
+    expect(await failureOf(deps(async () => reply(503, { error: 'Upstream translation service is unavailable.', code: 'upstream_error' })))).toEqual({ kind: 'busy' })
     expect(await failureOf(deps(async () => reply(503, { error: 'Service temporarily at capacity.' })))).toEqual({ kind: 'busy' })
+    expect(await failureOf(deps(async () => new Response('down', { status: 503 })))).toEqual({ kind: 'busy' })
   })
 
   it('anything else carries its status', async () => {
@@ -326,18 +356,20 @@ describe('every failure is a value with its own message, and the form stays usab
     const failures: EnrichFailure[] = [
       { kind: 'offline' },
       { kind: 'unauthorized' },
-      { kind: 'daily-quota', usage: 99, limit: 100 },
+      { kind: 'daily-quota', usage: 9, limit: 10 },
       { kind: 'rate-limit' },
+      { kind: 'capacity', resetsAt: Date.parse('2026-10-19T00:00:00Z') },
+      { kind: 'unavailable' },
       { kind: 'busy' },
       { kind: 'timeout' },
       { kind: 'network' },
       { kind: 'no-result' },
       { kind: 'other', status: 500 },
     ]
-    const messages = failures.map(enrichFailureMessage)
+    const messages = failures.map((f) => enrichFailureMessage(f, new Date('2026-10-18T19:30:00Z')))
     expect(new Set(messages).size).toBe(failures.length)
     for (const m of messages) expect(m.length).toBeGreaterThan(10)
-    expect(enrichFailureMessage({ kind: 'daily-quota', usage: 99, limit: 100 })).toContain('99 of 100')
+    expect(enrichFailureMessage({ kind: 'daily-quota', usage: 9, limit: 10 })).toContain('9 of 10')
     // No raw status code in front of a person, and no "try again" where the form has nothing to press for it (only waiting out a limit does).
     expect(enrichFailureMessage({ kind: 'other', status: 500 })).not.toMatch(/\d/)
     for (const failure of [{ kind: 'timeout' }, { kind: 'network' }, { kind: 'other', status: 500 }] as EnrichFailure[]) expect(enrichFailureMessage(failure).toLowerCase()).not.toContain('try again')
@@ -347,7 +379,7 @@ describe('every failure is a value with its own message, and the form stays usab
     setLanguage('ru')
     try {
       const failures: EnrichFailure[] = [{ kind: 'timeout' }, { kind: 'network' }, { kind: 'other', status: 500 }, { kind: 'no-result' }]
-      const messages = failures.map(enrichFailureMessage)
+      const messages = failures.map((f) => enrichFailureMessage(f))
       expect(new Set(messages).size).toBe(failures.length)
       for (const m of messages) {
         expect(m).not.toMatch(/\d/)
@@ -356,5 +388,83 @@ describe('every failure is a value with its own message, and the form stays usab
     } finally {
       setLanguage('en')
     }
+  })
+})
+
+describe('what the person is told when a limit is reached', () => {
+  const at = (iso: string) => new Date(iso)
+  const reset = Date.parse('2026-10-19T00:00:00Z')
+
+  it('the service\'s cap says roughly how many hours are left, computed from the reset, in English and in Russian, with the right plural', () => {
+    const cases: [string, string, string][] = [
+      ['2026-10-18T19:30:00Z', 'about 5 hours', 'примерно через 5 часов'], // 4.5 rounds to 5
+      ['2026-10-18T22:00:00Z', 'about 2 hours', 'примерно через 2 часа'],
+      ['2026-10-18T22:40:00Z', 'about 1 hour', 'примерно через 1 час'],
+      ['2026-10-18T03:00:00Z', 'about 21 hours', 'примерно через 21 час'],
+      ['2026-10-18T00:30:00Z', 'about 24 hours', 'примерно через 24 часа'],
+      ['2026-10-18T23:40:00Z', 'less than an hour', 'меньше чем через час'],
+    ]
+    for (const [now, english, russian] of cases) {
+      const failure: EnrichFailure = { kind: 'capacity', resetsAt: reset }
+      expect(enrichFailureMessage(failure, at(now)), now).toContain(english)
+      setLanguage('ru')
+      try {
+        expect(enrichFailureMessage(failure, at(now)), now).toContain(russian)
+      } finally {
+        setLanguage('en')
+      }
+    }
+  })
+
+  it('the whole sentence: used up for today, when it comes back, what to do', () => {
+    expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-18T19:30:00Z'))).toBe('Automatic translation is used up for today. It comes back in about 5 hours. Type it yourself, or try again then.')
+    setLanguage('ru')
+    try {
+      expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-18T19:30:00Z'))).toBe('Автоматический перевод на сегодня исчерпан. Он вернётся примерно через 5 часов. Введите перевод сами или попробуйте позже.')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('it never says "evening" or "tomorrow" or a clock time, because people are in different time zones', () => {
+    for (const now of ['2026-10-18T01:00:00Z', '2026-10-18T12:00:00Z', '2026-10-18T23:50:00Z']) {
+      for (const language of ['en', 'ru'] as const) {
+        setLanguage(language)
+        try {
+          expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at(now))).not.toMatch(/evening|tonight|tomorrow|midnight|UTC|\d\d:\d\d|вечер|завтра|полночь/i)
+        } finally {
+          setLanguage('en')
+        }
+      }
+    }
+  })
+
+  it('without a time from the proxy the hours come from the next 00:00 UTC; a time already past reads as less than an hour', () => {
+    expect(hoursUntilReset(null, at('2026-10-18T19:30:00Z'))).toBe(5)
+    expect(hoursUntilReset(reset, at('2026-10-19T00:10:00Z'))).toBe(0)
+    expect(enrichFailureMessage({ kind: 'capacity', resetsAt: null }, at('2026-10-18T19:30:00Z'))).toContain('about 5 hours')
+    expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-19T00:10:00Z'))).toContain('less than an hour')
+  })
+
+  it('the provider being out says automatic translation is unavailable for now, and not "wait a minute"', () => {
+    expect(enrichFailureMessage({ kind: 'unavailable' })).toBe('Automatic translation is unavailable for now. Type the translation yourself.')
+    expect(enrichFailureMessage({ kind: 'unavailable' })).not.toMatch(/minute|too many/i)
+    setLanguage('ru')
+    try {
+      expect(enrichFailureMessage({ kind: 'unavailable' })).toBe('Автоматический перевод сейчас недоступен. Введите перевод сами.')
+      expect(enrichFailureMessage({ kind: 'unavailable' })).not.toMatch(/минут/i)
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('the per-minute message still says a minute, and only that one does', () => {
+    expect(enrichFailureMessage({ kind: 'rate-limit' })).toMatch(/minute/)
+    for (const failure of [{ kind: 'busy' }, { kind: 'unavailable' }, { kind: 'capacity', resetsAt: reset }] as EnrichFailure[]) expect(enrichFailureMessage(failure, at('2026-10-18T19:30:00Z'))).not.toMatch(/a minute|too many/i)
+  })
+
+  it('only a failure that asking again could cure offers a retry: not a used-up day, a used-up cap, or a provider that is out', () => {
+    for (const failure of [{ kind: 'offline' }, { kind: 'unauthorized' }, { kind: 'rate-limit' }, { kind: 'busy' }, { kind: 'timeout' }, { kind: 'network' }, { kind: 'no-result' }, { kind: 'other', status: 500 }] as EnrichFailure[]) expect(isRetryable(failure), failure.kind).toBe(true)
+    for (const failure of [{ kind: 'daily-quota', usage: 10, limit: 10 }, { kind: 'capacity', resetsAt: null }, { kind: 'unavailable' }] as EnrichFailure[]) expect(isRetryable(failure), failure.kind).toBe(false)
   })
 })
