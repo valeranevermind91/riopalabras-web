@@ -376,7 +376,7 @@ export const en = {
       {
         id: 'learn',
         heading: 'Learn',
-        text: 'Learn brings new words, a few at a time, up to your daily goal. Each card has the word, an example sentence and the translation. Finishing a batch puts its words on your schedule. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. Each card has the word, an example sentence and the translation. When a batch is finished, the words go on to review. They come back for the first time tomorrow. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
       },
       {
         id: 'review',
@@ -391,12 +391,12 @@ export const en = {
       {
         id: 'cloze',
         heading: 'Cloze',
-        text: 'Cloze shows a sentence with one word blanked out. You type the missing word. A hint and the answer are one tap away. It also uses words you have already learned.',
+        text: 'Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have already learned.',
       },
       {
         id: 'spaced',
         heading: 'Why a word comes back',
-        text: 'Words come back on a schedule. A word you have just learned is due the next day. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again does not wipe the word: it is due again within the day, so it returns later in this session if you keep going, and counts as due the next time you open the app. The gaps start again from one day. The small number on each rating button is the gap that answer gives.',
+        text: 'Words come back on a schedule. A word you have just learned is due the next day. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day. The small number on each rating button is the gap that answer gives.',
       },
     ],
   },

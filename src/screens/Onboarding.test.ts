@@ -178,9 +178,9 @@ describe('How it works', () => {
     expect(html).toContain('about a week')
   })
 
-  it('uses only the words of the app\'s own buttons for the ratings', () => {
+  it('uses only the words of the app\'s own buttons for the ratings, and names the batch the way the Finish batch button does', () => {
     const html = renderToStaticMarkup(createElement(HowItWorks, {}))
-    for (const word of ['Again', 'Hard', 'Good', 'Easy', 'Finishing a batch']) expect(html).toContain(word)
+    for (const word of ['Again', 'Hard', 'Good', 'Easy', 'When a batch is finished']) expect(html).toContain(word)
   })
 })
 

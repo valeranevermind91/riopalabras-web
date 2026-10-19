@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { LOWER_SHARE } from './data/learnPick'
-import { MAX_INTERVAL_DAYS, RELEARN_MINUTES } from './sm2/sm2'
+import { MAX_INTERVAL_DAYS, RELEARN_MINUTES, learnedState } from './sm2/sm2'
+import { learnProgressUpdates } from './data/learn'
+import { makeWord } from './testing/makeWord'
 import { en } from './strings'
 import { ru } from './strings.ru'
 
@@ -190,14 +192,37 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(spaced(ru)).not.toMatch(/каждый длиннее предыдущего|начинает слово заново/i)
   })
 
-  it('"How it works" explains what Again does without naming a clock: the word is not wiped, it is due again within the day, comes back in this session and is due next time the app opens; the button says "Soon" and the text promises nothing it cannot keep', () => {
+  it('"How it works" says plainly what Again does, without naming a clock: the word needs another look today, and returns later in this session or the next time the app opens; the button says "Soon" and the text promises nothing it cannot keep', () => {
     expect(RELEARN_MINUTES).toBe(10) // the stored wait is a detail: the text does not repeat it
     for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/\d+\s*(min|мин)|minute|минут|\bten\b|десят/i)
-    expect(spaced(en)).toContain('Again does not wipe the word: it is due again within the day, so it returns later in this session if you keep going, and counts as due the next time you open the app.')
-    expect(spaced(en)).toContain('The gaps start again from one day.')
-    expect(spaced(ru)).toContain('Ответ «Снова» не стирает слово: его снова пора повторять в тот же день, поэтому оно вернётся позже в этой сессии, если вы продолжите, и будет ждать повторения, когда вы в следующий раз откроете приложение.')
-    expect(spaced(ru)).toContain('Промежутки снова начнутся с одного дня.')
+    expect(spaced(en)).toContain('Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day.')
+    expect(spaced(ru)).toContain('Ответ «Снова» означает, что слово нужно повторить сегодня же: оно вернётся позже в этой сессии или при следующем заходе. Промежутки начнутся заново с одного дня.')
+    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/wipe|стира/i) // no answer to a worry nobody has
     expect(spaced(en)).not.toMatch(/front of the queue/i) // a session takes the most overdue words, and a word that has just come due is the least overdue: no promise of its place
+  })
+
+  const section = (map: { howItWorks: { sections: readonly { id: string; text: string }[] } }, id: string) => map.howItWorks.sections.find((s) => s.id === id)!.text
+
+  it('"How it works", Learn: a finished batch puts every one of its words on review for tomorrow, and the text says that, not "your schedule"', () => {
+    // what finishing a batch writes for each word: the same state, due at the start of the next day in the device's own time (learnedState)
+    const finished = new Date(2026, 9, 18, 23, 59)
+    const batch = { words: ['uno', 'dos', 'tres'].map((w) => makeWord(w)) } as never
+    const updates = learnProgressUpdates(batch, finished)
+    expect(updates).toHaveLength(3)
+    for (const update of updates) expect(update.nextReview).toEqual(new Date(2026, 9, 19, 0, 0)) // tomorrow, from the first minute of it
+    expect(learnedState(finished)).toMatchObject({ interval: 0, repetitions: 1 })
+    expect(section(en, 'learn')).toContain('When a batch is finished, the words go on to review. They come back for the first time tomorrow.')
+    expect(section(ru, 'learn')).toContain('Когда подборка закончена, слова встают на повторение. Первый раз они придут завтра.')
+    for (const text of [section(en, 'learn'), section(ru, 'learn')]) expect(text).not.toMatch(/schedule|расписани/i)
+  })
+
+  it('"How it works", Cloze: one sentence for what it shows and what you do, then the hint and the answer, then where the words come from', () => {
+    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have already learned.')
+    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. Подсказка и ответ — в одно касание. Слова здесь тоже берутся из уже выученных.')
+    for (const map of [en, ru]) expect(section(map, 'cloze').split(/(?<=[.!?])\s/)).toHaveLength(3)
+    // and it is what the screen does: a typed answer, a Hint button and a Reveal button
+    expect(en.practice.clozeHint).toBe('Type the missing word.')
+    expect([en.practice.hint, en.practice.reveal]).toEqual(['Hint', 'Reveal'])
   })
 })
 
