@@ -197,7 +197,13 @@ describe('damer-check.mjs against a fake ASALE', () => {
     const first = await cli(dir, f.url)
     expect(first.code).toBe(0)
     expect(f.requests[0].url).toBe('/robots.txt')
-    for (const r of f.requests) expect(r.ua).toMatch(/^riopalabras-web-research\/.+contact:/)
+    for (const r of f.requests) {
+      expect(r.ua).toMatch(/^riopalabras-web-research\/.+contact:/)
+      // polite and identifying, and the contact is a Telegram handle and the project's page: never a mailbox
+      expect(r.ua).toContain('contact: Telegram @valeranevermind')
+      expect(r.ua).toContain('project: https://github.com/valeranevermind91/riopalabras-web')
+      expect(r.ua).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.-]+/)
+    }
     expect(Object.keys(first.result).sort()).toEqual(['colectivo', 'diario', 'ómnibus'])
     expect(first.result['ómnibus']).toMatchObject({ found: true, ar: true, ur: true })
     // the shareable copy has labels only: no definition text anywhere in it
@@ -270,5 +276,14 @@ describe('damer-check.mjs against a fake ASALE', () => {
     f.server.close()
     expect(r.out).toContain('diario [A,B,legacy]')
     expect(f.requests).toHaveLength(0)
+  })
+})
+
+describe('the overlay scripts name no mailbox', () => {
+  it('no script or type file next to damer-check.mjs holds an email-shaped string: this folder is public, and a contact in it is a handle and a project page', () => {
+    const dir = path.dirname(SCRIPT)
+    const files = fs.readdirSync(dir).filter((name) => /\.(mjs|ts)$/.test(name))
+    expect(files).toContain('damer-check.mjs') // the scan is looking at the right folder
+    for (const name of files) expect(fs.readFileSync(path.join(dir, name), 'utf8'), name).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z0-9.-]+/)
   })
 })

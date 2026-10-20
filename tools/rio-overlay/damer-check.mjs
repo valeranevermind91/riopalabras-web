@@ -31,7 +31,8 @@ const DICTIONARY_PATH = path.join(ROOT, 'public', 'words_enriched.json')
 
 // Only the tests point this at a local fake server.
 const BASE = process.env.DAMER_BASE_URL ?? 'https://www.asale.org'
-const USER_AGENT = 'riopalabras-web-research/0.1 (personal vocabulary-app data check, a few hundred pages at most, cached; contact: vkriukov@movchans.com)'
+// The contact is a Telegram handle and the project's page, not a mailbox: this file is public, and a crawler's contact is read by whoever runs the site.
+const USER_AGENT = 'riopalabras-web-research/0.1 (personal vocabulary-app data check, a few hundred pages at most, cached; contact: Telegram @valeranevermind; project: https://github.com/valeranevermind91/riopalabras-web)'
 const MIN_DELAY_MS = 2000
 
 // ---------------------------------------------------------------- robots.txt
