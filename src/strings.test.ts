@@ -60,11 +60,12 @@ describe('the two maps', () => {
   })
 
   it('a Russian string is Russian: no English words are left in the interface, except the names of the app\'s own screens and Spanish examples', () => {
-    const allowed = new Set(['Learn', 'Review', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'Debug', 'English', 'Telegram', 'Start' /* the name of Telegram's own button: the unreachable-reminder line tells the user to press it */, 'calabacín', 'zapallito', 'palabra', 'del', 'día', 'aprender', 'repasar', 'parejas', 'completar', 'calle', 'yo', 'vos', 'tenés', 'tú', 'tienes'])
+    const allowed = new Set(['Learn', 'Review', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'Debug', 'English', 'Telegram', 'Start' /* the name of Telegram's own button: the unreachable-reminder line tells the user to press it */, 'Supabase', 'Vercel', 'Railway', 'Gemini', 'Google', 'Fonts' /* names of the services the privacy page lists, and of the dictionary the About screen cites (DAMER): proper nouns, never translated */, 'DAMER', 'FreeLing' /* the tagger the source repository credits, named in About > Sources */, 'calabacín', 'zapallito', 'palabra', 'del', 'día', 'aprender', 'repasar', 'parejas', 'completar', 'calle', 'yo', 'vos', 'tenés', 'tú', 'tienes'])
     const leftovers: string[] = []
     const walk = (node: unknown, path: string) => {
       if (typeof node === 'string') {
-        for (const word of node.match(/\p{Script=Latin}{3,}/gu) ?? []) if (!allowed.has(word)) leftovers.push(`${path}: ${word}`)
+        // a {token} is the name of a piece the screen draws in that place (a link, an address), not a word of the text
+        for (const word of node.replace(/\{[a-z]+\}/g, '').match(/\p{Script=Latin}{3,}/gu) ?? []) if (!allowed.has(word)) leftovers.push(`${path}: ${word}`)
       } else if (Array.isArray(node)) node.forEach((item, i) => walk(item, `${path}[${i}]`))
       else if (node && typeof node === 'object') {
         // ids and tones are keys for the code, and `es` pieces are the Spanish words in a sentence: neither is interface text

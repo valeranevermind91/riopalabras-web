@@ -55,6 +55,8 @@ export interface TelegramWebApp {
   // Vertical swipes (Bot API 7.7+): Telegram's swipe-down-to-minimize/close gesture.
   /** Opens a t.me link inside Telegram (Bot API 6.1+). */
   openTelegramLink?: (url: string) => void
+  /** Opens any other link in Telegram's own browser, so a tap never takes the Mini App's own page away. */
+  openLink?: (url: string) => void
   disableVerticalSwipes?: () => void
   enableVerticalSwipes?: () => void
   // Closing confirmation (Bot API 6.2+) and events ('activated' arrives with 8.0); absent in the dev mock.

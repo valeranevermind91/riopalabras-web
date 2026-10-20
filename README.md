@@ -28,6 +28,19 @@ for the layout only and would fail the proxy's HMAC check anyway):
 cp .env.example .env.local
 ```
 
+## The privacy page
+
+`/privacy` is a page of its own (`privacy.html`, drawn by `src/privacy-main.tsx`), not a screen of the Mini App: it loads without Telegram, sign-in or
+Supabase, and from no other site (no fonts, no scripts, no analytics). `vercel.json` serves it at `/privacy` (and at `/privacy/`), ahead of the rule that
+sends every other path to `index.html`; the dev server and `vite preview` do the same (`vite.config.ts`). It opens in the language in the address
+(`?lang=ru`, which the app adds to its link), else the one this device last used, else the browser's. The address for BotFather's Mini App /
+privacy settings is `https://riopalabras-web.vercel.app/privacy`.
+
+Its text is in `src/strings.ts` and `src/strings.ru.ts` (`privacy`), and `src/screens/Privacy.test.ts` checks every claim in it against the code (the
+tables, the columns, the device storage, the third-party hosts, and, when `../riopalabras-proxy` is next to this repository, what the proxy stores and
+logs). When the text changes, set `PRIVACY_UPDATED` in `src/lib/privacy.ts` to the day and update the fingerprint in that test; a test fails until both
+move.
+
 ## Tests
 
 ```bash

@@ -145,7 +145,7 @@ describe('the two ways in', () => {
     expect(app).toMatch(/onClose=\{\(\) => go\(backTarget\)\}/)
   })
 
-  it('App forgets that a message was sent as soon as the person goes anywhere but Settings, the word or the form', () => {
-    expect(app).toMatch(/if \(to !== 'settings' && to !== 'word' && to !== 'feedback'\) setFeedbackSent\(null\)/)
+  it('App forgets that a message was sent as soon as the person goes anywhere but Settings, About, the word or the form', () => {
+    expect(app).toMatch(/if \(to !== 'settings' && to !== 'about' && to !== 'word' && to !== 'feedback'\) setFeedbackSent\(null\)/)
   })
 })

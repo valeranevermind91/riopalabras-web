@@ -39,6 +39,17 @@ export const languagePatch = (language: UiLanguage): Record<string, unknown> => 
 /** The stored choice if there is one, else what Telegram reports. */
 export const effectiveLanguage = (stored: UiLanguage | null): UiLanguage => stored ?? telegramLanguage()
 
+/**
+ * The language the browser asks for first ('ru' for anything starting with "ru", else 'en'). For a page opened outside Telegram, where there is no
+ * Telegram hint (the privacy page). Only the first preference counts: someone who asks for English and then Russian wants English.
+ */
+export function browserLanguage(languages: readonly string[] | undefined = typeof navigator === 'undefined' ? undefined : navigator.languages?.length ? navigator.languages : [navigator.language]): UiLanguage {
+  return languageFromCode(languages?.[0])
+}
+
+/** The language this device last used, if any (the same cache the app starts from). */
+export const readStoredLanguage = (): UiLanguage | null => readCached()
+
 function readCached(): UiLanguage | null {
   try {
     return typeof localStorage === 'undefined' ? null : parseUiLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY))
@@ -61,12 +72,15 @@ reflect(current)
 
 export const getLanguage = (): UiLanguage => current
 
-/** Makes this the interface language (and the one this device starts with next time). Everything that reads strings follows. */
-export function setLanguage(language: UiLanguage): void {
+/**
+ * Makes this the interface language (and, unless `remember` is false, the one this device starts with next time). Everything that reads strings
+ * follows. The privacy page passes `remember: false`: it only shows a language, and must not change what the app starts in.
+ */
+export function setLanguage(language: UiLanguage, options: { remember?: boolean } = {}): void {
   if (language === current) return
   current = language
   try {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+    if (options.remember !== false && typeof localStorage !== 'undefined') localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
   } catch {
     // storage may be blocked: the language still holds for this run
   }

@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
-import { VERSION_LABEL, formatVersion } from '../lib/buildInfo'
 import { setLanguage } from '../lib/language'
 import { strings } from '../strings'
 import { backTarget } from '../lib/nav'
@@ -236,14 +235,28 @@ describe('the Settings screen', () => {
   })
 
   describe('about', () => {
-    it('shows the version from the build, as "<hash> · <date>", the hash with no "v" in front of it', () => {
-      const html = render()
-      expect(html).toContain(`<span class="setting-value">${VERSION_LABEL}</span>`)
-      expect(formatVersion('1a2b3c4', '2026-10-07')).toBe('1a2b3c4 · 2026-10-07')
+    const rows = (html: string) => [...html.matchAll(/<button type="button" class="setting-row setting-nav"><span class="setting-label">([^<]+)<\/span>/g)].map((m) => m[1])
+
+    it('the section opens with a row to the About screen, ahead of "How it works" (each row is there only when there is something to open)', () => {
+      const html = render({}, { onOpenAbout: noop, onOpenHow: noop, onRunIntro: noop })
+      expect(rows(html)).toEqual(['About Riopalabras', 'How it works', 'Run the intro again'])
+      expect(rows(render({}, { onOpenHow: noop }))).toEqual(['How it works'])
+      expect(render()).not.toContain('About Riopalabras')
     })
 
-    it('a build with no git reads "dev", not "vdev"', () => {
-      expect(formatVersion('dev', '2026-10-07')).toBe('dev · 2026-10-07')
+    it('in Russian the row is «О Riopalabras»', () => {
+      setLanguage('ru')
+      try {
+        expect(rows(render({}, { onOpenAbout: noop }))).toEqual(['О Riopalabras'])
+      } finally {
+        setLanguage('en')
+      }
+    })
+
+    it('the version is not here any more: it is on the About screen, with the seven taps', () => {
+      const html = render({}, { onOpenAbout: noop })
+      expect(html).not.toContain('setting-version')
+      expect(html).not.toMatch(/Version|Версия/)
     })
 
     it('has the short paragraph about what the app is and where progress goes', () => {
@@ -331,11 +344,8 @@ describe('the Settings screen', () => {
         }
       })
 
-      it('nothing on screen hints at the gesture: the version row is a plain row, not a button, link or control, and says nothing of taps', () => {
-        const html = render({})
-        const row = html.match(/<div class="setting-row setting-version">.*?<\/div>/)![0]
-        expect(row).toBe('<div class="setting-row setting-version"><span class="setting-label">Version</span><span class="setting-value">' + VERSION_LABEL + '</span></div>')
-        expect(row).not.toMatch(/role=|tabindex|aria-|title=|<button|<a /)
+      it('nothing on screen hints at the gesture: Settings says nothing of taps or unlocking (the version row, in About, is a plain row: see About.test.ts)', () => {
+        const html = render({}, { onOpenAbout: noop })
         expect(html).not.toMatch(/tap|unlock|developer/i)
       })
 
@@ -348,7 +358,7 @@ describe('the Settings screen', () => {
       })
 
       it('no Telegram id, and nothing personal, in the code that does it', () => {
-        for (const file of ['src/lib/tapCount.ts', 'src/screens/Settings.tsx', 'src/data/settingsActions.ts']) {
+        for (const file of ['src/lib/tapCount.ts', 'src/screens/Settings.tsx', 'src/screens/About.tsx', 'src/data/settingsActions.ts']) {
           const code = readFileSync(file, 'utf8')
           expect(code, file).not.toMatch(/\b\d{6,}\b/) // a Telegram id is a long number
           expect(code, file).not.toMatch(/telegram_id|tg_\d|initDataUnsafe|@telegram/i)

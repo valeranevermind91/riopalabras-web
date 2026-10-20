@@ -28,6 +28,7 @@ import { HomeScreen } from '../screens/Home'
 import { HowItWorks } from '../screens/HowItWorks'
 import { Onboarding } from '../screens/Onboarding'
 import { PlacementScreen } from '../screens/PlacementScreen'
+import { AboutScreen } from '../screens/About'
 import { SettingsScreen } from '../screens/Settings'
 import { useReminders } from '../lib/useReminders'
 
@@ -127,6 +128,8 @@ export function Harness() {
   const back = () => void goBack()
   useScreenScroll(screen, null) // as App does
 
+  // origin: a fixed address, so the privacy link in About reads the same wherever the test runs
+  if (screen === 'about') return <AboutScreen data={data} queue={queue} origin="https://app.test" onBack={back} />
   if (screen === 'how') return <HowItWorks onBack={back} />
   if (screen === 'placement') return <PlacementScreen data={data} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={back} />
   if (screen === 'onboarding') return <Onboarding data={data} queue={queue} mode="replay" onExit={() => setScreen('settings')} registerBack={registerBack} />
@@ -139,6 +142,7 @@ export function Harness() {
         onOpenDebug={() => setScreen('debug')}
         reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
+        onOpenAbout={() => setScreen('about')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
         onBack={back}

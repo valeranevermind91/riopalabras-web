@@ -2297,6 +2297,87 @@ mark {
   line-height: 1.5;
 }
 
+/* ---- About: running text between the grouped rows, and the privacy page (privacy.html) ---- */
+
+.about-text {
+  margin: 0;
+  padding: 0 4px;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.about-lead {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.about-licence {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.about-text a,
+.privacy a {
+  color: var(--teal);
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.privacy {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.privacy-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.privacy-head .segmented {
+  flex: 0 0 auto;
+}
+
+.privacy-intro,
+.privacy-section p {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.privacy-section h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.privacy-section p + p {
+  margin-top: 8px;
+}
+
+.privacy-code {
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  /* the address breaks where a <wbr> allows (after @ and .), and anywhere only when even that does not fit */
+  overflow-wrap: break-word;
+}
+
+.privacy-updated {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 /* The daily goal: − value + */
 .stepper {
   display: flex;

@@ -270,7 +270,7 @@ export const en = {
     // two steps, in order: pressing Start alone does not clear the flag the job set, switching it off and on again does
     reminderUnreachable: "Open the bot's chat and press Start, then switch this off and on again. Pressing Start alone is not enough.",
     about: 'About',
-    version: 'Version',
+    aboutApp: 'About Riopalabras',
     bot: 'Open the bot',
     aboutText: 'Learn the Spanish of Uruguay and Argentina one word at a time. Your progress is saved to your account.',
     placementTest: 'Take the placement test',
@@ -280,6 +280,78 @@ export const en = {
     runIntro: 'Run the intro again',
     debug: 'Debug',
     debugLock: 'Lock Debug',
+  },
+
+  // About (opened from Settings > About): what the app is, who made it, where its words come from, what happens to the data, how to support it.
+  // {tokens} are pieces drawn by the screen (links, an address); the addresses themselves are in src/lib/links.ts.
+  about: {
+    title: 'About',
+    what: { heading: 'What this is', text: "A language for living in Uruguay and Argentina. I didn't have the vocabulary myself — so I made this app." },
+    author: { heading: 'Author', name: 'Valeriy Kriukov', telegram: 'Telegram' },
+    sources: {
+      heading: 'Sources',
+      // Only what was checked: the frequencies are hermitdave/FrequencyWords' (CC BY-SA 4.0, its README), the list is doozan/spanish_data's (CC BY 4.0, its LICENSE),
+      // and that README credits FreeLing for part-of-speech tagging. The figure is the dictionary's size to the nearest fifty: a test fails when the dictionary moves away from it.
+      text: 'The base word list is about 4,750 Spanish words, ranked by how often they appear in film and TV subtitles. The frequencies come from {hermitdave} (CC BY-SA 4.0); the list was taken from {doozan} (CC BY 4.0), which credits FreeLing for part-of-speech tagging. The translations, example sentences and regional notes were made for this app with AI (Google Gemini). The regional notes were partly checked against the DAMER dictionary of the Association of Spanish Language Academies and a questionnaire answered by native speakers in Uruguay.',
+      licence: 'The base word list is distributed under {licence}.',
+    },
+    data: {
+      heading: 'Your data',
+      text: 'Your progress, your own words and your settings are stored under your Telegram account. The privacy policy lists exactly what is kept and who else receives it; to have your data deleted, write to us.',
+      privacy: 'Privacy policy',
+      deleteHint: 'To have your data deleted',
+    },
+    support: { heading: 'Support', text: "It's free; if it helped, you can {coffee}.", coffee: 'buy me a coffee' },
+    version: 'Version',
+  },
+
+  // The privacy page (privacy.html, at /privacy): short, plain, in a person's voice. Every claim is checked against the code in a test
+  // (src/screens/Privacy.test.ts); the account address is drawn from src/lib/links.ts, the last-updated date is src/lib/privacy.ts.
+  // Deletion: the owner ran a catalogue query on the live database (2026-10-19): all ten tables that have user_id cascade on delete of the auth user
+  // (enrichment_usage, feedback, reminders, review_log, user_daily_metrics, user_favorites, user_hidden_words, user_progress, user_settings, user_words),
+  // so the page says deleting the account removes everything stored under it. Telegram's own history and the hosts' logs are outside the database and are said to be.
+  // src/screens/Privacy.test.ts fails when the code starts to use a table that is not in that verified list.
+  privacy: {
+    title: 'Privacy',
+    pageTitle: 'Privacy · Riopalabras',
+    intro: 'Riopalabras is a free app for learning the Spanish of Uruguay and Argentina, inside Telegram. Here is what it keeps and who else sees it.',
+    updated: (date: string) => `Last updated: ${date}`,
+    language: 'Language',
+    sections: [
+      {
+        id: 'stored',
+        heading: 'What it keeps',
+        paragraphs: [
+          'Your account comes from your Telegram ID, with your first name and username (if any) and a made-up email-style address like {email}; it is not a real mailbox and nothing is sent to it.',
+          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or mark as known. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
+          "Not kept: your phone number, contacts, location or passwords. No cookies; unsent changes and your sign-in stay in Telegram's browser storage.",
+        ],
+      },
+      {
+        id: 'shared',
+        heading: 'Who else sees it',
+        paragraphs: [
+          "Telegram runs the app (the app loads its script from telegram.org) and tells it who you are. Its bot sends the reminder and passes your messages to the author; the bot's own message carries no name or ID, but the message is stored in the database under your account. Supabase holds the database and sign-in. Vercel serves the app's pages and word list. Railway runs our server, whose log has your Telegram ID at sign-in and your account ID at each lookup, not the word. Exception: if a Gemini reply cannot be parsed, it is logged in full, and it usually contains the word.",
+          "A word you add goes to Google's Gemini for translations and an example, with no account details; Google's terms apply. Google Fonts loads the fonts, so Google sees your IP address when the app opens; every host sees it, and the app does not store it.",
+        ],
+      },
+      {
+        id: 'ads',
+        heading: "What's not here",
+        paragraphs: ["No advertising, no analytics, nothing sold. The answer history only runs the app's statistics and scheduling."],
+      },
+      {
+        id: 'delete',
+        heading: 'Deleting your data',
+        paragraphs: [
+          "To have your account and data deleted, write to us (Settings → About → Write to us) or message {handle} on Telegram. The author deletes your account, and that removes everything stored under it: the database is set up so that all of it goes together. Telegram's own history and the hosts' logs follow their rules.",
+        ],
+      },
+    ] as readonly {
+      id: string
+      heading: string
+      paragraphs: readonly string[]
+    }[],
   },
 
   // A note to the developer: from Settings (anything at all), or from a word (a problem with it). It says what travels with the text.

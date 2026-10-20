@@ -15,7 +15,7 @@ import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
 import { effectiveLanguage, setLanguage, useLanguage } from './lib/language'
 import { getSupabase } from './lib/supabase'
-import { backTarget as backTargetFor, type Screen } from './lib/nav'
+import { backTarget as backTargetFor, type FeedbackOrigin, type Screen } from './lib/nav'
 import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
 import { useRecentActivity } from './lib/useRecentActivity'
@@ -29,6 +29,7 @@ import { LearnScreen } from './screens/Learn'
 import { MatchingScreen } from './screens/Matching'
 import { FeedbackScreen } from './screens/Feedback'
 import { SettingsScreen } from './screens/Settings'
+import { AboutScreen } from './screens/About'
 import { HowItWorks } from './screens/HowItWorks'
 import { PlacementScreen } from './screens/PlacementScreen'
 import { Onboarding } from './screens/Onboarding'
@@ -136,10 +137,12 @@ function App() {
   // A note to the developer: from Settings (esWord null) or about the open word. `feedbackSent` is where one has just gone from, for the line that says so;
   // it is forgotten as soon as the person goes anywhere else.
   const [feedback, setFeedback] = useState<{ esWord: string | null }>({ esWord: null })
-  const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'word'; key: string | null } | null>(null)
+  const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'about' | 'word'; key: string | null } | null>(null)
+  // A general note is started from Settings' own row or from About (the way to ask for data to be deleted); Back, and the line that says it went, return there.
+  const [feedbackFrom, setFeedbackFrom] = useState<FeedbackOrigin>('settings')
   const setScreen = useCallback((to: Screen) => {
     setScreenNow(to)
-    if (to !== 'settings' && to !== 'word' && to !== 'feedback') setFeedbackSent(null)
+    if (to !== 'settings' && to !== 'about' && to !== 'word' && to !== 'feedback') setFeedbackSent(null)
   }, [])
   // A word's detail is opened from the word of the day (back goes Home) or from the Words list (back goes to the list).
   const [open, setOpen] = useState<{ key: string; from: 'home' | 'words' } | null>(null)
@@ -150,7 +153,7 @@ function App() {
   // Only a signed-in user can send one (the table takes their own rows); without a session the entry points are not there.
   const sendReport = useMemo(() => (client && userId ? (report: FeedbackReport) => sendFeedback(report, { client, userId, recoverSession: async () => (await recoverSession()) === true }) : null), [client, userId, recoverSession])
   /** Where Back leads from the current screen. */
-  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null, feedback.esWord !== null)
+  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null, feedback.esWord !== null, feedbackFrom)
   // A screen opens at the top of the page (the one Back leads to gets its place back), not wherever the last one was scrolled to.
   useScreenScroll(screen, open?.from ?? null)
   // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
@@ -274,18 +277,42 @@ function App() {
         onOpenDebug={() => setScreen('debug')}
         reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
+        onOpenAbout={() => setScreen('about')}
         onOpenHow={() => setScreen('how')}
         onRunIntro={() => setScreen('onboarding')}
         onOpenFeedback={
           sendReport
             ? () => {
                 setFeedback({ esWord: null })
+                setFeedbackFrom('settings')
                 setFeedbackSent(null)
                 setScreen('feedback')
               }
             : undefined
         }
         feedbackSent={feedbackSent?.screen === 'settings'}
+        onBack={inPageBack}
+      />
+    )
+  }
+
+  // About: opened from Settings. Its "Write to us" is the way to ask for data to be deleted, and Back from that form returns here.
+  if (screen === 'about' && readyData && queue) {
+    return (
+      <AboutScreen
+        data={readyData}
+        queue={queue}
+        onOpenFeedback={
+          sendReport
+            ? () => {
+                setFeedback({ esWord: null })
+                setFeedbackFrom('about')
+                setFeedbackSent(null)
+                setScreen('feedback')
+              }
+            : undefined
+        }
+        feedbackSent={feedbackSent?.screen === 'about'}
         onBack={inPageBack}
       />
     )
@@ -301,7 +328,7 @@ function App() {
         from={about === null ? 'settings' : 'word'}
         send={sendReport}
         onSent={() => {
-          setFeedbackSent({ screen: about === null ? 'settings' : 'word', key: about === null ? null : wordKey(about) })
+          setFeedbackSent({ screen: about === null ? feedbackFrom : 'word', key: about === null ? null : wordKey(about) })
           go(backTarget)
         }}
         onClose={() => go(backTarget)}

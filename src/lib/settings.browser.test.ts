@@ -421,59 +421,73 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     await page.close()
   }, 60_000)
 
-  describe('the Debug section behind seven taps on the version row', () => {
+  describe('the Debug section behind seven taps on the version row (which is on the About screen)', () => {
     const versionRow = '.setting-version'
+    const toAbout = async (page: Page) => {
+      await toSettings(page)
+      await press(page, '.setting-nav', 'About Riopalabras')
+      await page.waitForSelector(versionRow)
+    }
+    const backToSettings = async (page: Page) => {
+      await page.click('.back-link')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Settings')
+    }
     const tapVersion = async (page: Page, times: number) => {
       for (let i = 0; i < times; i++) await page.click(versionRow)
     }
     const debugSection = (page: Page) => page.$('#settings-debug')
     const pageText = (page: Page) => page.evaluate(() => document.body.innerText)
 
-    it('six quick taps do nothing; the seventh unlocks Debug and writes debug_unlocked once', async () => {
+    it('six quick taps do nothing; the seventh unlocks Debug and writes debug_unlocked once; Settings then shows the section', async () => {
       const page = await open('goal=12&lang=en')
       await toSettings(page)
       expect(await debugSection(page)).toBeNull()
+      await press(page, '.setting-nav', 'About Riopalabras')
+      await page.waitForSelector(versionRow)
       const before = await pageText(page)
       await tapVersion(page, 6)
-      expect(await debugSection(page)).toBeNull()
       expect(await pageText(page)).toBe(before) // nothing on screen changed
       expect(await sent(page)).toEqual([])
       await tapVersion(page, 1)
-      await page.waitForSelector('#settings-debug')
-      expect(await page.$$eval('#settings-debug ~ .settings-group .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['Debug', 'Lock Debug'])
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length === 1)
       expect(await sent(page)).toEqual([{ debug_unlocked: true }])
+      expect(await pageText(page)).toBe(before) // and still nothing on screen says so
       await tapVersion(page, 7) // more taps on an unlocked account write nothing more
       expect(await sent(page)).toEqual([{ debug_unlocked: true }])
+      await backToSettings(page)
+      await page.waitForSelector('#settings-debug')
+      expect(await page.$$eval('#settings-debug ~ .settings-group .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['Debug', 'Lock Debug'])
       await page.close()
     }, 60_000)
 
     it('slow taps never unlock it: a pause longer than a second and a half starts the count again', async () => {
       const page = await open('goal=12&lang=en')
-      await toSettings(page)
+      await toAbout(page)
       await tapVersion(page, 6)
       await new Promise((r) => setTimeout(r, 1700))
       await tapVersion(page, 1) // the seventh in all, but the first since the pause
-      expect(await debugSection(page)).toBeNull()
+      expect(await sent(page)).toEqual([])
       await tapVersion(page, 5)
-      expect(await debugSection(page)).toBeNull()
+      expect(await sent(page)).toEqual([])
       await tapVersion(page, 1) // seven since the pause
-      await page.waitForSelector('#settings-debug')
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length === 1)
+      expect(await sent(page)).toEqual([{ debug_unlocked: true }])
       await page.close()
     }, 60_000)
 
-    it('only taps on the version row count: twenty on the text beneath it do nothing, and six on the row with one elsewhere between are still six', async () => {
+    it('only taps on the version row count: twenty on the text above it do nothing, and six on the row with one elsewhere between are still six', async () => {
       const page = await open('goal=12&lang=en')
-      await toSettings(page)
-      for (let i = 0; i < 20; i++) await page.click('.settings-about')
-      expect(await debugSection(page)).toBeNull()
+      await toAbout(page)
+      for (let i = 0; i < 20; i++) await page.click('.about-lead')
+      expect(await sent(page)).toEqual([])
       await tapVersion(page, 3)
-      await page.click('.settings-about')
+      await page.click('.about-lead')
       await tapVersion(page, 3)
-      expect(await debugSection(page)).toBeNull()
+      expect(await sent(page)).toEqual([])
       await page.close()
     }, 60_000)
 
-    it('an account that unlocked it sees Debug at once, opens it, and locks it again: the section goes and the key leaves the blob', async () => {
+    it('an account that unlocked it sees Debug at once, locks it again (the section goes and the key leaves the blob), and can find it again the same way', async () => {
       const page = await open('goal=12&lang=en&unlocked=1')
       await toSettings(page)
       await page.waitForSelector('#settings-debug')
@@ -481,9 +495,13 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
       await page.waitForFunction(() => document.querySelector('#settings-debug') === null)
       expect(await sent(page)).toEqual([{ debug_unlocked: null }])
       expect(await pageText(page)).not.toContain('Debug')
-      await tapVersion(page, 7) // and it can be found again the same way
-      await page.waitForSelector('#settings-debug')
+      await press(page, '.setting-nav', 'About Riopalabras')
+      await page.waitForSelector(versionRow)
+      await tapVersion(page, 7)
+      await page.waitForFunction(() => (window as never as { __sent: { settings: unknown[] } }).__sent.settings.length === 2)
       expect(await sent(page)).toEqual([{ debug_unlocked: null }, { debug_unlocked: true }])
+      await backToSettings(page)
+      await page.waitForSelector('#settings-debug')
       await page.close()
     }, 60_000)
 
@@ -499,7 +517,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
 
     it('nothing about the version row says it can be tapped: not focusable, no role, no pointer, no highlight, the same on a touch device', async () => {
       const page = await open('goal=12&lang=en')
-      await toSettings(page)
+      await toAbout(page)
       const look = await page.$eval(versionRow, (e) => {
         const style = getComputedStyle(e)
         return { tag: e.tagName, tabIndex: (e as HTMLElement).tabIndex, role: e.getAttribute('role'), aria: e.getAttributeNames().filter((n) => n.startsWith('aria-') || n === 'title'), cursor: style.cursor, tapHighlight: style.getPropertyValue('-webkit-tap-highlight-color'), select: style.userSelect }
@@ -517,6 +535,120 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
       expect(await page.$$eval('#settings-debug ~ .settings-group .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['Debug', 'Заблокировать Debug'])
       await page.close()
     }, 60_000)
+  })
+
+  describe('the About screen', () => {
+    const toAbout = async (page: Page) => {
+      await toSettings(page)
+      await press(page, '.setting-nav', 'About')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'About')
+    }
+    const headings = (page: Page) => page.$$eval('h2.settings-label', (els) => els.map((e) => e.textContent))
+
+    it('opens from Settings with the five blocks in order, and Back returns to Settings', async () => {
+      const page = await open('goal=12&lang=en')
+      await toAbout(page)
+      expect(await headings(page)).toEqual(['What this is', 'Author', 'Sources', 'Your data', 'Support'])
+      expect(await page.$eval('.about-lead', (e) => e.textContent)).toBe("A language for living in Uruguay and Argentina. I didn't have the vocabulary myself — so I made this app.")
+      await page.click('.back-link')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Settings')
+      await page.close()
+    }, 60_000)
+
+    it('in Russian, in Russian', async () => {
+      const page = await open('goal=12&lang=ru')
+      await page.click('button[aria-label="Настройки"]')
+      await page.waitForSelector('.settings')
+      await press(page, '.setting-nav', 'О Riopalabras')
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'О приложении')
+      expect(await headings(page)).toEqual(['Что это', 'Автор', 'Источники', 'Ваши данные', 'Поддержка'])
+      expect(await page.$$eval('.about-text a', (els) => els.map((e) => e.textContent))).toEqual(['hermitdave/FrequencyWords', 'doozan/spanish_data', 'CC BY-SA 4.0', 'угостить меня кофе'])
+      await page.close()
+    }, 60_000)
+
+    it('fits a 320px screen: nothing is wider than the page, and every link and row can be reached', async () => {
+      const page = await open('goal=12&lang=en')
+      await page.setViewport({ width: 320, height: 640, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      await toAbout(page)
+      const overflow = await page.evaluate(() => ({ page: document.documentElement.scrollWidth - window.innerWidth, wide: Array.from(document.querySelectorAll('main *')).filter((e) => e.getBoundingClientRect().right > window.innerWidth + 0.5).map((e) => e.className || e.tagName) }))
+      expect(overflow).toEqual({ page: 0, wide: [] })
+      await page.close()
+    }, 60_000)
+
+    describe('links, inside Telegram', () => {
+      /** A page where window.Telegram is a real-looking WebApp whose two openers only record what they were asked to open. */
+      async function openInTelegram() {
+        const page = await (await browser.createBrowserContext()).newPage()
+        await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
+        await page.setViewport({ width: 390, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        await page.evaluateOnNewDocument(() => {
+          const opened: string[] = []
+          ;(window as never as { __opened: string[] }).__opened = opened
+          ;(window as never as { Telegram: unknown }).Telegram = {
+            WebApp: {
+              initData: 'query_id=x&hash=y',
+              initDataUnsafe: {},
+              colorScheme: 'light',
+              themeParams: {},
+              ready() {},
+              expand() {},
+              isVersionAtLeast: () => true,
+              openLink: (url: string) => void opened.push(`openLink ${url}`),
+              openTelegramLink: (url: string) => void opened.push(`openTelegramLink ${url}`),
+            },
+          }
+        })
+        await page.goto(`${base}/src/testing/settingsHarness.html?goal=12&lang=en`, { waitUntil: 'networkidle0' })
+        await page.waitForSelector('.screen-header')
+        await toSettings(page)
+        await press(page, '.setting-nav', 'About')
+        await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'About')
+        return page
+      }
+      const opened = (page: Page) => page.evaluate(() => (window as never as { __opened: string[] }).__opened)
+      /** A real click event on the link; says whether the page took it over (preventDefault), i.e. whether the anchor's own navigation was stopped. */
+      const clickLink = (page: Page, href: string) =>
+        page.evaluate((h) => {
+          const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+          document.querySelector(`a[href="${h}"]`)!.dispatchEvent(click)
+          return click.defaultPrevented
+        }, href)
+
+      it('the author goes to Telegram\'s own t.me opener; every other link goes to openLink; none of them takes the page away', async () => {
+        const page = await openInTelegram()
+        const here = page.url()
+        const pagesBefore = (await browser.pages()).length
+        const hrefs = ['https://t.me/valeranevermind', 'https://github.com/hermitdave/FrequencyWords', 'https://github.com/doozan/spanish_data', 'https://creativecommons.org/licenses/by-sa/4.0/', 'https://app.test/privacy?lang=en', 'https://buymeacoffee.com/valeranevermind']
+        const taken: boolean[] = []
+        for (const href of hrefs) taken.push(await clickLink(page, href))
+        expect(taken).toEqual([true, true, true, true, true, true]) // the anchor's own navigation was stopped on every one: Telegram's opener did the opening
+        expect(await opened(page)).toEqual([
+          'openTelegramLink https://t.me/valeranevermind',
+          'openLink https://github.com/hermitdave/FrequencyWords',
+          'openLink https://github.com/doozan/spanish_data',
+          'openLink https://creativecommons.org/licenses/by-sa/4.0/',
+          'openLink https://app.test/privacy?lang=en',
+          'openLink https://buymeacoffee.com/valeranevermind',
+        ])
+        expect(page.url()).toBe(here) // the Mini App is where it was
+        expect((await browser.pages()).length).toBe(pagesBefore) // and no tab opened beside it
+        await page.close()
+      }, 60_000)
+
+      it('outside Telegram nothing is taken over: the anchor does its ordinary job (a new tab), on every link', async () => {
+        const page = await open('goal=12&lang=en')
+        await toAbout(page)
+        const taken = await page.$$eval('a', (anchors) =>
+          anchors.map((a) => {
+            const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+            a.dispatchEvent(click)
+            return click.defaultPrevented
+          }),
+        )
+        expect(taken).toEqual([false, false, false, false, false, false])
+        await page.close()
+      }, 60_000)
+    })
   })
 
   describe('a screen opens at the top of the page, and the one Back leads to gets its place back', () => {

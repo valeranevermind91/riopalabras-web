@@ -1,4 +1,4 @@
-import { useRef, type MouseEvent } from 'react'
+import type { MouseEvent } from 'react'
 import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
@@ -6,8 +6,6 @@ import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
 import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
-import { VERSION_LABEL } from '../lib/buildInfo'
-import { DEBUG_UNLOCK_GAP_MS, DEBUG_UNLOCK_TAPS, createTapCounter } from '../lib/tapCount'
 import type { RemindersControl } from '../lib/useReminders'
 import { getWebApp, haptic } from '../lib/telegram'
 import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
@@ -24,6 +22,8 @@ interface SettingsScreenProps {
   reminders?: RemindersControl
   /** Runs the placement test on its own (Learning). Without it the row is left out. */
   onTakePlacement?: () => void
+  /** Opens the About screen: who made the app, where its words come from, the privacy policy, the version. Without it the row is left out. */
+  onOpenAbout?: () => void
   /** Opens "How it works" (About). Without it the row is left out. */
   onOpenHow?: () => void
   /** Replays the intro from step 1 (About). Without it the row is left out. */
@@ -48,7 +48,7 @@ const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ decli
 
 const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
-export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenHow, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -67,13 +67,7 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
     haptic('select')
     saveSetting(languagePatch(language), deps)
   }
-  // Seven quick taps on the version row unlock the Debug section for this account; nothing on screen says so.
-  const taps = useRef(createTapCounter({ taps: DEBUG_UNLOCK_TAPS, gapMs: DEBUG_UNLOCK_GAP_MS }))
-  const tapVersion = () => {
-    if (settings.debugUnlocked || !taps.current.tap()) return
-    haptic('success')
-    saveSetting(debugUnlockedPatch(true), deps)
-  }
+  // Debug is unlocked by seven quick taps on the version row, which lives on the About screen (src/screens/About.tsx); here it can only be locked again.
   const lockDebug = () => {
     haptic('select')
     saveSetting(debugUnlockedPatch(false), deps)
@@ -252,6 +246,14 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
           {t.about}
         </h2>
         <div className="settings-group">
+          {onOpenAbout && (
+            <button type="button" className="setting-row setting-nav" onClick={onOpenAbout}>
+              <span className="setting-label">{t.aboutApp}</span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
           {onOpenHow && (
             <button type="button" className="setting-row setting-nav" onClick={onOpenHow}>
               <span className="setting-label">{t.howItWorks}</span>
@@ -279,10 +281,6 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
               </span>
             </button>
           )}
-          <div className="setting-row setting-version" onClick={tapVersion}>
-            <span className="setting-label">{t.version}</span>
-            <span className="setting-value">{VERSION_LABEL}</span>
-          </div>
           {link && (
             <a className="setting-row setting-link" href={link} target="_blank" rel="noopener noreferrer" onClick={openLink}>
               <span className="setting-label">{t.bot}</span>

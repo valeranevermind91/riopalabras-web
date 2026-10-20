@@ -160,10 +160,39 @@ describe('spelling and address', () => {
     expect(offenders(ruTexts, /(^|[^а-яё])[а-яё]{3,}(ешь|ёшь|ишь)(?![а-яё])/i)).toEqual([])
   })
 
-  it('Russian: no gendered first person ("я … сделал/сделала", "сам/сама", but «сами» is the formal plural and fine)', () => {
-    expect(offenders(ruTexts, /(^|[^а-яё])я\s+[а-яё]+(л|ла|ло|ли)(?![а-яё])/i)).toEqual([])
-    expect(offenders(ruTexts, /(^|[^а-яё])сама?(?![а-яё])/i)).toEqual([]) // "сами" is the formal plural and fine: «Введите перевод сами»
+  // The rule is for the app's own voice, which is always "we" and never a gendered "I". ONE sentence is the exception: the About screen's first block is the author
+  // speaking in his own name, and that name is on the same screen (about.author.name). The exception is that exact sentence at that exact path: the rest of that
+  // string, and every other string in the interface, is still held to the rule, and the tests below fail if the sentence moves, changes, or is joined by another.
+  const AUTHOR_VOICE = { path: 'about.what.text', sentence: 'Мне самому не хватало лексики — поэтому я сделал это приложение.' }
+  const GENDERED_I = /(^|[^а-яё])я\s+[а-яё]+(л|ла|ло|ли)(?![а-яё])/i
+  const SAM = /(^|[^а-яё])сама?(?![а-яё])/i // "сами" is the formal plural and fine: «Введите перевод сами»
+  /** The Russian strings with the author's one sentence taken out of the one place it is allowed. */
+  const withoutAuthorVoice = (list: { path: string; text: string }[]) => list.map((t) => (t.path === AUTHOR_VOICE.path ? { ...t, text: t.text.replace(AUTHOR_VOICE.sentence, '') } : t))
+
+  it('Russian: no gendered first person ("я … сделал/сделала", "сам/сама", but «сами» is the formal plural and fine), except the author\'s one sentence in About', () => {
+    expect(offenders(withoutAuthorVoice(ruTexts), GENDERED_I)).toEqual([])
+    expect(offenders(withoutAuthorVoice(ruTexts), SAM)).toEqual([])
     expect(ru.words.form.fillMyself).toBe('Ввести вручную')
+  })
+
+  it('the author\'s sentence is the ONLY thing the exception lets through: without it the rule names that one string and no other', () => {
+    expect(offenders(ruTexts, GENDERED_I)).toEqual([`${AUTHOR_VOICE.path}: ${ru.about.what.text}`])
+    expect(ruTexts.find((t) => t.path === AUTHOR_VOICE.path)!.text).toContain(AUTHOR_VOICE.sentence) // a stale exception (the sentence reworded or gone) fails here, and is removed
+    expect(ruTexts.filter((t) => t.text.includes(AUTHOR_VOICE.sentence)).map((t) => t.path)).toEqual([AUTHOR_VOICE.path]) // and it is not used anywhere else
+  })
+
+  it('the exception does not travel: the same words at another path, or another gendered sentence beside it in the same string, are caught', () => {
+    const elsewhere = [{ path: 'settings.aboutText', text: AUTHOR_VOICE.sentence }]
+    expect(offenders(withoutAuthorVoice(elsewhere), GENDERED_I)).toHaveLength(1)
+    const beside = [{ path: AUTHOR_VOICE.path, text: `${AUTHOR_VOICE.sentence} Я сделал ещё одно приложение.` }]
+    expect(offenders(withoutAuthorVoice(beside), GENDERED_I)).toHaveLength(1)
+    const reworded = [{ path: AUTHOR_VOICE.path, text: 'Мне самому не хватало лексики — поэтому я сделала это приложение.' }]
+    expect(offenders(withoutAuthorVoice(reworded), GENDERED_I)).toHaveLength(1)
+  })
+
+  it('the speaker is named on the screen: the author block carries his name, in both languages', () => {
+    expect([en.about.author.name, ru.about.author.name]).toEqual(['Valeriy Kriukov', 'Валерий Крюков'])
+    expect(readFileSync('src/screens/About.tsx', 'utf8')).toContain('{t.author.name}')
   })
 })
 

@@ -227,10 +227,10 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
   })
 
   describe('Run the intro again', () => {
-    it('is a row in About next to "How it works"', async () => {
+    it('is a row in About next to "About Riopalabras" and "How it works"', async () => {
       const page = await open('goal=12')
       await toSettings(page)
-      expect(await page.$$eval('#settings-about ~ .settings-group .setting-nav .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['How it works', 'Run the intro again'])
+      expect(await page.$$eval('#settings-about ~ .settings-group .setting-nav .setting-label', (els) => els.map((e) => e.textContent))).toEqual(['About Riopalabras', 'How it works', 'Run the intro again'])
       await page.close()
     }, 60_000)
 
