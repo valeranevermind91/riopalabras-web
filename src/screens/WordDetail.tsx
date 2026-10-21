@@ -5,6 +5,7 @@ import { WordForm, type SubmitResult } from '../components/WordForm'
 import { deleteCustomWord, editCustomWord, valuesOf, type WordValues } from '../data/customWords'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
+import { reportFor } from '../data/feedback'
 import { headword } from '../data/headword'
 import { canStar } from '../data/starred'
 import type { Word } from '../data/types'
@@ -38,7 +39,8 @@ interface WordDetailProps {
   /** The word is gone (deleted): leave the screen, to where it was opened from. */
   onDeleted?: () => void
   /** Opens the form to report a problem with this word. Without it (signed out) the action is left out. A word the user typed in is edited, not reported. */
-  onReport?: () => void
+  /** Starts a report about this word; called with what the report names (`named`: the word on the card, and the standard form after it when they differ) and what the form shows the person (`shown`: the word on the card). */
+  onReport?: (reported: { shown: string; named: string }) => void
   /** A report about this word has just been sent: a line under the action says so. */
   reportSent?: boolean
   onBack?: () => void
@@ -182,7 +184,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
 
       {onReport && !word.isCustom && (
         <div className="detail-report">
-          <button type="button" className="link-btn" onClick={onReport}>
+          <button type="button" className="link-btn" onClick={() => onReport(reportFor(word))}>
             {strings.feedback.reportWord}
           </button>
           {reportSent && (

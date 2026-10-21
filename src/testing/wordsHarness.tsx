@@ -57,6 +57,11 @@ const enrich = (input: { word: string; pos: string | null }): Promise<EnrichResu
 }
 ;(window as never as { __queue: typeof queue }).__queue = queue
 
+// ?report=1: the detail screen offers "Report a problem" as signed in (App does when it can send), and what it hands over is recorded (window.__reported); window.__openWord(esWord) opens a card by its dictionary key.
+const reportable = new URLSearchParams(location.search).get('report') === '1'
+const reported: { shown: string; named: string }[] = []
+;(window as never as { __reported: typeof reported }).__reported = reported
+
 async function boot() {
   const [dictionary, rio] = await Promise.all([fetch('/words_enriched.json').then((r) => r.json()), fetch('/rio_overlay.json').then((r) => r.json())])
   const base = parseDictionary(dictionary, parseRioOverlay(rio))
@@ -95,6 +100,7 @@ export function Harness({ start }: { start: readonly Word[] }) {
   }, [])
   useEffect(() => {
     ;(window as never as { __pressBack: () => string }).__pressBack = () => (backInterceptor.current?.() ? 'closed-sheet' : 'left')
+    ;(window as never as { __openWord: (esWord: string) => void }).__openWord = (esWord) => setOpen(wordKey(esWord))
   }, [])
   const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, a_future_key: { kept: true }, ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
   useEffect(() => {
@@ -117,7 +123,7 @@ export function Harness({ start }: { start: readonly Word[] }) {
   const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden, upsertCustomWord: upsertCustom, removeCustomWord: removeCustom } as never
 
   const opened = open ? words.find((w) => wordKey(w.esWord) === open) : undefined
-  if (opened) return <WordDetail word={opened} data={data} queue={queue} registerBack={registerBack} onDeleted={() => setOpen(null)} onBack={() => setOpen(null)} />
+  if (opened) return <WordDetail word={opened} data={data} queue={queue} registerBack={registerBack} onDeleted={() => setOpen(null)} onReport={reportable ? (what) => void reported.push(what) : undefined} onBack={() => setOpen(null)} />
   return <WordsScreen data={data} queue={queue} savedView={viewStore.get()} onViewChange={viewStore.set} registerBack={registerBack} enrich={enrich} onOpen={(esWord) => setOpen(wordKey(esWord))} />
 }
 

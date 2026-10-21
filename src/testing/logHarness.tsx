@@ -3,8 +3,10 @@
 // sends is in window.__log (the entries, in order); progress rows are in window.__progress. Query: screen=review|learn|matching|cloze (default review),
 // logfail=1 (the log's send always fails, as with a table that cannot be reached), learned=N (how many learned words, default 12), fresh=N (how many
 // new words Learn can teach, default 12), interval=N and reps=N (the learned words' interval in days and repetitions, default 3 and 2: interval=0 reps=1 is a word
-// introduced by Learn and not reviewed yet, which has no schedule in days).
-import { useCallback, useMemo, useRef, useState } from 'react'
+// introduced by Learn and not reviewed yet, which has no schedule in days), native=1 (the screen draws no Back arrow of its own: the back press is window.__nativeBack(),
+// as with Telegram's BackButton). Besides the log and the progress rows, window.__sent records every settings patch, hidden-word and favourite write the queue is
+// given and how many times today was marked active, and window.__state() is the words' scheduling fields and the settings as they are now.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import { applyProgressUpdates, applySettingsPatch } from '../data/mutations'
@@ -13,6 +15,7 @@ import { parseSettings } from '../data/settings'
 import { computeStats } from '../data/stats'
 import type { ProgressUpdate, SettingsPatch, Word } from '../data/types'
 import { createWriteQueue } from '../data/writeQueue'
+import { wordKey } from '../data/words'
 import { ClozeScreen } from '../screens/Cloze'
 import { LearnScreen } from '../screens/Learn'
 import { MatchingScreen } from '../screens/Matching'
@@ -21,7 +24,15 @@ import { makeWord } from './makeWord'
 
 const params = new URLSearchParams(location.search)
 const screen = params.get('screen') ?? 'review'
-const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number } = { log: [], progress: [], logAttempts: 0 }
+const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number; settings: SettingsPatch[]; hidden: unknown[]; favorites: unknown[]; active: number } = {
+  log: [],
+  progress: [],
+  logAttempts: 0,
+  settings: [],
+  hidden: [],
+  favorites: [],
+  active: 0,
+}
 ;(window as never as { __log: ReviewLogEntry[]; __progress: ProgressUpdate[]; __sent: typeof sent }).__log = sent.log
 ;(window as never as { __progress: ProgressUpdate[] }).__progress = sent.progress
 ;(window as never as { __sent: typeof sent }).__sent = sent
@@ -29,8 +40,9 @@ const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: nu
 const queue = createWriteQueue(
   {
     sendProgress: async (updates) => void sent.progress.push(...updates),
-    sendSettings: async () => {},
-    sendHidden: async () => {},
+    sendSettings: async (patch) => void sent.settings.push(patch),
+    sendHidden: async (ops) => void sent.hidden.push(...ops),
+    sendFavorites: async (ops) => void sent.favorites.push(...ops),
     sendLog: async (entries) => {
       sent.logAttempts++
       if (params.get('logfail') === '1') throw new Error('review_log is unreachable')
@@ -86,8 +98,33 @@ export function Harness() {
     () => ({ words, settings, stats: computeStats(words, settings, new Date()), getSettings: () => latest.current, getWords: () => latestWords.current, applySettings, applyProgress, applyHidden: () => {}, degraded: [], retryDegraded: () => {} }) as never,
     [words, settings, applySettings, applyProgress],
   )
+  const backHandler = useRef<(() => boolean) | null>(null)
+  useEffect(() => {
+    const w = window as never as { __state: () => unknown; __nativeBack: () => void }
+    w.__state = () => ({
+      words: Object.fromEntries(
+        latestWords.current.map((x) => [wordKey(x.esWord), { nextReview: x.nextReview?.toISOString() ?? null, interval: x.interval, repetitions: x.repetitions, easeFactor: x.easeFactor }]),
+      ),
+      settings: JSON.stringify(latest.current),
+    })
+    w.__nativeBack = () => void backHandler.current?.()
+  }, [])
   const common = { data, queue, metrics: null, reviewLog, onHome: () => {} }
-  if (screen === 'learn') return <LearnScreen {...common} onReview={() => {}} />
+  if (screen === 'learn') {
+    const native = params.get('native') === '1'
+    const back = () => void backHandler.current?.()
+    return (
+      <LearnScreen
+        {...common}
+        metrics={{ markActiveToday: () => void sent.active++ }}
+        onReview={() => {}}
+        onBack={native ? undefined : back}
+        registerBack={(handler) => {
+          backHandler.current = handler
+        }}
+      />
+    )
+  }
   if (screen === 'matching') return <MatchingScreen {...common} />
   if (screen === 'cloze') return <ClozeScreen {...common} />
   return <ReviewScreen {...common} onLearn={() => {}} />

@@ -7,8 +7,10 @@ import { strings } from '../strings'
 
 interface FeedbackProps {
   kind: FeedbackKind
-  /** The word a report is about, as stored (a word report only). It is shown on the form and goes with the message. */
+  /** What the report names, as stored and sent to the author (a word report only): the word on the card, and the standard form after it when they differ (reportedWord). */
   esWord: string | null
+  /** What the person is shown on the form for it: just the word they saw. Without it the form shows `esWord`. */
+  shownWord?: string | null
   /** The screen the form was opened from; it goes with the message. */
   from: FeedbackScreen
   send: (report: FeedbackReport) => Promise<SendResult>
@@ -32,9 +34,10 @@ type Phase = 'writing' | 'sending' | 'failed'
  * A failure keeps every word and says so; a retry of the same text carries the same id, so it cannot make a second row. Changing the text makes it a new
  * report with a new id.
  */
-export function FeedbackScreen({ kind, esWord, from, send, onSent, onClose, registerBack, onBack, context }: FeedbackProps) {
+export function FeedbackScreen({ kind, esWord, shownWord, from, send, onSent, onClose, registerBack, onBack, context }: FeedbackProps) {
   const t = strings.feedback
-  const word = kind === 'word' ? esWord : null
+  const word = kind === 'word' ? esWord : null // what is sent
+  const seen = kind === 'word' ? (shownWord ?? esWord) : null // what is shown: the word the person saw
   const [text, setText] = useState('')
   const [phase, setPhase] = useState<Phase>('writing')
   const [empty, setEmpty] = useState(false)
@@ -99,10 +102,10 @@ export function FeedbackScreen({ kind, esWord, from, send, onSent, onClose, regi
     <main className="screen feedback">
       <ScreenHeader title={kind === 'word' ? t.titleWord : t.titleGeneral} onBack={onBack} />
       <form className="word-form" onSubmit={submit} noValidate>
-        {word !== null && (
+        {seen !== null && (
           <p className="form-word">
             <span className="form-label">{t.aboutWord}</span>
-            <strong>{word}</strong>
+            <strong>{seen}</strong>
           </p>
         )}
         <label className="form-field">
@@ -129,7 +132,7 @@ export function FeedbackScreen({ kind, esWord, from, send, onSent, onClose, regi
           )}
         </label>
         <p id="feedback-sends" className="form-hint">
-          {t.sentWith({ word, version: collected.appVersion, language: t.languages[collected.uiLanguage], screen: t.screens[collected.screen], platform: collected.platform })}
+          {t.sentWith({ word: seen, version: collected.appVersion, language: t.languages[collected.uiLanguage], screen: t.screens[collected.screen], platform: collected.platform })}
         </p>
         {empty && (
           <div className="form-note is-error" role="alert">

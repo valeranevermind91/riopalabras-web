@@ -104,7 +104,7 @@ function readMetrics(raw: unknown): DailyMetricsRow | null {
 
 const text = (v: unknown): v is string => typeof v === 'string'
 
-const LOG_MODES: readonly string[] = ['review', 'learn', 'matching', 'cloze']
+const LOG_MODES: readonly string[] = ['review', 'learn', 'matching', 'cloze', 'practice']
 const LOG_STATES: readonly string[] = ['new', 'learning', 'review', 'relearning']
 
 function readLogEntry(raw: unknown): ReviewLogEntry | null {

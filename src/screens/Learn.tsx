@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
 import { learnedToday } from '../data/daily'
+import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
 import { reminderOfferPatch, shouldOfferReminder } from '../data/reminderOffer'
 import { saveSetting } from '../data/settingsActions'
 import { UNDO_WINDOW_MS, createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
+import { wordKey } from '../data/words'
 import type { QueueTicket, WriteQueue } from '../data/writeQueue'
 import { haptic } from '../lib/telegram'
 import type { ReviewLog } from '../data/reviewLog'
@@ -18,6 +20,7 @@ import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { arrivalOf, type Arrival, type ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
+import { MatchingScreen } from './Matching'
 
 interface LearnScreenProps {
   data: UserData
@@ -31,9 +34,11 @@ interface LearnScreenProps {
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
+  /** Lets the screen take the back press first (Telegram's BackButton) while the batch is being practised: Back then returns to the end screen. */
+  registerBack?: (handler: (() => boolean) | null) => void
 }
 
-export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome, onReview, onBack }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome, onReview, onBack, registerBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
@@ -47,6 +52,21 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
   // The batch's place in the write queue, once "Finish batch" was pressed. The screen is done at that moment: it does not wait for the network.
   const [ticket, setTicket] = useState<QueueTicket | null>(null)
+  // The end screen's offer: Matching on the words of the batch just learned. The rounds, while it is on screen; null otherwise. Practising keeps the batch,
+  // the ticket and everything else of this screen as they are, so leaving it, finished or not, is the end screen as it was.
+  const [practising, setPracticing] = useState<readonly MatchGroup[] | null>(null)
+  const exitPractice = useCallback(() => {
+    setPracticing(null)
+    window.scrollTo(0, 0)
+  }, [])
+  useEffect(() => {
+    if (!registerBack || !practising) return
+    registerBack(() => {
+      exitPractice()
+      return true
+    })
+    return () => registerBack(null)
+  }, [registerBack, practising, exitPractice])
 
   const words = batch.words
   const lastIndex = words.length - 1
@@ -163,12 +183,33 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
     setArrival(null)
   }
 
+  const batchKeys = useMemo(() => new Set(words.map((w) => wordKey(w.esWord))), [words])
+  const practicable = phase === 'done' && ticket !== null && batchPracticeAvailable(data.words, batchKeys, data.settings)
+  const practise = () => {
+    haptic('tap')
+    setPracticing(buildBatchRounds(data.words, batchKeys, data.settings))
+    window.scrollTo(0, 0)
+  }
+
   if (phase === 'done') {
+    // The end screen stays mounted under the practice (hidden), so that coming back to it finds it as it was left: the one-time reminder offer included.
     return (
-      <main className="screen">
-        <ScreenHeader title={strings.learn.title} onBack={onBack} />
-        <PostBatch data={data} queue={queue} reminders={reminders} completed={ticket !== null} onNextBatch={startNextBatch} onReview={onReview} onHome={onHome} />
-      </main>
+      <>
+        {practising && <MatchingScreen data={data} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={onHome} onBack={onBack && exitPractice} practice={{ rounds: practising, onFinish: exitPractice }} />}
+        <main className="screen" hidden={practising !== null}>
+          <ScreenHeader title={strings.learn.title} onBack={onBack} />
+          <PostBatch
+            data={data}
+            queue={queue}
+            reminders={reminders}
+            completed={ticket !== null}
+            onPractise={practicable ? practise : null}
+            onNextBatch={startNextBatch}
+            onReview={onReview}
+            onHome={onHome}
+          />
+        </main>
+      </>
     )
   }
 
@@ -248,6 +289,7 @@ function PostBatch({
   queue,
   reminders,
   completed,
+  onPractise,
   onNextBatch,
   onReview,
   onHome,
@@ -257,6 +299,8 @@ function PostBatch({
   reminders: RemindersControl | undefined
   /** A batch was finished on this screen (as opposed to an end screen reached because there was nothing to learn). */
   completed: boolean
+  /** The offer to practise the batch just learned; null when Matching cannot run on it (or no batch was learned here). */
+  onPractise: (() => void) | null
   onNextBatch: () => void
   onReview: () => void
   onHome: () => void
@@ -312,6 +356,15 @@ function PostBatch({
       <h2>{title}</h2>
       {subtitle && <p className="subtitle">{subtitle}</p>}
       {why && <p className="post-batch-why">{why}</p>}
+      {onPractise && (
+        <section className="practice-offer" aria-label={strings.learn.practiceButton}>
+          <p>{strings.learn.practiceLine}</p>
+          <button type="button" className="btn btn-secondary" onClick={onPractise}>
+            {strings.learn.practiceButton}
+          </button>
+          <p className="practice-offer-note">{strings.learn.practiceNote}</p>
+        </section>
+      )}
       <div className="post-batch-actions">
         {canContinue && (
           <button type="button" className={secondary(true)} onClick={onNextBatch}>

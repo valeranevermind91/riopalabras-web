@@ -8,6 +8,7 @@ import {
   clearWrong,
   isMatchingComplete,
   tapAndFinish,
+  type MatchGroup,
   matchingEligibleCount,
   PRACTICE_MIN_WORDS,
   recordPracticeCards,
@@ -31,6 +32,11 @@ interface MatchingScreenProps {
   onHome: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
+  /**
+   * Set when Learn's end screen offers Matching on the batch just learned: these rounds, one after the other, and `onFinish` after the last one. This is
+   * practice only. It does not count toward the streak, and its rows in the review log carry the mode 'practice'; it never touches the schedule.
+   */
+  practice?: { rounds: readonly MatchGroup[]; onFinish: () => void }
 }
 
 const newRound = (data: UserData): MatchingState | null => {
@@ -38,11 +44,12 @@ const newRound = (data: UserData): MatchingState | null => {
   return group ? startMatching(group) : null
 }
 
-export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack }: MatchingScreenProps) {
-  const t = strings.practice 
-  const [round, setRound] = useState(() => newRound(data))
+export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack, practice }: MatchingScreenProps) {
+  const t = strings.practice
+  const [roundIndex, setRoundIndex] = useState(0)
+  const [round, setRound] = useState(() => (practice ? startMatching(practice.rounds[0]) : newRound(data)))
   const latest = useRef(round)
-  // The review log: a group is one sitting (a new group gets a new session id). `missed` holds the words that were in a wrong pair in this group:
+  // The review log: a group is one sitting (a new group gets a new session id); the rounds of one batch's practice are one sitting together. `missed` holds the words that were in a wrong pair in this group:
   // a pair matched after that is logged as needing another try.
   const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
   const missed = useRef(new Set<string>())
@@ -63,12 +70,14 @@ export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack
   const tap = (side: MatchSide, id: string) => {
     const current = latest.current
     if (!current) return
-    // Once per finished group: today's metrics row. Once per matched pair: a card toward the streak.
+    // Once per finished group: today's metrics row. Once per matched pair: a card toward the streak. Practising a batch does neither (it is not counted).
     const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
-    const next = tapAndFinish(current, side, id, () => recordPracticeCompleted(deps))
+    const next = tapAndFinish(current, side, id, () => {
+      if (!practice) recordPracticeCompleted(deps)
+    })
     if (next === current) return
     // Each matched pair is a card done (a wrong tap and a first selection are not).
-    if (next.matched.size > current.matched.size) recordPracticeCards(deps, next.matched.size - current.matched.size)
+    if (!practice && next.matched.size > current.matched.size) recordPracticeCards(deps, next.matched.size - current.matched.size)
     // One log row per matched pair: right at the first try, or after a wrong pair that included it (a wrong tap alone is not an answer to log).
     if (next.wrong && next.selectedLeft !== null && next.selectedRight !== null) {
       missed.current.add(next.selectedLeft)
@@ -78,7 +87,7 @@ export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack
       for (const id of next.matched) {
         if (current.matched.has(id)) continue
         const word = data.words.find((w) => wordKey(w.esWord) === id)
-        if (word) reviewLog.practice({ word, mode: 'matching', correct: !missed.current.has(id), sessionId, durationMs: null, now: new Date() })
+        if (word) reviewLog.practice({ word, mode: practice ? 'practice' : 'matching', correct: !missed.current.has(id), sessionId, durationMs: null, now: new Date() })
       }
     }
     commit(next)
@@ -98,6 +107,12 @@ export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack
   const nextGroup = () => {
     haptic('tap')
     missed.current = new Set()
+    if (practice) {
+      const next = Math.min(roundIndex + 1, practice.rounds.length - 1)
+      setRoundIndex(next)
+      commit(startMatching(practice.rounds[next]))
+      return
+    }
     setSessionId(reviewLog?.startSession() ?? null)
     commit(newRound(data))
   }
@@ -113,6 +128,23 @@ export function MatchingScreen({ data, queue, metrics, reviewLog, onHome, onBack
           <div className="post-batch-actions">
             <button type="button" className="btn btn-primary" onClick={onHome}>
               {t.backHome}
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (practice && isMatchingComplete(round)) {
+    const more = roundIndex < practice.rounds.length - 1
+    return (
+      <main className="screen practice">
+        {header}
+        <section className="post-batch">
+          <h2>{t.groupComplete}</h2>
+          <div className="post-batch-actions">
+            <button type="button" className="btn btn-primary" onClick={more ? nextGroup : practice.onFinish}>
+              {more ? t.nextWords : t.practiceDone}
             </button>
           </div>
         </section>

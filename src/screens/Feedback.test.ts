@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { makeWord } from '../testing/makeWord'
 import { parseSettings } from '../data/settings'
-import { COUNT_FROM, MAX_MESSAGE, type FeedbackContext, type SendResult } from '../data/feedback'
+import { COUNT_FROM, MAX_MESSAGE, reportFor, reportedWord, type FeedbackContext, type SendResult } from '../data/feedback'
 import { createWriteQueue } from '../data/writeQueue'
 import { backTarget } from '../lib/nav'
 import { setLanguage } from '../lib/language'
@@ -139,13 +139,115 @@ describe('the two ways in', () => {
   })
 
   it('App opens a word report with the word, a general one without, and a sent one closes to where it was written', () => {
-    expect(app).toMatch(/setFeedback\(\{ esWord: openedWord\.esWord \}\)/)
-    expect(app).toMatch(/setFeedback\(\{ esWord: null \}\)/)
+    expect(app).toMatch(/setFeedback\(\{ esWord: reported\.named, shown: reported\.shown, key: wordKey\(openedWord\.esWord\) \}\)/) // the words are what the detail screen handed over (reportFor); the key is only for the "sent" line
+    expect(app).toMatch(/setFeedback\(\{ esWord: null, shown: null, key: null \}\)/)
     expect(app).toMatch(/onSent=\{\(\) => \{\s*setFeedbackSent\([^\n]*\)\s*go\(backTarget\)\s*\}\}/)
     expect(app).toMatch(/onClose=\{\(\) => go\(backTarget\)\}/)
   })
 
   it('App forgets that a message was sent as soon as the person goes anywhere but Settings, About, the word or the form', () => {
     expect(app).toMatch(/if \(to !== 'settings' && to !== 'about' && to !== 'word' && to !== 'feedback'\) setFeedbackSent\(null\)/)
+  })
+})
+
+// A report about a card names the word the person was LOOKING AT. `Word.esWord` is the dictionary's key, which is not what a Rioplatense card shows ("cubierta" is
+// the headword of the entry whose key is "neumático"); sending it named a different word from the one on screen. Every way into a word report is pinned here: the
+// detail screen is the only one there is, and the tests below fail if it sends a field of the word instead of reportedWord(word), or if another screen grows a way
+// to report that has not been through the same rule.
+describe('a word report names the word on the card, from every way in', () => {
+  const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
+  const read = (file: string) => readFileSync(file, 'utf8')
+  const app = read('src/App.tsx')
+
+  it('the word detail screen: Report a problem hands over reportedWord(word), and nothing taken straight from the word', () => {
+    const source = read('src/screens/WordDetail.tsx')
+    expect(source).toContain('onClick={() => onReport(reportFor(word))}')
+    expect(source).not.toMatch(/onReport\([^)]*\besWord\b/) // never a field of the word
+    expect(source).not.toMatch(/onClick=\{onReport\}/) // never the bare handler (App would have to guess the word)
+  })
+
+  it('App passes along exactly what the detail screen gave it, and reads no field of the word for the report', () => {
+    expect(app).toMatch(/onReport=\{\s*sendReport\s*\?\s*\(reported\) => \{/)
+    expect(app).toMatch(/setFeedback\(\{ esWord: reported\.named, shown: reported\.shown, key: wordKey\(openedWord\.esWord\) \}\)/)
+    expect(app).toMatch(/shownWord=\{feedback\.shown\}/)
+    expect(app).not.toMatch(/setFeedback\(\{ esWord: openedWord/)
+    expect(app).not.toMatch(/setFeedback\(\{ esWord: [a-z]+\.esWord/)
+  })
+
+  it('a card that leads with the Rioplatense form: the report names it first and the standard form after it, labelled', () => {
+    // the overlay entry for "cubierta" has the dictionary key "neumático": built the way parseDictionary builds it
+    const word = makeWord('neumático', { rank: 4708, pos: 'n', exampleSentence: 'Cambié la cubierta de la bici.', wordFormInExample: 'cubierta', rio: { type: 'replacement', form: 'cubierta', altForm: null, altRegion: null, region: null, register: 'neutral', notes: null, stdMeaning: null, translation: null, stdUsage: null, confidence: 'high', example: null } as never })
+    expect(reportedWord(word)).toBe('cubierta (standard: neumático)')
+    expect(reportedWord(word)).not.toBe('neumático')
+  })
+
+  it.each([
+    'src/screens/Learn.tsx',
+    'src/screens/Review.tsx',
+    'src/screens/Cloze.tsx',
+    'src/screens/Matching.tsx',
+    'src/screens/Words.tsx',
+    'src/components/WordCard.tsx',
+    'src/components/ReviewCard.tsx',
+    'src/components/ClozeQuestion.tsx',
+    'src/components/WordRow.tsx',
+  ])('%s has no way to report a word, so it cannot send the wrong one (adding one means going through reportedWord, and then this list changes)', (file) => {
+    expect(read(file)).not.toMatch(/onReport|reportWord|FeedbackScreen|buildReport|sendFeedback|insertFeedback|setFeedback|reportedWord/)
+  })
+
+  it('a word the user added: no Report button on its detail; and the name it would carry is the typed word', () => {
+    const own = makeWord('zapallito', { rank: null, isCustom: true, isRioplatenseVariant: true })
+    const html = renderToStaticMarkup(createElement(WordDetail, { word: own, data: { words: [own], settings: parseSettings({}), applyFavorite: noop, applyHidden: noop } as never, queue, onReport: noop }))
+    expect(html).not.toContain('Report a problem')
+    expect(reportedWord(own)).toBe('zapallito')
+    expect(reportedWord(makeWord('mia', { rank: null, isCustom: true }))).toBe('mia')
+  })
+
+  it('the only places that build a word report are the form and the data layer, and the form gets its word from App', () => {
+    for (const file of ['src/screens/Settings.tsx', 'src/screens/About.tsx', 'src/screens/Home.tsx', 'src/screens/WordDetail.tsx']) expect(read(file), file).not.toMatch(/buildReport|kind: 'word'/)
+    expect(app).toMatch(/kind=\{about === null \? 'general' : 'word'\}/)
+    expect(app).toMatch(/esWord=\{about\}/)
+  })
+})
+
+// The form shows the person ONE word, the one they saw; the report and the bot carry both. These pin the split.
+describe('what the form shows and what it sends', () => {
+  const named = 'cubierta (standard: neumático)'
+
+  it('the form line and the "Sent with your message" line name only the word the person saw', () => {
+    const html = form({ kind: 'word', esWord: named, shownWord: 'cubierta', from: 'word' })
+    expect(html).toContain('<p class="form-word"><span class="form-label">The word</span><strong>cubierta</strong></p>')
+    expect(line(html)).toBe('Sent with your message: the word “cubierta”, your account, app version 0ad8e01, interface language English, screen Word, Telegram platform android.')
+    expect(html).not.toMatch(/standard|neumático/) // the standard form is on no screen of the form
+  })
+
+  it('in Russian too: «слово «cubierta»», no standard form', () => {
+    setLanguage('ru')
+    const html = form({ kind: 'word', esWord: named, shownWord: 'cubierta', from: 'word' })
+    expect(line(html)).toContain('слово «cubierta»')
+    expect(html).not.toMatch(/standard|neumático/)
+  })
+
+  it('without a separate word to show, the form shows what it sends (a card that leads with the standard word)', () => {
+    expect(form({ kind: 'word', esWord: 'casa', from: 'word' })).toContain('<strong>casa</strong>')
+  })
+
+  it('a general form shows and sends no word, whatever it is given', () => {
+    const html = form({ kind: 'general', esWord: named, shownWord: 'cubierta' })
+    expect(html).not.toMatch(/cubierta|neumático|form-word/)
+  })
+
+  it('the detail screen hands over both, and they are the two halves: shown is the word on the card, named is that and the standard form', () => {
+    const word = makeWord('neumático', { rank: 4708, pos: 'n', exampleSentence: 'Cambié la cubierta de la bici.', wordFormInExample: 'cubierta', rio: { type: 'replacement', form: 'cubierta', altForm: null, altRegion: null, region: null, register: 'neutral', notes: null, stdMeaning: null, translation: null, stdUsage: null, confidence: 'high', example: null } as never })
+    expect(reportFor(word)).toEqual({ shown: 'cubierta', named })
+    expect(reportedWord(word)).toBe(reportFor(word).named)
+    expect(reportFor(makeWord('casa', { rank: 1 }))).toEqual({ shown: 'casa', named: 'casa' })
+  })
+
+  it('the form builds the report from what is SENT, never from what it shows', () => {
+    const source = readFileSync('src/screens/Feedback.tsx', 'utf8')
+    expect(source).toContain("buildReport({ id, kind, esWord: word, text, context: collected })")
+    expect(source).toContain('<strong>{seen}</strong>')
+    expect(source).toContain('t.sentWith({ word: seen,')
   })
 })

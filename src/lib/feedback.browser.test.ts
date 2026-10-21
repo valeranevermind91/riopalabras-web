@@ -86,6 +86,19 @@ describe.skipIf(!CHROME)('the message form in a browser', () => {
     await page.close()
   }, 60_000)
 
+  it('a report that names two words shows the person only the one they saw, and sends both: the form line, the line under it, and the row', async () => {
+    const page = await open('kind=word&named=cubierta%20(standard%3A%20neum%C3%A1tico)&shown=cubierta')
+    expect(await page.$eval('.form-word', (e) => e.textContent)).toBe('The wordcubierta')
+    const sentWith = await page.$eval('#feedback-sends', (e) => e.textContent!)
+    expect(sentWith).toContain('the word “cubierta”,')
+    expect(await page.evaluate(() => document.body.innerText)).not.toMatch(/standard|neumático/)
+    await write(page, 'La traducción no está bien')
+    await tap(page, 'Send')
+    await page.waitForSelector('#result')
+    expect((await reports(page))[0]).toMatchObject({ kind: 'word', esWord: 'cubierta (standard: neumático)', message: 'La traducción no está bien' }) // the row carries both
+    await page.close()
+  }, 60_000)
+
   it('says in one line, before sending, exactly what goes along with the text: the same values the report then carries', async () => {
     const page = await open('kind=word')
     const sentWith = await page.$eval('#feedback-sends', (e) => e.textContent!)

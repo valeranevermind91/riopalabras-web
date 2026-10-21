@@ -45,12 +45,12 @@ describe.skipIf(!CHROME)('Learn, when the day\'s new words are used up', () => {
     await page.click('.learn-finish .btn-primary')
     await page.waitForSelector('.post-batch')
   }
-  const endScreen = (page: Page) => page.$eval('.post-batch', (e) => ({ title: e.querySelector('h2')!.textContent, subtitle: e.querySelector('.subtitle')?.textContent ?? null, why: e.querySelector('.post-batch-why')?.textContent ?? null, buttons: Array.from(e.querySelectorAll('button')).map((b) => b.textContent?.trim()) }))
+  const endScreen = (page: Page) => page.$eval('.post-batch', (e) => ({ title: e.querySelector('h2')!.textContent, subtitle: e.querySelector('.subtitle')?.textContent ?? null, why: e.querySelector('.post-batch-why')?.textContent ?? null, buttons: Array.from(e.querySelectorAll('.post-batch-actions button')).map((b) => b.textContent?.trim()), practiceOffer: e.querySelector('.practice-offer button')?.textContent ?? null }))
 
   it('says why, under the line that says it is done, once the goal is reached by a batch', async () => {
     const page = await open('limit=10&pool=14&lang=en')
     await finishBatch(page)
-    expect(await endScreen(page)).toEqual({ title: en.learn.capReachedTitle, subtitle: en.learn.capReachedSubtitle, why: en.learn.capReachedWhy, buttons: [en.common.backToHome] })
+    expect(await endScreen(page)).toEqual({ title: en.learn.capReachedTitle, subtitle: en.learn.capReachedSubtitle, why: en.learn.capReachedWhy, buttons: [en.common.backToHome], practiceOffer: en.learn.practiceButton }) // the offer to practise the batch is made here too, above the buttons
     expect(en.learn.capReachedWhy).toBe("New words are limited each day so that tomorrow's review stays manageable: every word you learn comes back for review, and too many at once pile up.")
     await page.close()
   }, 60_000)

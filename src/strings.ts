@@ -492,6 +492,10 @@ export const en = {
     next: 'Next',
     finishBatch: 'Finish batch',
     learnNextBatch: 'Learn next batch',
+    // the offer to practise the batch just learned with Matching: a card above the buttons of the end screen (the note says what it does not do)
+    practiceLine: 'These words come back for review tomorrow.',
+    practiceButton: 'Practise these words now',
+    practiceNote: "Matching on the words from this batch. It doesn't affect the schedule.",
     // offered once, under the buttons of the end screen after the first finished session
     reminderOffer: 'The words you just learned will come back for review tomorrow. Should we remind you?',
     reminderOfferYes: 'Remind me',
@@ -539,6 +543,9 @@ export const en = {
     matchingInsufficient: 'Learn and review some words first, then come back to practice matching.',
     groupComplete: 'Session complete',
     nextGroup: 'New session',
+    // practising the words of a Learn batch: the rounds after the first, and the end of the last one
+    nextWords: 'Next words',
+    practiceDone: 'Done',
     clozeTitle: 'Cloze',
     clozeInsufficient: 'Learn and review some words with example sentences first, then come back to practice Cloze.',
     answerLabel: 'Your answer',

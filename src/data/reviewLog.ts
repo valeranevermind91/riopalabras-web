@@ -15,7 +15,7 @@ import { wordKey } from './words'
 
 export const REVIEW_LOG_TABLE = 'review_log'
 
-export type LogMode = 'review' | 'learn' | 'matching' | 'cloze'
+export type LogMode = 'review' | 'learn' | 'matching' | 'cloze' | 'practice'
 export type LogState = 'new' | 'learning' | 'review' | 'relearning'
 
 /** One row of the log as the app holds it (camelCase); writes.ts turns it into the table's columns. The user id is added when it is sent. */
@@ -229,9 +229,10 @@ export interface ReviewLog {
   /**
    * A matched pair (Matching) or an answered question (Cloze). Nothing is scheduled and the word's state is unchanged, so the "after" columns repeat
    * its current values, and scheduled_days is the interval the word already had (null if it has none: see ReviewLogEntry.scheduledDays). Rating: 3 when
-   * it was right at the first try, 1 when it was wrong (Cloze) or needed another try (Matching): a stand-in.
+   * it was right at the first try, 1 when it was wrong (Cloze) or needed another try (Matching): a stand-in. Mode 'practice' is Matching on the words of a
+   * Learn batch just finished (from the end screen): the same row, told apart so that it can be left out of any fit to the user's own memory.
    */
-  practice: (input: { word: Word; mode: 'matching' | 'cloze'; correct: boolean; sessionId: string | null; durationMs: number | null; now: Date }) => void
+  practice: (input: { word: Word; mode: 'matching' | 'cloze' | 'practice'; correct: boolean; sessionId: string | null; durationMs: number | null; now: Date }) => void
 }
 
 /**

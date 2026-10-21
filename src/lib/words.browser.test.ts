@@ -1573,6 +1573,50 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }, 90_000)
   })
 
+  describe('"Report a problem" on a card names the word the person is looking at', () => {
+    /** Opens a card by its dictionary key, says what is on screen, presses Report a problem, and returns what the screen handed over. */
+    async function report(page: Page, key: string) {
+      await page.evaluate((k) => (window as never as { __openWord: (k: string) => void }).__openWord(k), key)
+      await page.waitForSelector('.link-btn')
+      await press(page, '.link-btn', 'Report a problem')
+      const handed = await page.evaluate(() => (window as never as { __reported: { shown: string; named: string }[] }).__reported)
+      return handed[handed.length - 1]
+    }
+    const onScreen = (page: Page) => page.evaluate(() => document.body.innerText)
+
+    it('the card for "cubierta" (the dictionary key is "neumático"): the report names cubierta first, then the standard form, labelled', async () => {
+      const page = await open('?report=1')
+      const handed = await report(page, 'neumático')
+      expect(await onScreen(page)).toContain('cubierta') // that is what is on screen
+      expect(handed).toEqual({ shown: 'cubierta', named: 'cubierta (standard: neumático)' }) // the form shows the first, the report carries the second
+      expect(handed.named).not.toBe('neumático')
+      await page.close()
+    }, 60_000)
+
+    it('cards that lead with the Rioplatense form each name what is on screen: coger → agarrar, coche → auto, tú → vos', async () => {
+      const page = await open('?report=1')
+      for (const [key, shown] of [['coger', 'agarrar'], ['coche', 'auto'], ['tú', 'vos']]) {
+        const handed = await report(page, key)
+        expect(handed, key).toEqual({ shown, named: `${shown} (standard: ${key})` })
+        expect(await onScreen(page), key).toContain(shown)
+      }
+      await page.close()
+    }, 60_000)
+
+    it('two entries with one headword are told apart: quizá and quizás both show "capaz"', async () => {
+      const page = await open('?report=1')
+      expect((await report(page, 'quizá')).named).toBe('capaz (standard: quizá)')
+      expect((await report(page, 'quizás')).named).toBe('capaz (standard: quizás)')
+      await page.close()
+    }, 60_000)
+
+    it('a card that leads with the standard word names just that word', async () => {
+      const page = await open('?report=1')
+      expect(await report(page, 'casa')).toEqual({ shown: 'casa', named: 'casa' })
+      await page.close()
+    }, 60_000)
+  })
+
   it('the whole thing is wired into the app: the Home button, Telegram\'s back button, and the list kept while a word is open', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
     expect(app).toMatch(/onWords=\{\(\) => setScreen\('words'\)\}/)

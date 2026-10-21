@@ -136,7 +136,9 @@ function App() {
   const [screen, setScreenNow] = useState<Screen>('home')
   // A note to the developer: from Settings (esWord null) or about the open word. `feedbackSent` is where one has just gone from, for the line that says so;
   // it is forgotten as soon as the person goes anywhere else.
-  const [feedback, setFeedback] = useState<{ esWord: string | null }>({ esWord: null })
+  // `esWord` is what a word report names and sends (given by the detail screen: the word on the card and the standard form after it); `shown` is what the form shows
+  // the person (the word on the card only); `key` is the open word's key, for the line that says it went.
+  const [feedback, setFeedback] = useState<{ esWord: string | null; shown: string | null; key: string | null }>({ esWord: null, shown: null, key: null })
   const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'about' | 'word'; key: string | null } | null>(null)
   // A general note is started from Settings' own row or from About (the way to ask for data to be deleted); Back, and the line that says it went, return there.
   const [feedbackFrom, setFeedbackFrom] = useState<FeedbackOrigin>('settings')
@@ -283,7 +285,7 @@ function App() {
         onOpenFeedback={
           sendReport
             ? () => {
-                setFeedback({ esWord: null })
+                setFeedback({ esWord: null, shown: null, key: null })
                 setFeedbackFrom('settings')
                 setFeedbackSent(null)
                 setScreen('feedback')
@@ -305,7 +307,7 @@ function App() {
         onOpenFeedback={
           sendReport
             ? () => {
-                setFeedback({ esWord: null })
+                setFeedback({ esWord: null, shown: null, key: null })
                 setFeedbackFrom('about')
                 setFeedbackSent(null)
                 setScreen('feedback')
@@ -325,10 +327,11 @@ function App() {
         key={about ?? 'general'}
         kind={about === null ? 'general' : 'word'}
         esWord={about}
+        shownWord={feedback.shown}
         from={about === null ? 'settings' : 'word'}
         send={sendReport}
         onSent={() => {
-          setFeedbackSent({ screen: about === null ? feedbackFrom : 'word', key: about === null ? null : wordKey(about) })
+          setFeedbackSent({ screen: about === null ? feedbackFrom : 'word', key: about === null ? null : feedback.key })
           go(backTarget)
         }}
         onClose={() => go(backTarget)}
@@ -377,6 +380,7 @@ function App() {
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}
+        registerBack={registerBack}
       />
     )
   }
@@ -429,8 +433,8 @@ function App() {
         onDeleted={() => go(backTarget)}
         onReport={
           sendReport
-            ? () => {
-                setFeedback({ esWord: openedWord.esWord })
+            ? (reported) => {
+                setFeedback({ esWord: reported.named, shown: reported.shown, key: wordKey(openedWord.esWord) })
                 setFeedbackSent(null)
                 setScreen('feedback')
               }

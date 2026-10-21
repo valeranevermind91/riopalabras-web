@@ -783,6 +783,27 @@ mark {
   margin-top: 24px;
 }
 
+/* The offer to practise the batch just learned, above the buttons of the end screen: the same quiet surface as the reminder offer, a line, one plain button and a note. */
+.practice-offer {
+  margin-top: 24px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.practice-offer p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.practice-offer .practice-offer-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
 /* The one-time offer of the daily reminder, under the buttons (they stay where they are). The same surface as the home cards, and quiet: a line and two plain buttons. */
 .reminder-offer {
   margin-top: 28px;

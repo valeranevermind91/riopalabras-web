@@ -41,7 +41,10 @@ export function Harness() {
   }, [])
   const kind = params.get('kind') === 'word' ? 'word' : 'general'
   if (result) return <p id="result">{result}</p>
-  return <FeedbackScreen kind={kind} esWord={kind === 'word' ? 'chévere' : null} from={kind === 'word' ? 'word' : 'settings'} send={send} onSent={() => setResult('sent')} onClose={() => setResult('closed')} registerBack={registerBack} />
+  // ?named= and ?shown= make a report name one thing and show the person another (a card that leads with the Rioplatense form)
+  const named = params.get('named') ?? 'chévere'
+  const shown = params.get('shown')
+  return <FeedbackScreen kind={kind} esWord={kind === 'word' ? named : null} shownWord={kind === 'word' ? shown : null} from={kind === 'word' ? 'word' : 'settings'} send={send} onSent={() => setResult('sent')} onClose={() => setResult('closed')} registerBack={registerBack} />
 }
 
 createRoot(document.getElementById('root')!).render(<Harness />)

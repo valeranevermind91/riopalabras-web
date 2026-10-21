@@ -116,6 +116,17 @@ describe('the review log, end to end', () => {
     expect(rows().map((r) => [r.es_word, r.scheduled_days, r.interval_after, r.duration_ms])).toEqual([['quince', 15, 15, null], ['cuarenta', 40, 40, null], ['nueva', null, 0, 4000]])
   })
 
+  it('a practice row (Matching on a Learn batch) reaches the table with the mode "practice", which review_log_mode_check allows; a mode it does not know is refused', async () => {
+    const app = await openApp()
+    app.log.practice({ word: makeWord('nueva', { repetitions: 1, interval: 0, nextReview: new Date(T0 + DAY) }), mode: 'practice', correct: true, sessionId: 's', durationMs: null, now: new Date(T0) })
+    await vi.waitFor(() => expect(rows()).toHaveLength(1))
+    expect(rows()[0]).toMatchObject({ es_word: 'nueva', mode: 'practice', rating: 3, state_before: 'learning', scheduled_days: null, interval_after: 0, repetitions_after: 1 })
+    // the control: the rule is the table's, so an unknown mode does not get in
+    const row = { id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', esWord: 'casa', reviewedAt: new Date(T0).toISOString(), rating: 3, mode: 'quiz' as never, stateBefore: 'review' as const, elapsedDays: 3, scheduledDays: 3, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2, sessionId: null, durationMs: null }
+    await expect(insertReviewLog(app.client, app.userId, [row])).rejects.toThrow()
+    expect(rows()).toHaveLength(1)
+  })
+
   it('a duplicate id does not create a second row, and is not an error: the same row sent twice is one row', async () => {
     const app = await openApp()
     const row = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', esWord: 'casa', reviewedAt: new Date(T0).toISOString(), rating: 3, mode: 'review' as const, stateBefore: 'review' as const, elapsedDays: 3, scheduledDays: 8, intervalAfter: 8, easeAfter: 2.5, repetitionsAfter: 3, sessionId: null, durationMs: null }

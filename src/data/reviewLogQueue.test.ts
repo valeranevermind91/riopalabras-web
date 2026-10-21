@@ -154,6 +154,17 @@ describe('a queued row survives a restart and is replayed once', () => {
     expect(r.log.flat()).toEqual([row])
   })
 
+  it('a "practice" row is read back as it was written (it is a mode of this build), and a mode no build has written is still refused', async () => {
+    const storage = memoryStorage()
+    const row = entry({ mode: 'practice', scheduledDays: null, stateBefore: 'learning', intervalAfter: 0, repetitionsAfter: 1 })
+    open(storage, recorder({ hangLog: true }).sender).enqueueLog(row)
+    const r = recorder()
+    const q = open(storage, r.sender)
+    expect(q.restore()).toMatchObject({ restored: 1, droppedUnreadable: 0 })
+    await drained(q)
+    expect(r.log.flat()).toEqual([row])
+  })
+
   it('is replayed in the order of the rows made in the new run too: rows from before come first', async () => {
     const storage = memoryStorage()
     const before = [entry(), entry()]

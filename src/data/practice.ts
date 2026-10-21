@@ -136,6 +136,65 @@ export function buildMatchingGroup(words: readonly Word[], settings: Translation
   return { items, left: shuffle(items, random), right: shuffle(items, random) }
 }
 
+/** How many random orders are tried to complete a round before the pool's own order (which always works, see fillRound). */
+const FILL_ATTEMPTS = 12
+
+/** A round of MATCH_GROUP_SIZE that starts with `seed` and takes the rest from `pool`: random orders first, the pool's own order last. Null when none gets there. */
+function fillRound(seed: readonly MatchItem[], pool: readonly MatchItem[], random: () => number): MatchItem[] | null {
+  const seeded = new Set(seed.map((m) => m.id))
+  const rest = pool.filter((m) => !seeded.has(m.id))
+  for (let attempt = 0; attempt <= FILL_ATTEMPTS; attempt++) {
+    const group = pickNonColliding([...seed, ...(attempt < FILL_ATTEMPTS ? shuffle(rest, random) : rest)], MATCH_GROUP_SIZE)
+    if (group.length === MATCH_GROUP_SIZE) return group
+  }
+  return null
+}
+
+/** Whether Matching can run on this batch: at least PRACTICE_MIN_WORDS of its words, usable and with pairwise different glosses. The one test of the offer and of buildBatchRounds. */
+export function batchPracticeAvailable(words: readonly Word[], batchKeys: ReadonlySet<string>, settings: TranslationFlags): boolean {
+  return pickNonColliding(batchPool(words, batchKeys, settings), Number.POSITIVE_INFINITY).length >= PRACTICE_MIN_WORDS
+}
+
+const batchPool = (words: readonly Word[], batchKeys: ReadonlySet<string>, settings: TranslationFlags): MatchItem[] =>
+  matchingPool(words.filter((w) => batchKeys.has(wordKey(w.esWord))), settings)
+
+/**
+ * The rounds that practise one Learn batch: every word of the batch that Matching can use is in at least one round, and nothing from outside the batch is
+ * ever in one. A round is a group of MATCH_GROUP_SIZE with pairwise different glosses, as everywhere in Matching; when the words left over do not fill the
+ * last round, it is filled up with repeats from the same batch. `batchKeys` are the batch's words (wordKey of esWord); they are looked up in `words` as they are now
+ * (the batch was just learned), and a word Matching cannot use (no gloss, hidden) is not in the pool. Null when the batch has fewer than PRACTICE_MIN_WORDS
+ * usable words with different glosses, which is when Matching could not run: the offer to practise is then not made.
+ */
+export function buildBatchRounds(
+  words: readonly Word[],
+  batchKeys: ReadonlySet<string>,
+  settings: TranslationFlags,
+  random: () => number = Math.random,
+): MatchGroup[] | null {
+  if (!batchPracticeAvailable(words, batchKeys, settings)) return null
+  const pool = batchPool(words, batchKeys, settings)
+
+  const rounds: MatchGroup[] = []
+  let remaining = shuffle(pool, random)
+  while (remaining.length > 0) {
+    // The words not yet in a round, as many as fit; the rest of the round is repeats. A word that collides with too many others to share a round of five
+    // with four more cannot be placed at all (only possible when the batch is barely above the minimum) and is left out rather than looping.
+    const items = fillRound(pickNonColliding(remaining, MATCH_GROUP_SIZE), pool, random) ?? fillRound([remaining[0]], pool, random)
+    if (!items) {
+      remaining = remaining.slice(1)
+      continue
+    }
+    rounds.push({ items, left: shuffle(items, random), right: shuffle(items, random) })
+    const used = new Set(items.map((m) => m.id))
+    remaining = remaining.filter((m) => !used.has(m.id))
+  }
+  if (rounds.length === 0) {
+    const items = fillRound([], pool, random)!
+    rounds.push({ items, left: shuffle(items, random), right: shuffle(items, random) })
+  }
+  return rounds
+}
+
 export type MatchSide = 'left' | 'right'
 
 export interface MatchingState {

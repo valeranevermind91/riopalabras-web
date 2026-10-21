@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { BUILD_HASH } from '../lib/buildInfo'
 import { getLanguage, type UiLanguage } from '../lib/language'
 import { getWebApp, type TelegramWebApp } from '../lib/telegram'
+import { headword, type HeadwordSource } from './headword'
 import { WriteError, isRejection } from './writes'
 
 // Messages to the developer: a free note from Settings (kind 'general'), or a problem with one word from its detail screen (kind 'word').
@@ -31,11 +32,29 @@ export interface FeedbackReport extends FeedbackContext {
   /** Made on the client, so a retry of the same report cannot make a second row. */
   id: string
   kind: FeedbackKind
-  /** The word reported (a word report only); null for a general message. */
+  /** What a word report names: the word on the card, and the standard form after it when they differ (see reportedWord); null for a general message. */
   esWord: string | null
   /** Already trimmed and checked. */
   message: string
 }
+
+/** The label in front of the standard word in what a word report names (it is read by the author, in the bot's message: English). */
+export const STANDARD_LABEL = 'standard'
+
+/**
+ * The word a report about a card names: the word the person is LOOKING AT (the card's headword, which for a Rioplatense replacement is the Rioplatense form,
+ * "cubierta"), and, when the card leads with another form than the dictionary's, the standard word after it, labelled ("cubierta (standard: neumático)").
+ * `Word.esWord` is the dictionary key and is NOT necessarily what is on screen; reading it here is what named "neumático" in a report about "cubierta".
+ * The standard word goes too because it is the key of the entry (and two entries can share a headword: quizá and quizás both lead with "capaz").
+ * Two things come back: `named`, which is stored and sent to the author (both words), and `shown`, which is all the person is shown on the form (the word they saw).
+ */
+export function reportFor(word: HeadwordSource): { shown: string; named: string } {
+  const shown = headword(word).text
+  return { shown, named: shown.trim().toLowerCase() === word.esWord.trim().toLowerCase() ? shown : `${shown} (${STANDARD_LABEL}: ${word.esWord})` }
+}
+
+/** What a word report names (the row's es_word, the bot's heading): `reportFor(word).named`. The form shows the person only `reportFor(word).shown`. */
+export const reportedWord = (word: HeadwordSource): string => reportFor(word).named
 
 export type MessageCheck = { ok: true; message: string } | { ok: false; problem: 'empty' | 'too-long' }
 

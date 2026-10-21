@@ -12,6 +12,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
  * `resolution=ignore-duplicates` skips the rows whose id exists and keeps the rest.
  */
 const APPEND_ONLY = new Set(['review_log', 'feedback'])
+/** The modes review_log_mode_check allows on the live table (sql/review_log.sql records it): a row with any other is refused with 23514, as the database does. */
+export const REVIEW_LOG_MODES = ['review', 'learn', 'matching', 'cloze', 'practice'] as const
 const b64 = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const unb64 = (text: string) => atob(text.replace(/-/g, '+').replace(/_/g, '/'))
 
@@ -120,6 +122,9 @@ export function createFakeServer(options: FakeServerOptions = {}) {
       const sent = ((await request.json()) as Row | Row[]) ?? []
       const batch = Array.isArray(sent) ? sent : [sent]
       if (batch.some((r) => r.user_id !== claims.sub)) return json({ code: '42501', message: `new row violates row-level security policy for table "${table}"` }, 403)
+      if (table === 'review_log' && batch.some((r) => r.mode !== undefined && !(REVIEW_LOG_MODES as readonly unknown[]).includes(r.mode))) {
+        return json({ code: '23514', message: 'new row for relation "review_log" violates check constraint "review_log_mode_check"' }, 400)
+      }
       const bad = broken.rejectRowsWhere ? batch.find(broken.rejectRowsWhere) : undefined
       if (bad) return json({ code: '23514', message: `new row for relation "${table}" violates check constraint` }, 400) // the whole request fails, as one statement does
       const ignore = prefer.includes('resolution=ignore-duplicates')

@@ -213,6 +213,15 @@ describe('the other modes', () => {
     for (const row of rows) expect(row).toMatchObject({ stateBefore: 'review', intervalAfter: 3, easeAfter: 2.3, repetitionsAfter: 2 })
   })
 
+  it('practice (Matching on a Learn batch): a row of its own mode, the word exactly as it is, 3 when right at the first try and 1 when it needed another', () => {
+    const { log, rows } = collecting()
+    const justLearned = makeWord('nueva', { ...learnedState(T0) }) // repetitions 1, interval 0, due tomorrow
+    log.practice({ word: justLearned, mode: 'practice', correct: true, sessionId: 'p', durationMs: null, now: T0 })
+    log.practice({ word: justLearned, mode: 'practice', correct: false, sessionId: 'p', durationMs: null, now: T0 })
+    expect(rows.map((r) => [r.mode, r.rating, r.sessionId, r.durationMs])).toEqual([['practice', 3, 'p', null], ['practice', 1, 'p', null]])
+    for (const row of rows) expect(row).toMatchObject({ stateBefore: 'learning', scheduledDays: null, intervalAfter: 0, easeAfter: learnedState(T0).easeFactor, repetitionsAfter: 1 })
+  })
+
   it('Matching and Cloze: scheduled_days is the word\'s own interval as it stood before the answer, never a 0 standing in for "nothing"', () => {
     const { log, rows } = collecting()
     for (const interval of [1, 3, 15, 40, 365]) {
