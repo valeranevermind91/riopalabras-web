@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parseDictionary } from './dictionary'
 import { buildPlacement, placementPool } from './placement'
 import { isInLearnPool, isReviewDue } from './stats'
-import { wordState } from './wordState'
+import { wordStatus } from './wordState'
 
 // The real dictionary has entries for the letters of the alphabet ("c (letter)", "The letter C is the third in the alphabet."). They are not words
 // to learn, and the placement test once asked whether you know "c".
@@ -32,7 +32,7 @@ describe('the letters of the alphabet are reference only', () => {
   it('one already learned is never due for Review, and the word list calls it reference only', () => {
     const learned = { ...letters[0], repetitions: 3, interval: 6, nextReview: new Date(NOW.getTime() - 86_400_000) }
     expect(isReviewDue(learned, NOW)).toBe(false)
-    expect(wordState(learned, NOW)).toBe('reference')
+    expect(wordStatus(learned, NOW).kind).toBe('reference')
   })
 
   it('only the part of speech decides: an abbreviation such as OK or pm is left as it was', () => {

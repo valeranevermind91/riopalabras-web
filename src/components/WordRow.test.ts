@@ -3,13 +3,13 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setLanguage } from '../lib/language'
 import { makeWord } from '../testing/makeWord'
-import { wordState } from '../data/wordState'
+import { wordStatus } from '../data/wordState'
 import type { Word } from '../data/types'
 import { WordRow } from './WordRow'
 
 const BOTH = { showRuTranslation: true, showEnTranslation: true }
 const render = (word: Word, extra: Partial<Parameters<typeof WordRow>[0]> = {}) =>
-  renderToStaticMarkup(createElement(WordRow, { row: { word, state: wordState(word, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {}, ...extra }))
+  renderToStaticMarkup(createElement(WordRow, { row: { word, status: wordStatus(word, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {}, ...extra }))
 const casa = makeWord('casa', { rank: 1 })
 const starButton = (html: string) => html.match(/<button[^>]*word-row-star[^>]*>.*?<\/button>/)![0]
 

@@ -110,9 +110,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('opens on All, most common first: segments All · Learned · Known, and the Filters and Sort buttons', async () => {
+  it('opens on All, most common first: segments All · Started · Known, and the Filters and Sort buttons', async () => {
     const page = await open()
-    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Learned 43', 'Known 2'])
+    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Started 43', 'Known 2'])
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])
     expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency'])
     expect((await rows(page))[0]).toBe('de')
@@ -120,9 +120,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('Learned lists only words with progress; Due soonest puts the due ones first, with the Due now badge', async () => {
+  it('Started lists only words that were studied; Due soonest puts the due ones first, with the Due now badge', async () => {
     const page = await open()
-    await segment(page, 'Learned')
+    await segment(page, 'Started')
     await control(page, 'Sort')
     await press(page, '.sheet-row', 'Due soonest')
     await page.waitForFunction(() => document.querySelector('.sheet') === null)
@@ -281,12 +281,12 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.waitForSelector('.words-empty')
     expect(await page.$eval('.words-empty p', (e) => e.textContent)).toBe('No words match. Try another search, or clear the filters.')
     expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters'])
-    await segment(page, 'Learned')
+    await segment(page, 'Started')
     await page.waitForSelector('.words-empty .btn') // still empty for the same reason: the search is still there
     await page.click('.words-empty .btn')
     await page.waitForSelector('.word-row')
     expect(await page.$eval('.words-search', (e) => (e as HTMLInputElement).value)).toBe('')
-    expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['Learned']) // the segment is the person's choice and stays
+    expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['Started']) // the segment is the person's choice and stays
     await page.close()
   }, 60_000)
 
@@ -397,15 +397,15 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }, 60_000)
   })
 
-  it('the detail of a word rated Again reads as in progress, and says nothing about Learn', async () => {
+  it('the detail of a word rated Again reads as learning, and says nothing about Learn', async () => {
     const page = await open()
     const fx = await fixture(page)
     await search(page, fx.lapsed)
     await page.waitForSelector('.word-row')
     await openRow(page, 0)
     const text = await page.$eval('.state-block', (e) => e.textContent ?? '')
-    expect(text).toContain('In progress')
-    expect(text).not.toContain('Not started')
+    expect(text).toContain('Learning')
+    expect(text).not.toContain('New')
     expect(text).not.toContain('Learn pool')
     await page.close()
   }, 60_000)
@@ -424,7 +424,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
   it('outside a search the standard word is in the muted line when the headword is not it, so cigarro and cigarrillo can be told apart', async () => {
     const page = await open()
-    await segment(page, 'Learned') // the harness has learned both words
+    await segment(page, 'Started') // the harness has started both words
     const seen = new Map<string, string | null | undefined>()
     for (let y = 0; y < 72 * 43 && seen.size < 2; y += 400) {
       await scrollTo(page, y)
@@ -435,6 +435,62 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     expect([...seen.keys()].sort()).toEqual(['cigarrillo', 'cigarro']) // both lead with pucho, each says which word it is
     await page.close()
   }, 60_000)
+
+  describe('the Progress filters and the row dots', () => {
+    /** The dot class and the Due badge of every row on screen. */
+    const dots = (page: Page) => page.$$eval('.word-row', (els) => els.map((e) => ({ dot: Array.from(e.querySelector('.state-dot')!.classList).find((c) => c.startsWith('is-')), due: Boolean(e.querySelector('.word-row-due')) })))
+    const choose = async (page: Page, option: string) => {
+      await control(page, 'Filters')
+      await page.waitForSelector('.sheet')
+      await press(page, '.sheet .chip', option)
+      await closeSheet(page)
+      await page.waitForSelector('.vlist, .words-empty')
+    }
+
+    it('Learning keeps showing a word once it is due (it used to empty out at midnight), and every row under a stage has that stage\'s dot', async () => {
+      const page = await open()
+      await segment(page, 'Started')
+      await choose(page, 'Learning')
+      const learning = await dots(page)
+      expect(learning.length).toBeGreaterThan(0)
+      expect(learning.every((r) => r.dot === 'is-learning')).toBe(true)
+      expect(learning.some((r) => r.due)).toBe(true) // learning and due, both: the words the old filter lost
+      expect(learning.some((r) => !r.due)).toBe(true)
+      await page.close()
+    }, 60_000)
+
+    it('Due now overlaps the stages: with Learning on, only the learning words that are due; with Well learned, only the well learned ones that are due', async () => {
+      const page = await open()
+      await segment(page, 'Started')
+      await choose(page, 'Learning')
+      await choose(page, 'Due now')
+      const both = await dots(page)
+      expect(both.length).toBeGreaterThan(0)
+      expect(both.every((r) => r.dot === 'is-learning' && r.due)).toBe(true)
+      await choose(page, 'Well learned')
+      const mature = await dots(page)
+      expect(mature.length).toBeGreaterThan(0)
+      expect(mature.every((r) => r.dot === 'is-wellLearned' && r.due)).toBe(true)
+      await page.close()
+    }, 60_000)
+
+    it('Well learned (interval of 21 days or more), New and Reference only each list rows with their own dot and no other', async () => {
+      const page = await open()
+      await choose(page, 'Well learned')
+      const mature = await dots(page)
+      expect(mature.length).toBeGreaterThan(0)
+      expect(mature.every((r) => r.dot === 'is-wellLearned')).toBe(true)
+      await choose(page, 'Reference only') // replaces the stage: one at a time
+      const reference = await dots(page)
+      expect(reference.length).toBeGreaterThan(0)
+      expect(reference.every((r) => r.dot === 'is-reference' && !r.due)).toBe(true)
+      await choose(page, 'New')
+      const fresh = await dots(page)
+      expect(fresh.length).toBeGreaterThan(0)
+      expect(fresh.every((r) => r.dot === 'is-new')).toBe(true)
+      await page.close()
+    }, 60_000)
+  })
 
   describe('the sheets', () => {
     it('Filters: groups, applies at once, counts on the button, and Clear all puts everything back', async () => {
@@ -469,7 +525,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         const page = await open()
         await control(page, 'Sort')
         await page.waitForSelector('.sheet')
-        expect(await page.$$eval('.sheet-row', (els) => els.map((e) => e.textContent))).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently learned', 'Random'])
+        expect(await page.$$eval('.sheet-row', (els) => els.map((e) => e.textContent))).toEqual(['Frequency', 'A to Z', 'Due soonest', 'Recently studied', 'Random'])
         await press(page, '.sheet-row', 'Random')
         await page.waitForFunction(() => document.querySelector('.sheet') === null)
         expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Random'])
@@ -514,8 +570,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
       it('un-starring a word with Favourites on takes only that word out: the others keep their order', async () => {
         const page = await open('?stars=0')
-        await chooseFilter(page, 'Filters', 'Not started')
-        // star five words that are not started, then look at them in a random order, starred only
+        await chooseFilter(page, 'Filters', 'New')
+        // star five words that are new, then look at them in a random order, starred only
         for (const i of [0, 1, 2, 3, 4]) await page.evaluate((n) => (document.querySelectorAll('.word-row-star')[n] as HTMLElement).click(), i)
         await chooseSort(page, 'Random')
         await chooseFilter(page, 'Filters', 'Learn sooner')
@@ -551,7 +607,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.waitForSelector('.sheet')
       await page.evaluate(() => {
         const click = (text: string) => (Array.from(document.querySelectorAll('.sheet .chip')).find((b) => b.textContent === text) as HTMLElement).click()
-        click('In progress')
+        click('Learning')
         click('Verbs')
       })
       await page.waitForFunction(() => document.querySelectorAll('.sheet .chip.is-active').length === 2)
@@ -602,13 +658,13 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     it('the sort and the filters are kept across a detail round trip', async () => {
       const page = await open()
       await control(page, 'Sort')
-      await press(page, '.sheet-row', 'Recently learned')
+      await press(page, '.sheet-row', 'Recently studied')
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
       await chooseFilter(page, 'Filters', 'Learn sooner')
       await page.waitForSelector('.vlist')
       await openRow(page, 0)
       await back(page)
-      expect(await controlTexts(page)).toEqual(['Filters1', 'Sort: Recently learned'])
+      expect(await controlTexts(page)).toEqual(['Filters1', 'Sort: Recently studied'])
       await page.close()
     }, 60_000)
   })
@@ -1563,7 +1619,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await addWord(page)
       await control(page, 'Filters')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Learn sooner', 'Custom'])
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Due now', 'Learn sooner', 'Custom'])
       await press(page, '.sheet .chip', 'Custom')
       await closeSheet(page)
       await page.waitForSelector('.vlist')

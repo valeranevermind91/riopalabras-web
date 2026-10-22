@@ -4,7 +4,7 @@ import { compareByRank, hasTranslations, isReviewablePos } from './words'
 
 export interface Stats {
   total: number
-  learned: number
+  started: number
   reviewDue: number
   learnPool: number
   newToLearn: number
@@ -72,7 +72,7 @@ export function computeStats(words: readonly Word[], settings: UserSettings, now
 
   return {
     total: words.length,
-    learned: words.filter((w) => w.repetitions > 0).length,
+    started: words.filter((w) => w.repetitions > 0).length,
     reviewDue: words.filter((w) => isReviewDue(w, now)).length,
     learnPool,
     newToLearn: Math.min(learnPool, remainingToday),

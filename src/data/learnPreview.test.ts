@@ -87,7 +87,7 @@ describe('the Debug Data section shows it', () => {
           data: {
             words: shown,
             settings: parseSettings(raw),
-            stats: { total: 0, learned: 0, reviewDue: 0, learnPool: 0, newToLearn: 0, favorites: 0, hidden: 0, custom: 0, streak: 0, dailyLimit: 10, remainingToday: 10 },
+            stats: { total: 0, started: 0, reviewDue: 0, learnPool: 0, newToLearn: 0, favorites: 0, hidden: 0, custom: 0, streak: 0, dailyLimit: 10, remainingToday: 10 },
             diagnostics: { baseCount: 0, orphanProgress: 0, orphanFavorites: 0, orphanHidden: 0 },
           } as never,
         },

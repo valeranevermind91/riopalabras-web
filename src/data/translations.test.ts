@@ -120,7 +120,7 @@ describe('the Learn card, the word detail and the Review card back', () => {
 })
 
 describe('the Words list rows', () => {
-  const row = (w: Word, via: ListRow['via'] = null): ListRow => ({ word: w, state: 'new', via })
+  const row = (w: Word, via: ListRow['via'] = null): ListRow => ({ word: w, status: { kind: 'new', due: false, started: false }, via })
   const line = (w: Word, flags: typeof BOTH, via: ListRow['via'] = null) =>
     renderToStaticMarkup(createElement(WordRow, { row: row(w, via), settings: flags, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {} })).match(/<span class="word-row-tr">([^<]*)<\/span>/)?.[1] ?? null
 

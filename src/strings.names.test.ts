@@ -63,13 +63,13 @@ describe('the scan itself', () => {
 describe('known, not hidden', () => {
   it('English: the tab, the state and the filters say "Known", and no string says hidden, hide or hid', () => {
     expect(en.words.segments.hidden).toBe('Known')
-    expect(en.words.stateName.hidden).toBe('Known')
+    expect(en.words.kindName.hidden).toBe('Known')
     expect(offenders(enTexts, /\bhid(den|e)?\b/i)).toEqual([])
   })
 
   it('Russian: the same, with «Известные» / «Известное», and no скрыт-', () => {
     expect(ru.words.segments.hidden).toBe('Известные')
-    expect(ru.words.stateName.hidden).toBe('Известное')
+    expect(ru.words.kindName.hidden).toBe('Известное')
     expect(offenders(ruTexts, /скры[тв]/i)).toEqual([])
   })
 
@@ -80,11 +80,11 @@ describe('known, not hidden', () => {
     expect(ru.words.emptyHidden).toContain(ru.learn.alreadyKnow)
   })
 
-  it('"Known well" is "Well learned" (Хорошо выучено), so Known means one thing', () => {
-    expect(en.words.states.established).toBe('Well learned')
-    expect(en.words.stateName.established).toBe('Well learned')
-    expect(ru.words.states.established).toBe('Хорошо выучено')
-    expect(ru.words.stateName.established).toBe('Хорошо выучено')
+  it('"Known well" is "Well learned" (Усвоенные), so Known means one thing', () => {
+    expect(en.words.stages.wellLearned).toBe('Well learned')
+    expect(en.words.kindName.wellLearned).toBe('Well learned')
+    expect(ru.words.stages.wellLearned).toBe('Усвоенные')
+    expect(ru.words.kindName.wellLearned).toBe('Усвоено')
     expect(offenders(enTexts, /known well/i)).toEqual([])
     expect(offenders(ruTexts, /знаю хорошо/i)).toEqual([])
   })
@@ -338,8 +338,8 @@ describe('what the text says about the scheduler is what the scheduler does', ()
   })
 
   it('"How it works", Cloze: one sentence for what it shows and what you do, then the hint and the answer, then where the words come from', () => {
-    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have already learned.')
-    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. Подсказка и ответ — в одно касание. Слова здесь тоже берутся из уже выученных.')
+    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have started learning.')
+    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. Подсказка и ответ — в одно касание. Слова здесь тоже берутся из тех, которые вы уже начали учить.')
     for (const map of [en, ru]) expect(section(map, 'cloze').split(/(?<=[.!?])\s/)).toHaveLength(3)
     // and it is what the screen does: a typed answer, a Hint button and a Reveal button
     expect(en.practice.clozeHint).toBe('Type the missing word.')
@@ -381,8 +381,8 @@ describe('what a disabled tile and an empty state tell the person to do', () => 
   })
 
   it('an empty list names the way out: Learn, or clearing the search and filters', () => {
-    expect(en.words.emptyLearned).toContain('Learn')
-    expect(ru.words.emptyLearned).toContain('Learn')
+    expect(en.words.emptyStarted).toContain('Learn')
+    expect(ru.words.emptyStarted).toContain('Learn')
     expect(en.words.emptyFiltered).toContain('clear the filters')
     expect(ru.words.emptyFiltered).toContain('сбросьте фильтры')
     expect(en.words.clearSearchAndFilters).toBe('Clear search and filters')

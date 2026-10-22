@@ -359,7 +359,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
 
       expect(await page.$eval('h1', (e) => e.textContent)).toBe('Words')
       expect(await page.$eval('.words-search', (e) => e.getAttribute('placeholder'))).toBe(ru.words.searchPlaceholder)
-      expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent?.replace(/\d+$/, '').trim()))).toEqual(['Все', 'Выученные', 'Известные'])
+      expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent?.replace(/\d+$/, '').trim()))).toEqual(['Все', 'В работе', 'Известные'])
       expect(await page.$$eval('.control-btn', (els) => els.map((e) => e.textContent))).toEqual(['Фильтры', 'По частоте']) // the Sort button's face is the value alone...
       expect(await page.$$eval('.control-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual([null, 'Сортировка: По частоте']) // ...and the whole phrase is its name
       expect(await page.$eval('button[aria-label="Добавить слово"]', (e) => e.getAttribute('aria-label'))).toBe(ru.words.addWord)
@@ -374,13 +374,13 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
       await clickText(page, '.control-btn', 'Фильтры')
       await page.waitForSelector('.sheet')
       expect(await page.$$eval('.sheet h3', (els) => els.map((e) => e.textContent))).toEqual(['Прогресс', 'Показывать только', 'Часть речи'])
-      expect(await page.$$eval('.sheet .chip', (els) => els.map((e) => e.textContent))).toEqual(['Любой', 'Не начато', 'В процессе', 'Хорошо выучено', 'Пора повторить', 'Учить раньше', 'Мои слова', 'Глаголы', 'Существительные', 'Прилагательные', 'Наречия'])
+      expect(await page.$$eval('.sheet .chip', (els) => els.map((e) => e.textContent))).toEqual(['Любой', 'Новые', 'В изучении', 'Усвоенные', 'Только для справки', 'Пора повторить', 'Учить раньше', 'Мои слова', 'Глаголы', 'Существительные', 'Прилагательные', 'Наречия'])
       expect(latin(await everything(page, '.sheet'))).toEqual([])
       await page.click('.sheet-backdrop', { offset: { x: 20, y: 20 } })
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
       await clickText(page, '.control-btn', 'По частоте')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('.sheet-row', (els) => els.map((e) => e.textContent))).toEqual(['По частоте', 'По алфавиту', 'Ближайшие повторы', 'Недавно выученные', 'В случайном порядке'])
+      expect(await page.$$eval('.sheet-row', (els) => els.map((e) => e.textContent))).toEqual(['По частоте', 'По алфавиту', 'Ближайшие повторы', 'Недавно изучались', 'В случайном порядке'])
       await page.click('.sheet-backdrop', { offset: { x: 20, y: 20 } })
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
 

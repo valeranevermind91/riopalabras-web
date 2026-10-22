@@ -80,7 +80,7 @@ export const en = {
     detailTitle: 'Word',
     searchPlaceholder: 'Search Spanish, English, Russian',
     searchLabel: 'Search words',
-    segments: { all: 'All', learned: 'Learned', hidden: 'Known' },
+    segments: { all: 'All', started: 'Started', hidden: 'Known' },
     segmentsLabel: 'Which words',
     // the two buttons under the segments, each opening a bottom sheet
     filtersButton: 'Filters',
@@ -96,18 +96,19 @@ export const en = {
       partOfSpeech: 'Part of speech',
       anyProgress: 'Any',
     },
-    // what the learning states are called to the user (the code keeps new / learning / established / due)
-    states: { new: 'Not started', learning: 'In progress', established: 'Well learned', due: 'Due now' },
+    // what the stages are called to the user (the Progress filter; the code keeps new / learning / wellLearned / reference, see wordStatus). "Due now" is not a stage: it is its own switch.
+    stages: { new: 'New', learning: 'Learning', wellLearned: 'Well learned', reference: 'Reference only' },
     // One action, one name everywhere (the row's star, the detail button, the filter): "Learn sooner". The star puts a word ahead in Learn and
     // clears itself when Learn has taught the word. It is not a bookmark and not a queue.
     favourites: 'Learn sooner',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
-    sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently learned', random: 'Random' },
+    sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently studied', random: 'Random' },
     bestMatch: 'Best match',
     // short part-of-speech tags on a row
     posTag: { n: 'noun', v: 'verb', adj: 'adj', adv: 'adv', pron: 'pron', num: 'num', prep: 'prep', determiner: 'det', conj: 'conj', interj: 'interj', letter: 'letter', contraction: 'contr', art: 'art' } as Record<string, string>,
     due: 'Due now',
-    stateName: { hidden: 'Known', reference: 'Reference only', due: 'Due now', established: 'Well learned', learning: 'In progress', new: 'Not started' } as Record<string, string>,
+    // the detail screen's State line: the word's kind (a due word keeps its stage; "due now" is a note under Next review)
+    kindName: { hidden: 'Known', reference: 'Reference only', new: 'New', learning: 'Learning', wellLearned: 'Well learned' } as Record<string, string>,
     // The star on a list row has no visible text (the translation needs the room); this is its accessible name, the same whether it is pressed or not.
     learnSoonerRow: (word: string) => `Learn ${word} sooner`,
     // The same words on the detail screen's button, pressed or not: the button only looks active, it never claims something happened.
@@ -201,7 +202,7 @@ export const en = {
     },
     bringBack: 'Bring back',
     bringBackWord: (word: string) => `Bring back ${word}`,
-    emptyLearned: 'Nothing learned yet. Start with Learn on the home screen.',
+    emptyStarted: 'Nothing started yet. Start with Learn on the home screen.',
     emptyAll: 'No words.',
     emptyHidden: 'No known words yet. Words you mark with “I already know this word”, or tick in the placement test, appear here.',
     emptyFiltered: 'No words match. Try another search, or clear the filters.',
@@ -465,12 +466,12 @@ export const en = {
       {
         id: 'matching',
         heading: 'Matching',
-        text: 'Matching pairs Spanish words with their translations. It uses words you have already learned.',
+        text: 'Matching pairs Spanish words with their translations. It uses words you have started learning.',
       },
       {
         id: 'cloze',
         heading: 'Cloze',
-        text: 'Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have already learned.',
+        text: 'Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have started learning.',
       },
       {
         id: 'spaced',

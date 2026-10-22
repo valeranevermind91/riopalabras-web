@@ -10,7 +10,7 @@ import { headword } from '../data/headword'
 import { canStar } from '../data/starred'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
-import { wordState, type WordState } from '../data/wordState'
+import { wordStatus, type WordStatus } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
 import { getLanguage } from '../lib/language'
 import { haptic } from '../lib/telegram'
@@ -24,9 +24,9 @@ const d = t.detail
 const date = (when: Date) => when.toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** What the state block says beyond the numbers: why a word reads the way it does, when that is not obvious. */
-function noteFor(word: Word, state: WordState): string | null {
-  if (state === 'hidden') return d.noteHidden
-  if (state === 'reference') return d.noteReference(hasTranslations(word) ? d.reasonPos : d.reasonNoTranslation)
+function noteFor(word: Word, { kind }: WordStatus): string | null {
+  if (kind === 'hidden') return d.noteHidden
+  if (kind === 'reference') return d.noteReference(hasTranslations(word) ? d.reasonPos : d.reasonNoTranslation)
   return null
 }
 
@@ -52,8 +52,8 @@ interface WordDetailProps {
  */
 export function WordDetail({ word, data, queue, registerBack, onDeleted, onReport, reportSent = false, onBack }: WordDetailProps) {
   const now = new Date()
-  const state = wordState(word, now)
-  const note = noteFor(word, state)
+  const status = wordStatus(word, now)
+  const note = noteFor(word, status)
   const head = headword(word).text
 
   // What the last action said (the confirmation after an edit).
@@ -138,7 +138,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
           <summary>{d.scheduling}</summary>
           <dl>
             <dt>{d.state}</dt>
-            <dd>{t.stateName[state]}</dd>
+            <dd>{t.kindName[status.kind]}</dd>
             <dt>{d.repetitions}</dt>
             <dd>{word.repetitions}</dd>
             <dt>{d.interval}</dt>
@@ -146,7 +146,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
             <dt>{d.nextReview}</dt>
             <dd>
               {word.nextReview ? date(word.nextReview) : d.notScheduled}
-              {state === 'due' ? ` · ${d.dueNow}` : ''}
+              {status.due ? ` · ${d.dueNow}` : ''}
             </dd>
             <dt>{d.ease}</dt>
             <dd>{word.easeFactor.toFixed(2)}</dd>

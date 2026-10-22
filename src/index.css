@@ -2046,7 +2046,7 @@ mark {
   cursor: pointer;
 }
 
-/* Where a word stands: a ring (new), half (learning), full (established); dashed (hidden), a dash (reference only). */
+/* Where a word stands: a ring (new), half (learning), full (well learned); dashed (hidden), a dash (reference only). */
 .state-dot {
   flex: none;
   box-sizing: border-box;
@@ -2061,7 +2061,7 @@ mark {
   background: linear-gradient(90deg, var(--teal) 50%, transparent 50%);
 }
 
-.state-dot.is-established {
+.state-dot.is-wellLearned {
   border-color: var(--teal);
   background: var(--teal);
 }

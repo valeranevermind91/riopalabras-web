@@ -1,11 +1,11 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { activeFilterCount, type ListFilters, type PosFilter, type Segment, type SortKey, type StateFilter } from '../data/wordList'
+import { activeFilterCount, type ListFilters, type PosFilter, type Segment, type SortKey, type StageFilter } from '../data/wordList'
 import { strings } from '../strings'
 
 const t = strings.words
 const s = t.sheet
 
-const STATES: readonly StateFilter[] = ['new', 'learning', 'established', 'due']
+const STAGES: readonly StageFilter[] = ['new', 'learning', 'wellLearned', 'reference']
 const POS: readonly PosFilter[] = ['verb', 'noun', 'adj', 'adv']
 const SORTS: readonly SortKey[] = ['frequency', 'az', 'due', 'recent', 'random']
 
@@ -69,12 +69,12 @@ export function FiltersSheet({ filters, segment, searching, onChange, onClearAll
         <section className="sheet-group" aria-labelledby="sheet-progress">
           <h3 id="sheet-progress">{s.progress}</h3>
           <div className="sheet-options">
-            <Option active={filters.state === null} onClick={() => onChange({ state: null })}>
+            <Option active={filters.stage === null} onClick={() => onChange({ stage: null })}>
               {s.anyProgress}
             </Option>
-            {STATES.map((state) => (
-              <Option key={state} active={filters.state === state} onClick={() => onChange({ state })}>
-                {t.states[state]}
+            {STAGES.map((stage) => (
+              <Option key={stage} active={filters.stage === stage} onClick={() => onChange({ stage })}>
+                {t.stages[stage]}
               </Option>
             ))}
           </div>
@@ -84,6 +84,11 @@ export function FiltersSheet({ filters, segment, searching, onChange, onClearAll
       <section className="sheet-group" aria-labelledby="sheet-show-only">
         <h3 id="sheet-show-only">{s.showOnly}</h3>
         <div className="sheet-options">
+          {showProgress && (
+            <Option active={filters.due} onClick={() => onChange({ due: !filters.due })}>
+              {t.due}
+            </Option>
+          )}
           <Option active={filters.favourites} onClick={() => onChange({ favourites: !filters.favourites })}>
             {t.favourites}
           </Option>

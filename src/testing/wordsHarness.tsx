@@ -67,10 +67,10 @@ async function boot() {
   const base = parseDictionary(dictionary, parseRioOverlay(rio))
   const day = 24 * 60 * 60 * 1000
   const now = Date.now()
-  // Progress for the 40 most common reviewable words: some due, some established, some just learned.
+  // Progress for the 40 most common reviewable words: some due, some well learned (interval 30), some learning (interval 5), some just seen in Learn (interval 0).
   const learned = base.filter((w) => !isReferenceOnly(w)).slice(0, 40)
-  const updates = learned.map((w, i) => ({ esWord: w.esWord, easeFactor: 2.5, interval: i % 3 === 0 ? 0 : 5, repetitions: i % 3 === 0 ? 1 : i % 3 === 1 ? 3 : 2, nextReview: new Date(now + (i % 4 === 0 ? -day : (i + 1) * day)) }))
-  // One lapsed word: rated Again a moment ago, so it is in progress (one repetition, interval 0) and due again in ten minutes.
+  const updates = learned.map((w, i) => ({ esWord: w.esWord, easeFactor: 2.5, interval: i % 3 === 0 ? 0 : i % 3 === 1 ? 30 : 5, repetitions: i % 3 === 0 ? 1 : i % 3 === 1 ? 3 : 2, nextReview: new Date(now + (i % 4 === 0 ? -day : (i + 1) * day)) }))
+  // One lapsed word: rated Again a moment ago, so it is learning (one repetition, interval 0) and due again in ten minutes.
   const reviewable = base.filter((w) => !isReferenceOnly(w))
   const lapsed = reviewable[60]
   updates.push({ esWord: lapsed.esWord, easeFactor: 2.18, interval: 0, repetitions: 1, nextReview: new Date(now + 10 * 60 * 1000) })

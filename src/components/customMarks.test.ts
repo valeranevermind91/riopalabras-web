@@ -12,7 +12,7 @@ import { ReviewCard } from './ReviewCard'
 import { WordRow } from './WordRow'
 import { strings } from '../strings'
 import type { Word } from '../data/types'
-import { wordState } from '../data/wordState'
+import { wordStatus } from '../data/wordState'
 
 const values = (over: Partial<WordValues>): WordValues => ({ ...blankValues(), esWord: 'zapallito', pos: 'n', enTranslation: 'little squash', ruTranslation: 'кабачок', ...over })
 const custom = (over: Partial<WordValues>): Word => customWordFromRow(rowFromValues(values(over)))
@@ -115,8 +115,8 @@ describe('the Words list row is unchanged', () => {
   it('the title is the typed word and there is no second title: the standard equivalent is not in the row', () => {
     expect(rowTitle(marked, null)).toEqual({ title: 'zapallito', alt: null })
     expect(rowTitle(plain, null)).toEqual({ title: 'zapallito', alt: null })
-    const html = renderToStaticMarkup(createElement(WordRow, { row: { word: marked, state: wordState(marked, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {} }))
-    const rowOfPlain = renderToStaticMarkup(createElement(WordRow, { row: { word: plain, state: wordState(plain, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {} }))
+    const html = renderToStaticMarkup(createElement(WordRow, { row: { word: marked, status: wordStatus(marked, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {} }))
+    const rowOfPlain = renderToStaticMarkup(createElement(WordRow, { row: { word: plain, status: wordStatus(plain, new Date()), via: null }, settings: BOTH, onOpen: () => {}, onToggleFavourite: () => {}, onBringBack: () => {} }))
     expect(html).toBe(rowOfPlain)
     for (const absent of ['calabacín', 'wc-rio', 'wc-tag', 'wc-register', 'informal', 'UY']) expect(html).not.toContain(absent)
   })

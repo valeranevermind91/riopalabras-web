@@ -2,20 +2,23 @@ import { headword } from './headword'
 import { shuffled } from '../lib/random'
 import { searchWords, type MatchVia } from './search'
 import type { Word } from './types'
-import { dueDate, hasProgress, lastReviewedAt, wordState, type WordState } from './wordState'
+import { dueDate, lastReviewedAt, wordStatus, type WordStatus } from './wordState'
 import { canStar } from './starred'
 import { compareByRank } from './words'
 
-/** The three lists: every word, the words with progress, and the words marked as known (hidden). */
-export type Segment = 'all' | 'learned' | 'hidden'
+/** The three lists: every word, the words started (studied at least once), and the words marked as known (hidden). */
+export type Segment = 'all' | 'started' | 'hidden'
 /** How the list is ordered (a search is always ordered by how well it matches instead). */
 export type SortKey = 'frequency' | 'az' | 'due' | 'recent' | 'random'
-export type StateFilter = 'new' | 'learning' | 'established' | 'due'
+/** The Progress filter: one stage at a time. Hidden words have no stage (they are in Known); reference-only words are a group of their own. */
+export type StageFilter = 'new' | 'learning' | 'wellLearned' | 'reference'
 export type PosFilter = 'verb' | 'noun' | 'adj' | 'adv'
 
 export interface ListFilters {
-  /** One state at a time (tap again to clear). */
-  state: StateFilter | null
+  /** One stage at a time (tap again to clear). */
+  stage: StageFilter | null
+  /** Only the words whose next review has arrived. Overlaps the stages: a learning word that is due is under both. */
+  due: boolean
   /** Only the words set to "learn sooner" that are still waiting (starred, and Learn can still teach them). */
   favourites: boolean
   /** Only the words the user added. */
@@ -47,7 +50,7 @@ export function createViewStore() {
 }
 
 
-export const NO_FILTERS: ListFilters = { state: null, favourites: false, custom: false, pos: null }
+export const NO_FILTERS: ListFilters = { stage: null, due: false, favourites: false, custom: false, pos: null }
 
 /** The first time the list opens: every word, most common first. */
 export function initialListView(): ListView {
@@ -56,7 +59,7 @@ export function initialListView(): ListView {
 
 export interface ListRow {
   word: Word
-  state: WordState
+  status: WordStatus
   /** How a search matched, when there is a query. */
   via: MatchVia | null
 }
@@ -119,9 +122,9 @@ export function buildWordList(
 
   let rows: ListRow[]
   if (searching) {
-    rows = searchWords(words, query, Number.POSITIVE_INFINITY, { translations: true }).map((hit) => ({ word: hit.word, state: wordState(hit.word, now), via: hit.via }))
+    rows = searchWords(words, query, Number.POSITIVE_INFINITY, { translations: true }).map((hit) => ({ word: hit.word, status: wordStatus(hit.word, now), via: hit.via }))
   } else {
-    const inSegment = (w: Word) => (segment === 'hidden' ? w.isHidden : segment === 'learned' ? !w.isHidden && hasProgress(w) : true)
+    const inSegment = (w: Word) => (segment === 'hidden' ? w.isHidden : segment === 'started' ? wordStatus(w, now).started : true)
     // Random shuffles ALL the words once for the seed (from the plain frequency order, so a seed always gives the same
     // order), and the segment and the filters only take words out of that order. A shuffle of the segment itself would
     // be a different shuffle each time the segment changed size; this way a word that leaves the list (brought back from
@@ -130,12 +133,14 @@ export function buildWordList(
       view.sort === 'random'
         ? shuffled([...words].sort(compareByRank), view.seed ?? 0).filter(inSegment)
         : words.filter(inSegment).sort(comparatorFor(view.sort ?? 'frequency'))
-    rows = ordered.map((word) => ({ word, state: wordState(word, now), via: null }))
+    rows = ordered.map((word) => ({ word, status: wordStatus(word, now), via: null }))
   }
 
-  const { state, favourites, custom, pos } = view.filters
-  // In the hidden list every word is "hidden", so a state filter has nothing to say there.
-  if (state && segment !== 'hidden') rows = rows.filter((r) => r.state === state)
+  const { stage, due, favourites, custom, pos } = view.filters
+  // In the hidden list every word is "hidden", so the stage and Due filters have nothing to say there (a search brings the other words back, and the filters with them).
+  const progressShown = segment !== 'hidden' || searching
+  if (stage && progressShown) rows = rows.filter((r) => r.status.kind === stage)
+  if (due && progressShown) rows = rows.filter((r) => r.status.due)
   if (favourites) rows = rows.filter((r) => r.word.isFavorite && canStar(r.word))
   if (custom) rows = rows.filter((r) => r.word.isCustom)
   if (pos) rows = rows.filter((r) => matchesPos(r.word, pos))
@@ -143,8 +148,8 @@ export function buildWordList(
   return { rows, searching }
 }
 
-/** How many filters are on (a state filter does not count in the hidden list, where it is not offered). */
+/** How many filters are on (the stage and Due filters do not count in the hidden list, where they are not offered). */
 export function activeFilterCount(filters: ListFilters, segment: Segment, searching = false): number {
-  const stateShown = segment !== 'hidden' || searching
-  return (filters.state && stateShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.custom ? 1 : 0) + (filters.pos ? 1 : 0)
+  const progressShown = segment !== 'hidden' || searching
+  return (filters.stage && progressShown ? 1 : 0) + (filters.due && progressShown ? 1 : 0) + (filters.favourites ? 1 : 0) + (filters.custom ? 1 : 0) + (filters.pos ? 1 : 0)
 }

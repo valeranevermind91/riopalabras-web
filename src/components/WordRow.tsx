@@ -3,7 +3,7 @@ import { translationsFor } from '../data/relation'
 import { firstTranslation, translationLines, type TranslationFlags } from '../data/translations'
 import { canStar } from '../data/starred'
 import type { ListRow } from '../data/wordList'
-import { wordStage, type WordState } from '../data/wordState'
+import type { WordKind } from '../data/wordState'
 import { strings } from '../strings'
 
 const t = strings.words
@@ -11,9 +11,8 @@ const t = strings.words
 /** The row height in px. The windowed list lays rows out by multiplying with it, so every row is exactly this tall. */
 export const WORD_ROW_HEIGHT = 72
 
-/** A small dot for where a word stands: a ring (new), half (learning), full (established); dashed for hidden and reference-only words. */
-export function StateDot({ state, stage }: { state: WordState; stage: ReturnType<typeof wordStage> }) {
-  const kind = state === 'hidden' || state === 'reference' ? state : stage
+/** A small dot for where a word stands (its kind, see wordStatus): a ring (new), half (learning), full (well learned); dashed for hidden, a dash for reference-only words. */
+export function StateDot({ kind }: { kind: WordKind }) {
   return <span className={`state-dot is-${kind}`} aria-hidden="true" />
 }
 
@@ -40,7 +39,7 @@ interface WordRowProps {
  * not, and the word's detail screen spells it out. A hidden word has "Bring back" instead. Tapping the row opens the word.
  */
 export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack }: WordRowProps) {
-  const { word, state, via } = row
+  const { word, status, via } = row
   const { title: head, alt } = rowTitle(word, via)
   // One muted line: every enabled language that has text, RU then EN, joined with " · " (the line truncates with an ellipsis
   // rather than wrapping, so a row is always the same height). A search that matched through a translation adds that
@@ -56,10 +55,10 @@ export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack 
     <div className="word-row">
       <button type="button" className="word-row-main" aria-label={t.open(head)} onClick={() => onOpen(word.esWord)}>
         <span className="word-row-top">
-          <StateDot state={state} stage={wordStage(word)} />
+          <StateDot kind={status.kind} />
           <span className="word-row-head">{head}</span>
           <span className="word-row-pos">{pos}</span>
-          {state === 'due' && <span className="word-row-due">{t.due}</span>}
+          {status.due && <span className="word-row-due">{t.due}</span>}
         </span>
         <span className="word-row-line">
           {alt && <span className="word-row-alt">{alt}</span>}

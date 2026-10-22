@@ -49,7 +49,7 @@ export function DataSection({ state }: { state: DataState }) {
           <dl>
             <Row label="Dictionary loaded" value={`${state.data.diagnostics.baseCount} words`} />
             <Row label="total" value={state.data.stats.total} />
-            <Row label="learned" value={state.data.stats.learned} />
+            <Row label="started" value={state.data.stats.started} />
             <Row label="reviewDue" value={state.data.stats.reviewDue} />
             <Row label="learnPool" value={state.data.stats.learnPool} />
             <Row label="newToLearn" value={state.data.stats.newToLearn} />

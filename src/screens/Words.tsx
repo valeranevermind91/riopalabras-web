@@ -10,7 +10,7 @@ import type { UserData } from '../data/useUserData'
 import { addCustomWord } from '../data/customWords'
 import { noEnrichment, type EnrichResult } from '../data/enrich'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
-import { hasProgress } from '../data/wordState'
+import { wordStatus } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
 import { wordKey } from '../data/words'
 import { newSeed } from '../lib/random'
@@ -22,7 +22,7 @@ const t = strings.words
 /** How long "Added, and set to learn sooner." stays: long enough to read, short enough not to still be there when the list has moved on. */
 export const NOTICE_MS = 6000
 
-const SEGMENTS: readonly Segment[] = ['all', 'learned', 'hidden']
+const SEGMENTS: readonly Segment[] = ['all', 'started', 'hidden']
 
 interface WordsScreenProps {
   data: UserData
@@ -84,11 +84,11 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const list = useMemo(() => buildWordList(data.words, view, now), [data.words, view.segment, view.sort, view.seed, view.filters, view.query, now]) // eslint-disable-line react-hooks/exhaustive-deps
   const counts = useMemo(
     () => ({
-      learned: data.words.filter((w) => !w.isHidden && hasProgress(w)).length,
+      started: data.words.filter((w) => wordStatus(w, now).started).length,
       all: data.words.length,
       hidden: data.words.filter((w) => w.isHidden).length,
     }),
-    [data.words],
+    [data.words, now],
   )
 
   const toggleFavourite = (esWord: string, favourite: boolean) => {
@@ -103,10 +103,10 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   }
 
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
-  const anyFilter = view.filters.state || view.filters.favourites || view.filters.custom || view.filters.pos
+  const anyFilter = view.filters.stage || view.filters.due || view.filters.favourites || view.filters.custom || view.filters.pos
   const emptyBecauseFiltered = list.rows.length === 0 && (list.searching || anyFilter)
-  const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'learned' ? t.emptyLearned : t.emptyAll
-  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.state}|${view.filters.favourites}|${view.filters.custom}|${view.filters.pos}`
+  const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'started' ? t.emptyStarted : t.emptyAll
+  const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.stage}|${view.filters.due}|${view.filters.favourites}|${view.filters.custom}|${view.filters.pos}`
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 
@@ -172,7 +172,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
             type="button"
             className={!list.searching && view.segment === segment ? 'segment is-active' : 'segment'}
             aria-pressed={!list.searching && view.segment === segment}
-            onClick={() => change(segment === 'hidden' ? { segment, filters: { ...latest.current.filters, state: null } } : { segment })}
+            onClick={() => change(segment === 'hidden' ? { segment, filters: { ...latest.current.filters, stage: null, due: false } } : { segment })}
           >
             {t.segments[segment]} <span className="segment-count">{counts[segment]}</span>
           </button>

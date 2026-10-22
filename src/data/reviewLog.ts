@@ -16,6 +16,11 @@ import { wordKey } from './words'
 export const REVIEW_LOG_TABLE = 'review_log'
 
 export type LogMode = 'review' | 'learn' | 'matching' | 'cloze' | 'practice'
+/**
+ * The log's own vocabulary for what a word was at the moment of an answer. It is fixed by the live table's review_log_state_before_check (sql/review_log.sql) and is
+ * NOT the Words list's: wordStatus (wordState.ts) has kinds new / learning / wellLearned by interval, and the two could be confused. Here `learning` means "repetitions 1,
+ * interval 0, the ease a new word gets" and `review` means "has an interval of at least a day".
+ */
 export type LogState = 'new' | 'learning' | 'review' | 'relearning'
 
 /** One row of the log as the app holds it (camelCase); writes.ts turns it into the table's columns. The user id is added when it is sent. */
