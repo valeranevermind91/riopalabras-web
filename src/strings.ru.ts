@@ -38,7 +38,7 @@ export const ru: Strings = {
     streak: (n) => `${n} ${plural(n, { one: 'день', few: 'дня', many: 'дней' })} подряд`,
     streakToday: (done, needed) => `${done} / ${needed} сегодня`,
     advice: {
-      reviewFirst: (n) => `Сначала повторение — ${plural(n, { one: 'ждёт', few: 'ждут', many: 'ждут' })} ${n} ${words(n)}`,
+      reviewFirst: (n, perSession) => `Сначала повторение — ${plural(n, { one: 'ждёт', few: 'ждут', many: 'ждут' })} ${n} ${words(n)}${n > perSession ? `, за раз — ${perSession}` : ''}`,
       learnNew: (n) => `Повторять нечего — можно изучить ${n} ${plural(n, { one: 'новое слово', few: 'новых слова', many: 'новых слов' })}`,
       allDoneToday: 'На сегодня всё',
       poolEmpty: 'Новые слова закончились — добавьте свои или потренируйтесь',

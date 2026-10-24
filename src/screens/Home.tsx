@@ -4,6 +4,7 @@ import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
+import { REVIEW_SESSION_SIZE } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
 import { STREAK_CARDS, cardsToday, streakCountedToday } from '../data/daily'
@@ -208,12 +209,12 @@ interface Tile {
   onPress: () => void
 }
 
-/** The line of advice, with the numbers it needs: how many are due (all of them, not one session's worth), and how many new words a batch would offer. */
+/** The line of advice, with the numbers it needs: how many are due (all of them, not one session's worth; past one session it also says how many a session holds), and how many new words a batch would offer. */
 function adviceText(advice: HomeAdvice, stats: Stats): string {
   const t = strings.home.advice
   switch (advice) {
     case 'reviewFirst':
-      return t.reviewFirst(stats.reviewDue)
+      return t.reviewFirst(stats.reviewDue, REVIEW_SESSION_SIZE)
     case 'learnNew':
       return t.learnNew(stats.newToLearn)
     case 'allDoneToday':

@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setLanguage } from '../lib/language'
 import { strings } from '../strings'
+import { makeWord } from '../testing/makeWord'
 import { homeAdvice, primaryTile, type HomeAdvice } from './advice'
+import { REVIEW_SESSION_SIZE, buildReviewSession } from './review'
 
 // What Home says to do today: five states from three numbers, in the Flutter app's priority.
 
 afterEach(() => setLanguage('en'))
+
+/** A session size no test count reaches: the first part of the line on its own, without the "per session" part. */
+const ALL = 1_000_000
 
 const advise = (reviewDue: number, learnPool: number, remainingToday: number) => homeAdvice({ reviewDue, learnPool, remainingToday })
 
@@ -65,7 +70,7 @@ describe('the wording', () => {
     expect(a().allDoneToday).toBe('Done for today')
     expect(a().poolEmpty).toBe('No new words left — add your own, or practise')
     expect(a().allClear).toBe('All caught up')
-    expect(a().reviewFirst(40)).toBe('Review first — 40 words are waiting')
+    expect(a().reviewFirst(40, ALL)).toBe('Review first — 40 words are waiting')
     expect(a().learnNew(10)).toBe('Nothing to review — 10 new words ready')
   })
 
@@ -74,12 +79,12 @@ describe('the wording', () => {
     expect(a().allDoneToday).toBe('На сегодня всё')
     expect(a().poolEmpty).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
     expect(a().allClear).toBe('Всё повторено')
-    expect(a().reviewFirst(40)).toBe('Сначала повторение — ждут 40 слов')
+    expect(a().reviewFirst(40, ALL)).toBe('Сначала повторение — ждут 40 слов')
     expect(a().learnNew(10)).toBe('Повторять нечего — можно изучить 10 новых слов')
   })
 
   it('English plurals for 1, 2, 5 and 21: the verb and the noun follow the number', () => {
-    expect([1, 2, 5, 21].map(a().reviewFirst)).toEqual([
+    expect([1, 2, 5, 21].map((n) => a().reviewFirst(n, ALL))).toEqual([
       'Review first — 1 word is waiting',
       'Review first — 2 words are waiting',
       'Review first — 5 words are waiting',
@@ -95,7 +100,7 @@ describe('the wording', () => {
 
   it('Russian plurals for 1, 2, 5 and 21: ждёт 1 слово, ждут 2 слова, ждут 5 слов, ждёт 21 слово (and the same for the new words)', () => {
     setLanguage('ru')
-    expect([1, 2, 5, 21].map(a().reviewFirst)).toEqual([
+    expect([1, 2, 5, 21].map((n) => a().reviewFirst(n, ALL))).toEqual([
       'Сначала повторение — ждёт 1 слово',
       'Сначала повторение — ждут 2 слова',
       'Сначала повторение — ждут 5 слов',
@@ -111,8 +116,8 @@ describe('the wording', () => {
 
   it('also right at the awkward Russian counts: 11, 12, 14, 22, 25, 101, 111', () => {
     setLanguage('ru')
-    const noun = (n: number) => a().reviewFirst(n).split(' ').slice(-1)[0]
-    const verb = (n: number) => a().reviewFirst(n).split(' ')[3]
+    const noun = (n: number) => a().reviewFirst(n, ALL).split(' ').slice(-1)[0]
+    const verb = (n: number) => a().reviewFirst(n, ALL).split(' ')[3]
     expect([11, 12, 14, 22, 25, 101, 111].map(noun)).toEqual(['слов', 'слов', 'слов', 'слова', 'слов', 'слово', 'слов'])
     expect([11, 12, 14, 22, 25, 101, 111].map(verb)).toEqual(['ждут', 'ждут', 'ждут', 'ждут', 'ждут', 'ждёт', 'ждут'])
   })
@@ -125,3 +130,48 @@ describe('the wording', () => {
     }
   })
 })
+
+describe('past one session: the line says both numbers (and not before)', () => {
+  const line = (n: number) => strings.home.advice.reviewFirst(n, REVIEW_SESSION_SIZE)
+
+  it('a session holds 20 (the number the line quotes is the real one: a session built from more than that has exactly that many words)', () => {
+    expect(REVIEW_SESSION_SIZE).toBe(20)
+    const due = Array.from({ length: 21 }, (_, i) => makeWord(`w${i}`, { repetitions: 2, nextReview: new Date('2026-10-01T00:00:00Z') }))
+    expect(buildReviewSession(due, new Date('2026-10-20T00:00:00Z'))).toHaveLength(REVIEW_SESSION_SIZE)
+    expect(buildReviewSession(due.slice(0, 20), new Date('2026-10-20T00:00:00Z'))).toHaveLength(20)
+  })
+
+  it('English: 20 or fewer is the line as it was; 21 and more adds "(20 per session)"', () => {
+    expect(line(1)).toBe('Review first — 1 word is waiting')
+    expect(line(20)).toBe('Review first — 20 words are waiting')
+    expect(line(21)).toBe('Review first — 21 words are waiting (20 per session)')
+    expect(line(37)).toBe('Review first — 37 words are waiting (20 per session)')
+    expect(line(250)).toBe('Review first — 250 words are waiting (20 per session)')
+  })
+
+  it('Russian: 20 or fewer is the line as it was; 21 and more adds «, за раз — 20»', () => {
+    setLanguage('ru')
+    expect(line(1)).toBe('Сначала повторение — ждёт 1 слово')
+    expect(line(20)).toBe('Сначала повторение — ждут 20 слов')
+    expect(line(21)).toBe('Сначала повторение — ждёт 21 слово, за раз — 20')
+    expect(line(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
+    expect(line(250)).toBe('Сначала повторение — ждут 250 слов, за раз — 20')
+  })
+
+  it('Russian, for every count from 1 to 1000: the verb and the noun agree with the number by the rule (checked against a hand-written rule, not the library), and the second part is there exactly past 20', () => {
+    setLanguage('ru')
+    const form = (n: number) => (n % 100 >= 11 && n % 100 <= 14 ? 'many' : n % 10 === 1 ? 'one' : n % 10 >= 2 && n % 10 <= 4 ? 'few' : 'many')
+    for (let n = 1; n <= 1000; n++) {
+      const f = form(n)
+      const expected = `Сначала повторение — ${f === 'one' ? 'ждёт' : 'ждут'} ${n} ${f === 'one' ? 'слово' : f === 'few' ? 'слова' : 'слов'}${n > 20 ? ', за раз — 20' : ''}`
+      expect(line(n), String(n)).toBe(expected)
+    }
+  })
+
+  it('English, for every count from 1 to 1000: "is" for one, "are" for the rest, and the second part exactly past 20', () => {
+    for (let n = 1; n <= 1000; n++) {
+      expect(line(n), String(n)).toBe(`Review first — ${n} ${n === 1 ? 'word is' : 'words are'} waiting${n > 20 ? ' (20 per session)' : ''}`)
+    }
+  })
+})
+

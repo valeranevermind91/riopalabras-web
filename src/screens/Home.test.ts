@@ -628,8 +628,23 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     expect(adviceOf(states.allClear())).toBe('All caught up')
   })
 
-  it('the number due in review first is the real total, not one session\'s worth', () => {
-    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting')
+  it('the number due in review first is the real total, not one session\'s worth, and past one session the line says how many a session holds', () => {
+    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting (20 per session)')
+  })
+
+  it('the boundary: 20 due is the line as it was, 21 due says both numbers — on Home, in both languages', () => {
+    const at = (due: number) => adviceOf(render({}, [...learnedWords(due + 5, due), ...unlearned(5)]))
+    expect(at(19)).toBe('Review first — 19 words are waiting')
+    expect(at(20)).toBe('Review first — 20 words are waiting')
+    expect(at(21)).toBe('Review first — 21 words are waiting (20 per session)')
+    setLanguage('ru')
+    try {
+      expect(at(20)).toBe('Сначала повторение — ждут 20 слов')
+      expect(at(21)).toBe('Сначала повторение — ждёт 21 слово, за раз — 20')
+      expect(at(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
+    } finally {
+      setLanguage('en')
+    }
   })
 
   it('the primary tile follows the state: Review, Learn, or none; Matching and Cloze never', () => {

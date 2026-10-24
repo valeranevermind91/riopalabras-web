@@ -47,7 +47,8 @@ export const en = {
     streak: (n: number) => `${n}-day streak`,
     // The one line under the streak: what to do today (src/data/advice.ts). N in reviewFirst is the real number due, which may be more than one session.
     advice: {
-      reviewFirst: (n: number) => `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting`,
+      // `perSession` is the size of one Review session: when more words than that are due, the line says both numbers (never when `n` is that or fewer)
+      reviewFirst: (n: number, perSession: number) => `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting${n > perSession ? ` (${perSession} per session)` : ''}`,
       learnNew: (n: number) => `Nothing to review — ${n} new ${plural(n, { one: 'word', other: 'words' })} ready`,
       allDoneToday: 'Done for today',
       poolEmpty: 'No new words left — add your own, or practise',
