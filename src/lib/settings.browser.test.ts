@@ -139,7 +139,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
     // the theme control: a radio group named by its label
     expect(await page.$$eval('[role="radiogroup"]', (els) => els.map((e) => document.getElementById(e.getAttribute('aria-labelledby')!)?.textContent))).toEqual(['App language', 'Theme'])
     // the reminder switch: its hint is tied to it
-    expect(await page.$eval('#daily-reminder', (e) => document.getElementById(e.getAttribute('aria-describedby')!)?.textContent)).toBe('Comes at 20:00, and only when something is waiting.')
+    expect(await page.$eval('#daily-reminder', (e) => document.getElementById(e.getAttribute('aria-describedby')!)?.textContent)).toBe('Comes around 20:00, and only when something is waiting.')
     await page.close()
   }, 60_000)
 
@@ -353,7 +353,7 @@ describe.skipIf(!CHROME)('Settings in a browser', () => {
         expect(m.noteRight).toBeLessThanOrEqual(m.width)
         expect(m.row).toBeGreaterThanOrEqual(48)
         expect(m.label).toBe(lang === 'en' ? 'Daily reminder' : 'Ежедневное напоминание')
-        expect(m.hint).toBe(lang === 'en' ? 'Comes at 20:00, and only when something is waiting.' : 'Приходит в 20:00 и только если есть что повторять.')
+        expect(m.hint).toBe(lang === 'en' ? 'Comes around 20:00, and only when something is waiting.' : 'Приходит около 20:00 и только если есть что повторять.')
         await page.close()
       }, 60_000)
     }

@@ -263,7 +263,7 @@ export const en = {
     theme: 'Theme',
     notifications: 'Notifications',
     reminder: 'Daily reminder',
-    reminderHint: 'Comes at 20:00, and only when something is waiting.',
+    reminderHint: 'Comes around 20:00, and only when something is waiting.',
     reminderDeclined: "Telegram did not allow messages. You can allow them from the bot's chat.",
     reminderFailed: 'Could not save this. Check your connection and try again.',
     // shown under a switch that is on: why nothing arrives (the user cannot change either; turning it off and on again clears them)

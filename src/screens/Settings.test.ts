@@ -157,7 +157,7 @@ describe('the Settings screen', () => {
     it('is one labelled switch with a quiet line under the label saying 20:00 and "only when something is waiting"', () => {
       const html = render({}, { reminders: control() })
       expect(html).toMatch(/<label for="daily-reminder" class="setting-label">Daily reminder<\/label>/)
-      expect(html).toContain('<span id="daily-reminder-hint" class="setting-hint">Comes at 20:00, and only when something is waiting.</span>')
+      expect(html).toContain('<span id="daily-reminder-hint" class="setting-hint">Comes around 20:00, and only when something is waiting.</span>')
       expect(switchOf(html)).toMatch(/type="checkbox" role="switch" class="switch"/)
       expect(switchOf(html)).toContain('aria-describedby="daily-reminder-hint"')
       expect(html).not.toContain('coming soon')
@@ -225,7 +225,7 @@ describe('the Settings screen', () => {
       try {
         const html = render({}, { reminders: control({ notice: 'declined' }) })
         expect(html).toContain('Ежедневное напоминание')
-        expect(html).toContain('Приходит в 20:00 и только если есть что повторять.')
+        expect(html).toContain('Приходит около 20:00 и только если есть что повторять.')
         expect(html).toContain('Telegram не разрешил сообщения. Разрешить их можно в чате с ботом.')
         expect(render({}, { reminders: control({ notice: 'failed' }) })).toContain('Не удалось сохранить. Проверьте соединение и попробуйте ещё раз.')
       } finally {
