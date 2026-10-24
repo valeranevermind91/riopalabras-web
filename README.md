@@ -41,6 +41,19 @@ tables, the columns, the device storage, the third-party hosts, and, when `../ri
 logs). When the text changes, set `PRIVACY_UPDATED` in `src/lib/privacy.ts` to the day and update the fingerprint in that test; a test fails until both
 move.
 
+## The icon
+
+`public/favicon.svg` (the page icon of `index.html` and `privacy.html`, and the source of the bot avatar) is made by `tools/icon/make-icon.mjs`, not drawn by hand:
+the letter R of Fraunces at weight 600 (the app's display face), cream (`--page`) on teal (`--teal`), the colours read from `src/tokens.css`, the letter as an
+outline so the file is about 1.6 KB and needs no font. The font is `tools/icon/fraunces-latin-600-normal.woff2` (SIL Open Font License, `tools/icon/Fraunces-OFL.txt`).
+
+```bash
+node tools/icon/make-icon.mjs                        # rewrites public/favicon.svg
+node tools/icon/make-icon.mjs --avatar avatar.png    # and renders the 512x512 PNG for BotFather (headless Chrome; CHROME_PATH if it is not found)
+```
+
+`tools/icon/make-icon.test.mjs` fails when `public/favicon.svg` is not exactly what the script makes, so a change to the tokens or the script must be followed by a run.
+
 ## Tests
 
 ```bash
