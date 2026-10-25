@@ -118,11 +118,12 @@ function entryFor(payload: unknown, word: string): { value: Enriched; notRecogni
 
 /**
  * Asks the proxy about one word. `pos` is left out of the request for "Other" (code `custom`), as the Flutter app does.
- * Offline fails at once, without a request; otherwise nothing waits longer than the timeout.
+ * The request is always made: the browser's "offline" flag is not trusted to refuse it (on some devices it says no while the network works). It only names a failure
+ * that has already happened, so a request that could not be made reads "offline" when the browser agrees and "network" when it does not. Nothing waits longer than the timeout.
  */
 export async function enrichWord(input: { word: string; pos: string | null }, deps: EnrichDeps): Promise<EnrichResult> {
   const fail = (failure: EnrichFailure): EnrichResult => ({ ok: false, failure })
-  if ((deps.isOffline ?? isOffline)()) return fail({ kind: 'offline' })
+  const unreachable = (): EnrichResult => fail({ kind: (deps.isOffline ?? isOffline)() ? 'offline' : 'network' })
 
   const proxyUrl = (deps.proxyUrl ?? import.meta.env.VITE_PROXY_URL ?? '').replace(/\/+$/, '')
   const doFetch = deps.fetchImpl ?? fetch
@@ -180,7 +181,7 @@ export async function enrichWord(input: { word: string; pos: string | null }, de
     if (first !== 'unauthorized') return first
     if (!deps.recoverSession) return fail({ kind: 'unauthorized' })
     const back = await deps.recoverSession()
-    if (back === 'unreachable') return fail({ kind: 'network' })
+    if (back === 'unreachable') return unreachable()
     if (!back) return fail({ kind: 'unauthorized' })
     const second = await attempt()
     return second === 'unauthorized' ? fail({ kind: 'unauthorized' }) : second
@@ -191,7 +192,7 @@ export async function enrichWord(input: { word: string; pos: string | null }, de
     return result === 'timeout' ? fail({ kind: 'timeout' }) : result
   } catch (err) {
     if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return fail({ kind: 'timeout' })
-    return fail({ kind: 'network' })
+    return unreachable()
   } finally {
     clearTimeout(timer)
   }

@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DailyMetricsRow } from './metrics'
 import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch, UserSettings } from './types'
-import { isOffline } from '../lib/online'
 import { fetchSettings, fetchSettingsRow } from './overlay'
 import { fetchServerMetricsRow, mergeRows, parseServerRow } from './metrics'
 import { reconcileSettingsPatch } from './restoreRules'
@@ -556,7 +555,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         recoveryTried = false
       } catch (err) {
         lastError = messageOf(err)
-        lastSaveFailure = { message: lastError, step: sendStep, status: err instanceof WriteError ? err.status : null, code: err instanceof WriteError ? err.code : null, at: new Date(nowMs()).toISOString() }
+        lastSaveFailure = { message: lastError, step: sendStep, status: err instanceof WriteError && err.status ? err.status : null, code: err instanceof WriteError ? err.code : null, at: new Date(nowMs()).toISOString() }
         sending = false
         if (isRejection(err)) {
           // Refused for who is asking: waiting and sending the same thing again cannot change that. Get a session
@@ -1062,9 +1061,9 @@ export function createSupabaseWriteQueue(
   }
   const recoverAuth = async () => (await recover()) === 'yes'
   const signedIn = async <T>(send: () => Promise<T>): Promise<T> => {
-    // No network: nothing here can succeed and none of it is a refusal. Fail fast, so the queue's own retries (and, when
-    // they run out, the unsaved-progress notice) take over; the writes stay queued and saved on the device.
-    if (isOffline()) throw new Error('No connection')
+    // The browser's own idea of "offline" is NOT consulted: on some devices it says no while the network works, and a write refused on its word
+    // never leaves the device, never says why, and is retried against the same answer for ever. A request with no network fails in milliseconds by itself and
+    // takes the same road: the queue's retries, then the unsaved-progress notice, with the writes kept on the device.
     if (!(await holdsSessionFor(client, userId))) {
       const back = await recover()
       if (back === 'unreachable') throw new Error('The server cannot be reached')

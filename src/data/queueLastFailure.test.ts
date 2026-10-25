@@ -105,6 +105,13 @@ describe('the last save failure', () => {
     expect(status.lastSaveFailure).toMatchObject({ message: 'user_settings: transient', status: 503 }) // but it was
   })
 
+  it('a status of 0 (what supabase-js reports when the request got no answer at all) is no status', async () => {
+    const queue = queueFailing(new WriteError('user_settings', 'TypeError: Failed to fetch', 0, null))
+    queue.enqueueSettings({ a: 1 })
+    await settled(queue)
+    expect(queue.getStatus().lastSaveFailure).toMatchObject({ status: null, code: null })
+  })
+
   it('is the latest failure when there are several', async () => {
     const queue = queueFailing(new WriteError('user_settings', 'first', 500, null), new WriteError('user_settings', 'second', 409, '23505'))
     queue.enqueueSettings({ a: 1 })

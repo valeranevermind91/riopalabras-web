@@ -181,12 +181,30 @@ describe('the spelling check (is_real_word and suggested_spelling)', () => {
 })
 
 describe('every failure is a value with its own message, and the form stays usable', () => {
-  it('offline fails at once: no request is made, no timeout is waited for', async () => {
-    const d = deps(async () => reply(200, {}), { isOffline: () => true, timeoutMs: 60_000 })
+  it('a request is made even when the browser claims to be offline, and it works when the network does (the flag is wrong on some devices)', async () => {
+    const d = deps(async () => reply(200, { words: [entry] }), { isOffline: () => true, timeoutMs: 60_000 })
+    const result = await enrichWord({ word: 'tímido', pos: 'adj' }, d)
+    expect(d.calls).toHaveLength(1)
+    expect(result.ok).toBe(true)
+  })
+
+  it('a request that cannot be made fails at once, with no timeout waited for, and reads "offline" when the browser agrees and "network" when it does not', async () => {
+    const down = async () => {
+      throw new TypeError('Failed to fetch')
+    }
     const started = Date.now()
-    expect(await failureOf(d)).toEqual({ kind: 'offline' })
+    const offline = deps(down, { isOffline: () => true, timeoutMs: 60_000 })
+    expect(await failureOf(offline)).toEqual({ kind: 'offline' })
+    expect(offline.calls).toHaveLength(1) // it was tried
+    expect(await failureOf(deps(down, { isOffline: () => false, timeoutMs: 60_000 }))).toEqual({ kind: 'network' })
     expect(Date.now() - started).toBeLessThan(500)
-    expect(d.calls).toHaveLength(0)
+  })
+
+  it('a sign-in that cannot be reached is named the same way: "offline" with the browser\'s agreement, otherwise "network"', async () => {
+    for (const [isOffline, kind] of [[true, 'offline'], [false, 'network']] as const) {
+      const d = deps(async () => reply(401, {}), { isOffline: () => isOffline, recoverSession: async () => 'unreachable' })
+      expect(await failureOf(d)).toEqual({ kind })
+    }
   })
 
   it('401, and no session at all (nothing is sent without a token)', async () => {

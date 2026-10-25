@@ -4,6 +4,7 @@ import { createFakeServer, initDataFor } from '../testing/fakeServer'
 import { makeUpdate, makeWord } from '../testing/makeWord'
 import { createQueueStore, type StorageLike } from './queueStore'
 import { restoreAndFlush } from './startup'
+import { showUnsavedNotice } from './useQueueStatus'
 import { createWriteQueue, type WriteQueue } from './writeQueue'
 
 /**
@@ -131,18 +132,52 @@ describe('a full Learn batch and several ratings with the network refused', () =
   })
 })
 
-describe('the session check with no network', () => {
-  it('with the browser saying it is offline nothing is attempted, not even the session lookup, and the failure is not a refusal', async () => {
+describe('a write is attempted whatever the browser says about the network', () => {
+  // navigator.onLine is wrong on some devices (it said "offline" on an Android phone with a working network, and every save was refused before any request was made,
+  // with no word of why). It is not consulted before a write; a request that cannot be made fails by itself, in milliseconds.
+  it('with the browser claiming to be offline the write goes out, is saved, and no notice is raised', async () => {
     const app = await signedInApp()
     vi.stubGlobal('navigator', { onLine: false })
     server.log.length = 0
     app.learn()
-    await failed(app.queue)
-    expect(server.log).toEqual([]) // no request of any kind left the app
-    expect(app.queue.getStatus()).toMatchObject({ authRejected: false, error: 'No connection' })
+    await vi.waitFor(() => expect(app.queue.getStatus().unsaved).toBe(false), { timeout: 3000 })
+    expect(noWriteWentOut().length).toBeGreaterThan(0) // requests did leave the app
+    expect(server.rows('user_progress').length).toBe(10)
+    expect(app.queue.getStatus()).toMatchObject({ stuck: false, failed: false, error: null, lastSaveFailure: null })
+    expect(showUnsavedNotice(app.queue.getStatus())).toBe(false)
+  })
 
-    vi.stubGlobal('navigator', { onLine: true })
-    expect(await app.queue.retry()).toBe(true)
+  it('with the network really down the write fails by itself and takes the usual road: retries, then the notice, a refusal it is not, and the writes stay queued', async () => {
+    for (const claim of [true, false]) {
+      const app = await signedInApp()
+      vi.stubGlobal('navigator', { onLine: claim }) // whatever the browser claims
+      server.break.networkDown = true
+      app.learn()
+      await failed(app.queue)
+      const status = app.queue.getStatus()
+      expect(status.authRejected).toBe(false)
+      expect(status.stuck).toBe(true)
+      expect(status.error).not.toBe('No connection') // no refusal made up on the browser's word: the request itself failed
+      expect(status.lastSaveFailure).toMatchObject({ step: 'user_progress', status: null })
+      expect(showUnsavedNotice(status)).toBe(true) // the notice still appears when writes really are failing
+      expect(app.queue.pending().progress.length).toBe(10) // and nothing is lost
+
+      server.break.networkDown = false
+      expect(await app.queue.retry()).toBe(true)
+      expect(server.rows('user_progress').length).toBeGreaterThan(0)
+      server.rows('user_progress').length = 0
+      vi.unstubAllGlobals()
+      vi.stubGlobal('fetch', server.fetch)
+    }
+  })
+
+  it('the browser\'s flag is consulted for nothing that sends a write: only to name a failed enrichment request and to skip a wait at app open', () => {
+    const consults = readdirSync('src', { recursive: true, encoding: 'utf8' })
+      .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.(ts|tsx)$/.test(f) && !f.startsWith('testing'))
+      .filter((f) => /\bisOffline\b|navigator\.onLine|\.onLine\b/.test(readFileSync(`src/${f}`, 'utf8')))
+      .sort()
+    expect(consults).toEqual(['data/enrich.ts', 'data/startup.ts', 'lib/online.ts'])
+    expect(readFileSync('src/data/writeQueue.ts', 'utf8')).not.toMatch(/isOffline|onLine/)
   })
 
   it('a lost session while the auth server cannot be reached is "offline", not "the sign-in was refused"; it signs in again once it can', async () => {
