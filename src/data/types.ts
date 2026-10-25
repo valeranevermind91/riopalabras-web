@@ -60,8 +60,8 @@ export interface UserSettings {
   /** Where Learn starts in the frequency order (the placement test's result); null for the default start. */
   readonly startRank: number | null
   readonly pendingWordDeletes: readonly string[]
-  /** The offer to turn on the daily reminder has been shown (once, after the first finished Learn session): it is never made again. */
-  readonly reminderOfferShown: boolean
+  /** How many times the offer to turn on the daily reminder has counted as made (see data/reminderOffer.ts): 0 is never, REMINDER_OFFER_MAX is over (answered, or made that many times with no answer). */
+  readonly reminderOfferShows: number
   /** The Debug section of Settings was unlocked on this account (seven taps on the version row, see lib/tapCount.ts). Never set by default. */
   readonly debugUnlocked: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

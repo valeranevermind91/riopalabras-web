@@ -7,7 +7,7 @@ import { headword } from '../data/headword'
 import { reportFor, type FeedbackReport, type SendResult } from '../data/feedback'
 import { learnedToday } from '../data/daily'
 import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
-import { reminderOfferPatch, shouldOfferReminder } from '../data/reminderOffer'
+import { offerOutcome, reminderOfferAnsweredPatch, reminderOfferShownPatch, shouldOfferReminder } from '../data/reminderOffer'
 import { saveSetting } from '../data/settingsActions'
 import { UNDO_WINDOW_MS, createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
@@ -359,27 +359,37 @@ function PostBatch({
 }) {
   const { stats, settings } = data
 
-  // The offer to turn on the daily reminder: once ever, at the end of a finished session, only if the reminder is known to be off. It is decided
-  // ONCE, here, when the end screen appears, because it records itself as shown the moment it does (below), and that would end it at once.
-  const [offer, setOffer] = useState<'open' | 'asking' | 'closed'>(() => (shouldOfferReminder({ completed, settings, reminder: reminders }) ? 'open' : 'closed'))
+  // The offer to turn on the daily reminder: at the end of a finished session, only if the reminder is known to be off, until it is answered and at most three times (data/reminderOffer.ts).
+  // It is decided ONCE, here, when the end screen appears, because it counts itself as shown the moment it does (below), and that must not end it on this screen.
+  // 'yes' and 'no' are the answers: the card is replaced by one line that says what happened and where the switch is, and stays until the person leaves.
+  const [offer, setOffer] = useState<'open' | 'asking' | 'yes' | 'no' | 'closed'>(() => (shouldOfferReminder({ completed, settings, reminder: reminders }) ? 'open' : 'closed'))
+  const shownBefore = useRef(settings.reminderOfferShows)
   const recorded = useRef(false)
   useEffect(() => {
-    // Shown is shown: recorded now, through the write queue (nothing here waits for it), whatever the user does next, leaving included.
+    // Counted as shown now, through the write queue (nothing here waits for it), whatever the user does next: leaving without an answer leaves the offer to the next session, up to three.
     if (offer === 'closed' || recorded.current) return
     recorded.current = true
-    saveSetting(reminderOfferPatch(), { applySettings: data.applySettings, queue })
+    saveSetting(reminderOfferShownPatch(shownBefore.current + 1), { applySettings: data.applySettings, queue })
   }, [offer, data.applySettings, queue])
+  // An answer, yes or no, ends the offer for good.
+  const answered = () => saveSetting(reminderOfferAnsweredPatch(), { applySettings: data.applySettings, queue })
   const remindMe = async () => {
     if (!reminders || offer !== 'open') return
     haptic('tap')
     setOffer('asking')
+    answered()
     await reminders.set(true) // the Settings toggle's own path: Telegram's permission first, then the row with the time zone
-    setOffer('closed') // granted, refused or failed alike: the offer is over, and a refusal leaves the toggle off with no screen of its own
+    setOffer('yes') // granted, refused or failed alike: the line below says which, from the control's own state
   }
-  const notNow = () => {
+  const noThanks = () => {
+    if (offer !== 'open') return
     haptic('select')
-    setOffer('closed')
+    answered()
+    setOffer('no')
   }
+  // What the answer led to. A refusal or a failed save says what Settings says; otherwise the reminder is on. A "yes" that did nothing (another change was under way) says nothing.
+  const outcome = offer === 'yes' || offer === 'no' ? offerOutcome(offer, reminders) : null
+  const answerLine = outcome === null ? null : { none: strings.learn.reminderOfferNone, done: strings.learn.reminderOfferDone, declined: strings.settings.reminderDeclined, failed: strings.settings.reminderFailed }[outcome]
 
   let title: string
   let subtitle: string | null = null
@@ -432,18 +442,23 @@ function PostBatch({
           {strings.common.backToHome}
         </button>
       </div>
-      {offer !== 'closed' && (
+      {(offer === 'open' || offer === 'asking') && (
         <section className="reminder-offer" aria-labelledby="reminder-offer-text">
           <p id="reminder-offer-text">{strings.learn.reminderOffer}</p>
           <div className="reminder-offer-actions">
             <button type="button" className="btn btn-secondary" disabled={offer === 'asking'} onClick={() => void remindMe()}>
               {strings.learn.reminderOfferYes}
             </button>
-            <button type="button" className="btn btn-secondary" disabled={offer === 'asking'} onClick={notNow}>
+            <button type="button" className="btn btn-secondary" disabled={offer === 'asking'} onClick={noThanks}>
               {strings.learn.reminderOfferNo}
             </button>
           </div>
         </section>
+      )}
+      {answerLine && (
+        <p className="reminder-offer-answer" role="status">
+          {answerLine}
+        </p>
       )}
     </section>
   )

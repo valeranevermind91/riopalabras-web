@@ -152,7 +152,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       expect(await page.$$eval('.intro-es', (els) => els.map((e) => e.textContent))).toEqual(['ll', 'y', 'calle', 'yo', 'vos tenés', 'tú tienes'])
       await clickText(page, '.intro-link', 'How Learn, Review and practice work')
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'How it works')
-      expect(await page.$$eval('.how-section h2', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'When a word comes back'])
+      expect(await page.$$eval('.how-section h2', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'When a word comes back', 'Reminders'])
       await page.click('.back-link')
       await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 7 of 7')
       expect(await title(page)).toBe('Pronunciation')

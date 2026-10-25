@@ -2,7 +2,7 @@
 // screen, the real write queue (its sender just records what it is given in window.__sent.settings), the real useReminders hook over a fake row and a fake
 // Telegram prompt (src/testing/fakeReminders.ts, which also documents that part of the query). Query: limit=N (the daily new-word goal, default 20: with 10 it is
 // reached by the first batch), pool=N (how many new words there are to learn,
-// default 12; the first batch is 10), offered=1 (the offer was already made: the flag is in the blob), lang=ru, nolearn=1 (the page passes no reminders
+// default 12; the first batch is 10), offered=1 (the offer was answered: `true` is in the blob), shows=N (it has been shown N times without an answer), lang=ru, nolearn=1 (the page passes no reminders
 // control at all, as a screen that has none).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -33,7 +33,7 @@ const WORDS: readonly Word[] = Array.from({ length: POOL }, (_, i) => makeWord(`
 export function Harness() {
   useLanguage()
   const [words, setWords] = useState<readonly Word[]>(WORDS)
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: Number(params.get('limit') ?? 20), onboarding_done: true, ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: Number(params.get('limit') ?? 20), onboarding_done: true, ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.has('shows') ? { reminder_offer_shown: Number(params.get('shows')) } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
   const latest = useRef(settings)
   const latestWords = useRef(words)
   const applySettings = useCallback((patch: SettingsPatch) => {

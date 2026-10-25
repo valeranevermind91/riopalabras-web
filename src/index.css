@@ -840,9 +840,21 @@ mark {
   gap: 8px;
 }
 
-/* Half a card wide at 320px: less side padding, so "Не сейчас" stays on one line. */
+/* Half a card wide at 320px: less side padding, so the longer Russian label ("Не нужно") stays on one line. */
 .reminder-offer .btn {
   padding-inline: 8px;
+}
+
+/* What the answer led to, in the card's place: the same surface, one muted line, nothing to press. */
+.reminder-offer-answer {
+  margin: 28px 0 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 @keyframes card-enter-next {

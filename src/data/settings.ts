@@ -1,5 +1,6 @@
 import { LANGUAGE_SETTING_KEY, parseUiLanguage } from '../lib/language'
 import { THEME_SETTING_KEY, parseThemeChoice } from '../lib/theme'
+import { parseReminderOfferShows } from './reminderOffer'
 import type { UserSettings } from './types'
 
 function num(value: unknown, fallback: number): number {
@@ -35,7 +36,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     uiLanguage: parseUiLanguage(raw[LANGUAGE_SETTING_KEY]),
     startRank: typeof raw.start_rank === 'number' && Number.isFinite(raw.start_rank) && raw.start_rank > 1 ? raw.start_rank : null,
     pendingWordDeletes: strings(raw.pending_word_deletes),
-    reminderOfferShown: raw.reminder_offer_shown === true,
+    reminderOfferShows: parseReminderOfferShows(raw.reminder_offer_shown),
     debugUnlocked: raw.debug_unlocked === true,
     raw,
   }

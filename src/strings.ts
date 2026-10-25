@@ -490,6 +490,11 @@ export const en = {
         heading: 'When a word comes back',
         text: 'Words come back on a schedule. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months.\n\nA word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit.\n\nAgain means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day.\n\nThe small label on each rating button tells you when that answer brings the word back.',
       },
+      {
+        id: 'reminders',
+        heading: 'Reminders',
+        text: 'A reminder comes around 20:00, only on days when words are due; you switch it on in Settings → Notifications.',
+      },
     ],
   },
 
@@ -511,10 +516,13 @@ export const en = {
     practiceLine: 'These words come back for review tomorrow.',
     practiceButton: 'Practise these words now',
     practiceNote: "Matching on the words from this batch. It doesn't affect the schedule.",
-    // offered once, under the buttons of the end screen after the first finished session
-    reminderOffer: 'The words you just learned will come back for review tomorrow. Should we remind you?',
+    // the offer to turn on the reminder, under the buttons of the end screen after a finished session (data/reminderOffer.ts: until it is answered, at most three times). The time is the
+    // one in Settings' hint. Answering replaces the card with one line; a refusal or a failure says what Settings says (settings.reminderDeclined / reminderFailed). Both lines name where the switch is.
+    reminderOffer: "Tomorrow's reviews will be waiting. Want a reminder around 20:00? It only comes on days when something is due.",
     reminderOfferYes: 'Remind me',
-    reminderOfferNo: 'Not now',
+    reminderOfferNo: 'No thanks',
+    reminderOfferDone: 'Done: a reminder around 20:00 on days when words are due. You can change this in Settings → Notifications.',
+    reminderOfferNone: 'OK. You can turn it on any time in Settings → Notifications.',
     reviewDueWords: (n: number) => `Review due words (${n})`,
     newWordsToday: (n: number, limit: number) => `${n} of ${limit} new words today`,
     capReachedTitle: "Today's new words are done",
