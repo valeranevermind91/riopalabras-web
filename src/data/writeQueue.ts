@@ -70,6 +70,13 @@ export interface QueueStatus {
   /** Automatic retries are exhausted: the UI shows a banner and waits for retry(). */
   failed: boolean
   error: string | null
+  /**
+   * The last failure of the main lane (progress, settings, hidden words, favourites, own words) in this run, kept after a later success: `error` clears the moment the queue
+   * recovers, and a failure that mended itself on a retry is still what a person debugging it needs. `message` is the error's own text (a database error starts with its table),
+   * `step` is the request that was being made (the table it writes to), `status` and `code` are the HTTP status and the database's code when the request got an answer (null for
+   * a timeout, no connection or no session), `at` is when it happened (ISO). Null until a failure happens. For the Debug screen.
+   */
+  lastSaveFailure: { message: string; step: string; status: number | null; code: string | null; at: string } | null
   /** Anything not yet durably saved (pending, in flight, or failed). Metrics never count: they are best-effort. */
   unsaved: boolean
   /**
@@ -322,6 +329,8 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   let logDropped = 0
   let logEvicted = 0
   let lastError: string | null = null
+  let lastSaveFailure: QueueStatus['lastSaveFailure'] = null
+  let sendStep = 'nothing yet' // the request sendOnce is making (or made last), for lastSaveFailure
   // The server refused the last progress/settings/hidden write (or metrics write) for who is asking.
   let rejected = false
   let metricsRejected = false
@@ -344,6 +353,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     sending,
     failed,
     error: lastError,
+    lastSaveFailure,
     unsaved: progress.size > 0 || hiddenOps.size > 0 || favoriteOps.size > 0 || wordOps.size > 0 || settings !== null || sending,
     stuck,
     pendingMetrics: metrics.size,
@@ -418,6 +428,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
   async function sendOnce() {
     while (progress.size > 0) {
       const chunk = [...progress.values()].slice(0, chunkSize)
+      sendStep = 'user_progress'
       await within(sender.sendProgress(chunk))
       // Only forget what was actually sent: a newer state for the same word stays queued.
       for (const sent of chunk) {
@@ -435,6 +446,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     // Saves go before everything that may refer to the word (its tombstone clearing, its star).
     const saves = [...wordOps.values()].filter((op) => op.kind === 'save')
     if (saves.length > 0) {
+      sendStep = 'user_words (saves)'
       if (sender.sendWords) await within(sender.sendWords(saves))
       forgetWordOps(saves)
       notify()
@@ -442,6 +454,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
     if (hiddenOps.size > 0) {
       const ops = [...hiddenOps.values()]
+      sendStep = 'user_hidden_words'
       if (sender.sendHidden) await within(sender.sendHidden(ops))
       // Only forget what was sent: a newer state for the same word stays queued.
       for (const sent of ops) {
@@ -455,6 +468,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
 
     if (favoriteOps.size > 0) {
       const ops = [...favoriteOps.values()]
+      sendStep = 'user_favorites'
       if (sender.sendFavorites) await within(sender.sendFavorites(ops))
       for (const sent of ops) {
         if (favoriteOps.get(wordKey(sent.esWord)) === sent) {
@@ -469,6 +483,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
       const sent = settings
       const sentVersion = settingsVersion // every patch merged into `sent` has a version <= this
       const restored = restoredSettingsKeys.size > 0 ? { keys: new Set(restoredSettingsKeys), queuedAt: { ...settingsQueuedAt } } : undefined
+      sendStep = 'user_settings'
       await within(restored ? sender.sendSettings(sent, restored) : sender.sendSettings(sent))
       if (settings === sent) {
         settings = null
@@ -484,6 +499,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
     // with the delete, and has to be on the server before the row is gone. Once the rows are gone the tombstones are cleared.
     const deletes = [...wordOps.values()].filter((op) => op.kind === 'delete')
     if (deletes.length > 0) {
+      sendStep = 'user_words (deletes)'
       if (sender.sendWords) await within(sender.sendWords(deletes))
       forgetWordOps(deletes)
       const patch = options.onWordsDeleted?.(deletes.flatMap((op) => (op.kind === 'delete' ? [op.tombstone] : [])))
@@ -540,6 +556,7 @@ export function createWriteQueue(sender: QueueSender, options: WriteQueueOptions
         recoveryTried = false
       } catch (err) {
         lastError = messageOf(err)
+        lastSaveFailure = { message: lastError, step: sendStep, status: err instanceof WriteError ? err.status : null, code: err instanceof WriteError ? err.code : null, at: new Date(nowMs()).toISOString() }
         sending = false
         if (isRejection(err)) {
           // Refused for who is asking: waiting and sending the same thing again cannot change that. Get a session

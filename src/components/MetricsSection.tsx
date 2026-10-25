@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { fetchServerMetricsRow, type MetricsRecorder } from '../data/metrics'
 import { localDateKey } from '../data/dates'
 import { useQueueStatus } from '../data/useQueueStatus'
-import type { WriteQueue } from '../data/writeQueue'
+import { browserOnline } from '../lib/online'
+import type { QueueStatus, WriteQueue } from '../data/writeQueue'
 
 interface MetricsSectionProps {
   queue: WriteQueue | null
@@ -15,6 +16,22 @@ interface MetricsSectionProps {
 type ServerCheck = { state: 'idle' } | { state: 'loading' } | { state: 'done'; row: Record<string, unknown> | null } | { state: 'error'; message: string }
 
 const FIELDS = ['date', 'newWords', 'reviewsDone', 'reviewsLapsed', 'dueAtStart', 'learnPool', 'dailyLimit', 'active'] as const
+
+type SaveStatus = Pick<QueueStatus, 'authRejected' | 'stuck' | 'sending' | 'failed' | 'unsaved'>
+
+/** The main lane (progress, settings, hidden words, favourites, own words) in a few words: what the unsaved-progress notice on Home is keyed on. */
+function saveState(status: SaveStatus): string {
+  if (status.authRejected) return 'refused (the server will not take writes from this sign-in)'
+  if (status.stuck) return 'stuck (automatic retries ran out; trying again in the background)'
+  if (status.sending) return 'sending'
+  if (status.failed) return 'failed'
+  return status.unsaved ? 'waiting' : 'idle (everything is saved)'
+}
+
+/** What is queued in the main lane, by kind. */
+function waiting(status: Pick<QueueStatus, 'pendingRatings' | 'pendingSettings' | 'pendingHidden' | 'pendingFavorites' | 'pendingWords'>): string {
+  return `${status.pendingRatings} ratings · settings ${status.pendingSettings ? 'yes' : 'no'} · ${status.pendingHidden} hidden · ${status.pendingFavorites} starred · ${status.pendingWords} own words`
+}
 
 /** Debug: today's user_daily_metrics row as recorded on this device, the lane's state, and an on-demand look at the server's copy. */
 export function MetricsSection({ queue, metrics, client, userId }: MetricsSectionProps) {
@@ -66,6 +83,42 @@ function MetricsBody({ queue, metrics, client, userId }: MetricsSectionProps) {
           Server seed: {seed.state}
           {seed.detail ? ` (${seed.detail})` : ''}
         </p>
+      )}
+      {status && (
+        <dl data-testid="save-lane">
+          <div>
+            <dt>Save queue</dt>
+            <dd>{saveState(status)}</dd>
+          </div>
+          <div>
+            <dt>Browser says online</dt>
+            <dd>{browserOnline()}</dd>
+          </div>
+          <div>
+            <dt>Waiting to be saved</dt>
+            <dd>{waiting(status)}</dd>
+          </div>
+          <div>
+            <dt>Last save error</dt>
+            <dd>{status.lastSaveFailure?.message ?? 'none'}</dd>
+          </div>
+          <div>
+            <dt>Failed request</dt>
+            <dd>{status.lastSaveFailure?.step ?? 'none'}</dd>
+          </div>
+          <div>
+            <dt>HTTP status</dt>
+            <dd>{status.lastSaveFailure ? (status.lastSaveFailure.status ?? 'none (no answer, no connection or no session)') : 'none'}</dd>
+          </div>
+          <div>
+            <dt>Error code</dt>
+            <dd>{status.lastSaveFailure?.code ?? 'none'}</dd>
+          </div>
+          <div>
+            <dt>Failed at</dt>
+            <dd>{status.lastSaveFailure?.at ?? 'never'}</dd>
+          </div>
+        </dl>
       )}
       {status && (
         <dl data-testid="metrics-lane">
