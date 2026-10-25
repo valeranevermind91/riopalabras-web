@@ -19,10 +19,11 @@ const client = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'rio_overlay
 const scope = selectStdUsageScope(overlay, dictionary)
 
 describe('selectStdUsageScope', () => {
-  it('takes the 63 accepted entries whose form differs from es_word, and no meaning_shift / regional_only / rejected / pending ones', () => {
-    expect(scope).toHaveLength(63)
+  it('takes the 62 accepted entries whose form differs from es_word, and no meaning_shift / regional_only / rejected / pending ones', () => {
+    expect(scope).toHaveLength(62)
     const words = scope.map((s) => s.es_word)
-    expect(words).toEqual(expect.arrayContaining(['autobús', 'metro', 'apartamento', 'chico', 'aquí', 'periódico', 'pastel', 'cabello', 'carro', 'fila', 'escoger', 'quizá', 'tú', 'contigo']))
+    expect(words).toEqual(expect.arrayContaining(['autobús', 'metro', 'apartamento', 'chico', 'aquí', 'periódico', 'pastel', 'cabello', 'carro', 'escoger', 'quizá', 'tú', 'contigo']))
+    expect(words).not.toContain('fila') // rejected by hand: "hacer cola" is ordinary in Spain too
     for (const out of ['foco', 'guapo', 'vos', 'mona', 'niño', 'hermoso']) expect(words).not.toContain(out)
     expect(scope.every((s) => s.type === 'replacement')).toBe(true)
   })
@@ -75,9 +76,9 @@ describe('validateStdUsage', () => {
 })
 
 describe('the stored answers and the client file', () => {
-  it('std-usage.v1.json answers exactly the 63 entries in scope, all valid, none failed', () => {
+  it('std-usage.v1.json answers every one of the 62 entries in scope, all valid, none failed; its one extra answer is fila, rejected by hand after the run', () => {
     expect(usageFile.meta).toMatchObject({ pass: 'stdusage', selected: 63, generated: 63, failed: 0 })
-    expect(Object.keys(usageFile.usage).sort()).toEqual(scope.map((s) => s.es_word).sort())
+    expect(Object.keys(usageFile.usage).sort()).toEqual([...scope.map((s) => s.es_word), 'fila'].sort()) // the stored run keeps its answer for fila; the build skips it (the entry is rejected)
     for (const item of scope) {
       const u = usageFile.usage[item.es_word]
       expect(validateStdUsage({ es_word: item.es_word, reason: u.reason, std_usage: u.std_usage }, item).errors, item.es_word).toEqual([])
@@ -96,7 +97,7 @@ describe('the stored answers and the client file', () => {
       else expect(['less_common', 'equally_used'], e.es_word).toContain(e.std_usage)
     }
     expect(client.filter((e) => e.std_usage === 'not_used').map((e) => e.es_word).sort()).toEqual(KEPT)
-    expect(client.filter((e) => e.std_usage === 'less_common')).toHaveLength(51)
+    expect(client.filter((e) => e.std_usage === 'less_common')).toHaveLength(50)
     expect(client.filter((e) => e.std_usage === 'equally_used')).toHaveLength(4)
   })
 
@@ -167,10 +168,10 @@ async function cli(args, { url, env = {} }) {
 const runArgs = (name) => ['--run', name, '--out', path.join(tmp, `${name}.out.json`), '--delay-ms', '0', '--retry-base-ms', '5', '--batch-size', '30']
 
 describe('generate-examples.mjs --pass stdusage', () => {
-  it('dry run lists the 63 entries and the cost, and calls nothing', async () => {
+  it('dry run lists the 62 entries and the cost, and calls nothing', async () => {
     const out = await cli([], { url: 'http://127.0.0.1:9', env: { GEMINI_API_KEY: undefined } })
     expect(out.code).toBe(0)
-    expect(out.out).toContain('63 entries to classify')
+    expect(out.out).toContain('62 entries to classify')
     expect(out.out).toMatch(/metro\s+subte\s+n\s+ar/)
     expect(out.out).toContain('No API call was made')
   })
@@ -190,7 +191,7 @@ describe('generate-examples.mjs --pass stdusage', () => {
     expect(g.requests[0].text).not.toMatch(/example|legacy|evidence/i)
 
     const result = JSON.parse(fs.readFileSync(args[args.indexOf('--out') + 1], 'utf8'))
-    expect(result.meta).toMatchObject({ pass: 'stdusage', selected: 63, generated: 62, failed: 1 })
+    expect(result.meta).toMatchObject({ pass: 'stdusage', selected: 62, generated: 61, failed: 1 })
     expect(result.usage.aquí).toMatchObject({ std_usage: 'less_common', rio_form: 'acá' })
     expect(result.usage.carro).toBeUndefined()
     expect(result.failed[0]).toMatchObject({ es_word: 'carro', errors: [expect.stringContaining('bad_std_usage')] })

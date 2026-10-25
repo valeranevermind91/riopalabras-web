@@ -174,8 +174,8 @@
     "confidence": "high",
     "status": "accepted",
     "flags": [],
-    "std_usage": "less_common",
-    "std_usage_reason": "'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech.",
+    "std_usage": "equally_used",
+    "std_usage_reason": "contigo is said in the region too, next to con vos (decided by hand)",
     "example": {
       "es": "Mañana voy a la feria con vos a comprar verduras.",
       "en": "Tomorrow I'm going to the street market with you to buy vegetables.",
@@ -191,7 +191,8 @@
       "Claude: form: con vos (medium)",
       "legacy: con vos",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
-      "std_usage less_common (gemini-3.1-pro-preview): 'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech."
+      "std_usage less_common (gemini-3.1-pro-preview): 'Con vos' is dominant. 'Contigo' is common in Uruguay but sounds poetic, formal, or foreign in everyday Argentine speech.",
+      "std_usage equally_used by manual override (Valera): contigo is said in the region too, next to con vos (decided by hand)"
     ]
   },
   {
@@ -226,7 +227,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Quizá\" and \"tal vez\" are also said — they sound more formal.",
+      "ru": "Говорят и \"quizá\", и \"tal vez\" — звучит формальнее."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "medium",
@@ -243,6 +247,7 @@
       "B: none (high)",
       "Claude: replacement: capaz (medium)",
       "legacy: capaz",
+      "manual override (Valera): a note; reason: proofreading pass over overlay-76.md (Valera)",
       "std_usage less_common (gemini-3.1-pro-preview): 'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation."
     ]
   },
@@ -278,7 +283,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Quizás\" and \"tal vez\" are also said — they sound more formal.",
+      "ru": "Говорят и \"quizás\", и \"tal vez\" — звучит формальнее."
+    },
     "std_meaning": null,
     "translation": null,
     "confidence": "medium",
@@ -295,6 +303,7 @@
       "B: none (high)",
       "Claude: replacement: capaz (medium)",
       "legacy: capaz",
+      "manual override (Valera): a note; reason: proofreading pass over overlay-76.md (Valera)",
       "std_usage less_common (gemini-3.1-pro-preview): While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often."
     ]
   },
@@ -655,8 +664,8 @@
       "ru": "красивый, привлекательный"
     },
     "translation": {
-      "en": "brave, tough",
-      "ru": "смелый, крутой"
+      "en": "brave, tough, handsome, attractive",
+      "ru": "смелый, крутой, красивый, привлекательный"
     },
     "confidence": "high",
     "status": "accepted",
@@ -675,6 +684,7 @@
       "DAMER: «guapo» has Ar and Ur labels (rio_form, any sense)",
       "A: meaning_shift: guapo (high)",
       "3-way agree",
+      "manual translation (Valera): {\"en\":\"brave, tough\",\"ru\":\"смелый, крутой\"} -> {\"en\":\"brave, tough, handsome, attractive\",\"ru\":\"смелый, крутой, красивый, привлекательный\"}; reason: both senses are ordinary in the region",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
     ]
   },
@@ -796,7 +806,7 @@
     "rio_form": "departamento",
     "alt_form": null,
     "alt_region": null,
-    "region": "ar",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -818,7 +828,6 @@
       "B: replacement: departamento (high)",
       "Claude: replacement: departamento @ar (high)",
       "legacy: departamento",
-      "country label ar kept for «departamento»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)",
       "std_usage not_used (gemini-3.1-pro-preview): Argentines exclusively say departamento or depto. Apartamento sounds like a translation or foreign Spanish.",
       "std_usage less_common by manual override (Valera): apartamento does occur in the region, in another sense or less often, so \"rarely used here\" would be false (decided by hand)"
     ]
@@ -1056,7 +1065,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Often just \"el control\".",
+      "ru": "Часто говорят просто \"el control\"."
+    },
     "std_meaning": null,
     "translation": {
       "en": "remote control",
@@ -1073,6 +1085,7 @@
       "questionnaire n=8, yes=8",
       "A: replacement: control remoto (high)",
       "3-way agree",
+      "manual override (Valera): a note; reason: proofreading pass over overlay-76.md (Valera)",
       "std_usage not_used (gemini-3.1-pro-preview): Locals say control remoto or el control. Mando is strictly Peninsular Spanish and never used in everyday speech.",
       "std_usage less_common by manual override (Valera): mando has another everyday sense in the region (decided by hand)"
     ]
@@ -1400,33 +1413,28 @@
   {
     "es_word": "fila",
     "rank": 1973,
-    "rio_type": "replacement",
-    "rio_form": "cola",
+    "rio_type": "none",
+    "rio_form": null,
     "alt_form": null,
     "alt_region": null,
     "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
-    "translation": {
-      "en": "queue, line",
-      "ru": "очередь"
-    },
-    "confidence": "medium",
-    "status": "accepted",
+    "translation": null,
+    "confidence": "high",
+    "status": "rejected",
     "flags": [],
-    "std_usage": "equally_used",
-    "std_usage_reason": "Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people.",
+    "std_usage": null,
+    "std_usage_reason": null,
     "example": null,
     "example_review": null,
     "evidence": [
-      "manual accept (Valera)",
-      "DAMER: «cola» has Ar and Ur labels (rio_form, any sense)",
-      "A: none (high)",
-      "B: replacement: cola (high)",
-      "Claude: replacement: cola (medium)",
-      "legacy: cola",
-      "std_usage equally_used (gemini-3.1-pro-preview): Both 'fila' and 'cola' are completely normal and interchangeable in everyday speech when referring to a line of people."
+      "manual reject (Valera): not a dialect difference",
+      "rejected proposal context, A: none (high)",
+      "rejected proposal context, B: replacement: cola (high)",
+      "rejected proposal context, Claude: replacement: cola (medium)",
+      "rejected proposal context, legacy: cola"
     ]
   },
   {
@@ -1882,11 +1890,17 @@
     "flags": [],
     "std_usage": "less_common",
     "std_usage_reason": "Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap.",
-    "example": null,
-    "example_review": null,
+    "example": {
+      "es": "Traje galletitas para la merienda.",
+      "en": "I brought cookies for the afternoon snack.",
+      "ru": "Принёс печенье к полднику.",
+      "word_form": "galletitas"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "questionnaire n=8, yes=8",
       "A: replacement: galletita (high)",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
       "std_usage less_common (gemini-3.1-pro-preview): Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap."
     ]
   },
@@ -2594,7 +2608,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "\"Balón\" is used too, but sounds more official, for example in sports reporting.",
+      "ru": "\"Balón\" тоже используют, но звучит официальнее, например в спортивных репортажах."
+    },
     "std_meaning": null,
     "translation": {
       "en": "ball",
@@ -2609,6 +2626,7 @@
     "example_review": null,
     "evidence": [
       "3-way agree",
+      "manual override (Valera): a note; reason: proofreading pass over overlay-76.md (Valera)",
       "std_usage not_used (gemini-3.1-pro-preview): Balón sounds like sports journalism or TV dubbing; in everyday life, people play with a pelota.",
       "std_usage less_common by manual override (Valera): balón has another everyday sense in the region (decided by hand)"
     ]
@@ -2925,7 +2943,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "\"Golero\" is particularly Uruguayan; \"arquero\" is also used.",
+      "ru": "\"Golero\" — особенно уругвайское слово; \"arquero\" тоже используют."
+    },
     "std_meaning": null,
     "translation": {
       "en": "goalkeeper",
@@ -2947,6 +2968,7 @@
       "questionnaire n=8, yes=8 (item 24: golero)",
       "questionnaire item 23: «arquero» n=8, yes=8",
       "golero proposed by Claude (uy) with arquero (ar); A said arquero",
+      "manual override (Valera): a note; reason: proofreading pass over overlay-76.md (Valera)",
       "country label uy dropped for «golero»: Claude says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)",
       "alt_form «arquero» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)",
       "pass-2 example (gemini-3.1-pro-preview), review: auto",

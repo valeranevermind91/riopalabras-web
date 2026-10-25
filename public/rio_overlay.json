@@ -70,7 +70,7 @@
     },
     "std_meaning": null,
     "translation": null,
-    "std_usage": "less_common",
+    "std_usage": "equally_used",
     "confidence": "high",
     "example": {
       "es": "Mañana voy a la feria con vos a comprar verduras.",
@@ -87,7 +87,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Quizá\" and \"tal vez\" are also said — they sound more formal.",
+      "ru": "Говорят и \"quizá\", и \"tal vez\" — звучит формальнее."
+    },
     "std_meaning": null,
     "translation": null,
     "std_usage": "less_common",
@@ -101,7 +104,10 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
-    "notes": null,
+    "notes": {
+      "en": "\"Quizás\" and \"tal vez\" are also said — they sound more formal.",
+      "ru": "Говорят и \"quizás\", и \"tal vez\" — звучит формальнее."
+    },
     "std_meaning": null,
     "translation": null,
     "std_usage": "less_common",
@@ -260,8 +266,8 @@
       "ru": "красивый, привлекательный"
     },
     "translation": {
-      "en": "brave, tough",
-      "ru": "смелый, крутой"
+      "en": "brave, tough, handsome, attractive",
+      "ru": "смелый, крутой, красивый, привлекательный"
     },
     "std_usage": null,
     "confidence": "high",
@@ -312,7 +318,7 @@
     "rio_form": "departamento",
     "alt_form": null,
     "alt_region": null,
-    "region": "ar",
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
@@ -402,7 +408,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "Often just \"el control\".",
+      "ru": "Часто говорят просто \"el control\"."
+    },
     "std_meaning": null,
     "translation": {
       "en": "remote control",
@@ -534,23 +543,6 @@
       "ru": "автомобиль, машина"
     },
     "std_usage": "less_common",
-    "confidence": "medium"
-  },
-  {
-    "es_word": "fila",
-    "rio_type": "replacement",
-    "rio_form": "cola",
-    "alt_form": null,
-    "alt_region": null,
-    "region": null,
-    "register": "neutral",
-    "notes": null,
-    "std_meaning": null,
-    "translation": {
-      "en": "queue, line",
-      "ru": "очередь"
-    },
-    "std_usage": "equally_used",
     "confidence": "medium"
   },
   {
@@ -690,7 +682,13 @@
     "std_meaning": null,
     "translation": null,
     "std_usage": "less_common",
-    "confidence": "high"
+    "confidence": "high",
+    "example": {
+      "es": "Traje galletitas para la merienda.",
+      "en": "I brought cookies for the afternoon snack.",
+      "ru": "Принёс печенье к полднику.",
+      "word_form": "galletitas"
+    }
   },
   {
     "es_word": "pluma",
@@ -934,7 +932,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "\"Balón\" is used too, but sounds more official, for example in sports reporting.",
+      "ru": "\"Balón\" тоже используют, но звучит официальнее, например в спортивных репортажах."
+    },
     "std_meaning": null,
     "translation": {
       "en": "ball",
@@ -1039,7 +1040,10 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "\"Golero\" is particularly Uruguayan; \"arquero\" is also used.",
+      "ru": "\"Golero\" — особенно уругвайское слово; \"arquero\" тоже используют."
+    },
     "std_meaning": null,
     "translation": {
       "en": "goalkeeper",

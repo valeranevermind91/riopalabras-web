@@ -70,7 +70,7 @@ describe('RelationBlock', () => {
       ['autobús', 'standard: <span>autobús</span>'], // downgraded to less_common by hand: no hint
       ['metro', 'standard: <span>metro</span>'], // another everyday sense (the unit of length)
       ['chico', 'standard: <span>chico</span><span class="wc-hint"> · also common</span>'], // equally_used
-      ['fila', 'standard: <span>fila</span><span class="wc-hint"> · also common</span>'],
+      ['contigo', 'standard: <span>contigo</span><span class="wc-hint"> · also common</span>'], // equally_used, by hand
       ['pastel', 'standard: <span>pastel</span>'], // overridden to less_common by hand: no hint
       ['coger', 'standard: <span>coger</span>'], // likewise
       ['aquí', 'standard: <span>aquí</span>'], // less_common: no hint

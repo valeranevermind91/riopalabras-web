@@ -143,8 +143,8 @@ for (const [w, id] of Object.entries(REJECT)) {
 // manual triage (Valera): accepted replacements, rejected non-dialect differences, and words deliberately left pending
 const MANUAL_ACCEPT = {
   aquí: { form: 'acá' }, quizá: { form: 'capaz' }, quizás: { form: 'capaz' }, vuestro: { form: 'su' }, vosotros: { form: 'ustedes' },
-  metro: { form: 'subte', region: 'ar' }, apartamento: { form: 'departamento', region: 'ar' }, escoger: { form: 'elegir' },
-  cabello: { form: 'pelo' }, carro: { form: 'auto' }, fila: { form: 'cola' },
+  metro: { form: 'subte', region: 'ar' }, apartamento: { form: 'departamento' }, escoger: { form: 'elegir' },
+  cabello: { form: 'pelo' }, carro: { form: 'auto' },
   // tú / contigo: type changed from "form" to "replacement" by decision, so the card leads with vos / con vos.
   // The notes are written here, by hand, as asked: they name the standard (Peninsular) form.
   tú: {
@@ -171,7 +171,8 @@ for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   make(w, fields, 'accepted', ['manual accept (Valera)', ...(m.evidence ? [m.evidence] : []), ...damerEvidence(fields), ...proposalEvidence(w)], [], `A${aMatches ? '' : bMatches ? ' (form and register from B)' : ' (form set by decision)'}, manual accept`)
   handled.add(w)
 }
-for (const w of ['hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamericano']) {
+// fila: "hacer cola" is ordinary in Spain too, so cola for fila was never a Rioplatense difference (decided by hand)
+for (const w of ['hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamericano', 'fila']) {
   if (handled.has(w)) throw new Error(`${w} is already handled by an earlier rule`)
   make(w, none(A.get(w)), 'rejected', ['manual reject (Valera): not a dialect difference', ...proposalEvidence(w).map((e) => 'rejected proposal context, ' + e)], [], 'A (type none; register kept from A)')
   handled.add(w)
@@ -260,6 +261,7 @@ for (const w of MANUAL_PENDING) {
 // ---------------------------------------------------------------- rule 4b: manual overrides from questionnaire free text
 // Applied after every automatic step, before the validator (so the new register value is checked too). Each one is a hand decision.
 const FREE_TEXT_REASON = 'questionnaire free-text (Salto respondent)'
+const PROOFREAD_REASON = 'proofreading pass over overlay-76.md (Valera)'
 const CIGARRO_NOTE = {
   form: 'pucho',
   register: 'informal',
@@ -279,6 +281,49 @@ const MANUAL_OVERRIDES = {
   },
   cigarrillo: CIGARRO_NOTE,
   cigarro: CIGARRO_NOTE, // same note, same reason: it is the same pucho entry from the other standard word
+  // Notes from the proofreading pass over overlay-76.md (the ПРАВКА lines). The register stays as it was.
+  quizás: {
+    form: 'capaz',
+    register: 'informal',
+    reason: PROOFREAD_REASON,
+    notes: {
+      en: '"Quizás" and "tal vez" are also said — they sound more formal.',
+      ru: 'Говорят и "quizás", и "tal vez" — звучит формальнее.',
+    },
+  },
+  quizá: {
+    form: 'capaz',
+    register: 'informal',
+    reason: PROOFREAD_REASON,
+    notes: {
+      en: '"Quizá" and "tal vez" are also said — they sound more formal.',
+      ru: 'Говорят и "quizá", и "tal vez" — звучит формальнее.',
+    },
+  },
+  mando: {
+    form: 'control remoto',
+    register: 'neutral',
+    reason: PROOFREAD_REASON,
+    notes: { en: 'Often just "el control".', ru: 'Часто говорят просто "el control".' },
+  },
+  balón: {
+    form: 'pelota',
+    register: 'neutral',
+    reason: PROOFREAD_REASON,
+    notes: {
+      en: '"Balón" is used too, but sounds more official, for example in sports reporting.',
+      ru: '"Balón" тоже используют, но звучит официальнее, например в спортивных репортажах.',
+    },
+  },
+  portero: {
+    form: 'golero',
+    register: 'neutral',
+    reason: PROOFREAD_REASON,
+    notes: {
+      en: '"Golero" is particularly Uruguayan; "arquero" is also used.',
+      ru: '"Golero" — особенно уругвайское слово; "arquero" тоже используют.',
+    },
+  },
 }
 const manualOverrideLog = []
 for (const [w, ov] of Object.entries(MANUAL_OVERRIDES)) {
@@ -287,7 +332,21 @@ for (const [w, ov] of Object.entries(MANUAL_OVERRIDES)) {
   manualOverrideLog.push({ es_word: w, rio_form: o.rio_form, register: { from: o.register, to: ov.register }, hadNote: o.notes !== null })
   o.register = ov.register
   o.notes = ov.notes
-  o.evidence.push(`manual override (Valera): register ${ov.register} and a note; reason: ${FREE_TEXT_REASON}`)
+  o.evidence.push(ov.reason ? `manual override (Valera): a note; reason: ${ov.reason}` : `manual override (Valera): register ${ov.register} and a note; reason: ${FREE_TEXT_REASON}`)
+}
+
+// A translation widened by hand. guapo keeps its Rioplatense sense (brave, tough) and its everyday standard sense (handsome), which are both ordinary here.
+const MANUAL_TRANSLATIONS = {
+  guapo: {
+    form: 'guapo',
+    translation: { en: 'brave, tough, handsome, attractive', ru: 'смелый, крутой, красивый, привлекательный' },
+  },
+}
+for (const [w, ov] of Object.entries(MANUAL_TRANSLATIONS)) {
+  const o = result.get(w)
+  if (!o || o.status !== 'accepted' || o.rio_form !== ov.form) throw new Error(`manual translation for ${w}: expected an accepted entry with rio_form ${ov.form}`)
+  o.evidence.push(`manual translation (Valera): ${JSON.stringify(o.translation)} -> ${JSON.stringify(ov.translation)}; reason: both senses are ordinary in the region`)
+  o.translation = ov.translation
 }
 
 // ---------------------------------------------------------------- rule 4c: country labels need two independent sources
@@ -339,7 +398,7 @@ for (const w of words) {
 // meaning_shift / regional_only / form examples stay "pending" here until they are confirmed by hand.
 // Examples confirmed by hand (Valera): the meaning_shift / regional_only entries read and approved, plus tú and contigo
 // (now replacements). A generated example is "auto" (replacement, automatic checks) or "pending" (waits for this list).
-const CONFIRMED_EXAMPLES = new Set(['foco', 'guapo', 'mina', 'saco', 'feria', 'boleto', 'colgado', 'suprema', 'chance', 'torta', 'marcador', 'propaganda', 'vos', 'tú', 'contigo'])
+const CONFIRMED_EXAMPLES = new Set(['galleta', 'foco', 'guapo', 'mina', 'saco', 'feria', 'boleto', 'colgado', 'suprema', 'chance', 'torta', 'marcador', 'propaganda', 'vos', 'tú', 'contigo'])
 const SHIPPED_REVIEWS = ['auto', 'confirmed']
 const examplesPath = path.join(HERE, 'examples.v1.json')
 const pass2 = fs.existsSync(examplesPath) ? JSON.parse(fs.readFileSync(examplesPath, 'utf8')) : null
@@ -394,6 +453,8 @@ const DOWNGRADED_BY_PRINCIPLE = {
 }
 const STD_USAGE_OVERRIDES = {
   ...Object.fromEntries(['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${OCCURS_IN_REGION}` }])),
+  // contigo is said here as well as con vos, so its card says "also common"
+  contigo: { std_usage: 'equally_used', reason: 'contigo is said in the region too, next to con vos (decided by hand)' },
   ...Object.fromEntries(['pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${ANOTHER_SENSE}` }])),
   ...Object.fromEntries(Object.entries(DOWNGRADED_BY_PRINCIPLE).map(([w, why]) => [w, { std_usage: 'less_common', reason: `${w}: ${why}; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)` }])),
 } // { es_word: { std_usage: 'not_used' | 'less_common' | 'equally_used', reason } }

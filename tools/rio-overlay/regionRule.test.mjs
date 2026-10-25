@@ -144,9 +144,9 @@ describe('the overlay that was built', () => {
     expect(rule).toBeLessThan(build.indexOf('const r = validateEntry('))
   })
 
-  it('the labels in the export are exactly these: gurí and ómnibus (uy), subte, departamento and pileta (ar), and colectivo as ómnibus\'s pair', () => {
+  it('the labels in the export are exactly these: gurí and ómnibus (uy), subte and pileta (ar), and colectivo as ómnibus\'s pair (departamento has none: Uruguayans say it too, decided by hand)', () => {
     const labels = shipped.filter((e) => e.region || e.alt_region).map((e) => `${e.es_word}: ${e.rio_form} ${e.region ?? '-'}${e.alt_form ? ` + ${e.alt_form} ${e.alt_region}` : ''}`)
-    expect(labels).toEqual(['chico: gurí uy', 'metro: subte ar', 'apartamento: departamento ar', 'autobús: ómnibus uy + colectivo ar', 'piscina: pileta ar'])
+    expect(labels).toEqual(['chico: gurí uy', 'metro: subte ar', 'autobús: ómnibus uy + colectivo ar', 'piscina: pileta ar'])
   })
 
   it('every label that is shipped says in its evidence why: two independent families, or the named extralinguistic exception', () => {

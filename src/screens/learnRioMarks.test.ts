@@ -95,8 +95,8 @@ describe('the Learn card shows what makes a word Rioplatense, as the other surfa
 describe('every overlay entry carries the pill, and an ordinary dictionary word carries nothing', () => {
   const overlay = words.filter((w) => w.rio)
 
-  it('all 76 overlay entries do: the local headwords (63), the meaning shifts (11) and the two regional-only words', () => {
-    expect(overlay).toHaveLength(76)
+  it('all 75 overlay entries do: the local headwords (62), the meaning shifts (11) and the two regional-only words', () => {
+    expect(overlay).toHaveLength(75)
     for (const word of overlay) expect(isRioplatenseWord(word), word.esWord).toBe(true)
     for (const word of overlay) expect(cardElsewhere(word), word.esWord).toContain('<span class="wc-rio">Rioplatense</span>')
   })
@@ -112,10 +112,10 @@ describe('every overlay entry carries the pill, and an ordinary dictionary word 
     expect(card).not.toContain('wc-relation')
   })
 
-  it('the country tag is exactly as it was: five overlay entries carry one (two UY, three AR), the meaning shifts and the regional-only words none', () => {
+  it('the country tag is exactly as it was: four overlay entries carry one (two UY, two AR), the meaning shifts and the regional-only words none', () => {
     const tagged = overlay.filter((w) => cardElsewhere(w).includes('wc-tag'))
-    expect(tagged).toHaveLength(5)
-    expect(tagged.map((w) => headwordRegion(w)).sort()).toEqual(['ar', 'ar', 'ar', 'uy', 'uy'])
+    expect(tagged).toHaveLength(4)
+    expect(tagged.map((w) => headwordRegion(w)).sort()).toEqual(['ar', 'ar', 'uy', 'uy'])
     for (const word of [...shifts, ...regionalOnly]) expect(cardElsewhere(word), word.esWord).not.toContain('wc-tag')
   })
 

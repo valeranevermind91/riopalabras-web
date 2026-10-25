@@ -32,10 +32,10 @@ const highlighted = (w: Word) => {
 const pickLocalized = (value: Parameters<typeof pickLocalizedAll>[0], flags: TranslationFlags) => pickLocalizedAll(value, flags)[0] ?? null
 
 describe('the overlay file', () => {
-  it('has 76 accepted entries, all in the dictionary, none of type none', () => {
-    expect(rawOverlay).toHaveLength(76)
-    expect(overlay.size).toBe(76)
-    expect(words.filter((w) => w.rio)).toHaveLength(76)
+  it('has 75 accepted entries, all in the dictionary, none of type none', () => {
+    expect(rawOverlay).toHaveLength(75)
+    expect(overlay.size).toBe(75)
+    expect(words.filter((w) => w.rio)).toHaveLength(75)
     for (const e of rawOverlay) expect(['replacement', 'meaning_shift', 'regional_only', 'form']).toContain(e.rio_type)
   })
 
@@ -286,9 +286,9 @@ describe('headword with the overlay', () => {
     expect(headwordRegion(w)).toBeNull()
   })
 
-  it('country tags are only on the entries two independent sources support: gurí and ómnibus (UY), subte, departamento and pileta (AR); the questionnaire alone sets none', () => {
+  it('country tags are only on the entries two independent sources support: gurí and ómnibus (UY), subte and pileta (AR); the questionnaire alone sets none, and departamento has none because Uruguayans say it too (decided by hand)', () => {
     const tag = (esWord: string) => headwordRegion(entry(esWord))
-    expect([tag('chico'), tag('autobús'), tag('metro'), tag('apartamento'), tag('piscina')]).toEqual(['uy', 'uy', 'ar', 'ar', 'ar'])
+    expect([tag('chico'), tag('autobús'), tag('metro'), tag('apartamento'), tag('piscina')]).toEqual(['uy', 'uy', 'ar', null, 'ar'])
     // asked of Uruguayans only, so no tag: Uruguayans saying they use a word does not say Argentines do not
     for (const esWord of ['recoger', 'boleto', 'maya', 'cigarro', 'chance', 'marcador', 'foco', 'guay', 'portero', 'asilo']) expect(tag(esWord), esWord).toBeNull()
   })
@@ -349,6 +349,20 @@ describe('notes, alternatives and translations', () => {
     expect(translationsFor(w)).toEqual({ en: 'to grab, to catch', ru: 'брать, хватать' })
   })
 
+  it('the notes written by hand after proofreading: quizás and quizá (tal vez), mando (el control), balón (more official), portero (golero is Uruguayan), each in both languages', () => {
+    const note = (esWord: string) => relationFor(entry(esWord))?.note
+    expect(note('quizás')).toEqual({ en: '"Quizás" and "tal vez" are also said — they sound more formal.', ru: 'Говорят и "quizás", и "tal vez" — звучит формальнее.' })
+    expect(note('quizá')).toEqual({ en: '"Quizá" and "tal vez" are also said — they sound more formal.', ru: 'Говорят и "quizá", и "tal vez" — звучит формальнее.' })
+    expect(note('mando')).toEqual({ en: 'Often just "el control".', ru: 'Часто говорят просто "el control".' })
+    expect(note('balón')).toEqual({ en: '"Balón" is used too, but sounds more official, for example in sports reporting.', ru: '"Balón" тоже используют, но звучит официальнее, например в спортивных репортажах.' })
+    expect(note('portero')).toEqual({ en: '"Golero" is particularly Uruguayan; "arquero" is also used.', ru: '"Golero" — особенно уругвайское слово; "arquero" тоже используют.' })
+    // the notes say what the fields cannot, so the fields stay as they were: no country label, no alternative form on golero, and balón / quizás keep their soft hint
+    expect([headwordRegion(entry('portero')), relationFor(entry('portero'))?.altForm]).toEqual([null, undefined])
+    expect([entry('balón').rio!.stdUsage, entry('quizás').rio!.stdUsage]).toEqual(['less_common', 'less_common'])
+    // the entries that carry a note at all
+    expect(words.filter((w) => w.rio?.notes).map((w) => w.esWord).sort()).toEqual(['balón', 'cigarrillo', 'cigarro', 'coger', 'contigo', 'follar', 'mando', 'pastel', 'portero', 'quizá', 'quizás', 'tú', 'vagabundo'])
+  })
+
   it('does not apply a replacement\'s override when the headword stayed the standard word', () => {
     const w = { ...entry('coger'), exampleSentence: 'No coger nada del suelo.' }
     expect(headword(w).form).toBe('standard')
@@ -357,7 +371,7 @@ describe('notes, alternatives and translations', () => {
 
   it('applies the override of a meaning_shift (guapo = brave, tough) and keeps the standard meaning as a note', () => {
     const w = entry('guapo')
-    expect(translationsFor(w)).toEqual({ en: 'brave, tough', ru: 'смелый, крутой' })
+    expect(translationsFor(w)).toEqual({ en: 'brave, tough, handsome, attractive', ru: 'смелый, крутой, красивый, привлекательный' }) // both senses are ordinary here (widened by hand)
     expect(relationFor(w)).toMatchObject({ type: 'meaning_shift', stdMeaning: { en: 'handsome, good-looking' } })
   })
 
@@ -444,11 +458,11 @@ describe('highlight with the overlay', () => {
 describe('overlay examples (pass 2)', () => {
   const withExample = words.filter((w) => w.rio?.example)
 
-  it('21 words carry an example in the client file: the 6 pass-2 replacements, tú and contigo, and the 13 confirmed meaning_shift / regional_only entries', () => {
+  it('22 words carry an example in the client file: the 6 pass-2 replacements, tú and contigo, galleta (hand-written, no mate), and the 13 confirmed meaning_shift / regional_only entries', () => {
     expect(withExample.map((w) => w.esWord).sort()).toEqual(
-      ['asilo', 'autobús', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'contigo', 'feria', 'foco', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
+      ['asilo', 'autobús', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'contigo', 'feria', 'foco', 'galleta', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
     )
-    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(8)
+    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(9)
     expect(withExample.filter((w) => w.rio!.type !== 'replacement')).toHaveLength(13)
     expect(words.filter((w) => w.rio?.type === ('form' as string))).toEqual([]) // tú and contigo are replacements now
   })
@@ -555,9 +569,9 @@ describe('fallback examples (pass 3)', () => {
   const withFallback = words.filter((w) => w.fallbackExample)
   const SAMPLE = ['niño', 'pequeño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
 
-  it('the file has 47 examples, none for an overlay word, none for tony (a junk entry)', () => {
-    expect(rawFallback).toHaveLength(47)
-    expect(withFallback).toHaveLength(47)
+  it('the file has 48 examples (47 generated, plus fila written by hand), none for an overlay word, none for tony (a junk entry)', () => {
+    expect(rawFallback).toHaveLength(48)
+    expect(withFallback).toHaveLength(48)
     expect(withFallback.filter((w) => w.rio)).toEqual([])
     expect(entry('tony').fallbackExample).toBeNull()
     expect(entry('casa').fallbackExample).toBeNull()
@@ -623,14 +637,14 @@ describe('std_usage (is the standard word used in everyday speech?)', () => {
   const replacements = words.filter((w) => w.rio?.type === 'replacement')
 
   it('every replacement carries it, and no other type does', () => {
-    expect(replacements).toHaveLength(63)
+    expect(replacements).toHaveLength(62)
     expect(replacements.filter((w) => w.rio!.stdUsage === null).map((w) => w.esWord)).toEqual([])
     expect(words.filter((w) => w.rio && w.rio.type !== 'replacement' && w.rio.stdUsage !== null)).toEqual([])
   })
 
-  it('splits after the manual decisions: 8 not_used (unambiguously Peninsular-only words), 51 less_common, 4 equally_used', () => {
+  it('splits after the manual decisions: 8 not_used (unambiguously Peninsular-only words), 50 less_common, 4 equally_used', () => {
     const count = (u: string) => replacements.filter((w) => w.rio!.stdUsage === u).length
-    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([8, 51, 4])
+    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([8, 50, 4])
     expect(replacements.filter((w) => w.rio!.stdUsage === 'not_used').map((w) => w.esWord).sort()).toEqual(['aparcar', 'chaval', 'gilipollas', 'guay', 'ordenador', 'patata', 'vosotros', 'vuestro'])
     // words that also exist in the region in another sense, or are used there, are never "rarely used here"
     for (const w of ['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón', 'pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'autobús', 'piscina', 'gasolina']) {
@@ -685,17 +699,17 @@ describe('standard meaning shows its first gloss only', () => {
 })
 
 describe('what the overlay does to the dictionary', () => {
-  it('63 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4677 are untouched', () => {
+  it('62 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4678 are untouched', () => {
     const withOverlay = words.filter((w) => w.rio)
     const led = withOverlay.filter((w) => headword(w).form === 'rioplatense')
     const noteOnly = withOverlay.filter((w) => headword(w).form === 'standard' && relationFor(w))
-    expect(led).toHaveLength(63)
+    expect(led).toHaveLength(62)
     expect(led.every((w) => w.rio!.type === 'replacement')).toBe(true)
-    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(63)
+    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(62)
     expect(noteOnly).toHaveLength(13)
     expect(noteOnly.every((w) => w.rio!.type !== 'replacement')).toBe(true)
     expect(withOverlay.filter((w) => headword(w).form === 'standard' && !relationFor(w))).toHaveLength(0)
-    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 76)
+    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 75)
     for (const w of words.filter((x) => !x.rio)) {
       expect(headword(w)).toEqual({ text: w.esWord, form: 'standard', secondary: null })
       expect(relationFor(w)).toBeNull()

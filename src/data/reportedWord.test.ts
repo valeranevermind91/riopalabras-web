@@ -9,7 +9,7 @@ import { headword } from './headword'
 import { parseFallbackExamples, parseRioOverlay } from './rio'
 
 // What a word report names, over the real dictionary and the real overlay (the way the app builds its words): the word on the card first, the standard form after
-// it when the card leads with another. `Word.esWord` is the dictionary key; for 63 cards it is not what is on screen.
+// it when the card leads with another. `Word.esWord` is the dictionary key; for 62 cards it is not what is on screen.
 
 const words = parseDictionary(
   JSON.parse(readFileSync('public/words_enriched.json', 'utf8')),
@@ -42,9 +42,9 @@ describe('what a word report names', () => {
     expect(reportFor(byKey('neumático'))).toEqual({ shown: 'cubierta', named: 'cubierta (standard: neumático)' })
   })
 
-  it('63 cards lead with a Rioplatense form, every one of them an overlay replacement, and each report names both words', () => {
+  it('62 cards lead with a Rioplatense form, every one of them an overlay replacement, and each report names both words', () => {
     const different = words.filter(differs)
-    expect(different).toHaveLength(63)
+    expect(different).toHaveLength(62)
     for (const w of different) {
       expect(w.rio?.type, w.esWord).toBe('replacement')
       expect(reportedWord(w)).toContain(w.rio!.form)
@@ -100,7 +100,7 @@ describe.skipIf(!existsSync(`${PROXY}/feedback-notify.js`))('the bot message for
     expect(piece.text).not.toContain('<b>neumático</b>')
   })
 
-  it('names the right word for all 63 cards that lead with another form, whole (the bot cuts a field at 40 characters, and the longest label is 36)', () => {
+  it('names the right word for all 62 cards that lead with another form, whole (the bot cuts a field at 40 characters, and the longest label is 36)', () => {
     for (const w of words.filter(differs)) {
       const [piece] = entryPieces(row(reportedWord(w)))
       expect(piece.text, w.esWord).toContain(`<b>${reportedWord(w)}</b>`)
