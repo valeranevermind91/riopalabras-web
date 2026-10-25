@@ -2715,6 +2715,24 @@ mark {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The placement test draws its own Back and Next, inside this body (it has five sets of its own to go through). So that they end where every other step's do, at the bottom of the
+   screen, the step takes the whole body, the test takes the step, and the footer is pushed to the bottom of it; when the set is taller than the body it scrolls, with the footer
+   kept in view (sticky). Without this the footer followed the text: high on a short set, and in the middle of the screen on the result. */
+.onboarding .intro-step[data-step='placement'] {
+  flex: 1 0 auto;
+}
+
+.onboarding .intro-step[data-step='placement'] .place {
+  flex: 1;
+}
+
+.onboarding .place-footer {
+  margin-top: auto;
+  padding-bottom: 0;
 }
 
 .intro-step {

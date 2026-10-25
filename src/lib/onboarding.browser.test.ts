@@ -88,6 +88,66 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
     }, 60_000)
   })
 
+  describe('the controls stay where they are', () => {
+    /** Back and Next/Continue/Done as drawn now, on any step (the placement test draws its own, in its own footer): where each sits on the screen. */
+    const controls = (page: Page) =>
+      page.evaluate(() => {
+        const rect = (e: Element) => {
+          const r = e.getBoundingClientRect()
+          return { left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height) }
+        }
+        const buttons = Array.from(document.querySelectorAll('.intro-footer .btn, .place-footer .btn')).map((b) => ({ text: b.textContent, ...rect(b) }))
+        return { buttons, viewport: window.innerHeight, main: rect(document.querySelector('.onboarding')!) }
+      })
+
+    for (const [width, height] of [[390, 800], [320, 568]]) it(`on all seven steps, and on every set of the placement test, the buttons sit at the bottom of the screen: the same height, the same place (${width} x ${height})`, async () => {
+      const page = await open('fresh=1&goal=default&dict=1')
+      await page.setViewport({ width, height, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      await page.waitForFunction(() => (window as never as { __dictionary?: boolean }).__dictionary === true)
+      const seen: { where: string; bottoms: number[]; heights: number[]; viewport: number; main: { bottom: number } }[] = []
+      const record = async (where: string) => {
+        const c = await controls(page)
+        seen.push({ where, bottoms: c.buttons.map((b) => b.bottom), heights: c.buttons.map((b) => b.height), viewport: c.viewport, main: c.main })
+      }
+      for (let n = 1; n <= 7; n++) {
+        await page.waitForFunction((m) => document.querySelector('.intro-progress span')?.textContent === `Step ${m} of 7`, {}, n)
+        if (n === 5) {
+          // the placement test: five sets, each with its own Back and Next, then the result
+          for (let set = 1; set <= 5; set++) {
+            await page.waitForFunction((k) => document.querySelector('.place')?.getAttribute('data-set') === String(k), {}, set)
+            await record(`step 5, set ${set}`)
+            await page.evaluate(() => (document.querySelector('.place-footer .btn-primary') as HTMLElement).click())
+          }
+          await page.waitForFunction(() => document.querySelector('.place')?.getAttribute('data-state') === 'result')
+          await record('step 5, result')
+          await page.evaluate(() => (document.querySelector('.place-footer .btn-primary') as HTMLElement).click())
+        } else {
+          await record(`step ${n}`)
+          if (n < 7) await clickText(page, '.intro-footer .btn', n === 7 ? 'Done' : 'Continue')
+        }
+      }
+      expect(seen.map((s) => s.where)).toEqual(['step 1', 'step 2', 'step 3', 'step 4', 'step 5, set 1', 'step 5, set 2', 'step 5, set 3', 'step 5, set 4', 'step 5, set 5', 'step 5, result', 'step 6', 'step 7'])
+      const reference = seen[1] // step 2: the plain case
+      for (const s of seen) {
+        expect(s.bottoms.length, s.where).toBeGreaterThan(0)
+        for (const bottom of s.bottoms) expect(bottom, `${s.where}: the buttons end where the others do`).toBe(reference.bottoms[0])
+        for (const height of s.heights) expect(height, `${s.where}: and are as tall`).toBe(reference.heights[0])
+        expect(reference.bottoms[0], 'and that is the bottom of the screen: within one padding of its edge').toBeGreaterThan(s.viewport - 40)
+      }
+      await page.close()
+    }, 120_000)
+
+    it('and a short step does not lift them: the intro fills the screen (step 6 is the shortest)', async () => {
+      const page = await open('fresh=1&goal=default&dict=1')
+      await page.waitForFunction(() => (window as never as { __dictionary?: boolean }).__dictionary === true)
+      await goTo(page, 6)
+      const c = await controls(page)
+      expect(c.main.bottom).toBeGreaterThanOrEqual(c.viewport - 1)
+      expect(c.buttons[0].bottom).toBeGreaterThan(c.viewport - 40)
+      await page.close()
+    }, 90_000)
+  })
+
   describe('the flow', () => {
     it('six steps, forward and back, with the progress following: step titles in order', async () => {
       const page = await open('fresh=1&goal=default')
