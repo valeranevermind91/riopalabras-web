@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { RELEARN_MINUTES, RELEARN_MS, applyReview, formatInterval, isAgain, learnedState, previewInterval, type Sm2Card } from './sm2'
+import { MAX_INTERVAL_DAYS, RELEARN_MINUTES, RELEARN_MS, applyReview, formatInterval, isAgain, learnedState, previewInterval, type Sm2Card } from './sm2'
 
 const NOW = new Date('2026-10-02T15:00:00.000Z')
 const JUST_LEARNED: Sm2Card = { easeFactor: 2.5, interval: 0, repetitions: 1 }
@@ -89,8 +89,34 @@ describe('applyReview', () => {
     expect(applyReview({ easeFactor: 2.5, interval: 3, repetitions: 2 }, 3, NOW).interval).toBe(8)
   })
 
-  it('Hard never shrinks a 1-day interval below 1 day', () => {
-    expect(applyReview({ easeFactor: 2.5, interval: 1, repetitions: 2 }, 2, NOW).interval).toBe(1)
+  it('Hard on a 1-day word moves it out to 2 days, and on a 2-day word to 3 (1 × 1.2 and 2 × 1.2 used to round back, and the word came back every day for ever)', () => {
+    expect(applyReview({ easeFactor: 2.5, interval: 1, repetitions: 2 }, 2, NOW).interval).toBe(2)
+    expect(applyReview({ easeFactor: 2.5, interval: 2, repetitions: 3 }, 2, NOW).interval).toBe(3)
+    expect(applyReview({ easeFactor: 1.3, interval: 2, repetitions: 3 }, 2, NOW).interval).toBe(3) // whatever the ease
+    expect(applyReview({ easeFactor: 3.4, interval: 1, repetitions: 2 }, 2, NOW).interval).toBe(2)
+  })
+
+  it('Good on a 1-day word with an ease under 1.5 moves it out to 2 days (round(1.3) is 1); from 1.5 it was already 2', () => {
+    expect(applyReview({ easeFactor: 1.3, interval: 1, repetitions: 2 }, 3, NOW).interval).toBe(2)
+    expect(applyReview({ easeFactor: 1.49, interval: 1, repetitions: 2 }, 3, NOW).interval).toBe(2)
+    expect(applyReview({ easeFactor: 1.5, interval: 1, repetitions: 2 }, 3, NOW).interval).toBe(2)
+  })
+
+  it('a word with no interval in days yet (just learned, or relearning) keeps the one-day base: Hard on it is 1 day, not 2', () => {
+    expect(applyReview({ easeFactor: 2.5, interval: 0, repetitions: 1 }, 2, NOW).interval).toBe(1)
+    expect(applyReview({ easeFactor: 1.3, interval: 0, repetitions: 1 }, 3, NOW).interval).toBe(1) // round(1.3): its first step, nothing to grow from
+    expect(applyReview({ easeFactor: 2.5, interval: 0, repetitions: 1 }, 1, NOW).interval).toBe(0) // and Again is still due in minutes
+  })
+
+  it('a person who answers Hard every time sees the word further out each time, not for ever on the same day', () => {
+    let card: Sm2Card = { easeFactor: 2.5, interval: 0, repetitions: 1 }
+    const days: number[] = []
+    for (let i = 0; i < 8; i++) {
+      const next = applyReview(card, 2, NOW)
+      card = { easeFactor: next.easeFactor, interval: next.interval, repetitions: next.repetitions }
+      days.push(next.interval)
+    }
+    expect(days).toEqual([1, 2, 3, 4, 5, 6, 7, 8]) // and the ease has gone from 2.5 to 1.38 on the way: Good could not have got it out of 1 day before
   })
 
   it('floors the ease factor at 1.3', () => {
@@ -184,5 +210,72 @@ describe('learnedState', () => {
     expect(s.nextReview.getMonth()).toBe(5)
     expect(s.nextReview.getDate()).toBe(16)
     expect([s.nextReview.getHours(), s.nextReview.getMinutes(), s.nextReview.getSeconds(), s.nextReview.getMilliseconds()]).toEqual([0, 0, 0, 0])
+  })
+})
+
+describe('a rating always moves a word that has an interval out, and changes nothing else', () => {
+  // every interval below the cap, every ease the scheduler can reach (1.30 to 3.50 in hundredths), every rating but Again
+  const eases = Array.from({ length: 221 }, (_, i) => (130 + i) / 100)
+  const intervals = Array.from({ length: MAX_INTERVAL_DAYS - 1 }, (_, i) => i + 1)
+  // the scheduler as it was before the floor: round(base × factor), at least one day, at most the cap
+  const before = (card: Sm2Card, q: number) => {
+    const ease = applyReview(card, q, NOW).easeFactor
+    const base = card.interval === 0 ? 1 : card.interval
+    const raw = q === 2 ? base * 1.2 : q === 3 ? base * ease : base * ease * 1.3
+    return Math.min(MAX_INTERVAL_DAYS, Math.max(1, Math.round(raw)))
+  }
+
+  it('Hard, Good and Easy each give a word with an interval a longer one (property, over every interval below the cap and every ease)', () => {
+    let checked = 0
+    for (const interval of intervals)
+      for (const easeFactor of eases)
+        for (const q of [2, 3, 4]) {
+          const next = applyReview({ easeFactor, interval, repetitions: 2 }, q, NOW).interval
+          if (next <= interval) throw new Error(`rating ${q} on ${interval} days at ease ${easeFactor} gave ${next}`)
+          expect(next).toBeLessThanOrEqual(MAX_INTERVAL_DAYS)
+          checked++
+        }
+    expect(checked).toBe(intervals.length * eases.length * 3)
+  })
+
+  it('and the three buttons stay in order: Hard is never longer than Good, nor Good than Easy', () => {
+    for (const interval of intervals)
+      for (const easeFactor of eases) {
+        const [hard, good, easy] = [2, 3, 4].map((q) => applyReview({ easeFactor, interval, repetitions: 2 }, q, NOW).interval)
+        if (!(hard <= good && good <= easy)) throw new Error(`${interval} days at ease ${easeFactor}: ${hard} / ${good} / ${easy}`)
+      }
+  })
+
+  it('it changes only the states that could not grow: everywhere else the interval is what rounding gave, and in those it is exactly one day more', () => {
+    const changed: string[] = []
+    for (const interval of intervals)
+      for (const easeFactor of eases)
+        for (const q of [2, 3, 4]) {
+          const card = { easeFactor, interval, repetitions: 2 }
+          const was = before(card, q)
+          const now = applyReview(card, q, NOW).interval
+          if (now === was) continue
+          expect(now).toBe(interval + 1) // a change is the minimum increment and nothing more
+          expect(was).toBeLessThanOrEqual(interval) // and only where the old interval had not grown
+          changed.push(`${q === 2 ? 'Hard' : q === 3 ? 'Good' : 'Easy'} at ${interval}`)
+        }
+    // Hard at 1 and 2 days (221 eases each) and Good at 1 day with ease 1.30 to 1.49 (20 eases): nothing else
+    expect(changed.filter((c) => c === 'Hard at 1')).toHaveLength(221)
+    expect(changed.filter((c) => c === 'Hard at 2')).toHaveLength(221)
+    expect(changed.filter((c) => c === 'Good at 1')).toHaveLength(20)
+    expect(changed).toHaveLength(221 + 221 + 20)
+  })
+
+  it('at the cap a word stays at the cap, and a word stored past it comes under it at its next review', () => {
+    for (const q of [2, 3, 4]) {
+      expect(applyReview({ easeFactor: 2.5, interval: MAX_INTERVAL_DAYS, repetitions: 9 }, q, NOW).interval).toBe(MAX_INTERVAL_DAYS)
+      expect(applyReview({ easeFactor: 2.5, interval: 400, repetitions: 9 }, q, NOW).interval).toBe(MAX_INTERVAL_DAYS)
+    }
+  })
+
+  it('the buttons preview what would be written, floor included', () => {
+    const card: Sm2Card = { easeFactor: 1.3, interval: 1, repetitions: 2 }
+    expect([2, 3, 4].map((q) => previewInterval(card, q))).toEqual([2, 2, 2])
+    expect([2, 3, 4].map((q) => previewInterval({ easeFactor: 2.5, interval: 2, repetitions: 3 }, q))).toEqual([3, 5, 7])
   })
 })

@@ -62,9 +62,13 @@ export function applyReview(card: Sm2Card, quality: Quality, now: Date): Sm2Stat
   } else {
     repetitions = card.repetitions + 1
     const base = card.interval === 0 ? 1 : card.interval
-    if (q === 2) interval = clampInterval(base * 1.2)
-    else if (q === 3) interval = clampInterval(base * easeFactor)
-    else interval = clampInterval(base * easeFactor * 1.3)
+    // A word that has an interval in days always moves out by at least a day. Without that, rounding leaves it where it was: Hard on 1 or 2 days (1.2 and 2.4 round back),
+    // and Good on 1 day once the ease is under 1.5. A person answering Hard honestly would see the word every day with no end. A word at interval 0 (just learned, or
+    // relearning) starts from the one-day base, which is its first step, so it has no floor above that.
+    const floor = card.interval === 0 ? 1 : card.interval + 1
+    if (q === 2) interval = clampInterval(Math.max(base * 1.2, floor))
+    else if (q === 3) interval = clampInterval(Math.max(base * easeFactor, floor))
+    else interval = clampInterval(Math.max(base * easeFactor * 1.3, floor))
   }
 
   // Duration-style (n × 24h) like Flutter's Duration(days:), not calendar-day arithmetic. An Again is due in minutes, not days.
