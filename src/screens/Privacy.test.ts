@@ -66,7 +66,7 @@ describe('the privacy page, as drawn', () => {
     const html = render()
     expect(html).toContain('<h1>Конфиденциальность</h1>')
     expect(html).toContain('aria-label="Язык"')
-    expect(headings(html)).toEqual(['stored:Что хранится', 'shared:Кто ещё это видит', 'ads:Чего здесь нет', 'delete:Удаление данных'])
+    expect(headings(html)).toEqual(['stored:Что хранится', 'shared:Кто еще это видит', 'ads:Чего здесь нет', 'delete:Удаление данных'])
     expect(text(html)).toContain('Последнее обновление: 19 октября 2026 г.')
   })
 
@@ -291,12 +291,55 @@ describe('the page and the delete instruction use the app\'s own names', () => {
 })
 
 describe('the policy text and its date move together', () => {
-  // When this fails the text of the policy changed: set PRIVACY_UPDATED in src/lib/privacy.ts to the day of the change, then put the new value here.
-  const FINGERPRINT = 'a00fbce1c8f9535a'
-  const fingerprint = () => createHash('sha256').update(JSON.stringify({ en: en.privacy, ru: ru.privacy }, (_k, v) => (typeof v === 'function' ? v('DATE') : v))).digest('hex').slice(0, 16)
+  // When this fails the policy changed in substance: set PRIVACY_UPDATED in src/lib/privacy.ts to the day of the change, then put the new value here.
+  // A change of spelling (е for ё) or of spacing is not a change of the policy, so the text is compared normalised: е and ё are one letter and
+  // whitespace is one space. The fingerprint is still of the real text, just read that way; it never skips a word.
+  const FINGERPRINT = '0b0e0f0f147c49ec'
+  const normalise = (text: string) => text.replace(/ё/g, 'е').replace(/Ё/g, 'Е').replace(/\s+/g, ' ').trim()
+  const fingerprintOf = (privacy: { en: unknown; ru: unknown }) =>
+    createHash('sha256')
+      .update(JSON.stringify(privacy, (_k, v) => { const value = typeof v === 'function' ? v('DATE') : v; return typeof value === 'string' ? normalise(value) : value }))
+      .digest('hex')
+      .slice(0, 16)
+  const fingerprint = () => fingerprintOf({ en: en.privacy, ru: ru.privacy })
+  /** The same privacy text with every string (and every string a function returns) passed through f. */
+  const mapText = (value: unknown, f: (text: string) => string): unknown =>
+    typeof value === 'string' ? f(value)
+    : typeof value === 'function' ? (...args: unknown[]) => mapText((value as (...a: unknown[]) => unknown)(...args), f)
+    : Array.isArray(value) ? value.map((x) => mapText(x, f))
+    : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, x]) => [k, mapText(x, f)]))
+    : value
+  const raw = (privacy: { en: unknown; ru: unknown }) => JSON.stringify(privacy, (_k, v) => (typeof v === 'function' ? v('DATE') : v))
 
   it('is the text as it was when it was last dated', () => {
-    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy text changed: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-19', text: FINGERPRINT })
+    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-19', text: FINGERPRINT })
+  })
+
+  it('does not move for spelling or spacing: е and ё are the same letter, and a run of whitespace is one space', () => {
+    const original = { en: en.privacy, ru: ru.privacy }
+    const respelled = { en: mapText(en.privacy, (t) => t), ru: mapText(ru.privacy, (t) => t.replace(/еще/g, 'ещё').replace(/всё/g, 'все')) }
+    const spaced = { en: mapText(en.privacy, (t) => `  ${t.replace(/ /g, '   ')}\n`), ru: mapText(ru.privacy, (t) => `\n${t.replace(/ /g, ' \t ')} `) }
+    expect(raw(respelled), 'the respelled copy must differ from the original, or this proves nothing').not.toEqual(raw(original))
+    expect(raw(spaced), 'the re-spaced copy must differ from the original, or this proves nothing').not.toEqual(raw(original))
+    expect(fingerprintOf(respelled)).toBe(fingerprint())
+    expect(fingerprintOf(spaced)).toBe(fingerprint())
+  })
+
+  it('moves for a change of substance, in either language: a word changed, a sentence added, a sentence removed', () => {
+    const base = fingerprint()
+    const original = { en: en.privacy, ru: ru.privacy }
+    const changes: [string, { en: unknown; ru: unknown }][] = [
+      ['a word changed in Russian', { en: en.privacy, ru: mapText(ru.privacy, (t) => t.replace('Telegram', 'Facebook')) }],
+      ['a word changed in English', { en: mapText(en.privacy, (t) => t.replace('Telegram', 'Facebook')), ru: ru.privacy }],
+      ['a sentence added in Russian', { en: en.privacy, ru: mapText(ru.privacy, (t) => `${t} Мы передаем данные рекламодателям.`) }],
+      ['a sentence added in English', { en: mapText(en.privacy, (t) => `${t} We share data with advertisers.`), ru: ru.privacy }],
+      ['a sentence removed in Russian', { en: en.privacy, ru: mapText(ru.privacy, (t) => t.replace(/[^.]*\.\s*$/, '')) }],
+      ['a sentence removed in English', { en: mapText(en.privacy, (t) => t.replace(/[^.]*\.\s*$/, '')), ru: ru.privacy }],
+    ]
+    for (const [name, changed] of changes) {
+      expect(raw(changed), `${name}: the changed copy must differ from the original`).not.toEqual(raw(original))
+      expect(fingerprintOf(changed), name).not.toBe(base)
+    }
   })
 })
 

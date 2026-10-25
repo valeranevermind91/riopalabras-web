@@ -54,6 +54,23 @@ node tools/icon/make-icon.mjs --avatar avatar.png    # and renders the 512x512 P
 
 `tools/icon/make-icon.test.mjs` fails when `public/favicon.svg` is not exactly what the script makes, so a change to the tokens or the script must be followed by a run.
 
+## Conventions
+
+**Russian is written without «ё» by default.** «е» stands for «ё», so it is «ее», «еще», «пришел», «нашел». «ё» stays only where leaving it out gives a different word: **всё** (not «все»), **всём**, **чём**, **нём**, **мёд**, **осёл**, **чёрт**, **узнаёт**, **слёз**, **лёгкие** and the like.
+`src/data/russianYo.test.ts` enforces it for everything the app ships in Russian (the dictionary, the overlay, the fallback examples and the interface strings): it fails on any other «ё», and when one of those words is written without its «ё». A new pair is added to the `KEPT` list in that test, with the word it would otherwise be mistaken for. Practice matching treats «е» and «ё» as the same letter (`glossKey` in `src/data/practice.ts`), so the convention is about how the text reads, not about what is accepted.
+
+**A dictionary example shows the sense that stands first in the gloss.** The gloss lists a word's senses in order, and the places that show one of them (the card's example, and Matching, which pairs a word with its first gloss) take the first. A word whose example shows a later sense is a mismatch to fix, by changing the example or the order of the gloss. The only wording of this rule in the code is the example-generation prompt in `tools/rio-overlay/fallback.mjs` ("use the first or most common one").
+
+*Deliberate exceptions* are decisions, and they are listed here and pinned in `src/data/exampleSense.test.ts`, which fails if one of them changes, so it is decided again and not left stale:
+- **puto.** Its first gloss is the homophobic slur ("faggot (derogatory)"), and its example uses the intensifier sense ("¡Qué puto frío hace hoy!"). A safe example for a slur is worth more than the rule, so the example does not show the first sense and must not: it may never voice the slur.
+- **puta.** The same reason, and the same decision. Its first gloss is the slur ("whore"), and its example uses the intensifier sense ("Esa película es una puta obra de arte"). The example may never voice the slur.
+
+*Decided not to change.* An example that shows a second sense that is just as everyday here does not break the rule: the first gloss is not wrong, and putting one everyday sense ahead of another would be a coin toss. These entries keep their order on purpose; they are not unfinished work, and nobody needs to reopen them:
+- **Both senses are everyday here (27):** dejar (leave / let), pasar (pass / happen), razón (reason / right), sonar (sound / ring), marcha (march / gear), pista (track / clue / dance floor), grado (degree / grade), título (title / degree), trampa (trap / cheat), letra (letter / lyrics), pesado (heavy / annoying), extender (extend / spread), cola (tail / queue), ensayo (essay / rehearsal), escala (scale / layover), grano (grain / pimple), abordar (board / tackle), asistencia (assistance / attendance), rango (range / rank), bono (bond / voucher / bonus), respaldo (chair back / support), chispa (spark / wit), titulado (titled / graduated), revolver (stir / rummage), encargar (entrust / order / take charge), conformar (conform / settle for), bienes (goods / assets / property).
+- **disposición and reclamar:** the English and Russian glosses do not map one to one (availability against распоряжение; the Russian has no «жаловаться»), so a reorder could not keep the two languages identical.
+- **lance:** a rare word whose everyday sense cannot be told.
+- **Judged not to be mismatches (34):** the example shows a sub-sense or a near-synonym of the first gloss. obra, registro, crítica, vencer, entrega, extremo, categoría, joya, urgencia, consulta, cinturón, pozo, conquistar, fuga, maduro, culto, montado, antigüedad, programación, panorama, sanción, gala, liquidar, voltear, perder, referir, mundial, conservar, coincidir, correo, ánimo, situar, mudo, subida.
+
 ## Tests
 
 ```bash

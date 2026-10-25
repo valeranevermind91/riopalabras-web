@@ -383,7 +383,7 @@ describe('every failure is a value with its own message, and the form stays usab
       expect(new Set(messages).size).toBe(failures.length)
       for (const m of messages) {
         expect(m).not.toMatch(/\d/)
-        expect(m).not.toContain('ещё раз')
+        expect(m).not.toMatch(/ещ[её] раз/)
       }
     } finally {
       setLanguage('en')
@@ -420,7 +420,7 @@ describe('what the person is told when a limit is reached', () => {
     expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-18T19:30:00Z'))).toBe('Automatic translation is used up for today. It comes back in about 5 hours. Type it yourself, or try again then.')
     setLanguage('ru')
     try {
-      expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-18T19:30:00Z'))).toBe('Автоматический перевод на сегодня исчерпан. Он вернётся примерно через 5 часов. Введите перевод сами или попробуйте позже.')
+      expect(enrichFailureMessage({ kind: 'capacity', resetsAt: reset }, at('2026-10-18T19:30:00Z'))).toBe('Автоматический перевод на сегодня исчерпан. Он вернется примерно через 5 часов. Введите перевод сами или попробуйте позже.')
     } finally {
       setLanguage('en')
     }

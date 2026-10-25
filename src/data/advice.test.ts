@@ -98,13 +98,13 @@ describe('the wording', () => {
     ])
   })
 
-  it('Russian plurals for 1, 2, 5 and 21: ждёт 1 слово, ждут 2 слова, ждут 5 слов, ждёт 21 слово (and the same for the new words)', () => {
+  it('Russian plurals for 1, 2, 5 and 21: ждет 1 слово, ждут 2 слова, ждут 5 слов, ждет 21 слово (and the same for the new words)', () => {
     setLanguage('ru')
     expect([1, 2, 5, 21].map((n) => a().reviewFirst(n, ALL))).toEqual([
-      'Сначала повторение — ждёт 1 слово',
+      'Сначала повторение — ждет 1 слово',
       'Сначала повторение — ждут 2 слова',
       'Сначала повторение — ждут 5 слов',
-      'Сначала повторение — ждёт 21 слово',
+      'Сначала повторение — ждет 21 слово',
     ])
     expect([1, 2, 5, 21].map(a().learnNew)).toEqual([
       'Повторять нечего — можно изучить 1 новое слово',
@@ -119,7 +119,7 @@ describe('the wording', () => {
     const noun = (n: number) => a().reviewFirst(n, ALL).split(' ').slice(-1)[0]
     const verb = (n: number) => a().reviewFirst(n, ALL).split(' ')[3]
     expect([11, 12, 14, 22, 25, 101, 111].map(noun)).toEqual(['слов', 'слов', 'слов', 'слова', 'слов', 'слово', 'слов'])
-    expect([11, 12, 14, 22, 25, 101, 111].map(verb)).toEqual(['ждут', 'ждут', 'ждут', 'ждут', 'ждут', 'ждёт', 'ждут'])
+    expect([11, 12, 14, 22, 25, 101, 111].map(verb)).toEqual(['ждут', 'ждут', 'ждут', 'ждут', 'ждут', 'ждет', 'ждут'])
   })
 
   it('never mentions reviews when none are due (the Flutter app\'s "or catch up on reviews" with nothing to review)', () => {
@@ -151,9 +151,9 @@ describe('past one session: the line says both numbers (and not before)', () => 
 
   it('Russian: 20 or fewer is the line as it was; 21 and more adds «, за раз — 20»', () => {
     setLanguage('ru')
-    expect(line(1)).toBe('Сначала повторение — ждёт 1 слово')
+    expect(line(1)).toBe('Сначала повторение — ждет 1 слово')
     expect(line(20)).toBe('Сначала повторение — ждут 20 слов')
-    expect(line(21)).toBe('Сначала повторение — ждёт 21 слово, за раз — 20')
+    expect(line(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20')
     expect(line(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
     expect(line(250)).toBe('Сначала повторение — ждут 250 слов, за раз — 20')
   })
@@ -163,7 +163,7 @@ describe('past one session: the line says both numbers (and not before)', () => 
     const form = (n: number) => (n % 100 >= 11 && n % 100 <= 14 ? 'many' : n % 10 === 1 ? 'one' : n % 10 >= 2 && n % 10 <= 4 ? 'few' : 'many')
     for (let n = 1; n <= 1000; n++) {
       const f = form(n)
-      const expected = `Сначала повторение — ${f === 'one' ? 'ждёт' : 'ждут'} ${n} ${f === 'one' ? 'слово' : f === 'few' ? 'слова' : 'слов'}${n > 20 ? ', за раз — 20' : ''}`
+      const expected = `Сначала повторение — ${f === 'one' ? 'ждет' : 'ждут'} ${n} ${f === 'one' ? 'слово' : f === 'few' ? 'слова' : 'слов'}${n > 20 ? ', за раз — 20' : ''}`
       expect(line(n), String(n)).toBe(expected)
     }
   })

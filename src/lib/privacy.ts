@@ -3,8 +3,9 @@ import { browserLanguage, parseUiLanguage, setLanguage, type UiLanguage } from '
 // The privacy page's small amount of logic, apart from React so a test can drive it.
 
 /**
- * The day the policy was last changed, as a calendar date. Change it whenever the page's text changes: src/screens/Privacy.test.ts fingerprints the
- * text (both languages) next to this date, and fails when one moves without the other.
+ * The day the policy was last changed, as a calendar date. Change it whenever the page's text changes in substance: src/screens/Privacy.test.ts fingerprints the
+ * text (both languages) next to this date, and fails when one moves without the other. Spelling (е for ё) and spacing are not a change of the policy,
+ * so the fingerprint reads the text normalised and the date does not move for them.
  */
 export const PRIVACY_UPDATED = '2026-10-19'
 

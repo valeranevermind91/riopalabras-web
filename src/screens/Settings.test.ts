@@ -227,7 +227,7 @@ describe('the Settings screen', () => {
         expect(html).toContain('Ежедневное напоминание')
         expect(html).toContain('Приходит около 20:00 и только если есть что повторять.')
         expect(html).toContain('Telegram не разрешил сообщения. Разрешить их можно в чате с ботом.')
-        expect(render({}, { reminders: control({ notice: 'failed' }) })).toContain('Не удалось сохранить. Проверьте соединение и попробуйте ещё раз.')
+        expect(render({}, { reminders: control({ notice: 'failed' }) })).toContain('Не удалось сохранить. Проверьте соединение и попробуйте еще раз.')
       } finally {
         setLanguage('en')
       }

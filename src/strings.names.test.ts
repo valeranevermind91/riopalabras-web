@@ -134,7 +134,7 @@ describe('spelling and address', () => {
 
   it('one idea, one word: the star never reads as a bookmark, a favourite, a save or a queue, in either language', () => {
     expect(offenders(enTexts, /favou?rite|bookmark|queue|saved word|save word|\bsaved\b$/i)).toEqual([])
-    expect(offenders(ruTexts, /избранн|закладк|очеред|сохранённые|сохранённых слов|сохранить слово/i)).toEqual([])
+    expect(offenders(ruTexts, /избранн|закладк|очеред|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)).toEqual([])
     for (const map of [en, ru]) for (const gone of ['queued', 'queueForLearn', 'queueRow', 'unqueueRow', 'removeFromQueue', 'queuedAt', 'queueFull', 'beyondToday', 'addedNotQueued', 'favourite', 'unfavourite', 'addFavourite', 'removeFavourite', 'queueShort']) expect(gone in map.words, gone).toBe(false)
   })
 
@@ -156,7 +156,7 @@ describe('spelling and address', () => {
   })
 
   it('Russian: formal "вы" throughout: no ты-forms (ты, тебе, тебя, твой, видишь, хочешь…)', () => {
-    expect(offenders(ruTexts, /(^|[^а-яё])(ты|тебе|тебя|тобой|твой|твоя|твоё|твои|твоих)(?![а-яё])/i)).toEqual([])
+    expect(offenders(ruTexts, /(^|[^а-яё])(ты|тебе|тебя|тобой|твой|твоя|тво[её]|твои|твоих)(?![а-яё])/i)).toEqual([])
     expect(offenders(ruTexts, /(^|[^а-яё])[а-яё]{3,}(ешь|ёшь|ишь)(?![а-яё])/i)).toEqual([])
   })
 
@@ -257,7 +257,7 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(RELEARN_MINUTES).toBe(10) // the stored wait is a detail: the text does not repeat it
     for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/\d+\s*(min|мин)|minute|минут|\bten\b|десят/i)
     expect(spaced(en)).toContain('Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day.')
-    expect(spaced(ru)).toContain('Ответ «Снова» означает, что слово нужно повторить сегодня же: оно вернётся позже в этой сессии или при следующем заходе. Промежутки начнутся заново с одного дня.')
+    expect(spaced(ru)).toContain('Ответ «Снова» означает, что слово нужно повторить сегодня же: оно вернется позже в этой сессии или при следующем заходе. Промежутки начнутся заново с одного дня.')
     for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/wipe|стира/i) // no answer to a worry nobody has
     expect(spaced(en)).not.toMatch(/front of the queue/i) // a session takes the most overdue words, and a word that has just come due is the least overdue: no promise of its place
   })
@@ -282,8 +282,8 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(spaced(en)).toMatch(/^Words come back on a schedule\. Each time you get it right/)
     expect(spaced(ru)).toMatch(/^Слова возвращаются по расписанию\. Каждый раз, когда/)
     expect(spaced(en)).toContain('The small label on each rating button tells you when that answer brings the word back.')
-    expect(spaced(ru)).toContain('Подпись на кнопке показывает, когда слово вернётся после такого ответа.')
-    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/small number|gap that answer gives|маленькое число|промежуток, который даёт/i)
+    expect(spaced(ru)).toContain('Подпись на кнопке показывает, когда слово вернется после такого ответа.')
+    for (const text of [spaced(en), spaced(ru)]) expect(text).not.toMatch(/small number|gap that answer gives|маленькое число|промежуток, который да[её]т/i)
     // what the buttons show: Again says when in words, the other three in days
     const card = { easeFactor: 2.5, interval: 3, repetitions: 2, nextReview: null } as never
     const labels = [1, 2, 3, 4].map((q) => formatInterval(previewInterval(card, q)))
@@ -294,7 +294,7 @@ describe('what the text says about the scheduler is what the scheduler does', ()
   it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called', () => {
     const learn = [section(en, 'learn'), section(ru, 'learn')]
     expect(section(en, 'learn')).toContain(`Star a word with ${en.words.learnSooner} and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them.`)
-    expect(section(ru, 'learn')).toContain(`Отметьте слово «${ru.words.learnSooner}» — и оно пойдёт в Learn раньше остальных: из отмеченных набирается большая часть новых слов дня, пока они есть.`)
+    expect(section(ru, 'learn')).toContain(`Отметьте слово «${ru.words.learnSooner}» — и оно пойдет в Learn раньше остальных: из отмеченных набирается большая часть новых слов дня, пока они есть.`)
     for (const text of learn) expect(text).not.toMatch(/\d|%|percent|процент/)
     // and it is true of the code, for the sizes a day has: the stars take more than half of a batch (a batch of two is the one exception, exactly half)
     expect(STARRED_SHARE).toBeGreaterThan(0.5)

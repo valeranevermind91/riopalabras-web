@@ -84,16 +84,22 @@ describe('the build day, in the reader\'s own time zone', () => {
     expect(formatBuildDate('2026-10-17T05:00:00.000Z')).toBe('2026-10-17') // 02:00 in Montevideo
   })
 
-  it('never reads as a future date in any zone: at any moment the build is already behind, its day is today or earlier there', () => {
-    const zones = ['Pacific/Pago_Pago', 'Pacific/Honolulu', 'America/Los_Angeles', 'America/Montevideo', 'Atlantic/Azores', 'UTC', 'Europe/Madrid', 'Asia/Kolkata', 'Asia/Kathmandu', 'Asia/Tokyo', 'Pacific/Auckland', 'Pacific/Kiritimati']
-    const day = (at: number, zone: string) => formatBuildDate(new Date(at).toISOString(), zone)
-    for (let step = 0; step < 24 * 14; step++) {
-      const builtAt = Date.UTC(2026, 9, 1) + step * 3600_000
-      for (const now of [builtAt, builtAt + 1, builtAt + 3600_000, builtAt + 5 * 3600_000, builtAt + 30 * 3600_000]) {
-        for (const zone of zones) expect(day(builtAt, zone) <= day(now, zone), `${zone}: built ${new Date(builtAt).toISOString()}, read ${new Date(now).toISOString()}`).toBe(true)
+  // One test per zone, not one for all twelve: each is about a twelfth of the work (a few thousand date formats), so under a loaded machine
+  // (the whole suite runs in parallel) none comes near the default 5 s timeout, and a failure names its zone. The coverage is the same
+  // as before: every hour for two weeks, at five later moments each, in every zone.
+  it.each(['Pacific/Pago_Pago', 'Pacific/Honolulu', 'America/Los_Angeles', 'America/Montevideo', 'Atlantic/Azores', 'UTC', 'Europe/Madrid', 'Asia/Kolkata', 'Asia/Kathmandu', 'Asia/Tokyo', 'Pacific/Auckland', 'Pacific/Kiritimati'])(
+    'never reads as a future date in %s: at any moment the build is already behind, its day is today or earlier there',
+    (zone) => {
+      const day = (at: number) => formatBuildDate(new Date(at).toISOString(), zone)
+      for (let step = 0; step < 24 * 14; step++) {
+        const builtAt = Date.UTC(2026, 9, 1) + step * 3600_000
+        const builtDay = day(builtAt) // the build's day does not depend on the later moment, so it is worked out once
+        for (const now of [builtAt, builtAt + 1, builtAt + 3600_000, builtAt + 5 * 3600_000, builtAt + 30 * 3600_000]) {
+          expect(builtDay <= day(now), `${zone}: built ${new Date(builtAt).toISOString()}, read ${new Date(now).toISOString()}`).toBe(true)
+        }
       }
-    }
-  })
+    },
+  )
 
   it('is in the format it always was: four-digit year, two-digit month and day', () => {
     for (const zone of ['America/Montevideo', 'Asia/Tokyo', 'UTC']) expect(formatBuildDate('2026-01-05T12:00:00.000Z', zone)).toBe('2026-01-05')

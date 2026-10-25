@@ -231,11 +231,11 @@ describe('highlightTarget', () => {
   it('finds a highlight for every dictionary word', () => {
     const missing = dictionary.filter((w) => highlightTarget(w).range === null).map((w) => w.esWord)
     expect(missing).toEqual([])
-  }, 30_000) // walks all 4,753 words: about 4 s alone, which is too close to the 5 s default when the browser tests run beside it
+  }) // walks all 4,753 words: about 2.5 s alone, and the global timeout in vitest.config.ts covers it when the whole suite runs at once
 
   it('never leaves ** markers in the sentence', () => {
     for (const w of dictionary) expect(highlightTarget(w).sentence).not.toContain('*')
-  }, 30_000) // the same walk over all 4,753 words as the test above, and the same reason for the longer limit: it timed out at 5 s once the browser tests ran beside it
+  }) // the same walk over all 4,753 words as the test above
 })
 
 describe('relationFor', () => {

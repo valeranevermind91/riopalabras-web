@@ -447,12 +447,12 @@ describe('highlight with the overlay', () => {
     expect(highlighted(w)).toBe('ómnibus')
   })
 
-  // One pass over all 4753 words (a few seconds on a loaded machine), hence the explicit timeout.
+  // One pass over all 4753 words (about 2.5 s alone, several times that when the whole suite runs at once; the global timeout covers it).
   it('finds a highlight for every dictionary word, and no ** markers remain', () => {
     const results = words.map((w) => ({ word: w.esWord, result: highlightTarget(w) }))
     expect(results.filter((r) => r.result.range === null).map((r) => r.word)).toEqual([])
     expect(results.filter((r) => r.result.sentence.includes('*')).map((r) => r.word)).toEqual([])
-  }, 30_000)
+  })
 })
 
 describe('overlay examples (pass 2)', () => {
@@ -578,6 +578,16 @@ describe('fallback examples (pass 3)', () => {
     expect(entry('ser').fallbackExample).toBeNull() // an irregular form of itself (sos): nothing to fix
   })
 
+  it("a sentence that lacks its entry's own dictionary word belongs to a card led by the Rioplatense form (the example is written for that form: gilipollas shows «boludo», coño shows «concha») or to one of the eight exceptions; no other entry shows a sentence about something else", () => {
+    const sentence = (w: Word) => effectiveExample(w).sentence.replace(/\*+/g, '')
+    const lacksKey = words.filter((w) => findFormRange(sentence(w), w.esWord, w.pos, true) === null)
+    const led = words.filter((w) => headword(w).form === 'rioplatense')
+    expect(led.filter((w) => !lacksKey.includes(w)).map((w) => w.esWord)).toEqual([]) // a replacement's sentence never uses the standard word
+    expect(lacksKey.filter((w) => headword(w).form !== 'rioplatense').map((w) => w.esWord).sort()).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'tony', 'ver'])
+    expect(entry('gilipollas').rio?.form).toBe('boludo')
+    expect(entry('coño').rio?.form).toBe('concha')
+  })
+
   it.each(SAMPLE)('%s: the old example showed another word; the card now shows a sentence with %s itself', (esWord) => {
     const w = entry(esWord)
     expect(w.exampleSentence.replace(/\*+/g, '')).not.toMatch(new RegExp(`(^|[^\\p{L}])${esWord}(?![\\p{L}])`, 'iu'))
@@ -630,7 +640,7 @@ describe('fallback examples (pass 3)', () => {
       .sort()
     expect(missing).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'tony', 'ver'])
     expect(words.filter((w) => highlightTarget(w).range === null)).toEqual([]) // every card still highlights something
-  }, 30_000)
+  })
 })
 
 describe('std_usage (is the standard word used in everyday speech?)', () => {

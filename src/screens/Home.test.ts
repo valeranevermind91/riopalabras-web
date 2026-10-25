@@ -640,7 +640,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     setLanguage('ru')
     try {
       expect(at(20)).toBe('Сначала повторение — ждут 20 слов')
-      expect(at(21)).toBe('Сначала повторение — ждёт 21 слово, за раз — 20')
+      expect(at(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20')
       expect(at(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
     } finally {
       setLanguage('en')
