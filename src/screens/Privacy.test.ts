@@ -58,7 +58,7 @@ describe('the privacy page, as drawn', () => {
     expect(html.match(/role="radio"/g)).toHaveLength(2)
     expect(text(html)).toContain('Riopalabras is a free app for learning the Spanish of Uruguay and Argentina, inside Telegram.')
     expect(headings(html)).toEqual(['stored:What it keeps', 'shared:Who else sees it', 'ads:What\'s not here', 'delete:Deleting your data'])
-    expect(text(html)).toContain('Last updated: 19 October 2026')
+    expect(text(html)).toContain('Last updated: 25 October 2026')
   })
 
   it('Russian: the same, in Russian, with the date written as Russian writes it', () => {
@@ -67,7 +67,7 @@ describe('the privacy page, as drawn', () => {
     expect(html).toContain('<h1>Конфиденциальность</h1>')
     expect(html).toContain('aria-label="Язык"')
     expect(headings(html)).toEqual(['stored:Что хранится', 'shared:Кто еще это видит', 'ads:Чего здесь нет', 'delete:Удаление данных'])
-    expect(text(html)).toContain('Последнее обновление: 19 октября 2026 г.')
+    expect(text(html)).toContain('Последнее обновление: 25 октября 2026 г.')
   })
 
   it('the language switch names each language in its own language, and marks the one shown', () => {
@@ -128,7 +128,7 @@ describe('what is stored: the page names every table the app touches', () => {
   const PHRASE_OF_TABLE: Record<string, { en: string[]; ru: string[] }> = {
     user_progress: { en: ['your progress on each word'], ru: ['прогресс по каждому слову'] },
     user_favorites: { en: ['set to Learn sooner'], ru: ['«Учить раньше»'] },
-    user_hidden_words: { en: ['mark as known'], ru: ['как известные'] },
+    user_hidden_words: { en: ['Learn sooner or hide'], ru: ['скрытые вами слова'] },
     user_words: { en: ['the words you add yourself'], ru: ['добавленные вами слова'] },
     user_settings: { en: ['your settings'], ru: ['настройки'] },
     user_daily_metrics: { en: ['a summary for each day'], ru: ['сводка за день'] },
@@ -294,7 +294,7 @@ describe('the policy text and its date move together', () => {
   // When this fails the policy changed in substance: set PRIVACY_UPDATED in src/lib/privacy.ts to the day of the change, then put the new value here.
   // A change of spelling (е for ё) or of spacing is not a change of the policy, so the text is compared normalised: е and ё are one letter and
   // whitespace is one space. The fingerprint is still of the real text, just read that way; it never skips a word.
-  const FINGERPRINT = '0b0e0f0f147c49ec'
+  const FINGERPRINT = '15969cba2798137b'
   const normalise = (text: string) => text.replace(/ё/g, 'е').replace(/Ё/g, 'Е').replace(/\s+/g, ' ').trim()
   const fingerprintOf = (privacy: { en: unknown; ru: unknown }) =>
     createHash('sha256')
@@ -312,7 +312,7 @@ describe('the policy text and its date move together', () => {
   const raw = (privacy: { en: unknown; ru: unknown }) => JSON.stringify(privacy, (_k, v) => (typeof v === 'function' ? v('DATE') : v))
 
   it('is the text as it was when it was last dated', () => {
-    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-19', text: FINGERPRINT })
+    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-25', text: FINGERPRINT })
   })
 
   it('does not move for spelling or spacing: е and ё are the same letter, and a run of whitespace is one space', () => {

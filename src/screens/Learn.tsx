@@ -4,6 +4,7 @@ import { UnsavedNotice } from '../components/UnsavedNotice'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
+import { reportFor, type FeedbackReport, type SendResult } from '../data/feedback'
 import { learnedToday } from '../data/daily'
 import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
 import { reminderOfferPatch, shouldOfferReminder } from '../data/reminderOffer'
@@ -20,6 +21,7 @@ import { useVerticalSwipesOff } from '../lib/useVerticalSwipesOff'
 import { arrivalOf, type Arrival, type ExitPlan } from '../lib/swipe'
 import { useSwipe } from '../lib/useSwipe'
 import { strings } from '../strings'
+import { FeedbackScreen } from './Feedback'
 import { MatchingScreen } from './Matching'
 
 interface LearnScreenProps {
@@ -30,6 +32,8 @@ interface LearnScreenProps {
   reminders?: RemindersControl
   /** The review log (App makes it once the user is signed in). Without it nothing is logged. */
   reviewLog?: ReviewLog | null
+  /** Sends a note to the author (App makes it only for a signed-in user). Without it the card has no "Report a problem" and nothing else changes. */
+  sendReport?: ((report: FeedbackReport) => Promise<SendResult>) | null
   onHome: () => void
   onReview: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
@@ -38,7 +42,7 @@ interface LearnScreenProps {
   registerBack?: (handler: (() => boolean) | null) => void
 }
 
-export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome, onReview, onBack, registerBack }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendReport, onHome, onReview, onBack, registerBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
@@ -68,6 +72,13 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
     return () => registerBack(null)
   }, [registerBack, practising, exitPractice])
 
+  // A report about the word on the card. The form is drawn over the card (which stays mounted, hidden), so the batch, the place in it and the marks are as they
+  // were when it closes; the word it names is what the person is looking at (reportFor), the same hand-over as the word's detail screen. `reportedKey` is the
+  // word it has just gone for, for the line under the control.
+  const [reporting, setReporting] = useState<{ shown: string; named: string; key: string } | null>(null)
+  const [reportedKey, setReportedKey] = useState<string | null>(null)
+  const closeReport = useCallback(() => setReporting(null), [])
+
   const words = batch.words
   const lastIndex = words.length - 1
   const phase = words.length === 0 ? 'done' : learnPhase(ticket)
@@ -95,7 +106,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
 
   const go = (delta: 1 | -1, plan?: ExitPlan) => {
     const next = index + delta
-    if (!reading || next < 0 || next > lastIndex) return
+    if (!reading || reporting || next < 0 || next > lastIndex) return // with the form open the arrow keys belong to its text box, not to the cards behind it
     setUndoOffer(null)
     setDirection(delta > 0 ? 'next' : 'prev')
     setArrival(plan ? arrivalOf(plan) : null)
@@ -132,7 +143,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
     onPrevious: (plan) => commit(-1, plan),
     canNext: index < lastIndex,
     canPrevious: index > 0,
-    enabled: reading,
+    enabled: reading && reporting === null,
   })
 
   // Hands the batch to the queue (a double tap just returns the same ticket); nothing here awaits the network.
@@ -216,71 +227,112 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, onHome
   const onLastCard = index >= lastIndex
   const progress = ((index + 1) / words.length) * 100
 
+  const card = words[index]
+  const canReport = reading && Boolean(sendReport) && !card.isCustom // a word the user typed in is edited, not reported (as on the detail screen)
+  const openReport = () => {
+    const { shown, named } = reportFor(card)
+    haptic('tap')
+    setUndoOffer(null)
+    setReporting({ shown, named, key: wordKey(card.esWord) })
+    window.scrollTo(0, 0)
+  }
+
   return (
-    <main className="screen fill">
-      <ScreenHeader title={strings.learn.title} onBack={onBack} />
+    <>
+      {reporting && sendReport && (
+        <FeedbackScreen
+          kind="word"
+          esWord={reporting.named}
+          shownWord={reporting.shown}
+          from="learn" // the place goes with the report (the kind stays 'word': it is about a word)
+          send={sendReport}
+          onSent={() => {
+            setReportedKey(reporting.key)
+            setReporting(null)
+          }}
+          onClose={closeReport}
+          registerBack={registerBack}
+          onBack={onBack}
+        />
+      )}
+      <main className="screen fill" hidden={reporting !== null}>
+        <ScreenHeader title={strings.learn.title} onBack={onBack} />
 
-      <div className="learn-progress">
-        <span>{strings.learn.wordNofM(index + 1, words.length)}</span>
-        <div className="bar" role="progressbar" aria-valuemin={1} aria-valuemax={words.length} aria-valuenow={index + 1}>
-          <div className="bar-fill" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
-
-      <div className="swipe-area" {...swipe.handlers}>
-        <div className="swipe-stage">
-          <div className="swipe-layer" style={swipe.layerStyle}>
-            <div
-              key={`${index}:${words[index].esWord}`}
-              className={arrival ? 'card-enter card-arrive' : `card-enter card-enter-${direction}`}
-              style={arrival ? ({ '--arrive-from': `${arrival.from}px`, '--arrive-ms': `${arrival.duration}ms` } as CSSProperties) : undefined}
-            >
-              <WordCard word={words[index]} settings={data.settings} />
-            </div>
+        <div className="learn-progress">
+          <span>{strings.learn.wordNofM(index + 1, words.length)}</span>
+          <div className="bar" role="progressbar" aria-valuemin={1} aria-valuemax={words.length} aria-valuenow={index + 1}>
+            <div className="bar-fill" style={{ width: `${progress}%` }} />
           </div>
-          {leaving && (
-            <SwipeGhost key={leaving.id} plan={leaving.plan} onDone={clearLeaving}>
-              <WordCard word={words[leaving.index]} settings={data.settings} />
-            </SwipeGhost>
-          )}
         </div>
-      </div>
 
-      {reading && undoOffer !== null && batch.known.length > 0 && (
-        <div className="learn-undo" role="status">
-          <span>{strings.learn.markedKnown(headword(batch.known[batch.known.length - 1].word).text)}</span>
-          <button type="button" className="link-btn" onClick={undo}>
-            {strings.learn.undo}
+        <div className="swipe-area" {...swipe.handlers}>
+          <div className="swipe-stage">
+            <div className="swipe-layer" style={swipe.layerStyle}>
+              <div
+                key={`${index}:${words[index].esWord}`}
+                className={arrival ? 'card-enter card-arrive' : `card-enter card-enter-${direction}`}
+                style={arrival ? ({ '--arrive-from': `${arrival.from}px`, '--arrive-ms': `${arrival.duration}ms` } as CSSProperties) : undefined}
+              >
+                <WordCard word={words[index]} settings={data.settings} />
+              </div>
+            </div>
+            {leaving && (
+              <SwipeGhost key={leaving.id} plan={leaving.plan} onDone={clearLeaving}>
+                <WordCard word={words[leaving.index]} settings={data.settings} />
+              </SwipeGhost>
+            )}
+          </div>
+        </div>
+
+        {reading && undoOffer !== null && batch.known.length > 0 && (
+          <div className="learn-undo" role="status">
+            <span>{strings.learn.wordHidden(headword(batch.known[batch.known.length - 1].word).text)}</span>
+            <button type="button" className="link-btn" onClick={undo}>
+              {strings.learn.undo}
+            </button>
+          </div>
+        )}
+
+        {reading && (
+          <div className="learn-known">
+            <button type="button" className="known-btn" onClick={know}>
+              {strings.learn.hideWord}
+            </button>
+          </div>
+        )}
+
+        {canReport && (
+          <div className="learn-report">
+            <button type="button" className="known-btn" onClick={openReport}>
+              {strings.feedback.reportWord}
+            </button>
+            {reportedKey === wordKey(card.esWord) && (
+              <p className="detail-note" role="status">
+                {strings.feedback.sent}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="learn-nav">
+          <button type="button" className="btn btn-icon" aria-label={strings.learn.previous} disabled={!reading || index === 0} onClick={() => go(-1)}>
+            ‹
+          </button>
+          <span className="hint">{strings.learn.swipeHint}</span>
+          <button type="button" className="btn btn-icon" aria-label={strings.learn.next} disabled={!reading || onLastCard} onClick={() => go(1)}>
+            ›
           </button>
         </div>
-      )}
 
-      {reading && (
-        <div className="learn-known">
-          <button type="button" className="known-btn" onClick={know}>
-            {strings.learn.alreadyKnow}
-          </button>
-        </div>
-      )}
-
-      <div className="learn-nav">
-        <button type="button" className="btn btn-icon" aria-label={strings.learn.previous} disabled={!reading || index === 0} onClick={() => go(-1)}>
-          ‹
-        </button>
-        <span className="hint">{strings.learn.swipeHint}</span>
-        <button type="button" className="btn btn-icon" aria-label={strings.learn.next} disabled={!reading || onLastCard} onClick={() => go(1)}>
-          ›
-        </button>
-      </div>
-
-      {onLastCard && (
-        <div className="learn-finish">
-          <button type="button" className="btn btn-primary" onClick={finish}>
-            {strings.learn.finishBatch}
-          </button>
-        </div>
-      )}
-    </main>
+        {onLastCard && (
+          <div className="learn-finish">
+            <button type="button" className="btn btn-primary" onClick={finish}>
+              {strings.learn.finishBatch}
+            </button>
+          </div>
+        )}
+      </main>
+    </>
   )
 }
 

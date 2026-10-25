@@ -11,6 +11,7 @@ import { createWriteQueue } from '../data/writeQueue'
 import { parseSettings } from '../data/settings'
 import type { Word } from '../data/types'
 import { setLanguage } from '../lib/language'
+import { learnedState } from '../sm2/sm2'
 import { makeWord } from '../testing/makeWord'
 import { HomeScreen } from './Home'
 
@@ -33,6 +34,8 @@ function learnedWords(n: number, due = n): Word[] {
     }),
   )
 }
+/** n words learned today, in the state a finished Learn batch leaves them in: one repetition, no interval yet, first review at the start of tomorrow. */
+const learnedTodayWords = (n: number): Word[] => learnedWords(n, 0).map((w) => ({ ...w, interval: 0, nextReview: learnedState(NOW).nextReview }))
 const unlearned = (n: number) => Array.from({ length: n }, (_, i) => makeWord(`nueva${i}`, { rank: 1000 + i }))
 
 const real = parseDictionary(
@@ -296,7 +299,7 @@ describe('notices', () => {
   it('the known-words notice sits between the status row and the word card, and nothing is lost', () => {
     const html = render({}, real, {}, ['user_hidden_words'])
     expect(html).toContain('class="notice"')
-    expect(html).toContain('known words')
+    expect(html).toContain('hidden words')
     const [status, notice, card, grid] = ['home-status', 'class="notice"', 'class="wotd"', 'class="home-grid"'].map((c) => html.indexOf(c))
     expect(status).toBeLessThan(notice)
     expect(notice).toBeLessThan(card)
@@ -610,12 +613,15 @@ describe('the status row: how far today is from counting for the streak', () => 
 
 describe('the line of advice under the streak, and the tile it points at', () => {
   const spent = { new_words_learned_today_count: 10, new_words_learned_today_date: TODAY }
-  const adviceOf = (html: string) => html.match(/<p class="home-advice">([^<]*)<\/p>/)?.[1] ?? null
+  const adviceOf = (html: string) => html.match(/<p class="home-advice">([^<]*)<\/p>/)?.[1]?.replaceAll('&#x27;', "'") ?? null
   const primaries = (html: string) => ['learn', 'review', 'matching', 'cloze'].filter((id) => tile(html, id).includes('is-primary'))
   const states = {
     reviewFirst: () => render({}, [...learnedWords(8, 3), ...unlearned(20)]),
     learnNew: () => render({}, [...learnedWords(8, 0), ...unlearned(20)]),
+    // nothing was learned today (as the words stand), but the counter says 10: the line still says what was done and what comes
     allDoneToday: () => render({}, [...learnedWords(8, 0), ...unlearned(20)], spent),
+    // the same, with the 8 words really learned today: they come back tomorrow, and can be practised now
+    allDoneTodayWithWords: () => render({}, [...learnedTodayWords(8), ...unlearned(20)], spent),
     poolEmpty: () => render({}, learnedWords(8, 0)),
     allClear: () => render({}, learnedWords(8, 0), spent),
   }
@@ -623,7 +629,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
   it('each of the five states says its line, from hand-made numbers', () => {
     expect(adviceOf(states.reviewFirst())).toBe('Review first — 3 words are waiting')
     expect(adviceOf(states.learnNew())).toBe('Nothing to review — 10 new words ready') // the 10 a batch would offer, not the 20 in the pool
-    expect(adviceOf(states.allDoneToday())).toBe('Done for today')
+    expect(adviceOf(states.allDoneToday())).toBe('Today: 10 new words. Tomorrow: 10 new words.') // no reviews tomorrow: that part is left out
     expect(adviceOf(states.poolEmpty())).toBe('No new words left — add your own, or practise')
     expect(adviceOf(states.allClear())).toBe('All caught up')
   })
@@ -647,10 +653,58 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     }
   })
 
-  it('the primary tile follows the state: Review, Learn, or none; Matching and Cloze never', () => {
+  it('the primary tile follows the state: Review, Learn, Matching at the end of the day, or none; Cloze never', () => {
     expect(primaries(states.reviewFirst())).toEqual(['review'])
     expect(primaries(states.learnNew())).toEqual(['learn'])
-    for (const quiet of [states.allDoneToday, states.poolEmpty, states.allClear]) expect(primaries(quiet())).toEqual([])
+    expect(primaries(states.allDoneToday())).toEqual(['matching']) // practice is the one thing left to do
+    expect(primaries(states.allDoneTodayWithWords())).toEqual(['matching'])
+    for (const quiet of [states.poolEmpty, states.allClear]) expect(primaries(quiet())).toEqual([])
+  })
+
+  describe('the end of the day, once new words were learned', () => {
+    const dayEnd = () => states.allDoneTodayWithWords()
+
+    it('says what was done and what comes next, then points at the practice: tomorrow\'s reviews are the 8 words learned today', () => {
+      expect(adviceOf(dayEnd())).toBe('Today: 10 new words. Tomorrow: 8 reviews and 10 new. Today\'s words are ready to practise.')
+    })
+
+    it('Matching is the one filled tile; Learn (past the goal) and Review (nothing due) stay disabled, and Cloze is plain', () => {
+      const html = dayEnd()
+      expect(primaries(html)).toEqual(['matching'])
+      expect(tile(html, 'matching')).not.toContain('disabled')
+      expect(tile(html, 'cloze')).not.toContain('disabled')
+      expect(tile(html, 'review')).toContain('disabled') // the app never offers reviews that are not due
+      expect(tile(html, 'learn')).toContain('disabled') // and no one-tap "more today": the goal protects tomorrow\'s load
+      expect(tile(html, 'review')).not.toContain('is-primary')
+    })
+
+    it('with the goal at 0 nothing was learned today: the plain line, and no tile is pushed', () => {
+      const html = render({}, [...learnedWords(8, 0), ...unlearned(20)], { daily_new_word_limit: 0, new_words_learned_today_count: 0, new_words_learned_today_date: TODAY })
+      expect(adviceOf(html)).toBe('Done for today')
+      expect(primaries(html)).toEqual([])
+    })
+
+    it('when only Cloze can run on today\'s words (their glosses collide for Matching), the pointer is still there', () => {
+      const colliding = learnedTodayWords(8).map((w) => ({ ...w, ruTranslation: 'igual', enTranslation: 'same' }))
+      expect(adviceOf(render({}, [...colliding, ...unlearned(20)], spent))).toContain('Today\'s words are ready to practise.')
+    })
+
+    it('with too few words to practise, the line still says what was done, no pointer to a practice that cannot run, and no tile is pushed', () => {
+      const html = render({}, [...learnedTodayWords(3), ...unlearned(20)], spent)
+      expect(adviceOf(html)).toBe('Today: 10 new words. Tomorrow: 3 reviews and 10 new.')
+      expect(primaries(html)).toEqual([])
+      expect(tile(html, 'matching')).toContain('disabled')
+    })
+
+    it('in Russian', () => {
+      setLanguage('ru')
+      try {
+        expect(adviceOf(dayEnd())).toBe('Сегодня: 10 новых слов. Завтра: 8 повторений и 10 новых. Сегодняшние слова можно потренировать.')
+        expect(adviceOf(states.allDoneToday())).toBe('Сегодня: 10 новых слов. Завтра: 10 новых слов.')
+      } finally {
+        setLanguage('en')
+      }
+    })
   })
 
   it('is one line of text in a card, under the streak row and above the tiles: no icon, heading, button or bar inside it', () => {
@@ -666,7 +720,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     try {
       expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова')
       expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно изучить 10 новых слов')
-      expect(adviceOf(states.allDoneToday())).toBe('На сегодня всё')
+      expect(adviceOf(states.allDoneToday())).toBe('Сегодня: 10 новых слов. Завтра: 10 новых слов.')
       expect(adviceOf(states.poolEmpty())).toBe('Новые слова закончились — добавьте свои или потренируйтесь')
       expect(adviceOf(states.allClear())).toBe('Всё повторено')
     } finally {

@@ -259,9 +259,10 @@ describe('the language of the page', () => {
 })
 
 describe('the placement test says what marking does, in the words the app already uses', () => {
-  it('English: "marked as known" (Learn\'s bar and the Words screen), "kept out of Learn, Review and practice", "bring them back" (the Words button), and one sentence', () => {
+  it('English: "marked as known" (the person\'s own claim in this test), "kept out of Learn, Review and practice", "bring them back" (the Words button) from the Hidden tab, and one sentence', () => {
     const note = en.onboarding.placement.hidesNote
-    expect(note).toContain(en.learn.markedKnown('x').replace(/^“x” /, '')) // "marked as known": the phrase Learn\'s bar uses
+    expect(note).toContain('marked as known') // ticking a word here IS saying it is known: the note keeps the person\'s own words
+    expect(note).toContain(`the ${en.words.segments.hidden} tab`) // and says where such a word is found
     expect(note).toContain('kept out of Learn, Review and practice')
     const [verb, particle] = en.words.bringBack.toLowerCase().split(' ') // "Bring back": the button in the word list
     expect(note).toContain(`${verb} them ${particle}`) // the same phrase, with its object
@@ -271,7 +272,8 @@ describe('the placement test says what marking does, in the words the app alread
 
   it('Russian: the same ideas in the same words as the existing strings: отмечаются как известные, Learn, Review и упражнения, Вернуть', () => {
     const note = ru.onboarding.placement.hidesNote
-    expect(note).toContain('как известные') // the Learn bar says «…» отмечено как известное; the Words screen, "отметили как известные"
+    expect(note).toContain('как известные') // ticking a word here IS saying it is known: the note keeps the person\'s own words
+    expect(note).toContain(`«${ru.words.segments.hidden}»`) // and says where such a word is found
     expect(note).toContain('Learn, Review и упражнения') // as in the Words screen\'s note and How it works
     expect(note.toLowerCase()).toContain(ru.words.bringBack.toLowerCase())
     expect(note.match(/[.!?](\s|$)/g)).toHaveLength(1)

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -176,5 +177,39 @@ describe('Cloze screen and question', () => {
     expect(html).toContain('Learn and review some words with example sentences first')
     expect(html).toContain('Back to home')
     expect(html).not.toContain('cz-card')
+  })
+})
+
+describe('Cloze and Matching on the words learned today (Home, at the end of the day)', () => {
+  const render = (list: Word[], scope?: ReadonlySet<string>) =>
+    renderToStaticMarkup(createElement(ClozeScreen, { data: dataFor(list, { show_ru_translation: false, show_en_translation: true }), queue, metrics: null, onHome: () => {}, scope }))
+
+  it('with a scope, the session is made of the scoped words only: as many questions as there are words, and every one asks about one of them', () => {
+    const list = words(12)
+    const scope = new Set(['palabra1', 'palabra4', 'palabra7', 'palabra8', 'palabra11']) // five of twelve, and not the first five
+    expect(render(list, scope)).toContain('aria-valuemax="5"')
+    expect(render(list)).toContain('aria-valuemax="10"') // without one: the usual ten
+    for (let i = 0; i < 30; i++) {
+      const gloss = render(list, scope).match(/cz-cue-pill">EN<\/span> word(\d+), other/)
+      expect(gloss, 'the question shows its cue').not.toBeNull()
+      expect(['1', '4', '7', '8', '11']).toContain(gloss![1])
+    }
+  })
+
+  it('a scope too small for Cloze says so, like an account with too few words, instead of showing a short or empty session', () => {
+    const html = render(words(12), new Set(['palabra1', 'palabra2']))
+    expect(html).toContain('Learn and review some words with example sentences first')
+    expect(html).not.toContain('cz-card')
+  })
+
+  it('App opens the usual practice from the usual tiles and today\'s only from the end-of-day handlers: each clears what the other set', () => {
+    const app = readFileSync('src/App.tsx', 'utf8')
+    expect(app).toMatch(/onMatching=\{\(\) => \{\s*setTodayRounds\(null\)\s*setScreen\('matching'\)/)
+    expect(app).toMatch(/onCloze=\{\(\) => \{\s*setTodayScope\(null\)\s*setScreen\('cloze'\)/)
+    expect(app).toMatch(/setTodayRounds\(todayMatchingRounds\(readyData\.words, readyData\.settings, new Date\(\)\)\)\s*setScreen\('matching'\)/)
+    expect(app).toMatch(/setTodayScope\(learnedTodayKeys\(readyData\.words, new Date\(\)\)\)\s*setScreen\('cloze'\)/)
+    // and Matching plays them as practice (counting for nothing), Cloze is limited to them
+    expect(app).toMatch(/practice=\{todayRounds \? \{ rounds: todayRounds, onFinish: \(\) => void go\('home'\) \} : undefined\}/)
+    expect(app).toContain('scope={todayScope ?? undefined}')
   })
 })

@@ -723,6 +723,20 @@ mark {
   outline-offset: 2px;
 }
 
+/* "Report a problem with this word": as quiet as the action above it, and under it. The line after sending says so, in the same muted voice. */
+.learn-report {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.learn-report .detail-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .learn-undo {
   display: flex;
   align-items: center;
@@ -1506,6 +1520,15 @@ mark {
   gap: 12px;
 }
 
+/*
+ * The on-screen keyboard. On some phones it is drawn over the page without shrinking it, so the Check button, below the answer field, sat behind it.
+ * useKeyboardInset (src/lib/useKeyboardInset.ts) sets --keyboard-inset to the height the keyboard covers, and the Cloze screen reads it twice: this
+ * padding is room for the page to scroll up by that much, and ClozeQuestion scrolls the dock into the part that is still visible.
+ */
+.cz-screen {
+  padding-bottom: calc(40px + var(--keyboard-inset, 0px));
+}
+
 .cz-input {
   width: 100%;
   padding: 12px 14px;
@@ -2125,6 +2148,12 @@ mark {
 .sched summary:focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* what the number beside it means, a little quieter than the number */
+.sched-hint {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .sched dl {
@@ -2805,6 +2834,16 @@ mark {
   margin: 0;
   color: var(--text-2);
   line-height: 1.55;
+}
+
+/* A section's text is paragraphs: a little air between them, none above the first. */
+.how-section p + p {
+  margin-top: 10px;
+}
+
+/* The way out at the end of the page: the page is long, and Back at its top is a long scroll away. */
+.how-end {
+  margin-top: 4px;
 }
 
 .how-learn h2,

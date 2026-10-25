@@ -5,7 +5,7 @@
 // interface language; without it the language follows Telegram, which here means English), ready=1 (Home with a few words, so its
 // tiles and status show), reminder=on|off|none (the daily reminder's row at the start: on, off, or no row), rtz=<zone> (the zone on that row),
 // tz=<zone> (the device's zone), access=yes|no|manual (Telegram's permission prompt: answered at once, or by window.__answerAccess(true|false)),
-// paused=1 / unreachable=1 (the job has paused it / Telegram cannot deliver), savefail=1 (writes to the row fail), readfail=1 (reading it fails); everything written to the row is in window.__reminders. dict=1 (the real dictionary, loaded from the page: enough words for the placement test), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
+// endofday=N (Home at the end of the day: N new words learned today, as a finished Learn batch leaves them, and today's allowance spent, or only todaycount=M of it; window.__taps records which Home handler each tile calls), paused=1 / unreachable=1 (the job has paused it / Telegram cannot deliver), savefail=1 (writes to the row fail), readfail=1 (reading it fails); everything written to the row is in window.__reminders. dict=1 (the real dictionary, loaded from the page: enough words for the placement test), late=1 (the settings arrive only when the page calls window.__loadSettings(), like a slow load).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -13,7 +13,9 @@ import { parseDictionary } from '../data/dictionary'
 import { applyHiddenFlag, applySettingsPatch } from '../data/mutations'
 import { needsOnboarding } from '../data/onboarding'
 import { parseSettings } from '../data/settings'
+import { localDateKey } from '../data/dates'
 import { computeStats } from '../data/stats'
+import { learnedState } from '../sm2/sm2'
 import { createWriteQueue } from '../data/writeQueue'
 import { createFakeReminders } from './fakeReminders'
 import { makeWord } from './makeWord'
@@ -56,11 +58,17 @@ const HOME_WORDS = [
 const HOME_WORDS_WITH_RELEARN: readonly Word[] =
   relearnSeconds > 0 ? [...HOME_WORDS, makeWord('repasada', { repetitions: 1, interval: 0, easeFactor: 2.18, nextReview: new Date(Date.now() + relearnSeconds * 1000), rank: 50 })] : HOME_WORDS
 
+// endofday=N: the first N learned words are the day's own (first review tomorrow), the rest are not due for days: nothing is due now, and the allowance is spent.
+const endOfDay = Number(params.get('endofday') ?? 0)
+const END_OF_DAY_WORDS = HOME_WORDS.map((w, i) => (i < 8 ? (i < endOfDay ? { ...w, interval: 0, nextReview: learnedState(new Date()).nextReview } : { ...w, nextReview: new Date(Date.now() + 5 * 86_400_000) }) : w))
+const taps: string[] = []
+;(window as never as { __taps: string[] }).__taps = taps
+
 export function Harness() {
   useLanguage() // as App does: everything below re-renders when the language changes
   const [screen, setScreen] = useState<Screen>('home')
   // The words: a few for Home, or (dict=1) the real dictionary once it has been fetched.
-  const [words, setWords] = useState<readonly Word[]>(HOME_WORDS_WITH_RELEARN)
+  const [words, setWords] = useState<readonly Word[]>(endOfDay > 0 ? END_OF_DAY_WORDS : HOME_WORDS_WITH_RELEARN)
   useEffect(() => {
     if (params.get('dict') !== '1') return
     let cancelled = false
@@ -90,6 +98,7 @@ export function Harness() {
       ...(params.get('lang') ? { ui_language: params.get('lang') } : {}),
       ...(params.get('start_rank') ? { start_rank: Number(params.get('start_rank')) } : {}),
       ...(params.get('unlocked') === '1' ? { debug_unlocked: true } : {}),
+      ...(endOfDay > 0 ? { new_words_learned_today_count: Number(params.get('todaycount') ?? params.get('goal') ?? 18), new_words_learned_today_date: localDateKey(new Date()) } : {}),
     }),
   )
   // The latest settings, updated at once (as useUserData does), so two taps before a render both see the first.
@@ -130,7 +139,8 @@ export function Harness() {
 
   // origin: a fixed address, so the privacy link in About reads the same wherever the test runs
   if (screen === 'about') return <AboutScreen data={data} queue={queue} origin="https://app.test" onBack={back} />
-  if (screen === 'how') return <HowItWorks onBack={back} />
+  // as App does: where Telegram's own BackButton exists (native=1) the header draws no Back, and the end of the page has one that does the same
+  if (screen === 'how') return <HowItWorks onBack={params.get('native') === '1' ? undefined : back} onDone={back} />
   if (screen === 'placement') return <PlacementScreen data={data} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={back} />
   if (screen === 'onboarding') return <Onboarding data={data} queue={queue} mode="replay" onExit={() => setScreen('settings')} registerBack={registerBack} />
   if (screen === 'settings')
@@ -169,10 +179,12 @@ export function Harness() {
     <HomeScreen
       auth={{ status: 'no-telegram' }}
       data={loaded && params.get('ready') === '1' ? ({ status: 'ready', data: { ...(data as object), words, degraded: [], retryDegraded: () => {} } } as never) : { status: 'loading' }}
-      onLearn={() => {}}
-      onReview={() => {}}
-      onMatching={() => {}}
-      onCloze={() => {}}
+      onLearn={() => void taps.push('learn')}
+      onReview={() => void taps.push('review')}
+      onMatching={() => void taps.push('matching')}
+      onCloze={() => void taps.push('cloze')}
+      onMatchingToday={() => void taps.push('matching-today')}
+      onClozeToday={() => void taps.push('cloze-today')}
       onWords={() => {}}
       onSettings={() => setScreen('settings')}
       queue={null}

@@ -3,11 +3,13 @@ import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
-import { PRACTICE_MIN_WORDS, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
+import { PRACTICE_MIN_WORDS, batchPracticeAvailable, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { REVIEW_SESSION_SIZE } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
-import { STREAK_CARDS, cardsToday, streakCountedToday } from '../data/daily'
+import { STREAK_CARDS, cardsToday, learnedToday, streakCountedToday } from '../data/daily'
+import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
+import { wordKey } from '../data/words'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
@@ -25,6 +27,9 @@ interface HomeScreenProps {
   onReview: () => void
   onMatching: () => void
   onCloze: () => void
+  /** At the end of the day, Matching and Cloze on the words learned today (App builds the rounds / the scope). Without them the tiles open the usual practice. */
+  onMatchingToday?: () => void
+  onClozeToday?: () => void
   /** Opens a word's full card (the word of the day's "See the card"). */
   onOpenWord?: (word: Word) => void
   /** Opens the Words screen. */
@@ -39,7 +44,7 @@ interface HomeScreenProps {
   now?: Date
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
   // The time the counts are taken at: when Home is shown (it remounts on navigation), so "due" and "today" are never stale. A word rated Again is
   // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
   // was while Home stays open, the counts are taken again the moment the next such word comes due, and when the app comes back to the foreground
@@ -68,7 +73,23 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   }, [stats, metrics])
 
   const advice = stats ? homeAdvice({ reviewDue: stats.reviewDue, learnPool: stats.learnPool, remainingToday: stats.remainingToday }) : null
-  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze }, advice ? primaryTile(advice) : null) : []
+  // The end of the day (src/data/dayEnd.ts): once today's new words are done, Home says what was done and what tomorrow brings, and the practice on today's words is the one
+  // thing left to do. Nothing is offered that is not due, and nothing past the goal. Only worked out in that state, and only when some new words were learned today.
+  const day = useMemo(() => {
+    if (advice !== 'allDoneToday' || data.status !== 'ready') return null
+    const { words, settings } = data.data
+    const learned = learnedToday(settings, at)
+    if (learned === 0) return null
+    const keys = learnedTodayKeys(words, at)
+    return {
+      learned,
+      tomorrow: tomorrowPreview(words, settings, at),
+      matching: keys.size > 0 && batchPracticeAvailable(words, keys, settings),
+      cloze: keys.size > 0 && clozeEligibleCount(words.filter((w) => keys.has(wordKey(w.esWord)))) >= PRACTICE_MIN_WORDS,
+    }
+  }, [advice, data, at])
+  const practiceNow = day !== null && (day.matching || (extras?.matching ?? 0) >= PRACTICE_MIN_WORDS)
+  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday }, advice ? primaryTile(advice, practiceNow) : null, day) : []
   const now = nowProp ?? new Date()
 
   return (
@@ -93,7 +114,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
             today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: STREAK_CARDS }}
           />
 
-          {advice && <p className="home-advice">{adviceText(advice, stats)}</p>}
+          {advice && <p className="home-advice">{adviceText(advice, stats, day)}</p>}
 
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
@@ -194,6 +215,14 @@ function WordOfTheDayCard({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word
 
 export type TileId = 'learn' | 'review' | 'matching' | 'cloze'
 
+/** What Home knows at the end of the day: today's new words, what tomorrow brings, and whether Matching / Cloze can run on today's words. */
+interface DayEnd {
+  learned: number
+  tomorrow: { reviews: number; fresh: number }
+  matching: boolean
+  cloze: boolean
+}
+
 interface Tile {
   id: TileId
   label: string
@@ -210,7 +239,7 @@ interface Tile {
 }
 
 /** The line of advice, with the numbers it needs: how many are due (all of them, not one session's worth; past one session it also says how many a session holds), and how many new words a batch would offer. */
-function adviceText(advice: HomeAdvice, stats: Stats): string {
+function adviceText(advice: HomeAdvice, stats: Stats, day: DayEnd | null): string {
   const t = strings.home.advice
   switch (advice) {
     case 'reviewFirst':
@@ -218,7 +247,8 @@ function adviceText(advice: HomeAdvice, stats: Stats): string {
     case 'learnNew':
       return t.learnNew(stats.newToLearn)
     case 'allDoneToday':
-      return t.allDoneToday
+      // what was done and what comes next, and a pointer to the practice when today's words can be practised; the plain line when nothing new was learned today (the goal is 0)
+      return day ? [t.doneToday(day.learned, day.tomorrow.reviews, day.tomorrow.fresh), day.matching || day.cloze ? t.practiceToday : null].filter(Boolean).join(' ') : t.allDoneToday
     case 'poolEmpty':
       return t.poolEmpty
     case 'allClear':
@@ -230,8 +260,9 @@ function adviceText(advice: HomeAdvice, stats: Stats): string {
 function buildTiles(
   stats: Stats,
   practice: { matching: number; cloze: number },
-  on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void },
-  primary: 'learn' | 'review' | null,
+  on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void; onMatchingToday?: () => void; onClozeToday?: () => void },
+  primary: TileId | null,
+  day: DayEnd | null,
 ): Tile[] {
   const t = strings.home.tiles
   const need = strings.practice.needWords
@@ -247,8 +278,9 @@ function buildTiles(
       onPress: on.onLearn,
     },
     { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
-    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: on.onMatching },
-    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: on.onCloze },
+    // at the end of the day Matching (and Cloze) open on today's words, when they can run on them; otherwise, and at any other time, the usual practice
+    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, primary: primary === 'matching', onPress: day?.matching && on.onMatchingToday ? on.onMatchingToday : on.onMatching },
+    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: day?.cloze && on.onClozeToday ? on.onClozeToday : on.onCloze },
   ]
 }
 

@@ -657,7 +657,7 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       await page.waitForSelector('.place')
       expect(await note(page)).toEqual([en.onboarding.placement.hidesNote])
       expect(await placed(page)).toEqual({ afterChips: true, beforeSkip: true, insideSkip: false, insideChips: false })
-      expect(en.onboarding.placement.hidesNote).toBe('Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back from the Known tab.')
+      expect(en.onboarding.placement.hidesNote).toBe('Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back from the Hidden tab.')
       await page.close()
     }, 60_000)
 

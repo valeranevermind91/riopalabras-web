@@ -95,13 +95,15 @@ describe('the seven steps', () => {
     expect(html.indexOf('class="stepper"')).toBeLessThan(html.indexOf('Every word you learn comes back'))
   })
 
-  it('6: pronunciation: two facts with the Spanish words in the display face, a link to "How it works"', () => {
+  it('6: pronunciation: two facts with the Spanish words in the display face, a link that says what it opens (how Learn, Review and practice work), not "How it works"', () => {
     const html = step('pronunciation')
     expect([...html.matchAll(/<span class="intro-es">([^<]+)<\/span>/g)].map((m) => m[1])).toEqual(['ll', 'y', 'calle', 'yo', 'vos tenés', 'tú tienes'])
     expect(html).toContain('sound like the “sh” in “shoe”: ')
     expect(html).toContain('People say “')
     expect(html.match(/<li>/g)).toHaveLength(2)
-    expect(html).toMatch(/<button type="button" class="link-btn intro-link">How it works<\/button>/)
+    expect(html).toMatch(/<button type="button" class="link-btn intro-link">How Learn, Review and practice work<\/button>/)
+    expect(html).not.toMatch(/intro-link">How it works</) // the old label read as more pronunciation to come, and it opens the app's modes
+    expect(ru.onboarding.pronunciation.link).toBe('Как работают Learn, Review и упражнения')
   })
 
   it('the last step ends in Done, the others in Continue', () => {
@@ -169,11 +171,13 @@ describe('the tone: these screens inform, they do not instruct', () => {
 })
 
 describe('How it works', () => {
-  it('has a paragraph for Learn, Review, Matching and Cloze, and one on why a word comes back', () => {
+  it('has a section for Learn, Review, Matching and Cloze, and one on when a word comes back', () => {
     const html = renderToStaticMarkup(createElement(HowItWorks, {}))
     expect(html).toContain('<h1>How it works</h1>')
-    expect([...html.matchAll(/<h2 id="how-\w+">([^<]+)<\/h2>/g)].map((m) => m[1])).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'Why a word comes back'])
-    expect(html.match(/<p>/g)).toHaveLength(5)
+    expect([...html.matchAll(/<h2 id="how-\w+">([^<]+)<\/h2>/g)].map((m) => m[1])).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'When a word comes back'])
+    // a long section is paragraphs, not one block: Learn two, Review, Matching and Cloze one each, and the schedule four
+    const paragraphs = (id: string) => (html.match(new RegExp(`<section class="how-section how-${id}"[\\s\\S]*?</section>`))![0].match(/<p>/g) ?? []).length
+    expect(['learn', 'review', 'matching', 'cloze', 'spaced'].map(paragraphs)).toEqual([2, 1, 1, 1, 4])
     expect(html).toContain('for the first time tomorrow')
     expect(html).toContain('about a week')
   })

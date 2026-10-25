@@ -110,9 +110,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('opens on All, most common first: segments All · Started · Known, and the Filters and Sort buttons', async () => {
+  it('opens on All, most common first: segments All · Started · Hidden, and the Filters and Sort buttons', async () => {
     const page = await open()
-    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Started 43', 'Known 2'])
+    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4753', 'Started 43', 'Hidden 2'])
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])
     expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency'])
     expect((await rows(page))[0]).toBe('de')
@@ -303,9 +303,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('Known lists the words marked as known with "Bring back"; it goes through the hidden lane and the word leaves the list', async () => {
+  it('Hidden lists the hidden words with "Bring back"; it goes through the hidden lane and the word leaves the list', async () => {
     const page = await open()
-    await segment(page, 'Known')
+    await segment(page, 'Hidden')
     await page.waitForSelector('.word-row-bring')
     expect(await page.$$eval('.word-row-bring', (els) => els.length)).toBe(2)
     expect(await page.$('.word-row-star')).toBeNull()
@@ -319,22 +319,22 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     expect(await rows(page)).not.toContain(first)
     await page.waitForFunction(() => (window as never as { __sent: { hidden: unknown[] } }).__sent.hidden.length > 0)
     expect((await sent(page)).hidden.at(-1)).toMatchObject({ hidden: false })
-    expect((await page.$$eval('.segment', (els) => els.map((e) => e.textContent)))[2]).toBe('Known 1')
+    expect((await page.$$eval('.segment', (els) => els.map((e) => e.textContent)))[2]).toBe('Hidden 1')
     await page.close()
   }, 60_000)
 
-  it('a known word found by search says so, opens in detail with its kept progress, and "Bring back" there works too', async () => {
+  it('a hidden word found by search says so, opens in detail with its kept progress, and "Bring back" there works too', async () => {
     const page = await open()
     const fx = await fixture(page)
     await search(page, fx.hidden[0])
     await page.waitForSelector('.word-row-bring')
     await openRow(page, 0)
     const text = await page.$eval('.state-block', (e) => e.textContent ?? '')
-    expect(text).toContain('Known')
+    expect(text).toContain('Hidden')
     expect(text).toContain('Its progress is kept')
     await page.click('.detail-actions .btn-primary')
     await page.waitForFunction(() => document.querySelector('.detail-actions .btn-primary') === null)
-    expect(await page.$eval('.state-block', (e) => e.textContent ?? '')).not.toContain('Known')
+    expect(await page.$eval('.state-block', (e) => e.textContent ?? '')).not.toContain('Hidden')
     expect((await sent(page)).hidden.at(-1)).toMatchObject({ hidden: false })
     expect((await status(page)).pendingFavorites).toBe(0)
     await page.close()
@@ -392,7 +392,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await search(page, fx.hidden[0])
       await page.waitForSelector('.word-row')
       await openRow(page, 0)
-      expect(await inTree(page, 'Marked as known')).toBe(true) // the note is in the tree with the disclosure closed
+      expect(await inTree(page, 'Hidden, so it stays out of Learn, Review and practice')).toBe(true) // the note is in the tree with the disclosure closed
       await page.close()
     }, 60_000)
   })

@@ -359,7 +359,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
 
       expect(await page.$eval('h1', (e) => e.textContent)).toBe('Words')
       expect(await page.$eval('.words-search', (e) => e.getAttribute('placeholder'))).toBe(ru.words.searchPlaceholder)
-      expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent?.replace(/\d+$/, '').trim()))).toEqual(['Все', 'В работе', 'Известные'])
+      expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent?.replace(/\d+$/, '').trim()))).toEqual(['Все', 'В работе', 'Скрытые'])
       expect(await page.$$eval('.control-btn', (els) => els.map((e) => e.textContent))).toEqual(['Фильтры', 'По частоте']) // the Sort button's face is the value alone...
       expect(await page.$$eval('.control-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual([null, 'Сортировка: По частоте']) // ...and the whole phrase is its name
       expect(await page.$eval('button[aria-label="Добавить слово"]', (e) => e.getAttribute('aria-label'))).toBe(ru.words.addWord)

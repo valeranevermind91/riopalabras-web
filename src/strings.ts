@@ -40,9 +40,9 @@ export const en = {
     learnPoolEmpty: 'No new words available',
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
-    degradedTables: { user_favorites: 'words set to learn sooner', user_hidden_words: 'known words' } as Record<string, string>,
+    degradedTables: { user_favorites: 'words set to learn sooner', user_hidden_words: 'hidden words' } as Record<string, string>,
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
-    degradedHiddenWarning: 'Words you marked as known may still show up until it loads.',
+    degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
     streak: (n: number) => `${n}-day streak`,
     // The one line under the streak: what to do today (src/data/advice.ts). N in reviewFirst is the real number due, which may be more than one session.
@@ -51,6 +51,16 @@ export const en = {
       reviewFirst: (n: number, perSession: number) => `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting${n > perSession ? ` (${perSession} per session)` : ''}`,
       learnNew: (n: number) => `Nothing to review — ${n} new ${plural(n, { one: 'word', other: 'words' })} ready`,
       allDoneToday: 'Done for today',
+      // The end of the day, once new words were learned: what was done and what comes next (src/data/dayEnd.ts). The numbers are real: today's new words, the reviews that fall
+      // tomorrow, and the new words a day offers. A part with nothing in it is left out.
+      doneToday: (learned: number, reviews: number, fresh: number) => {
+        const word = (n: number) => plural(n, { one: 'word', other: 'words' })
+        const parts = []
+        if (reviews > 0) parts.push(`${reviews} ${plural(reviews, { one: 'review', other: 'reviews' })}`)
+        if (fresh > 0) parts.push(reviews > 0 ? `${fresh} new` : `${fresh} new ${word(fresh)}`)
+        return `Today: ${learned} new ${word(learned)}.${parts.length > 0 ? ` Tomorrow: ${parts.join(' and ')}.` : ''}`
+      },
+      practiceToday: 'Today\'s words are ready to practise.',
       poolEmpty: 'No new words left — add your own, or practise',
       allClear: 'All caught up',
     },
@@ -81,7 +91,7 @@ export const en = {
     detailTitle: 'Word',
     searchPlaceholder: 'Search Spanish, English, Russian',
     searchLabel: 'Search words',
-    segments: { all: 'All', started: 'Started', hidden: 'Known' },
+    segments: { all: 'All', started: 'Started', hidden: 'Hidden' },
     segmentsLabel: 'Which words',
     // the two buttons under the segments, each opening a bottom sheet
     filtersButton: 'Filters',
@@ -109,7 +119,7 @@ export const en = {
     posTag: { n: 'noun', v: 'verb', adj: 'adj', adv: 'adv', pron: 'pron', num: 'num', prep: 'prep', determiner: 'det', conj: 'conj', interj: 'interj', letter: 'letter', contraction: 'contr', art: 'art' } as Record<string, string>,
     due: 'Due now',
     // the detail screen's State line: the word's kind (a due word keeps its stage; "due now" is a note under Next review)
-    kindName: { hidden: 'Known', reference: 'Reference only', new: 'New', learning: 'Learning', wellLearned: 'Well learned' } as Record<string, string>,
+    kindName: { hidden: 'Hidden', reference: 'Reference only', new: 'New', learning: 'Learning', wellLearned: 'Well learned' } as Record<string, string>,
     // The star on a list row has no visible text (the translation needs the room); this is its accessible name, the same whether it is pressed or not.
     learnSoonerRow: (word: string) => `Learn ${word} sooner`,
     // The same words on the detail screen's button, pressed or not: the button only looks active, it never claims something happened.
@@ -205,7 +215,7 @@ export const en = {
     bringBackWord: (word: string) => `Bring back ${word}`,
     emptyStarted: 'Nothing started yet. Start with Learn on the home screen.',
     emptyAll: 'No words.',
-    emptyHidden: 'No known words yet. Words you mark with “I already know this word”, or tick in the placement test, appear here.',
+    emptyHidden: 'No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.',
     emptyFiltered: 'No words match. Try another search, or clear the filters.',
     clearSearchAndFilters: 'Clear search and filters',
     count: (shown: number) => `${shown} ${plural(shown, { one: 'word', other: 'words' })}`,
@@ -220,7 +230,8 @@ export const en = {
       notScheduled: 'Not scheduled',
       dueNow: 'due now',
       ease: 'Ease factor',
-      noteHidden: 'Marked as known, so it stays out of Learn, Review and practice. Its progress is kept: if you bring it back, it carries on where it left off.',
+      easeHint: 'the higher, the less often the word comes back',
+      noteHidden: 'Hidden, so it stays out of Learn, Review and practice. Its progress is kept: if you bring it back, it carries on where it left off.',
       noteReference: (why: string) => `Reference only: ${why}, so it is never in Learn or Review.`,
       reasonPos: 'this kind of word is not drilled',
       reasonNoTranslation: 'it has no translation yet',
@@ -325,7 +336,7 @@ export const en = {
         heading: 'What it keeps',
         paragraphs: [
           'Your account comes from your Telegram ID, with your first name and username (if any) and a made-up email-style address like {email}; it is not a real mailbox and nothing is sent to it.',
-          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or mark as known. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
+          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or hide. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
           "Not kept: your phone number, contacts, location or passwords. No cookies; unsent changes and your sign-in stay in Telegram's browser storage.",
         ],
       },
@@ -373,7 +384,7 @@ export const en = {
     sentWith: (c: { word: string | null; version: string; language: string; screen: string; platform: string }) =>
       `Sent with your message: ${c.word ? `the word “${c.word}”, ` : ''}your account, app version ${c.version}, interface language ${c.language}, screen ${c.screen}, Telegram platform ${c.platform}.`,
     languages: { en: 'English', ru: 'Russian' },
-    screens: { settings: 'Settings', word: 'Word' },
+    screens: { settings: 'Settings', word: 'Word', learn: 'Learn' },
     send: 'Send',
     sending: 'Sending…',
     cancel: 'Cancel',
@@ -416,7 +427,7 @@ export const en = {
       question: 'Which of these do you know?',
       hint: 'Only mark the words whose meaning you are sure of.',
       // what ticking does (the same "marked as known" as Learn's button and the Words screen; they wait under Known there)
-      hidesNote: 'Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back from the Known tab.',
+      hidesNote: 'Words you tick are marked as known and kept out of Learn, Review and practice; you can bring them back from the Hidden tab.',
       set: (n: number, m: number) => `Set ${n} of ${m}`,
       progress: 'Placement test progress',
       back: 'Back',
@@ -446,7 +457,7 @@ export const en = {
         [{ es: 'll' }, { text: ' and ' }, { es: 'y' }, { text: ' sound like the “sh” in “shoe”: ' }, { es: 'calle' }, { text: ', ' }, { es: 'yo' }, { text: '.' }],
         [{ text: 'People say “' }, { es: 'vos tenés' }, { text: '” where a textbook says “' }, { es: 'tú tienes' }, { text: '”.' }],
       ] as readonly (readonly { es?: string; text?: string }[])[],
-      link: 'How it works',
+      link: 'How Learn, Review and practice work',
     },
   },
 
@@ -457,12 +468,12 @@ export const en = {
       {
         id: 'learn',
         heading: 'Learn',
-        text: 'Learn brings new words, a few at a time, up to your daily goal. Star a word with Learn sooner and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them. Each card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. A word you already know can be marked as known: it then stays out of Learn, Review and the practice exercises.',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. To learn a word sooner, star it in Words, either on its row in the list or with Learn sooner on the word\'s own page. Learn takes starred words before the others: they make up most of the new words each day, for as long as there are enough of them.\n\nEach card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. Any word can be hidden, whether you already know it or would rather not see it: it then stays out of Learn, Review and the practice exercises.',
       },
       {
         id: 'review',
         heading: 'Review',
-        text: 'Review shows the words that are due. Turn a card over, then say how well you knew it: Again, Hard, Good or Easy. That answer decides when the word comes back. A session takes the most overdue words, about twenty at a time; while more are due, Continue starts another.',
+        text: 'Review shows the words that are due. Turn a card over, then say how well you knew it: Again, Hard, Good or Easy. That answer decides when the word comes back. A session takes the most overdue words, about twenty at a time. While more are due, Continue starts another.',
       },
       {
         id: 'matching',
@@ -472,12 +483,12 @@ export const en = {
       {
         id: 'cloze',
         heading: 'Cloze',
-        text: 'Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have started learning.',
+        text: 'Cloze shows a sentence with a word missing, and you type that word in. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.',
       },
       {
         id: 'spaced',
-        heading: 'Why a word comes back',
-        text: 'Words come back on a schedule. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months. A word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit. Again means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day. The small label on each rating button tells you when that answer brings the word back.',
+        heading: 'When a word comes back',
+        text: 'Words come back on a schedule. Each time you get it right the gap grows: a few days, then about a week, then weeks, then months, up to a longest gap of nine months.\n\nA word is easiest to hold on to when you see it just as it starts to fade, so every success pushes the next review further out, until it reaches that limit.\n\nAgain means the word needs another look today: it returns later in this session, or the next time you open the app. The gaps start again from one day.\n\nThe small label on each rating button tells you when that answer brings the word back.',
       },
     ],
   },
@@ -487,8 +498,10 @@ export const en = {
     wordNofM: (n: number, m: number) => `Word ${n} of ${m}`,
     swipeHint: 'Swipe or use the arrows',
     // "Already know it": a secondary action, set apart from the main ones
-    alreadyKnow: 'I already know this word',
-    markedKnown: (word: string) => `“${word}” marked as known`,
+    // "Hide this word": the one action for a word the person does not want in Learn, Review and practice, whatever the reason (they know it, it is unpleasant, it is
+    // irrelevant). The effect was always hiding; it used to be called "I already know this word", which claimed a reason that may not be true.
+    hideWord: 'Hide this word',
+    wordHidden: (word: string) => `“${word}” hidden`,
     undo: 'Undo',
     previous: 'Previous',
     next: 'Next',

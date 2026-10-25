@@ -8,6 +8,8 @@ import { supabaseReminderStore } from './data/reminders'
 import { createLearnedAtStore, createReviewLog } from './data/reviewLog'
 import { enrichDepsFor, enrichWord } from './data/enrich'
 import { createSettingsSource, mirrorPending, restoreAndFlush } from './data/startup'
+import { learnedTodayKeys, todayMatchingRounds } from './data/dayEnd'
+import type { MatchGroup } from './data/practice'
 import { wordKey } from './data/words'
 import { createViewStore } from './data/wordList'
 import { useUserData } from './data/useUserData'
@@ -134,6 +136,9 @@ function App() {
   }, [queue, readyData, userId])
 
   const [screen, setScreenNow] = useState<Screen>('home')
+  // Home's practice on the words learned today: the rounds Matching plays, or the words Cloze is limited to. Null is the usual practice, which is what the other ways in open.
+  const [todayRounds, setTodayRounds] = useState<readonly MatchGroup[] | null>(null)
+  const [todayScope, setTodayScope] = useState<ReadonlySet<string> | null>(null)
   // A note to the developer: from Settings (esWord null) or about the open word. `feedbackSent` is where one has just gone from, for the line that says so;
   // it is forgotten as soon as the person goes anywhere else.
   // `esWord` is what a word report names and sends (given by the detail screen: the word on the card and the standard form after it); `shown` is what the form shows
@@ -341,7 +346,7 @@ function App() {
     )
   }
 
-  if (screen === 'how') return <HowItWorks onBack={inPageBack} />
+  if (screen === 'how') return <HowItWorks onBack={inPageBack} onDone={goBack} />
 
   // The placement test on its own, from Settings; finishing or skipping it goes back to Settings.
   if (screen === 'placement' && readyData && queue) {
@@ -377,6 +382,7 @@ function App() {
         metrics={metrics}
         reminders={reminders}
         reviewLog={reviewLog}
+        sendReport={sendReport}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
         onBack={inPageBack}
@@ -400,7 +406,17 @@ function App() {
   }
 
   if (screen === 'matching' && readyData && queue) {
-    return <MatchingScreen data={readyData} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={() => void go('home')} onBack={inPageBack} />
+    return (
+      <MatchingScreen
+        data={readyData}
+        queue={queue}
+        metrics={metrics}
+        reviewLog={reviewLog}
+        onHome={() => void go('home')}
+        onBack={inPageBack}
+        practice={todayRounds ? { rounds: todayRounds, onFinish: () => void go('home') } : undefined}
+      />
+    )
   }
 
   if (screen === 'words' && readyData && queue) {
@@ -447,7 +463,7 @@ function App() {
   }
 
   if (screen === 'cloze' && readyData && queue) {
-    return <ClozeScreen data={readyData} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={() => void go('home')} onBack={inPageBack} />
+    return <ClozeScreen data={readyData} queue={queue} metrics={metrics} reviewLog={reviewLog} onHome={() => void go('home')} onBack={inPageBack} scope={todayScope ?? undefined} />
   }
 
   // The first open of an account that has not finished the intro: it is shown instead of Home, and finishing it writes onboarding_done.
@@ -461,8 +477,31 @@ function App() {
       data={data}
       onLearn={() => setScreen('learn')}
       onReview={() => setScreen('review')}
-      onMatching={() => setScreen('matching')}
-      onCloze={() => setScreen('cloze')}
+      onMatching={() => {
+        setTodayRounds(null)
+        setScreen('matching')
+      }}
+      onCloze={() => {
+        setTodayScope(null)
+        setScreen('cloze')
+      }}
+      // at the end of the day, the practice on the words learned today: Matching as the rounds of a batch (which counts for nothing and never touches the schedule), Cloze scoped to them
+      onMatchingToday={
+        readyData
+          ? () => {
+              setTodayRounds(todayMatchingRounds(readyData.words, readyData.settings, new Date()))
+              setScreen('matching')
+            }
+          : undefined
+      }
+      onClozeToday={
+        readyData
+          ? () => {
+              setTodayScope(learnedTodayKeys(readyData.words, new Date()))
+              setScreen('cloze')
+            }
+          : undefined
+      }
       onWords={() => setScreen('words')}
       onSettings={() => setScreen('settings')}
       activity={activity}

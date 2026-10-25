@@ -150,14 +150,14 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       const page = await open('fresh=1&goal=default')
       await goTo(page, 7)
       expect(await page.$$eval('.intro-es', (els) => els.map((e) => e.textContent))).toEqual(['ll', 'y', 'calle', 'yo', 'vos tenés', 'tú tienes'])
-      await clickText(page, '.intro-link', 'How it works')
+      await clickText(page, '.intro-link', 'How Learn, Review and practice work')
       await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'How it works')
-      expect(await page.$$eval('.how-section h2', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'Why a word comes back'])
+      expect(await page.$$eval('.how-section h2', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'When a word comes back'])
       await page.click('.back-link')
       await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 7 of 7')
       expect(await title(page)).toBe('Pronunciation')
       // Telegram's back does the same
-      await clickText(page, '.intro-link', 'How it works')
+      await clickText(page, '.intro-link', 'How Learn, Review and practice work')
       await page.waitForSelector('.how-it-works')
       expect(await pressBack(page)).toBe('handled')
       await page.waitForSelector('.onboarding')
@@ -293,6 +293,44 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       expect(await sent(page)).toEqual([{ show_ru_translation: false, show_en_translation: true }])
       await page.close()
     }, 90_000)
+
+    it('"How it works" ends in a Back of its own: at the bottom of the page it is on screen, and it leads where the header\'s Back does (Settings; the same step of the intro)', async () => {
+      const toBottom = (page: Page) => page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+      const endBackVisible = (page: Page) => page.$eval('.how-end .btn', (e) => { const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight })
+      // from Settings
+      const settings = await open('goal=12')
+      await settings.setViewport({ width: 390, height: 500, isMobile: true, hasTouch: true, deviceScaleFactor: 2 }) // short, so the page scrolls
+      await toSettings(settings)
+      await aboutRow(settings, 'How it works')
+      await settings.waitForSelector('.how-it-works')
+      expect(await settings.$eval('.how-end .btn', (e) => e.textContent)).toBe('Back')
+      expect(await settings.evaluate(() => document.documentElement.scrollHeight > window.innerHeight)).toBe(true) // the page really is longer than the screen
+      await toBottom(settings)
+      expect(await endBackVisible(settings)).toBe(true)
+      await settings.click('.how-end .btn')
+      await settings.waitForSelector('.settings')
+      await settings.close()
+      // from the intro: back on the same step
+      const intro = await open('fresh=1&goal=default')
+      await goTo(intro, 7)
+      await clickText(intro, '.intro-link', 'How Learn, Review and practice work')
+      await intro.waitForSelector('.how-it-works')
+      await toBottom(intro)
+      await intro.click('.how-end .btn')
+      await intro.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 7 of 7')
+      await intro.close()
+    }, 90_000)
+
+    it("with Telegram's own Back (native=1) the header has no Back, and the end of the page still has one", async () => {
+      const page = await open('goal=12&native=1')
+      await toSettings(page)
+      await aboutRow(page, 'How it works')
+      await page.waitForSelector('.how-it-works')
+      expect(await page.$('.back-link')).toBeNull()
+      await page.click('.how-end .btn')
+      await page.waitForSelector('.settings')
+      await page.close()
+    }, 60_000)
 
     it('"How it works" in Settings opens its own screen, and Back lands on Settings', async () => {
       const page = await open('goal=12')

@@ -5,11 +5,13 @@
 // new words Learn can teach, default 12), interval=N and reps=N (the learned words' interval in days and repetitions, default 3 and 2: interval=0 reps=1 is a word
 // introduced by Learn and not reviewed yet, which has no schedule in days), native=1 (the screen draws no Back arrow of its own: the back press is window.__nativeBack(),
 // as with Telegram's BackButton). Besides the log and the progress rows, window.__sent records every settings patch, hidden-word and favourite write the queue is
-// given and how many times today was marked active, and window.__state() is the words' scheduling fields and the settings as they are now.
+// given and how many times today was marked active, and window.__state() is the words' scheduling fields and the settings as they are now. report=1 gives the Learn
+// screen a sender for "Report a problem" (as for a signed-in user) that records every report in window.__reports and answers ok.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import { applyProgressUpdates, applySettingsPatch } from '../data/mutations'
+import type { FeedbackReport } from '../data/feedback'
 import { createLearnedAtStore, createReviewLog, type ReviewLogEntry } from '../data/reviewLog'
 import { parseSettings } from '../data/settings'
 import { computeStats } from '../data/stats'
@@ -24,6 +26,8 @@ import { makeWord } from './makeWord'
 
 const params = new URLSearchParams(location.search)
 const screen = params.get('screen') ?? 'review'
+const reports: FeedbackReport[] = []
+;(window as never as { __reports: FeedbackReport[] }).__reports = reports
 const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number; settings: SettingsPatch[]; hidden: unknown[]; favorites: unknown[]; active: number } = {
   log: [],
   progress: [],
@@ -117,6 +121,7 @@ export function Harness() {
       <LearnScreen
         {...common}
         metrics={{ markActiveToday: () => void sent.active++ }}
+        sendReport={params.get('report') === '1' ? async (report) => (reports.push(report), { ok: true as const }) : undefined}
         onReview={() => {}}
         onBack={native ? undefined : back}
         registerBack={(handler) => {

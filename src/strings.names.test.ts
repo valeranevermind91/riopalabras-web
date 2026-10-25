@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LOWER_SHARE } from './data/learnPick'
 import { MAX_INTERVAL_DAYS, RELEARN_MINUTES, formatInterval, learnedState, previewInterval } from './sm2/sm2'
 import { learnProgressUpdates } from './data/learn'
+import { buildHint } from './data/practice'
 import { REVIEW_SESSION_SIZE, buildReviewSession } from './data/review'
 import { STARRED_SHARE, starredSlots } from './data/starred'
 import { makeWord } from './testing/makeWord'
@@ -12,8 +13,12 @@ import { ru } from './strings.ru'
 /**
  * One name per thing, in each language, pinned. The user-facing words for a concept are chosen once (below) and a string that drifts back to
  * the old name, or a Russian string that slips into "ты" or a gendered "я", fails here.
- *   known       a word the person said they know: "I already know this word" → "marked as known" → the Known tab (never "hidden", never "hide")
- *   well learned the progress state that used to be called "Known well" (it clashed with Known)
+ *   hidden      a word the person took out of Learn, Review and practice: "Hide this word" → "hidden" → the Hidden tab.
+ *               THIS REVERSES AN EARLIER DECISION, which called it "known" ("I already know this word" → "marked as known" → the Known tab, and never "hide"). The effect was always
+ *               hiding. "I already know this word" claimed a reason that may not be true, and a person who wants a word gone because it is unpleasant or irrelevant had no honest
+ *               button. "Known" now appears only where the person really does say they know the words (the placement test). The privacy text said "mark as known" too and was changed
+ *               with the rest (it now says "hide"; the policy date moved with it).
+ *   well learned the progress state that used to be called "Known well" (a progress state, nothing to do with the Hidden tab)
  *   session     one run of Review, Matching or Cloze: "Session complete" / "New session" (never "group", never "done for now")
  *   batch       one go at Learn: "Finish batch" (Russian: подборка, never порция)
  *   learn sooner the star on a word: "Learn sooner" (Russian: «Учить раньше»), on the row, the detail, the filter and every notice; never saved, favourite or queued
@@ -52,35 +57,50 @@ describe('the scan itself', () => {
     expect(enTexts.length).toBeGreaterThan(300)
     expect(ruTexts.length).toBeGreaterThan(300)
     expect(enTexts.some((t) => t.path === 'practice.sessionComplete')).toBe(true)
-    expect(enTexts.some((t) => t.path === 'learn.markedKnown')).toBe(true)
+    expect(enTexts.some((t) => t.path === 'learn.wordHidden')).toBe(true)
   })
 
   it('would catch a stray word: the check is real', () => {
-    expect(offenders([...enTexts, { path: 'x', text: 'Hidden words' }], /\bhid(den|e)?\b/i)).toEqual(['x: Hidden words'])
+    expect(offenders([...enTexts, { path: 'x', text: 'Mark it as known' }], /mark it as known/i)).toEqual(['x: Mark it as known'])
   })
 })
 
-describe('known, not hidden', () => {
-  it('English: the tab, the state and the filters say "Known", and no string says hidden, hide or hid', () => {
-    expect(en.words.segments.hidden).toBe('Known')
-    expect(en.words.kindName.hidden).toBe('Known')
-    expect(offenders(enTexts, /\bhid(den|e)?\b/i)).toEqual([])
+// This block USED to be "known, not hidden" and forbade the words hide, hidden and скрыт- in every string. That is the decision the comment at the top of the file says was
+// reversed: one action, "Hide this word", and a Hidden tab, because the effect was always hiding and "I already know this word" claimed a reason that may not be true.
+describe('hidden, not known', () => {
+  it('English: the action is "Hide this word", Learn\'s bar says the word is hidden, and the tab and the state say "Hidden"', () => {
+    expect(en.learn.hideWord).toBe('Hide this word')
+    expect(en.learn.wordHidden('x')).toBe('“x” hidden')
+    expect(en.words.segments.hidden).toBe('Hidden')
+    expect(en.words.kindName.hidden).toBe('Hidden')
   })
 
-  it('Russian: the same, with «Известные» / «Известное», and no скрыт-', () => {
-    expect(ru.words.segments.hidden).toBe('Известные')
-    expect(ru.words.kindName.hidden).toBe('Известное')
-    expect(offenders(ruTexts, /скры[тв]/i)).toEqual([])
+  it('Russian: «Скрыть слово», «…» скрыто, and the tab and the state say «Скрытые» / «Скрытое»', () => {
+    expect(ru.learn.hideWord).toBe('Скрыть слово')
+    expect(ru.learn.wordHidden('x')).toBe('«x» скрыто')
+    expect(ru.words.segments.hidden).toBe('Скрытые')
+    expect(ru.words.kindName.hidden).toBe('Скрытое')
   })
 
-  it('the tab is the one the placement note and the empty list send people to', () => {
+  it('no string outside the placement test uses the old action\'s words ("I already know this word", "marked as known", "known words"): the action, the bar, the tab, the notes and the empty list do not', () => {
+    // in the placement test (its screens and the Settings row for it) the person really is saying which words they know.
+    // How it works may say that a hidden word is one the person already knows: that is a reason, not the name of the action.
+    const outside = (list: { path: string; text: string }[]) => list.filter((t) => !/^(onboarding\.placement|settings\.placement)/.test(t.path))
+    expect(outside(enTexts).length).toBeGreaterThan(300)
+    expect(offenders(outside(enTexts), /I already know this word|marked as known|mark as known|\bknown words\b/i)).toEqual([])
+    expect(offenders(outside(ruTexts), /я уже знаю это слово|как известн|(?<![а-я])известн/i)).toEqual([])
+    // and the scan is real: it would find the old action
+    expect(offenders(outside([...enTexts, { path: 'x', text: 'I already know this word' }]), /I already know this word/i)).toEqual(['x: I already know this word'])
+  })
+
+  it('the tab is the one the placement note and the empty list send people to, and the empty list names the button that puts a word there', () => {
     expect(en.onboarding.placement.hidesNote).toContain(`the ${en.words.segments.hidden} tab`)
     expect(ru.onboarding.placement.hidesNote).toContain(`«${ru.words.segments.hidden}»`)
-    expect(en.words.emptyHidden).toContain(en.learn.alreadyKnow) // it names the button that puts a word there
-    expect(ru.words.emptyHidden).toContain(ru.learn.alreadyKnow)
+    expect(en.words.emptyHidden).toContain(en.learn.hideWord)
+    expect(ru.words.emptyHidden).toContain(ru.learn.hideWord)
   })
 
-  it('"Known well" is "Well learned" (Усвоенные), so Known means one thing', () => {
+  it('"Known well" is "Well learned" (Усвоенные): a progress state of its own, not the Hidden tab', () => {
     expect(en.words.stages.wellLearned).toBe('Well learned')
     expect(en.words.kindName.wellLearned).toBe('Well learned')
     expect(ru.words.stages.wellLearned).toBe('Усвоенные')
@@ -291,10 +311,16 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     for (const label of labels.slice(1)) expect(label).toMatch(/^\d+d$/)
   })
 
-  it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called', () => {
+  it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called, and the text says WHERE the star is (in Words, not in Learn)', () => {
     const learn = [section(en, 'learn'), section(ru, 'learn')]
-    expect(section(en, 'learn')).toContain(`Star a word with ${en.words.learnSooner} and Learn takes it before the others: starred words make up most of the new words each day, for as long as there are enough of them.`)
-    expect(section(ru, 'learn')).toContain(`Отметьте слово «${ru.words.learnSooner}» — и оно пойдет в Learn раньше остальных: из отмеченных набирается большая часть новых слов дня, пока они есть.`)
+    expect(section(en, 'learn')).toContain(`To learn a word sooner, star it in Words, either on its row in the list or with ${en.words.learnSooner} on the word's own page. Learn takes starred words before the others: they make up most of the new words each day, for as long as there are enough of them.`)
+    expect(section(ru, 'learn')).toContain(`Чтобы выучить слово раньше, отметьте его звездочкой в разделе Words, в списке или кнопкой «${ru.words.learnSooner}» на странице слова. Learn предлагает отмеченные слова первыми: из них набирается большая часть новых слов дня, пока они есть.`)
+    // the star is where the text says: on each row of the Words list, and as a button on the word's own page; Learn's own card has none
+    expect(en.words.title).toBe('Words')
+    expect(ru.words.title).toBe('Words') // the Russian text names the section by the name it has on screen
+    expect(readFileSync('src/components/WordRow.tsx', 'utf8')).toContain('learnSoonerRow')
+    expect(readFileSync('src/screens/WordDetail.tsx', 'utf8')).toContain('t.learnSooner')
+    expect(readFileSync('src/screens/Learn.tsx', 'utf8')).not.toMatch(/learnSooner|toggleFavourite|applyFavorite\(/)
     for (const text of learn) expect(text).not.toMatch(/\d|%|percent|процент/)
     // and it is true of the code, for the sizes a day has: the stars take more than half of a batch (a batch of two is the one exception, exactly half)
     expect(STARRED_SHARE).toBeGreaterThan(0.5)
@@ -318,8 +344,10 @@ describe('what the text says about the scheduler is what the scheduler does', ()
 
   it('"How it works", Review: a session takes the most overdue words, about twenty at a time, and Continue starts another', () => {
     expect(REVIEW_SESSION_SIZE).toBe(20)
-    expect(section(en, 'review')).toContain('A session takes the most overdue words, about twenty at a time; while more are due, Continue starts another.')
-    expect(section(ru, 'review')).toContain('За один раз берутся самые просроченные слова, около двадцати; пока есть что повторять, «Продолжить» начинает следующую сессию.')
+    // two sentences, not one joined by a semicolon
+    expect(section(en, 'review')).toContain('A session takes the most overdue words, about twenty at a time. While more are due, Continue starts another.')
+    expect(section(ru, 'review')).toContain('За один раз берутся самые просроченные слова, около двадцати. Пока есть что повторять, «Продолжить» начинает следующую сессию.')
+    for (const text of [section(en, 'review'), section(ru, 'review')]) expect(text).not.toContain(';')
     expect(en.review.continue).toBe('Continue') // the buttons the sentence names
     expect(ru.review.continue).toBe('Продолжить')
     // the most overdue: of 30 due words (w30 has waited longest, w1 least), the session is the 20 that waited longest
@@ -330,6 +358,18 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     expect(session.map((w) => w.esWord).sort()).toEqual(due.slice(10).map((w) => w.esWord).sort())
   })
 
+  it('"How it works", the schedule section is called for what it says (when a word comes back, not why), and is paragraphs, none of them long', () => {
+    const heading = (map: { howItWorks: { sections: readonly { id: string; heading: string }[] } }) => map.howItWorks.sections.find((s) => s.id === 'spaced')!.heading
+    expect(heading(en)).toBe('When a word comes back')
+    expect(heading(ru)).toBe('Когда слово возвращается')
+    for (const text of [heading(en), heading(ru)]) expect(text).not.toMatch(/\bwhy\b|почему/i)
+    for (const map of [en, ru]) {
+      const paragraphs = spaced(map).split('\n\n')
+      expect(paragraphs).toHaveLength(4)
+      for (const paragraph of paragraphs) expect(paragraph.split(/(?<=[.!?])\s+/).length, paragraph).toBeLessThanOrEqual(3)
+    }
+  })
+
   it('"How it works", Spaced and Learn: no two sentences in a row each carry a colon, in either language', () => {
     for (const [name, text] of [['en spaced', spaced(en)], ['ru spaced', spaced(ru)], ['en learn', section(en, 'learn')], ['ru learn', section(ru, 'learn')]]) {
       const sentences = text.split(/(?<=[.!?])\s+/)
@@ -337,13 +377,17 @@ describe('what the text says about the scheduler is what the scheduler does', ()
     }
   })
 
-  it('"How it works", Cloze: one sentence for what it shows and what you do, then the hint and the answer, then where the words come from', () => {
-    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. The hint and the answer are one tap away. The words here also come from the ones you have started learning.')
-    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. Подсказка и ответ — в одно касание. Слова здесь тоже берутся из тех, которые вы уже начали учить.')
-    for (const map of [en, ru]) expect(section(map, 'cloze').split(/(?<=[.!?])\s/)).toHaveLength(3)
-    // and it is what the screen does: a typed answer, a Hint button and a Reveal button
+  it('"How it works", Cloze: what it shows and what you do, then what Hint does, then what Reveal does, then where the words come from', () => {
+    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.')
+    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. «Подсказка» показывает первую букву слова и сколько в нем букв. «Ответ» показывает само слово, и вопрос засчитывается как «Не вспомнили». Слова здесь тоже берутся из тех, которые вы уже начали учить.')
+    for (const map of [en, ru]) expect(section(map, 'cloze').split(/(?<=[.!?])\s/)).toHaveLength(4)
+    // and it is what the screen does: a typed answer, a Hint button that shows the first letter and the length, and a Reveal button that gives the question up
     expect(en.practice.clozeHint).toBe('Type the missing word.')
     expect([en.practice.hint, en.practice.reveal]).toEqual(['Hint', 'Reveal'])
+    expect([ru.practice.hint, ru.practice.reveal]).toEqual(['Подсказка', 'Ответ'])
+    expect(buildHint('gato')).toBe('g***')
+    expect(en.practice.outcome.gaveUp).toBe('Gave up') // the label the text names
+    expect(ru.practice.outcome.gaveUp).toBe('Не вспомнили')
   })
 })
 
@@ -358,14 +402,14 @@ describe('what a disabled tile and an empty state tell the person to do', () => 
     expect(ru.home.advice.allClear).toBe(ru.review.allCaughtUp)
   })
 
-  it('the Known tab\'s empty text does not say "known" twice: its second sentence names the actual buttons, Learn\'s and the placement test\'s', () => {
+  it('the Hidden tab\'s empty text does not say "hidden" twice: its second sentence names the actual buttons, Learn\'s and the placement test\'s', () => {
     for (const [text, button, test, word] of [
-      [en.words.emptyHidden, en.learn.alreadyKnow, 'placement test', /known/gi],
-      [ru.words.emptyHidden, ru.learn.alreadyKnow, 'входном тесте', /известн/gi],
+      [en.words.emptyHidden, en.learn.hideWord, 'placement test', /\bhidden\b/gi],
+      [ru.words.emptyHidden, ru.learn.hideWord, 'входном тесте', /скрытых/gi],
     ] as const) {
       expect(text).toContain(button)
       expect(text).toContain(test)
-      expect(text.match(word)).toHaveLength(1) // the first sentence says it; the second does not repeat it
+      expect(text.match(word)).toHaveLength(1) // the first sentence says it; the second uses the verb
     }
   })
 

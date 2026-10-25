@@ -43,6 +43,14 @@ describe('the message form', () => {
     expect(line(html)).toBe('Sent with your message: the word “chévere”, your account, app version 0ad8e01, interface language English, screen Word, Telegram platform android.')
   })
 
+  it('a report from Learn\'s card is still a word report, and says on the form that it goes with the place Learn, in both languages', () => {
+    const html = form({ kind: 'word', esWord: 'chévere', from: 'learn', context: { ...context, screen: 'learn' } })
+    expect(html).toContain('<h1>Report a problem</h1>')
+    expect(line(html)).toBe('Sent with your message: the word “chévere”, your account, app version 0ad8e01, interface language English, screen Learn, Telegram platform android.')
+    setLanguage('ru')
+    expect(line(form({ kind: 'word', esWord: 'chévere', from: 'learn', context: { ...context, screen: 'learn', uiLanguage: 'ru' } }))).toBe('Вместе с текстом отправится: слово «chévere», ваш аккаунт, версия приложения 0ad8e01, язык интерфейса — русский, экран — «Learn», платформа Telegram — android.')
+  })
+
   it('a general form given a word still shows and sends none', () => {
     const html = form({ kind: 'general', esWord: 'chévere' })
     expect(html).not.toContain('chévere')
@@ -83,8 +91,8 @@ describe('the words', () => {
     expect([en.feedback.reportWord, ru.feedback.reportWord]).toEqual(['Report a problem with this word', 'Сообщить об ошибке в слове'])
   })
 
-  it('a Russian line has no English left but the names of Telegram and the app version', () => {
-    for (const text of textsOf(ru.feedback)) expect(text.replace(/Telegram|casa/g, '').match(/\p{Script=Latin}{3,}/gu) ?? []).toEqual([])
+  it('a Russian line has no English left but the names of Telegram and of Learn (the screen\'s own name in the Russian interface, as on Home) and the app version', () => {
+    for (const text of textsOf(ru.feedback)) expect(text.replace(/Telegram|Learn|casa/g, '').match(/\p{Script=Latin}{3,}/gu) ?? []).toEqual([])
   })
 })
 
@@ -181,8 +189,25 @@ describe('a word report names the word on the card, from every way in', () => {
     expect(reportedWord(word)).not.toBe('neumático')
   })
 
+  it('Learn: Report a problem hands over reportFor(card) and nothing taken straight from the word; App only hands it the sender', () => {
+    const source = read('src/screens/Learn.tsx')
+    expect(source).toContain('const { shown, named } = reportFor(card)')
+    expect(source).toContain('setReporting({ shown, named, key: wordKey(card.esWord) })')
+    expect(source).toContain('esWord={reporting.named}')
+    expect(source).toContain('shownWord={reporting.shown}')
+    expect(source).not.toMatch(/esWord=\{(?!reporting\.named\})/) // the form is never given anything else as the name
+    expect(source).not.toMatch(/setReporting\(\{[^}]*\besWord:/) // never a field of the word as what is named
+    expect(source).not.toMatch(/buildReport|sendFeedback|insertFeedback|setFeedback/) // the form and the data layer build the report, not Learn
+    // a report from a card says it came from Learn (the table has no constraint on the screen), and is still a word report: the kind has a check
+    expect(source).toContain('from="learn"')
+    expect(source).not.toMatch(/from="word"/)
+    expect(source).toContain('kind="word"')
+    // the control is the card's own and only for a word that is not the user's, and only when a sender exists
+    expect(source).toContain('const canReport = reading && Boolean(sendReport) && !card.isCustom')
+    expect(app).toMatch(/sendReport=\{sendReport\}/)
+  })
+
   it.each([
-    'src/screens/Learn.tsx',
     'src/screens/Review.tsx',
     'src/screens/Cloze.tsx',
     'src/screens/Matching.tsx',

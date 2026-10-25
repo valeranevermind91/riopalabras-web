@@ -58,8 +58,19 @@ describe('the primary tile follows the state', () => {
     for (const quiet of ['allDoneToday', 'poolEmpty', 'allClear'] as const) expect(primaryTile(quiet)).toBeNull()
   })
 
-  it('is never Matching or Cloze: they are practice, not advice', () => {
-    for (const state of ['reviewFirst', 'learnNew', 'allDoneToday', 'poolEmpty', 'allClear'] as const) expect(['review', 'learn', null]).toContain(primaryTile(state))
+  it('is never Cloze, and Matching only at the end of the day (below): practice is not advice for any other state', () => {
+    for (const state of ['reviewFirst', 'learnNew', 'allDoneToday', 'poolEmpty', 'allClear'] as const) {
+      expect(['review', 'learn', null]).toContain(primaryTile(state)) // the usual call: never a practice tile
+      expect(['review', 'learn', 'matching', null]).toContain(primaryTile(state, true))
+    }
+  })
+
+  it('at the end of the day, with practice to do on today\'s words, Matching is the one primary tile, and only then', () => {
+    expect(primaryTile('allDoneToday', true)).toBe('matching')
+    expect(primaryTile('allDoneToday', false)).toBeNull() // nothing to practise on: the state stays quiet
+    expect(primaryTile('allDoneToday')).toBeNull()
+    // practice never outranks what is due or what can still be learned, and the other quiet states stay quiet
+    for (const state of ['reviewFirst', 'learnNew', 'poolEmpty', 'allClear'] as const) expect(primaryTile(state, true)).toBe(primaryTile(state))
   })
 })
 
@@ -127,6 +138,51 @@ describe('the wording', () => {
     for (const language of ['en', 'ru'] as const) {
       setLanguage(language)
       for (const text of [a().allDoneToday, a().poolEmpty, a().allClear, a().learnNew(5)]) expect(text.toLowerCase().replace('nothing to review', '').replace('повторять нечего', '').replace('всё повторено', '')).not.toMatch(/review|catch up|повтор/)
+    }
+  })
+})
+
+describe('the end of the day: what was done and what comes next', () => {
+  const a = () => strings.home.advice
+
+  it('English: today\'s new words, then tomorrow\'s reviews and new words, each part only when there is something in it', () => {
+    expect(a().doneToday(10, 10, 10)).toBe('Today: 10 new words. Tomorrow: 10 reviews and 10 new.')
+    expect(a().doneToday(1, 1, 1)).toBe('Today: 1 new word. Tomorrow: 1 review and 1 new.')
+    expect(a().doneToday(10, 10, 0)).toBe('Today: 10 new words. Tomorrow: 10 reviews.')
+    expect(a().doneToday(10, 0, 8)).toBe('Today: 10 new words. Tomorrow: 8 new words.')
+    expect(a().doneToday(5, 0, 0)).toBe('Today: 5 new words.')
+    expect(a().practiceToday).toBe('Today\'s words are ready to practise.')
+  })
+
+  it('Russian: the same, with the nouns agreeing with the numbers', () => {
+    setLanguage('ru')
+    expect(a().doneToday(10, 10, 10)).toBe('Сегодня: 10 новых слов. Завтра: 10 повторений и 10 новых.')
+    expect(a().doneToday(1, 1, 1)).toBe('Сегодня: 1 новое слово. Завтра: 1 повторение и 1 новое.')
+    expect(a().doneToday(2, 2, 2)).toBe('Сегодня: 2 новых слова. Завтра: 2 повторения и 2 новых.')
+    expect(a().doneToday(21, 21, 21)).toBe('Сегодня: 21 новое слово. Завтра: 21 повторение и 21 новое.')
+    expect(a().doneToday(3, 3, 0)).toBe('Сегодня: 3 новых слова. Завтра: 3 повторения.')
+    expect(a().doneToday(5, 0, 8)).toBe('Сегодня: 5 новых слов. Завтра: 8 новых слов.')
+    expect(a().practiceToday).toBe('Сегодняшние слова можно потренировать.')
+  })
+
+  it('Russian, for every count from 1 to 300: the nouns agree with the number by a hand-written rule (not the library)', () => {
+    setLanguage('ru')
+    const form = (n: number, one: string, few: string, many: string) => (n % 10 === 1 && n % 100 !== 11 ? one : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? few : many)
+    for (let n = 1; n <= 300; n++) {
+      expect(a().doneToday(n, 0, 0), `${n}`).toBe(`Сегодня: ${n} ${form(n, 'новое слово', 'новых слова', 'новых слов')}.`)
+      expect(a().doneToday(1, n, n), `${n}`).toBe(`Сегодня: 1 новое слово. Завтра: ${n} ${form(n, 'повторение', 'повторения', 'повторений')} и ${n} ${form(n, 'новое', 'новых', 'новых')}.`)
+    }
+  })
+
+  it('names reviews only as tomorrow\'s: a forecast, never an offer (the part about today says none, and review is never put first)', () => {
+    for (const language of ['en', 'ru'] as const) {
+      setLanguage(language)
+      const text = a().doneToday(10, 10, 10)
+      const [today, ...rest] = text.split(/(?<=\.)\s/)
+      expect(today).not.toMatch(/review|повторен/i)
+      expect(rest.join(' ')).toMatch(language === 'en' ? /^Tomorrow:/ : /^Завтра:/)
+      // and the practice pointer says nothing of reviewing either
+      expect(a().practiceToday).not.toMatch(/review|повторен/i)
     }
   })
 })

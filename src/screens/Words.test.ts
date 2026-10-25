@@ -36,11 +36,11 @@ const render = (words: readonly Word[], savedView: ListView | null = null, setti
 const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', seed: 1, filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
 
 describe('the Words screen', () => {
-  it('has the header, a search field, the segments All · Started · Known with their counts, the two buttons and the list', () => {
+  it('has the header, a search field, the segments All · Started · Hidden with their counts, the two buttons and the list', () => {
     const html = render(learnedSome())
     expect(html).toContain('<h1>Words</h1>')
     expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English, Russian"/)
-    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 5', 'Known 0'])
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 5', 'Hidden 0'])
     expect(html).toContain('role="list"')
   })
 
@@ -64,10 +64,10 @@ describe('the Words screen', () => {
     expect(html).not.toContain('class="sheet') // and no sheet until one is asked for
   })
 
-  it('the Started count is the studied words that are not hidden: a studied word marked as known is counted under Known, not under Started', () => {
+  it('the Started count is the studied words that are not hidden: a studied word that is hidden is counted under Hidden, not under Started', () => {
     const words = learnedSome().map((w) => (w.esWord === ordinary[1].esWord ? ({ ...w, isHidden: true } as Word) : w))
     const html = render(words)
-    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 4', 'Known 1'])
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 4', 'Hidden 1'])
   })
 
   it('Filters shows how many are on, and Sort names the current order', () => {
@@ -114,7 +114,7 @@ describe('the Words screen', () => {
     expect(render(learnedSome(), view({ segment: 'started' }))).toContain('<span class="word-row-due">Due now</span>')
   })
 
-  it('the Known list has "Bring back" on each row in place of the star', () => {
+  it('the Hidden list has "Bring back" on each row in place of the star', () => {
     const words = [makeWord('siete', { rank: 1, isHidden: true, repetitions: 2, nextReview: new Date(Date.now() + day) }), makeWord('uno', { rank: 2 })]
     const html = render(words, view({ segment: 'hidden' }))
     expect(html).toContain('Bring back</button>')
@@ -182,7 +182,7 @@ describe('the Words screen', () => {
   })
 
   it('an empty list says what goes there', () => {
-    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No known words yet. Words you mark with “I already know this word”, or tick in the placement test, appear here.')
+    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.')
     expect(render([makeWord('uno')], view({ segment: 'started' }))).toContain('Nothing started yet.')
     expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain('No words match.')
   })
@@ -331,7 +331,8 @@ describe('the word detail', () => {
       expect(inside).toContain('<dt>State</dt><dd>Learning</dd>') // interval 12 days: under the 21 that make a word well learned
       expect(inside).toContain('<dt>Repetitions</dt><dd>3</dd>')
       expect(inside).toContain('<dt>Interval</dt><dd>12d</dd>')
-      expect(inside).toContain('<dt>Ease factor</dt><dd>2.36</dd>')
+      // the number, and beside it what it means (no bands are invented: the hint says which way the number works)
+      expect(inside).toContain('<dt>Ease factor</dt><dd>2.36 <span class="sched-hint">· the higher, the less often the word comes back</span></dd>')
     })
 
     it('shows none of them outside it: nothing in the card is a visible row any more', () => {
@@ -394,9 +395,9 @@ describe('the word detail', () => {
     expect(html).not.toContain('Again')
   })
 
-  it('a hidden word explains that its progress is kept, and offers "Bring back" and no star: a known word is not waiting to be taught', () => {
+  it('a hidden word explains that its progress is kept, and offers "Bring back" and no star: a hidden word is not waiting to be taught', () => {
     const html = detail({ ...base, isHidden: true, isFavorite: true, repetitions: 2, nextReview: new Date(NOWISH + day) })
-    expect(html).toContain('<dd>Known</dd>')
+    expect(html).toContain('<dd>Hidden</dd>')
     expect(html).toContain('Its progress is kept')
     expect(html).toContain('aria-label="Bring back casa"')
     expect(html).not.toContain('Learn sooner')

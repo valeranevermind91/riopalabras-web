@@ -435,10 +435,10 @@ describe('the Learn screen', () => {
   const data = { words: pool(300), settings, getSettings: () => settings, applyProgress: () => {}, applySettings: () => {}, applyHidden: () => {} } as never
   const queue = createSupabaseWriteQueue(fakeSupabase('u').client, 'u', () => settings)
 
-  it('offers "I already know this word" as a quiet secondary action, apart from the arrows and Finish', () => {
+  it('offers "Hide this word" as a quiet secondary action, apart from the arrows and Finish', () => {
     const html = renderToStaticMarkup(createElement(LearnScreen, { data, queue, metrics: null, onHome: () => {}, onReview: () => {} }))
     expect(html).toContain('class="known-btn"')
-    expect(html).toContain('I already know this word')
+    expect(html).toContain('Hide this word')
     expect(html).not.toContain('btn-primary') // never styled as a main action
     const order = ['swipe-area', 'learn-known', 'learn-nav'].map((c) => html.indexOf(c))
     expect(order).toEqual([...order].sort((a, b) => a - b)) // between the card and the arrows

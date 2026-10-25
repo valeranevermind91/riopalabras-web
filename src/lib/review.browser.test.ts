@@ -307,7 +307,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     const states = [
       { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting (20 per session)', ru: 'Сначала повторение — ждут 50 слов, за раз — 20' },
       { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — можно изучить 10 новых слов' },
-      { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Done for today', ru: 'На сегодня всё' },
+      { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Today: 10 new words. Tomorrow: 10 new words.', ru: 'Сегодня: 10 новых слов. Завтра: 10 новых слов.' },
       { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова закончились — добавьте свои или потренируйтесь' },
       { name: 'allClear', query: 'due=0&met=1', primary: null, en: 'All caught up', ru: 'Всё повторено' },
     ] as const

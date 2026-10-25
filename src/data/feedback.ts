@@ -17,8 +17,11 @@ export const COUNT_FROM = 1800
 export const SEND_TIMEOUT_MS = 15_000
 
 export type FeedbackKind = 'word' | 'general'
-/** Where a report was written: the Settings row, or a word's detail screen. */
-export type FeedbackScreen = 'settings' | 'word'
+/**
+ * Where a report was written: the Settings row, a word's detail screen, or Learn's card. The table puts no constraint on this column (only on kind, status and the message),
+ * so a new place is a new value here and in the form's `screens` names, nothing else.
+ */
+export type FeedbackScreen = 'settings' | 'word' | 'learn'
 
 /** What travels with the text besides the person's account: nothing that identifies the device. */
 export interface FeedbackContext {

@@ -7,7 +7,7 @@ import { browserLanguage, parseUiLanguage, setLanguage, type UiLanguage } from '
  * text (both languages) next to this date, and fails when one moves without the other. Spelling (е for ё) and spacing are not a change of the policy,
  * so the fingerprint reads the text normalised and the date does not move for them.
  */
-export const PRIVACY_UPDATED = '2026-10-19'
+export const PRIVACY_UPDATED = '2026-10-25'
 
 /** The date as the reader's language writes it ("19 October 2026" / "19 октября 2026 г."). A calendar date, so no time zone moves it. */
 export function formatPolicyDate(iso: string, language: UiLanguage): string {

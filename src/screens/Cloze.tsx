@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ClozeQuestion } from '../components/ClozeQuestion'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
@@ -20,6 +20,8 @@ import {
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { useCardTimer } from '../lib/cardTimer'
+import { useKeyboardInset } from '../lib/useKeyboardInset'
+import { wordKey } from '../data/words'
 import { haptic } from '../lib/telegram'
 import { strings } from '../strings'
 
@@ -32,15 +34,19 @@ interface ClozeScreenProps {
   onHome: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
+  /** Only these words (their wordKeys), for the questions and for "New session": Home's practice on the words learned today. Without it, every word that can be used. */
+  scope?: ReadonlySet<string>
 }
 
-export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }: ClozeScreenProps) {
+export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack, scope }: ClozeScreenProps) {
   const t = strings.practice
-  const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(data.words))
+  const words = useMemo(() => (scope ? data.words.filter((w) => scope.has(wordKey(w.esWord))) : data.words), [data.words, scope])
+  const [session, setSession] = useState<readonly ClozeItem[] | null>(() => buildClozeSession(words))
   const [progress, setProgress] = useState<ClozeProgress>(startCloze)
   const { index, results, done } = progress
   // The review log: a Cloze session has an id of its own, and each question's time is from the question appearing to the answer.
   const [sessionId, setSessionId] = useState(() => reviewLog?.startSession() ?? null)
+  const keyboardInset = useKeyboardInset() // how much of the page the on-screen keyboard covers: the screen pads for it and the question scrolls its dock clear of it
   const timer = useCardTimer() // the time on a question: null if the app was away meanwhile or it took over a minute (see cardTimer.ts)
   // The time is read when the answer is COMMITTED (Check, or giving up), not when "Continue" is pressed after the feedback: reading the feedback is not time answering.
   const answeredIn = useRef<number | null>(null)
@@ -69,7 +75,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
 
   const newSession = () => {
     haptic('tap')
-    setSession(buildClozeSession(data.words))
+    setSession(buildClozeSession(words))
     setSessionId(reviewLog?.startSession() ?? null)
     timer.start()
     setProgress(startCloze())
@@ -92,7 +98,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
   }
 
   if (done) {
-    const canContinue = clozeEligibleCount(data.words) >= PRACTICE_MIN_WORDS
+    const canContinue = clozeEligibleCount(words) >= PRACTICE_MIN_WORDS
     return (
       <main className="screen practice">
         {header}
@@ -133,7 +139,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack }:
         <div className="bar-fill" style={{ width: `${((index + 1) / session.length) * 100}%` }} />
       </div>
       <p className="cz-instruction">{t.clozeHint}</p>
-      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} onAnswered={answered} onChecked={() => (answeredIn.current = timer.stop())} />
+      <ClozeQuestion key={`${index}-${session[index].headword}`} item={session[index]} settings={data.settings} keyboardInset={keyboardInset} onAnswered={answered} onChecked={() => (answeredIn.current = timer.stop())} />
     </main>
   )
 }

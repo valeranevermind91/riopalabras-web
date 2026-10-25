@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CLOZE_BLANK,
   blankSentence,
@@ -13,11 +13,14 @@ import {
 } from '../data/practice'
 import { clozeFeedback } from '../data/clozeFeedback'
 import type { UserSettings } from '../data/types'
+import { scrollDeltaToClear } from '../lib/useKeyboardInset'
 import { strings } from '../strings'
 
 interface ClozeQuestionProps {
   item: ClozeItem
   settings: Pick<UserSettings, 'showRuTranslation' | 'showEnTranslation'>
+  /** How much of the page the on-screen keyboard covers (0 when none, or when the page shrinks for it): the dock is kept above it. */
+  keyboardInset?: number
   /** Fires once, when Continue is pressed after the question was answered or given up. */
   onAnswered: (outcome: ClozeOutcome) => void
   /** The moment the answer is committed (Check, or giving up), before the feedback is read: where the time spent on the question ends. */
@@ -27,8 +30,18 @@ interface ClozeQuestionProps {
 type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 
 /** One fill-in-the-blank question. Every element stays mounted in the same place, so nothing shifts when a hint or the feedback appears. */
-export function ClozeQuestion({ item, settings, onAnswered, onChecked }: ClozeQuestionProps) {
-  const t = strings.practice 
+export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, onChecked }: ClozeQuestionProps) {
+  const t = strings.practice
+  const dock = useRef<HTMLFormElement>(null)
+  // With the keyboard up, the answer field, Hint, Reveal and Check/Continue must all be in the part of the page that can be seen: scroll the dock up
+  // to just above the keyboard (the screen's padding gives the page room to). It runs for each new question too, since the keyboard stays up between them.
+  useEffect(() => {
+    const visible = window.visualViewport
+    const element = dock.current
+    if (keyboardInset === 0 || !visible || !element) return
+    const delta = scrollDeltaToClear(element.getBoundingClientRect().bottom, visible.offsetTop + visible.height)
+    if (delta > 0) window.scrollBy({ top: delta })
+  }, [keyboardInset])
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
   const [answer, setAnswer] = useState<Answer | null>(null)
@@ -89,6 +102,7 @@ export function ClozeQuestion({ item, settings, onAnswered, onChecked }: ClozeQu
       </div>
 
       <form
+        ref={dock}
         className="cz-dock"
         onSubmit={(e) => {
           e.preventDefault()

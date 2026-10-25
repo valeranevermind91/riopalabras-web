@@ -149,7 +149,9 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
               {status.due ? ` · ${d.dueNow}` : ''}
             </dd>
             <dt>{d.ease}</dt>
-            <dd>{word.easeFactor.toFixed(2)}</dd>
+            <dd>
+              {word.easeFactor.toFixed(2)} <span className="sched-hint">· {d.easeHint}</span>
+            </dd>
           </dl>
         </details>
       </section>
