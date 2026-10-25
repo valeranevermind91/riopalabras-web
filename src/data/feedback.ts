@@ -9,7 +9,7 @@ import { WriteError, isRejection } from './writes'
 // They go into public.feedback, which the signed-in user can read and add to (their own rows) and nothing else: a row is never changed or removed.
 
 export const FEEDBACK_TABLE = 'feedback'
-/** The table's limit on a message (1..2000 characters). */
+/** The table's limit on a message (1..2000 characters after trimming; the form counts UTF-16 units, the table characters, so the form is the stricter). */
 export const MAX_MESSAGE = 2000
 /** From this many characters on the form shows how many are used (nine tenths of the limit). */
 export const COUNT_FROM = 1800
@@ -18,7 +18,7 @@ export const SEND_TIMEOUT_MS = 15_000
 
 export type FeedbackKind = 'word' | 'general'
 /**
- * Where a report was written: the Settings row, a word's detail screen, or Learn's card. The table puts no constraint on this column (only on kind, status and the message),
+ * Where a report was written: the Settings row, a word's detail screen, or Learn's card. The table puts no constraint on this column (only on kind, status and the message: sql/feedback.sql),
  * so a new place is a new value here and in the form's `screens` names, nothing else.
  */
 export type FeedbackScreen = 'settings' | 'word' | 'learn'
