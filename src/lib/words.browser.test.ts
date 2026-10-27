@@ -989,7 +989,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect(sent.words).toEqual([
         {
           kind: 'save',
-          row: { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'baby squash', ru_translation: 'кабачок', example_sentence: 'Me gusta el zapallito.', example_translation_en: 'I like little squash.', example_translation_ru: 'Мне нравится кабачок.', is_rioplatense_variant: false, region: null, register: null, es_standard: null, pos: 'n' },
+          row: { es_word: 'Zapallito', es_rioplatense: null, en_translation: 'baby squash', ru_translation: 'кабачок', example_sentence: 'Me gusta el zapallito.', example_translation_en: 'I like little squash.', example_translation_ru: 'Мне нравится кабачок.', is_rioplatense_variant: false, region: null, register: null, es_standard: null, pos: 'n', word_form_in_example: 'zapallito' }, // the form from the lookup travels with the word
         },
       ])
       expect(sent.favorites).toEqual([{ esWord: 'Zapallito', favorite: true }]) // the star is written with the word

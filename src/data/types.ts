@@ -78,7 +78,7 @@ export interface ProgressUpdate {
   readonly nextReview: Date
 }
 
-/** The columns of a user_words row that the client writes (user_id is added by the writer; id, created_at and word_form_in_example are never sent). */
+/** The columns of a user_words row that the client writes (user_id is added by the writer; id and created_at are never sent). */
 export interface CustomWordRow {
   /** Exactly as typed: the table's UNIQUE (user_id, es_word) is case-sensitive. */
   es_word: string
@@ -96,6 +96,8 @@ export interface CustomWordRow {
   /** The standard-Spanish equivalent of a Rioplatense headword. */
   es_standard: string | null
   pos: string
+  /** The exact text of the word as it stands in example_sentence ("Tengo" for tener), so the card can highlight it; null when there is none or the sentence was edited. */
+  word_form_in_example: string | null
 }
 
 /**

@@ -44,6 +44,12 @@ export interface MergedWords {
   diagnostics: MergeDiagnostics
 }
 
+/** The stored form, if it still stands in the sentence (an edited sentence may have lost it); null otherwise. */
+function formIn(sentence: string | null | undefined, form: string | null | undefined): string | null {
+  const trimmed = form?.trim()
+  return trimmed && sentence?.includes(trimmed) ? trimmed : null
+}
+
 export function customWordFromRow(row: UserWordRow): Word {
   const enTranslation = row.en_translation ?? ''
   const ruTranslation = row.ru_translation ?? ''
@@ -57,7 +63,7 @@ export function customWordFromRow(row: UserWordRow): Word {
     exampleSentence: row.example_sentence ?? '',
     exampleTranslationEn: row.example_translation_en ?? '',
     exampleTranslationRu: row.example_translation_ru ?? '',
-    wordFormInExample: null,
+    wordFormInExample: formIn(row.example_sentence, row.word_form_in_example),
     isRioplatenseVariant: row.is_rioplatense_variant === true,
     region: customRegion(row.region),
     register: customRegister(row.register),

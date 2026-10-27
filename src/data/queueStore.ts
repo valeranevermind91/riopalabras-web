@@ -154,6 +154,8 @@ function readWordOp(raw: unknown): CustomWordOp | null {
     register: text(r.register) ? r.register : null,
     es_standard: text(r.es_standard) ? r.es_standard : null,
     pos: r.pos,
+    // a save queued before the column existed has none
+    word_form_in_example: text(r.word_form_in_example) && r.word_form_in_example.trim() !== '' ? r.word_form_in_example : null,
   }
   return { kind: 'save', row }
 }

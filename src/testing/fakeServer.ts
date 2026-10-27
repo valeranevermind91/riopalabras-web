@@ -41,7 +41,7 @@ export function createFakeServer(options: FakeServerOptions = {}) {
   // Things a test can break on purpose.
   // Lets a test look at the server's state at the moment a request arrives (before it is applied).
   const spy: { beforeRest: ((request: { method: string; table: string }) => void) | null } = { beforeRest: null }
-  const broken = { loseAnswerOf: null as string | null, rejectRowsWhere: null as ((row: Row) => boolean) | null, missingTable: null as string | null, forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false }
+  const broken = { loseAnswerOf: null as string | null, rejectRowsWhere: null as ((row: Row) => boolean) | null, missingTable: null as string | null, forgetSessions: false, proxyDown: false, hangWrites: false, forbidWrites: false, forbidTable: null as string | null, failReadsOf: null as string | null, proxyUnreachable: false, networkDown: false, missingColumn: null as string | null }
 
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -101,6 +101,8 @@ export function createFakeServer(options: FakeServerOptions = {}) {
     const rows = tables.get(table) ?? []
     if (request.method === 'GET') {
       if (broken.failReadsOf === table) return json({ message: 'could not read this table' }, 400) // not a 5xx: supabase-js retries those on its own
+      // a database that does not have a column yet (the migration not run): selecting it by name is refused, as PostgREST does (42703)
+      if (broken.missingColumn && url.searchParams.get('select')?.split(',').some((c) => c.trim() === broken.missingColumn)) return json({ code: '42703', message: `column ${table}.${broken.missingColumn} does not exist` }, 400)
       // RLS: a row is visible only to the user who owns it; anon sees nothing, and gets no error for it.
       let visible = role === 'authenticated' ? rows.filter((r) => r.user_id === claims.sub) : []
       for (const [column, filter] of url.searchParams) {
@@ -110,6 +112,12 @@ export function createFakeServer(options: FakeServerOptions = {}) {
       const offset = Number(url.searchParams.get('offset') ?? 0)
       const limit = url.searchParams.get('limit')
       return json(visible.slice(offset, limit === null ? undefined : offset + Number(limit)))
+    }
+    // ...and writing it is refused by name too (PGRST204: not in the schema cache)
+    if (broken.missingColumn && request.method === 'POST' && table !== 'feedback' && table !== 'review_log') {
+      const probe = (await request.clone().json().catch(() => null)) as Row | Row[] | null
+      const sent = Array.isArray(probe) ? probe : probe ? [probe] : []
+      if (sent.some((r) => broken.missingColumn! in r)) return json({ code: 'PGRST204', message: `Could not find the '${broken.missingColumn}' column of '${table}' in the schema cache` }, 400)
     }
     if (broken.missingTable === table) return json({ code: 'PGRST205', message: `Could not find the table 'public.${table}' in the schema cache` }, 404)
     if (broken.hangWrites && request.method !== 'GET') return new Promise<Response>(() => {})

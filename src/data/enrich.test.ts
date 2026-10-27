@@ -80,6 +80,7 @@ describe('a good answer', () => {
         exampleTranslationRu: 'Он очень застенчив.',
         esRioplatense: 'chiquito',
         isRioplatenseVariant: true,
+        wordFormInExample: 'tímido',
         region: null,
         register: 'neutral',
         esStandard: null,
@@ -104,10 +105,17 @@ describe('a good answer', () => {
     expect(bad.ok && bad.value).toMatchObject({ region: null, register: null, esStandard: null })
   })
 
-  it('ignores word_form_in_example: it has no column and is not synced', async () => {
-    const result = await enrichWord({ word: 'tímido', pos: 'adj' }, deps(async () => reply(200, { words: [entry] })))
-    expect(result.ok && Object.keys(result.value)).not.toContain('wordFormInExample')
-    expect(JSON.stringify(result)).not.toContain('word_form')
+  it('gives word_form_in_example when it really stands in the example, so the card can highlight it; otherwise none', async () => {
+    const form = async (body: unknown) => {
+      const result = await enrichWord({ word: 'tener', pos: 'verb' }, deps(async () => reply(200, { words: [{ ...entry, word: 'tener', ...(body as object) }] })))
+      return result.ok ? result.value.wordFormInExample : 'failed'
+    }
+    expect(await form({ example_sentence: 'Tengo hambre.', word_form_in_example: 'Tengo' })).toBe('Tengo')
+    expect(await form({ example_sentence: 'Tengo hambre.', word_form_in_example: 'tengo' })).toBeNull() // not the exact text of the sentence
+    expect(await form({ example_sentence: 'Tengo hambre.', word_form_in_example: null })).toBeNull()
+    expect(await form({ example_sentence: 'Tengo hambre.', word_form_in_example: '' })).toBeNull()
+    expect(await form({ example_sentence: '', word_form_in_example: 'Tengo' })).toBeNull()
+    expect(await form({ example_sentence: 'Tengo hambre.', word_form_in_example: 7 })).toBeNull()
   })
 
   it('finds the word among several by its lowercased form, and accepts the other shapes the proxy has used', async () => {

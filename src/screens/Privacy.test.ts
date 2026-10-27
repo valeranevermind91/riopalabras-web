@@ -168,7 +168,9 @@ describe('what is stored: the columns the code writes are the ones the page desc
   })
 
   it('your own words: the word as typed, translations, example and its translations, part of speech, region and register', () => {
-    expect(keys(rowFromValues(blankValues()))).toEqual(['en_translation', 'es_rioplatense', 'es_standard', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'es_word', 'is_rioplatense_variant', 'pos', 'region', 'register', 'ru_translation'].sort())
+    // word_form_in_example is the example's own word, as it stands in the sentence (so the card can highlight it): part of the example, not a new kind of data, and the page's
+    // words ("the words you add yourself") already cover it; adding it to the list changes the guard, not the policy, so PRIVACY_UPDATED does not move.
+    expect(keys(rowFromValues(blankValues()))).toEqual(['en_translation', 'es_rioplatense', 'es_standard', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'es_word', 'is_rioplatense_variant', 'pos', 'region', 'register', 'ru_translation', 'word_form_in_example'].sort())
     expect(pageText(en)).toContain('the words you add yourself') // the translations, the example and the notes of such a word are the words themselves
   })
 

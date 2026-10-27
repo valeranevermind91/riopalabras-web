@@ -58,6 +58,8 @@ export interface WordValues {
   exampleSentence: string
   exampleTranslationEn: string
   exampleTranslationRu: string
+  /** The word as it stands in exampleSentence (from the lookup; null when there is none or the sentence was written by hand). Not typed. */
+  wordFormInExample: string | null
   /** Not typed: they come back from enrichment (or stay as the word has them). */
   esRioplatense: string | null
   isRioplatenseVariant: boolean
@@ -92,6 +94,8 @@ export function fillBlanks(typed: WordValues, found: Partial<WordValues>): WordV
     exampleSentence: text(typed.exampleSentence, found.exampleSentence),
     exampleTranslationEn: text(typed.exampleTranslationEn, found.exampleTranslationEn),
     exampleTranslationRu: text(typed.exampleTranslationRu, found.exampleTranslationRu),
+    // the form belongs to the sentence it came with: a sentence that was already there keeps its own (or none), a sentence filled in brings its form
+    wordFormInExample: typed.exampleSentence.trim() !== '' ? typed.wordFormInExample : (found.wordFormInExample ?? null),
     esRioplatense: typed.esRioplatense ?? found.esRioplatense ?? null,
     isRioplatenseVariant: typed.isRioplatenseVariant || found.isRioplatenseVariant === true,
     region: typed.region ?? found.region ?? null,
@@ -100,7 +104,13 @@ export function fillBlanks(typed: WordValues, found: Partial<WordValues>): WordV
   }
 }
 
-/** The row to write: exactly the twelve columns the client owns, es_word as typed (trimmed), text trimmed. */
+/** The stored form, only while it still stands in the sentence as it will be saved (an edited sentence may have lost it); null otherwise. */
+function formStanding(values: WordValues): string | null {
+  const form = values.wordFormInExample?.trim()
+  return form && values.exampleSentence.trim().includes(form) ? form : null
+}
+
+/** The row to write: the thirteen columns the client owns, es_word as typed (trimmed), text trimmed. */
 export function rowFromValues(values: WordValues): CustomWordRow {
   return {
     es_word: values.esWord.trim(),
@@ -110,6 +120,7 @@ export function rowFromValues(values: WordValues): CustomWordRow {
     example_sentence: values.exampleSentence.trim(),
     example_translation_en: values.exampleTranslationEn.trim(),
     example_translation_ru: values.exampleTranslationRu.trim(),
+    word_form_in_example: formStanding(values),
     is_rioplatense_variant: values.isRioplatenseVariant,
     region: customRegion(values.region),
     register: customRegister(values.register),
@@ -127,6 +138,7 @@ export const blankValues = (): WordValues => ({
   exampleSentence: '',
   exampleTranslationEn: '',
   exampleTranslationRu: '',
+  wordFormInExample: null,
   esRioplatense: null,
   isRioplatenseVariant: false,
   region: null,
@@ -144,6 +156,7 @@ export function valuesOf(word: Word): WordValues {
     exampleSentence: word.exampleSentence,
     exampleTranslationEn: word.exampleTranslationEn,
     exampleTranslationRu: word.exampleTranslationRu,
+    wordFormInExample: word.wordFormInExample,
     esRioplatense: word.esRioplatense,
     isRioplatenseVariant: word.isRioplatenseVariant,
     region: word.region,

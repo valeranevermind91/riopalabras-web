@@ -161,15 +161,20 @@ export const writeFavoriteWords = (client: SupabaseClient, userId: string, ops: 
 
 /**
  * Writes custom-word changes to user_words the way the Flutter app does: saves are one upsert on (user_id, es_word), with
- * es_word as typed and without id, created_at (the database fills it on insert and leaves it on update) or
- * word_form_in_example (no such column); deletes are one request per word, matched by the word's STORED casing. (A lowercased
- * key silently matches no row for a capitalised word.) Both are safe to repeat. Throws on any failure.
+ * es_word as typed and without id or created_at (the database fills it on insert and leaves it on update); deletes are one
+ * request per word, matched by the word's STORED casing. (A lowercased key silently matches no row for a capitalised word.)
+ * Both are safe to repeat. A save carries word_form_in_example; a database that does not have the column yet (sql/user_words_word_form.sql
+ * not run) refuses it by name, and the save is made again without it, so a word is never lost for a column. Throws on any other failure.
  */
 export async function writeCustomWords(client: SupabaseClient, userId: string, ops: readonly CustomWordOp[]): Promise<void> {
   const saved = ops.flatMap((op) => (op.kind === 'save' ? [{ user_id: userId, ...op.row }] : []))
   if (saved.length > 0) {
-    const { error, status } = await client.from('user_words').upsert(saved, { onConflict: 'user_id,es_word' })
-    if (error) fail('user_words', error, status)
+    const first = await client.from('user_words').upsert(saved, { onConflict: 'user_id,es_word' })
+    if (first.error && /word_form_in_example/.test(first.error.message)) {
+      const without = saved.map(({ word_form_in_example: _form, ...rest }) => rest)
+      const { error, status } = await client.from('user_words').upsert(without, { onConflict: 'user_id,es_word' })
+      if (error) fail('user_words', error, status)
+    } else if (first.error) fail('user_words', first.error, first.status)
   }
   for (const op of ops) {
     if (op.kind !== 'delete') continue

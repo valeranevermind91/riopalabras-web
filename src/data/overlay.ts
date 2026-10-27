@@ -19,6 +19,8 @@ export interface UserWordRow {
   register?: string | null
   es_standard?: string | null
   pos: string | null
+  /** Absent on a database that does not have the column yet (sql/user_words_word_form.sql), and on rows written before it. */
+  word_form_in_example?: string | null
 }
 
 export interface ProgressRow {
@@ -119,6 +121,18 @@ function timesOf(rows: readonly FavoriteRow[]): Record<string, number> {
 
 const WORD_COLUMNS =
   'es_word, es_rioplatense, en_translation, ru_translation, example_sentence, example_translation_en, example_translation_ru, is_rioplatense_variant, region, register, es_standard, pos'
+/** The same with the word form. user_words is a critical table: a database that does not have the column yet must not stop the app from loading (see fetchCustomWords). */
+const WORD_COLUMNS_WITH_FORM = `${WORD_COLUMNS}, word_form_in_example`
+
+/** Reads the user's own words. If the database says the word-form column is not there (42703), reads again without it: the words load, only the highlighting of inflected forms is missing. */
+export async function fetchCustomWords(client: SupabaseClient, userId: string): Promise<UserWordRow[]> {
+  try {
+    return await fetchAll<UserWordRow>(client, 'user_words', WORD_COLUMNS_WITH_FORM, userId)
+  } catch (error) {
+    if (error instanceof TableLoadError && error.code === '42703') return fetchAll<UserWordRow>(client, 'user_words', WORD_COLUMNS, userId)
+    throw error
+  }
+}
 
 /** Without these the app would show wrong progress or lose the user's own words: a failure here is an error. */
 export const CRITICAL_TABLES = ['user_words', 'user_progress', 'user_settings'] as const
@@ -163,7 +177,7 @@ export async function loadOverlay(client: SupabaseClient, userId: string, option
   }
 
   const [customWords, progress, settings, favorites, hidden] = await Promise.all([
-    read('user_words', () => fetchAll<UserWordRow>(client, 'user_words', WORD_COLUMNS, userId)),
+    read('user_words', () => fetchCustomWords(client, userId)),
     read('user_progress', () => fetchAll<ProgressRow>(client, 'user_progress', 'es_word, ease_factor, interval_days, repetitions, next_review', userId)),
     read('user_settings', () => fetchSettings(client, userId)),
     soft('user_favorites', () => fetchFavorites(client, userId), []),

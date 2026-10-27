@@ -30,6 +30,8 @@ export interface Enriched {
   register: CustomRegister | null
   /** The standard-Spanish equivalent, when the typed word is itself Rioplatense. */
   esStandard: string | null
+  /** The exact text of the word as it stands in the example (null when the proxy gave none, or it is not in the sentence). */
+  wordFormInExample: string | null
 }
 
 export type EnrichFailure =
@@ -91,6 +93,9 @@ function notRecognisedIn(item: Record<string, unknown>, typed: string): NotRecog
   return { suggestion: usable ? suggestion : null }
 }
 
+/** The form the proxy points at, if it really stands in the sentence (the client highlights by finding it there); otherwise null. */
+const formIn = (sentence: string, form: string): string | null => (form !== '' && sentence.includes(form) ? form : null)
+
 /** The part of the answer that belongs to the word asked about (matched by lowercased `word`, as the Flutter app does). */
 function entryFor(payload: unknown, word: string): { value: Enriched; notRecognised: NotRecognised | null } | null {
   const list = Array.isArray(payload) ? payload : isObject(payload) ? (['words', 'results', 'items'].map((k) => payload[k]).find(Array.isArray) as unknown[] | undefined) : undefined
@@ -111,6 +116,7 @@ function entryFor(payload: unknown, word: string): { value: Enriched; notRecogni
       region: customRegion(item.region),
       register: customRegister(item.register),
       esStandard: textOf(item.es_standard) || null,
+      wordFormInExample: formIn(textOf(item.example_sentence), textOf(item.word_form_in_example)),
     },
     notRecognised: notRecognisedIn(item, word),
   }

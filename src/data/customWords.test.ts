@@ -93,9 +93,9 @@ describe('what saving needs', () => {
     expect(checkSave(filled({ exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '' }))).toEqual({ ok: true })
   })
 
-  it('the row carries exactly the twelve intended columns, the word as typed: no id, no created_at, no word_form_in_example, no user_id', () => {
+  it('the row carries exactly the thirteen intended columns, the word as typed: no id, no created_at, no user_id', () => {
     const row = rowFromValues(filled({ exampleSentence: ' Me gusta el zapallito. ', esRioplatense: ' zapallito ', isRioplatenseVariant: true }))
-    expect(Object.keys(row).sort()).toEqual(['en_translation', 'es_rioplatense', 'es_standard', 'es_word', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'is_rioplatense_variant', 'pos', 'region', 'register', 'ru_translation'])
+    expect(Object.keys(row).sort()).toEqual(['en_translation', 'es_rioplatense', 'es_standard', 'es_word', 'example_sentence', 'example_translation_en', 'example_translation_ru', 'is_rioplatense_variant', 'pos', 'region', 'register', 'ru_translation', 'word_form_in_example'])
     expect(row).toEqual({
       es_word: 'Zapallito',
       es_rioplatense: 'zapallito',
@@ -109,6 +109,7 @@ describe('what saving needs', () => {
       register: null,
       es_standard: null,
       pos: 'n',
+      word_form_in_example: null,
     })
   })
 
@@ -434,6 +435,7 @@ describe('through the write queue', () => {
         register: null,
         es_standard: null,
         pos: 'n',
+        word_form_in_example: null,
       },
     ])
     expect(blob()).toEqual({ daily_new_word_limit: 10, some_future_key: { a: 1 } }) // the settings blob is untouched: the word is starred in user_favorites instead
