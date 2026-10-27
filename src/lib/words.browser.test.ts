@@ -1595,6 +1595,66 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 120_000)
 
+    it('the Rioplatense form is a field of its own: the lookup fills it, the user can change it or clear it, ticking "This word is Rioplatense" clears it, and what is left is saved', async () => {
+      const lookup = (over: Record<string, unknown>) => ({ ok: true, value: { enTranslation: 'to get drunk', ruTranslation: 'напиться', exampleSentence: '', exampleTranslationEn: '', exampleTranslationRu: '', esRioplatense: 'curarse', isRioplatenseVariant: false, region: null, register: 'informal', esStandard: null, wordFormInExample: null, ...over } })
+      const fieldShown = (p: Page) => p.$$eval('.form-field .form-label', (els, label) => els.some((e) => e.textContent === label), f.rioplatenseForm)
+
+      // the lookup fills it (as it did for the owner's word), and it can be emptied by hand: nothing is written
+      const page = await open()
+      await stub(page, lookup({}))
+      await startAdding(page, 'Encurdelarse', 'Verb')
+      await page.waitForSelector('.form-word')
+      expect(await fieldShown(page)).toBe(true)
+      expect(await fieldValue(page, f.rioplatenseForm)).toBe('curarse')
+      expect(await page.$$eval('.form-field .form-hint', (els) => els.map((e) => e.textContent))).toContain(f.rioplatenseFormHint)
+      await typeIn(page, f.rioplatenseForm, '')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { es_word: 'Encurdelarse', es_rioplatense: null, is_rioplatense_variant: false } })
+
+      // changed by hand, in the edit form, and kept
+      await openByName(page, 'Encurdelarse')
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await fieldValue(page, f.rioplatenseForm)).toBe('')
+      await typeIn(page, f.rioplatenseForm, 'chuparse')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { es_rioplatense: 'chuparse' } })
+
+      // ticking the box says the word is itself Rioplatense: the field goes, with its value
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      expect(await fieldValue(page, f.rioplatenseForm)).toBe('chuparse')
+      await page.click('.form-check input')
+      expect(await fieldShown(page)).toBe(false)
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.word-detail')
+      expect((await sentAll(page)).words.at(-1)).toMatchObject({ row: { es_rioplatense: null, is_rioplatense_variant: true } })
+      // and unticking it does not bring the old value back
+      await clickText(page, '.detail-actions .btn', 'Edit')
+      await page.waitForSelector('.word-form')
+      await page.click('.form-check input')
+      expect(await fieldShown(page)).toBe(true)
+      expect(await fieldValue(page, f.rioplatenseForm)).toBe('')
+      await page.close()
+    }, 150_000)
+
+    it('a word added with a Rioplatense equivalent keeps the typed word as its title; the card says "Rioplatense: cotillear" and highlights it in the example', async () => {
+      const page = await open()
+      await stub(page, { ok: true, value: { enTranslation: 'to snoop', ruTranslation: 'сплетничать', exampleSentence: 'Le gusta cotillear en las redes.', exampleTranslationEn: 'He likes to snoop on social media.', exampleTranslationRu: 'Он любит совать нос в соцсети.', esRioplatense: 'cotillear', isRioplatenseVariant: false, region: null, register: null, esStandard: null, wordFormInExample: 'cotillear' } })
+      await startAdding(page, 'Chusmear', 'Verb')
+      await page.waitForSelector('.form-word')
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      await openByName(page, 'Chusmear')
+      await page.waitForSelector('.wc-headword')
+      expect(await page.$eval('.wc-headword', (e) => e.textContent)).toBe('Chusmear')
+      expect(await page.$eval('.wc-relation', (e) => e.textContent?.replace(/\s+/g, ' ').trim())).toBe(`${strings.rio.rioplatense}: cotillear`)
+      expect(await page.$eval('.wc-sentence mark, mark', (e) => e.textContent)).toBe('cotillear')
+      await page.close()
+    }, 90_000)
+
     it('a word typed by hand can be marked Rioplatense with the checkbox, and its marks show', async () => {
       const page = await open()
       await stub(page, { ok: false, failure: { kind: 'offline' } })

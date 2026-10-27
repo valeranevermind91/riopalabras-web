@@ -315,11 +315,19 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
       </label>
       <div className="form-field">
         <label className="form-check">
-          <input type="checkbox" checked={values.isRioplatenseVariant} onChange={(e) => set({ isRioplatenseVariant: e.target.checked })} />
+          {/* a word that is itself Rioplatense has no Rioplatense equivalent: ticking the box clears the one the lookup may have given */}
+          <input type="checkbox" checked={values.isRioplatenseVariant} onChange={(e) => set({ isRioplatenseVariant: e.target.checked, ...(e.target.checked ? { esRioplatense: null } : {}) })} />
           <span>{f.rioplatenseCheck}</span>
         </label>
         <span className="form-hint">{f.rioplatenseHint}</span>
       </div>
+      {!values.isRioplatenseVariant && (
+        <label className="form-field">
+          <span className="form-label">{f.rioplatenseForm}</span>
+          <input className="form-input" lang="es" value={values.esRioplatense ?? ''} onChange={(e) => set({ esRioplatense: e.target.value === '' ? null : e.target.value })} />
+          <span className="form-hint">{f.rioplatenseFormHint}</span>
+        </label>
+      )}
       <label className="form-field">
         <span className="form-label">{f.standard}</span>
         <input className="form-input" lang="es" value={values.esStandard ?? ''} onChange={(e) => set({ esStandard: e.target.value })} />
@@ -348,7 +356,6 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
           ))}
         </select>
       </label>
-      {values.esRioplatense && <p className="form-hint">{f.rioplatenseForm(values.esRioplatense)}</p>}
 
       <div className="form-actions">
         <button type="submit" className="btn btn-primary">

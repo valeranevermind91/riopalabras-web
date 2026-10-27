@@ -1,4 +1,4 @@
-import { headword, isOwnRioplatense, type HeadwordSource } from './headword'
+import { headword, isCleanVariant, isOwnRioplatense, type HeadwordSource } from './headword'
 import type { Localized, RioRegion, RioType, StdUsage } from './rio'
 import type { Word } from './types'
 
@@ -30,6 +30,12 @@ export function relationFor(word: HeadwordSource): Relation {
   if (!rio) {
     // A Rioplatense word the user added: the standard equivalent, in the same line a dictionary word uses.
     if (isOwnRioplatense(word)) return word.esStandard ? { type: 'replacement', standardWord: word.esStandard } : null
+    // A word the user added keeps the headword they typed. Its Rioplatense equivalent (the lookup's, or their own) is a note: the same line a dictionary word shows when its
+    // Rioplatense form does not lead. It says why an example may show another word, highlighted.
+    if (word.isCustom === true) {
+      const equivalent = word.esRioplatense?.trim() ?? ''
+      return equivalent !== '' && isCleanVariant(equivalent) && equivalent.toLowerCase() !== word.esWord.trim().toLowerCase() ? { type: 'replacement', rioForm: equivalent } : null
+    }
     // Legacy fallback: only the replacement shape can be derived from the free-text field.
     if (head.form === 'rioplatense' && head.secondary) return { type: 'replacement', standardWord: head.secondary }
     return null

@@ -21,6 +21,8 @@ function explain(word: Word, decision: HeadwordDecision): string {
       return r.legacy
     case 'own-rioplatense':
       return r['own-rioplatense']
+    case 'custom-word':
+      return r['custom-word']
     case 'not-replacement':
       return r['not-replacement'](word.rio?.type ?? '')
     case 'unclean-form':

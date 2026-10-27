@@ -81,6 +81,7 @@ export const debug = {
       'no-overlay': 'No overlay entry: a plain dictionary word.',
       legacy: 'Legacy rule (no overlay entry): old es_rioplatense value checked against the example word form.',
       'own-rioplatense': 'A word the user added and marked as Rioplatense: the typed word is the Rioplatense form.',
+      'custom-word': 'A word the user added: the typed word always leads. Its Rioplatense equivalent, if the lookup gave one, is a note on the card, never the headword.',
       'not-replacement': (type: string) => `Type ${type} never switches the headword; only a replacement can.`,
       'unclean-form': 'The overlay form is not a clean headword, so it cannot lead.',
       'same-as-es-word': 'The overlay form equals es_word, so there is nothing to switch to.',

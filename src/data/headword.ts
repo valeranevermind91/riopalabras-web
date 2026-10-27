@@ -4,8 +4,10 @@ import type { Word } from './types'
 // Which Spanish form a card leads with, and which word in the example sentence to highlight.
 // The Rioplatense form leads only when the data proves it. With the typed overlay: a replacement whose
 // form (or an inflection of it) appears in the example sentence. Without it (the overlay failed to
-// load, or a custom word): the legacy rule, a clean es_rioplatense value genuinely different from the
+// load): the legacy rule, a clean es_rioplatense value genuinely different from the
 // standard word and actually demonstrated by the example sentence's target form.
+// A word the user added is never decided by any of this: the headword is the word they typed. The lookup's idea of its
+// Rioplatense equivalent is a note on the card (relation.ts), and a wrong one must not be able to put another word in the title.
 
 export type HeadwordSource = Pick<Word, 'esWord' | 'esRioplatense' | 'wordFormInExample'> &
   Partial<Pick<Word, 'rio' | 'fallbackExample' | 'pos' | 'exampleSentence' | 'exampleTranslationEn' | 'exampleTranslationRu' | 'isCustom' | 'isRioplatenseVariant' | 'region' | 'register' | 'esStandard'>>
@@ -97,6 +99,7 @@ export type HeadwordReason =
   | 'no-overlay'
   | 'legacy'
   | 'own-rioplatense'
+  | 'custom-word'
   | 'not-replacement'
   | 'unclean-form'
   | 'same-as-es-word'
@@ -125,6 +128,7 @@ export function headwordDecision(word: HeadwordSource): HeadwordDecision {
   const base = { matched: null, exampleSource: example.source } as const
   if (!rio) {
     if (isOwnRioplatense(word)) return { ...base, switched: true, reason: 'own-rioplatense' }
+    if (word.isCustom === true && word.esRioplatense) return { ...base, switched: false, reason: 'custom-word' }
     if (word.esRioplatense) return { ...base, switched: legacyHeadword(word) !== null, reason: 'legacy' }
     return { ...base, switched: false, reason: 'no-overlay' }
   }
@@ -141,8 +145,9 @@ export function headwordDecision(word: HeadwordSource): HeadwordDecision {
   }
 }
 
-/** The legacy rule: a clean es_rioplatense value, different from es_word, shown by the example's word form. */
+/** The legacy rule: a clean es_rioplatense value, different from es_word, shown by the example's word form. Never for a word the user added: their word leads. */
 function legacyHeadword(word: HeadwordSource): string | null {
+  if (word.isCustom === true) return null
   const rio = word.esRioplatense?.trim() ?? ''
   const useRio = rio !== '' && isCleanVariant(rio) && lower(rio) !== lower(word.esWord) && formMatches(word.wordFormInExample, rio)
   return useRio ? rio : null
