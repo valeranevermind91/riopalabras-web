@@ -47,12 +47,12 @@ export function FeedbackScreen({ kind, esWord, shownWord, from, send, onSent, on
   // The id of the last report tried and its text: the same text again is the same report.
   const attempt = useRef<{ id: string; message: string } | null>(null)
   const mounted = useRef(true)
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true // StrictMode (development) runs an effect, its cleanup and the effect again: without this the flag stayed false and a sent report never closed the form
+    return () => {
       mounted.current = false
-    },
-    [],
-  )
+    }
+  }, [])
 
   const dirty = text.trim() !== ''
   useEffect(() => {
