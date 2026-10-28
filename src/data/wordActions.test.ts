@@ -159,7 +159,7 @@ describe('where favourites sit in the queue', () => {
     q.enqueueSettings({ streak_count: 1 })
     q.enqueueFavorite('casa', true)
     q.enqueueHidden('perro', true)
-    q.enqueueMetrics({ date: '2026-10-06', newWords: 0, reviewsDone: 1, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: true })
+    q.enqueueMetrics({ date: '2026-10-06', newWords: 0, reviewsDone: 1, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: true, learnCardsSeen: 0 })
     release()
     await vi.waitFor(() => expect(q.getStatus().pendingMetrics).toBe(0))
     expect(calls).toEqual(['progress', 'hidden', 'favorites', 'settings', 'metrics'])

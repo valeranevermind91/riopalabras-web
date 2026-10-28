@@ -120,13 +120,13 @@ describe('a Review session writes the day\'s metrics row', () => {
     ;[3, 1, 4, 1, 2].forEach((q, i) => rate(words[i], q, DAY1))
     await a.drained()
 
-    expect(a.recorder.today(DAY1)).toEqual({ date: KEY1, newWords: 4, reviewsDone: 5, reviewsLapsed: 2, dueAtStart: null, learnPool: null, dailyLimit: null, active: true })
+    expect(a.recorder.today(DAY1)).toEqual({ date: KEY1, newWords: 4, reviewsDone: 5, reviewsLapsed: 2, dueAtStart: null, learnPool: null, dailyLimit: null, active: true, learnCardsSeen: 0 })
     const calls = a.metricsCalls()
     expect(calls.length).toBeGreaterThanOrEqual(1)
     expect(calls.length).toBeLessThanOrEqual(2) // five ratings, not five requests
     expect(calls.at(-1)?.options).toEqual({ onConflict: 'user_id,date' })
     expect(calls.at(-1)?.rows).toEqual([
-      { user_id: 'user-1', date: KEY1, new_words: 4, reviews_done: 5, reviews_lapsed: 2, due_at_start: null, learn_pool: null, daily_limit: null, active: true, updated_at: expect.any(String) },
+      { user_id: 'user-1', date: KEY1, new_words: 4, reviews_done: 5, reviews_lapsed: 2, due_at_start: null, learn_pool: null, daily_limit: null, active: true, learn_cards_seen: 0, updated_at: expect.any(String) },
     ])
     expect(a.progressCalls().flatMap((c) => c.rows as unknown[])).toHaveLength(5)
   })
@@ -186,7 +186,7 @@ describe('a Learn session writes the day\'s metrics row', () => {
     expect(tables.slice(0, 2)).toEqual(['user_progress', 'user_settings'])
     expect(tables.at(-1)).toBe('user_daily_metrics') // lowest priority: after the batch
     expect(a.metricsCalls().at(-1)?.rows).toEqual([
-      { user_id: 'user-1', date: KEY1, new_words: 5, reviews_done: 0, reviews_lapsed: 0, due_at_start: null, learn_pool: null, daily_limit: null, active: true, updated_at: expect.any(String) },
+      { user_id: 'user-1', date: KEY1, new_words: 5, reviews_done: 0, reviews_lapsed: 0, due_at_start: null, learn_pool: null, daily_limit: null, active: true, learn_cards_seen: 0, updated_at: expect.any(String) },
     ])
   })
 })
@@ -201,7 +201,7 @@ describe('start-of-day snapshot (Home)', () => {
 
     expect(a.recorder.today(DAY1)).toMatchObject({ dueAtStart: 12, learnPool: 4000, dailyLimit: 10, reviewsDone: 1 })
     expect(a.metricsCalls().at(-1)?.rows).toEqual([
-      { user_id: 'user-1', date: KEY1, new_words: 0, reviews_done: 1, reviews_lapsed: 0, due_at_start: 12, learn_pool: 4000, daily_limit: 10, active: true, updated_at: expect.any(String) },
+      { user_id: 'user-1', date: KEY1, new_words: 0, reviews_done: 1, reviews_lapsed: 0, due_at_start: 12, learn_pool: 4000, daily_limit: 10, active: true, learn_cards_seen: 0, updated_at: expect.any(String) },
     ])
 
     a.recorder.captureStartOfDaySnapshotIfNeeded({ reviewDue: 3, learnPool: 3900, dailyLimit: 12 }, DAY2) // next day: a new snapshot

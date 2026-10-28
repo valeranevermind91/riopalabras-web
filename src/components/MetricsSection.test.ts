@@ -12,9 +12,9 @@ describe('Debug: today\'s metrics section', () => {
     renderToStaticMarkup(createElement(MetricsSection, { queue: null, metrics: null, client: null, userId: null, ...props }))
 
   it('shows every field of the row recorded today', () => {
-    const row = { ...emptyRow('2026-10-04'), newWords: 3, reviewsDone: 12, reviewsLapsed: 2, dueAtStart: 15, learnPool: 4000, dailyLimit: 10, active: true }
+    const row = { ...emptyRow('2026-10-04'), newWords: 3, reviewsDone: 12, reviewsLapsed: 2, dueAtStart: 15, learnPool: 4000, dailyLimit: 10, active: true, learnCardsSeen: 7 }
     const html = render({ metrics: { today: () => row } })
-    for (const [name, value] of Object.entries({ date: '2026-10-04', newWords: '3', reviewsDone: '12', reviewsLapsed: '2', dueAtStart: '15', learnPool: '4000', dailyLimit: '10', active: 'true' })) {
+    for (const [name, value] of Object.entries({ date: '2026-10-04', newWords: '3', reviewsDone: '12', reviewsLapsed: '2', dueAtStart: '15', learnPool: '4000', dailyLimit: '10', active: 'true', learnCardsSeen: '7' })) {
       expect(html).toContain(`<dt>${name}</dt><dd>${value}</dd>`)
     }
   })

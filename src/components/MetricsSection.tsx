@@ -15,7 +15,7 @@ interface MetricsSectionProps {
 
 type ServerCheck = { state: 'idle' } | { state: 'loading' } | { state: 'done'; row: Record<string, unknown> | null } | { state: 'error'; message: string }
 
-const FIELDS = ['date', 'newWords', 'reviewsDone', 'reviewsLapsed', 'dueAtStart', 'learnPool', 'dailyLimit', 'active'] as const
+const FIELDS = ['date', 'newWords', 'reviewsDone', 'reviewsLapsed', 'dueAtStart', 'learnPool', 'dailyLimit', 'active', 'learnCardsSeen'] as const
 
 type SaveStatus = Pick<QueueStatus, 'authRejected' | 'stuck' | 'sending' | 'failed' | 'unsaved'>
 

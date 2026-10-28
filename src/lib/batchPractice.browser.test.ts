@@ -171,7 +171,10 @@ describe.skipIf(!CHROME)('practising a Learn batch with Matching', () => {
     await settle(page)
     const rows = await log(page)
     expect(rows.every((r) => r.mode === 'learn')).toBe(true)
-    expect(await written(page)).toEqual(before)
+    // The next batch opens on its first card and that card is counted (a card is learned when it is reached): one word, one settings step, the day marked active again.
+    // Nothing else was written, and nothing at all for the practice offer that was skipped.
+    const after = await written(page)
+    expect(after).toEqual({ ...before, progress: before.progress + 1, settings: before.settings + 1, active: before.active + 1 })
     await page.close()
   }, 60_000)
 
@@ -185,7 +188,7 @@ describe.skipIf(!CHROME)('practising a Learn batch with Matching', () => {
       const writtenBefore = await written(page)
       expect(writtenBefore.progress).toBe(10) // the batch itself was written: that is the baseline
       expect(writtenBefore.settings).toBeGreaterThan(0)
-      expect(writtenBefore.active).toBe(1)
+      expect(writtenBefore.active).toBeGreaterThan(0) // the day was marked active as the cards were reached
 
       await startPractice(page)
       const first = await playRound(page, true) // a wrong pair in it

@@ -121,7 +121,7 @@ describe('the queue and a refusal', () => {
       throw refused()
     })
     const q = createWriteQueue({ ...ok, sendMetrics }, { metricsRetryDelaysMs: [1, 1, 1] })
-    q.enqueueMetrics({ date: '2026-10-06', newWords: 10, reviewsDone: 0, reviewsLapsed: 0, dueAtStart: 0, learnPool: 0, dailyLimit: 10, active: true })
+    q.enqueueMetrics({ date: '2026-10-06', newWords: 10, reviewsDone: 0, reviewsLapsed: 0, dueAtStart: 0, learnPool: 0, dailyLimit: 10, active: true, learnCardsSeen: 0 })
     await vi.waitFor(() => expect(q.getStatus().authRejected).toBe(true))
     expect(q.getStatus().unsaved).toBe(false)
     expect(q.getStatus().failed).toBe(false)

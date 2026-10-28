@@ -264,6 +264,6 @@ describe('the Learn screen hands the star to Learn\'s two actions', () => {
   })
 
   it('finishing a batch clears the stars of the words it taught through the same data', () => {
-    expect(learn).toMatch(/createBatchFinisher\([\s\S]*?applyFavorite: data\.applyFavorite,/)
+    expect(learn).toMatch(/createBatchKeeper\(\{[\s\S]*?applyFavorite: data\.applyFavorite,/)
   })
 })

@@ -77,7 +77,8 @@ describe.skipIf(!CHROME)('with the network gone', () => {
         await act(page, '.learn-nav .btn-icon:last-child', '.learn-progress span')
         await act(page, '.known-btn', '.learn-undo') // "already know it" is a queued write too
         if (startsUp) {
-          await page.waitForFunction(() => (window as never as { __queue: { getStatus: () => { pendingHidden: number } } }).__queue.getStatus().pendingHidden === 0, { timeout: 5000 })
+          // everything written so far (the first cards are counted as they are reached, not at the end) has gone through before the network drops, or how many rows are held after it would depend on timing
+          await page.waitForFunction(() => (window as never as { __queue: { getStatus: () => { pendingHidden: number; unsaved: boolean } } }).__queue.getStatus().unsaved === false, { timeout: 5000 })
           net.up = false // the network drops here
         }
         await readThroughBatch(page)
@@ -90,9 +91,13 @@ describe.skipIf(!CHROME)('with the network gone', () => {
         expect(buttons.every((b) => !b.disabled)).toBe(true)
         expect(buttons[0].text).toMatch(/next batch/i)
 
-        // the batch is held by the queue, nothing was lost
+        // what was learned since the network went is held by the queue, nothing was lost. Cards are counted as they are reached, so with the network gone from the start that is
+        // the ten words of the batch plus the one that was put back when it was marked as known; when it dropped after the first two cards, the eight reached after that.
         const held = await pending(page)
-        expect(held.progress).toHaveLength(10)
+        const learnedRows = (held.progress as { repetitions: number }[]).filter((u) => u.repetitions > 0)
+        const putBack = (held.progress as { repetitions: number }[]).filter((u) => u.repetitions === 0)
+        expect(learnedRows).toHaveLength(startsUp ? 8 : 10)
+        expect(putBack).toHaveLength(startsUp ? 0 : 1)
         expect(held.settings).not.toBeNull()
         expect((await queueStatus(page)).unsaved).toBe(true)
 

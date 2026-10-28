@@ -127,10 +127,11 @@ describe('user_daily_metrics', () => {
       learn_pool: 4000,
       daily_limit: 10,
       active: true,
+      learn_cards_seen: 0,
       updated_at: '2026-10-04T15:00:00.000Z',
     })
-    expect(Object.keys(toMetricsRow('u', emptyRow('2026-10-04'), 'x'))).toHaveLength(10)
-    expect(toMetricsRow('u', emptyRow('2026-10-04'), 'x')).toMatchObject({ due_at_start: null, learn_pool: null, daily_limit: null, active: false })
+    expect(Object.keys(toMetricsRow('u', emptyRow('2026-10-04'), 'x'))).toHaveLength(11)
+    expect(toMetricsRow('u', emptyRow('2026-10-04'), 'x')).toMatchObject({ due_at_start: null, learn_pool: null, daily_limit: null, active: false, learn_cards_seen: 0 })
   })
 
   it('upserts with the composite key, and sends nothing for an empty list', async () => {

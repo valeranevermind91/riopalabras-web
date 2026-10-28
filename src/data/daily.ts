@@ -27,6 +27,26 @@ export function newWordsPatch(settings: UserSettings, delta: number, now: Date):
   return { new_words_learned_today_count: base + delta, new_words_learned_today_date: today }
 }
 
+/**
+ * The settings that take `delta` words back out of today's counts: a card that was counted as learned and then hidden ("Already know it") is not a new word learned,
+ * and the day's goal must not count it. Absolute values, from the settings as they are now. The cards-done count goes down only while the day has not yet counted for
+ * the streak (after that nothing tracks it any more). Null when there is nothing of today's to take back.
+ */
+export function uncountPatch(settings: UserSettings, delta: number, now: Date): SettingsPatch | null {
+  if (delta <= 0) return null
+  const today = localDateKey(now)
+  const patch: SettingsPatch = {}
+  if (settings.newWordsLearnedTodayDate === today && settings.newWordsLearnedTodayCount > 0) {
+    patch.new_words_learned_today_count = Math.max(0, settings.newWordsLearnedTodayCount - delta)
+    patch.new_words_learned_today_date = today
+  }
+  if (!streakCountedToday(settings, now) && settings.cardsDoneTodayDate === today && settings.cardsDoneTodayCount > 0) {
+    patch.cards_done_today_count = Math.max(0, settings.cardsDoneTodayCount - delta)
+    patch.cards_done_today_date = today
+  }
+  return Object.keys(patch).length > 0 ? patch : null
+}
+
 /** How many new words were introduced today (0 if the stored counter is from another day). */
 export function learnedToday(settings: UserSettings, now: Date): number {
   return settings.newWordsLearnedTodayDate === localDateKey(now) ? settings.newWordsLearnedTodayCount : 0

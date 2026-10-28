@@ -20,8 +20,13 @@ export interface DailyMetricsRow {
   readonly dueAtStart: number | null
   readonly learnPool: number | null
   readonly dailyLimit: number | null
-  /** Any real activity today: a review rating or a finished Learn batch. */
+  /** Any real activity today: a review rating or a Learn card reached. */
   readonly active: boolean
+  /**
+   * How far into a Learn batch the person got today: the furthest card reached (1 to 10), as a maximum over the day's sittings. 0: Learn was not opened. It tells apart someone
+   * who closed the app at Home from someone who read eight cards and stopped; nothing else is recorded about it.
+   */
+  readonly learnCardsSeen: number
 }
 
 export interface StartOfDaySnapshot {
@@ -31,7 +36,7 @@ export interface StartOfDaySnapshot {
 }
 
 export function emptyRow(date: string): DailyMetricsRow {
-  return { date, newWords: 0, reviewsDone: 0, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: false }
+  return { date, newWords: 0, reviewsDone: 0, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: false, learnCardsSeen: 0 }
 }
 
 /** The stored row if it is for today, otherwise a fresh zeroed one (a stale date counts as empty). */
@@ -61,11 +66,12 @@ export function parseStoredRow(raw: unknown): DailyMetricsRow | null {
     learnPool: nullableInt(r.learnPool),
     dailyLimit: nullableInt(r.dailyLimit),
     active: r.active === true,
+    learnCardsSeen: int(r.learnCardsSeen, 0),
   }
 }
 
 const isEmptyRow = (r: DailyMetricsRow) =>
-  r.newWords === 0 && r.reviewsDone === 0 && r.reviewsLapsed === 0 && !r.active && r.dueAtStart === null && r.learnPool === null && r.dailyLimit === null
+  r.newWords === 0 && r.reviewsDone === 0 && r.reviewsLapsed === 0 && !r.active && r.learnCardsSeen === 0 && r.dueAtStart === null && r.learnPool === null && r.dailyLimit === null
 
 const sameRow = (a: DailyMetricsRow, b: DailyMetricsRow) =>
   a.date === b.date &&
@@ -73,6 +79,7 @@ const sameRow = (a: DailyMetricsRow, b: DailyMetricsRow) =>
   a.reviewsDone === b.reviewsDone &&
   a.reviewsLapsed === b.reviewsLapsed &&
   a.active === b.active &&
+  a.learnCardsSeen === b.learnCardsSeen &&
   a.dueAtStart === b.dueAtStart &&
   a.learnPool === b.learnPool &&
   a.dailyLimit === b.dailyLimit
@@ -89,6 +96,7 @@ export function parseServerRow(raw: Record<string, unknown> | null): DailyMetric
     learnPool: raw.learn_pool,
     dailyLimit: raw.daily_limit,
     active: raw.active,
+    learnCardsSeen: raw.learn_cards_seen, // null on a row from before the column, or from another app: nothing was recorded
   })
 }
 
@@ -110,6 +118,7 @@ export function mergeRows(local: DailyMetricsRow | null, server: DailyMetricsRow
     learnPool: server?.learnPool ?? local?.learnPool ?? null,
     dailyLimit: server?.dailyLimit ?? local?.dailyLimit ?? null,
     active: a.active || b.active,
+    learnCardsSeen: Math.max(a.learnCardsSeen, b.learnCardsSeen),
   }
 }
 
@@ -191,8 +200,10 @@ export interface SeedStatus {
 export interface MetricsRecorder {
   /** Once per Review rating; `quality` 1 is a lapse. */
   recordReviewRating: (quality: number, now?: Date) => void
-  /** A finished Learn batch (call after its settings were applied, so the new-word counter is current). */
+  /** A Learn card was counted, or the batch finished (call after its settings were applied, so the new-word counter is current). */
   markActiveToday: (now?: Date) => void
+  /** The person has reached card `position` (1-based) of a Learn batch: raises the day's furthest card, and does nothing when it is not further than before. */
+  noteLearnCardsSeen: (position: number, now?: Date) => void
   /** Home: the start-of-day snapshot, captured once per day. */
   captureStartOfDaySnapshotIfNeeded: (snapshot: StartOfDaySnapshot, now?: Date) => void
   /** Today's accumulated row as recorded on this device, or null if nothing was recorded today. */
@@ -310,6 +321,16 @@ export function createMetricsRecorder(deps: MetricsRecorderDeps): MetricsRecorde
         newWords: newWordsNow(now, row.newWords),
         active: true,
       }))
+    },
+
+    noteLearnCardsSeen(position, now = new Date()) {
+      try {
+        const seen = Math.floor(position)
+        if (!(seen >= 1) || rowForToday(localDateKey(now), deps.store.load()).learnCardsSeen >= seen) return
+        update(now, (row) => ({ ...row, learnCardsSeen: seen }))
+      } catch {
+        // never let metrics interfere with learning
+      }
     },
 
     markActiveToday(now = new Date()) {

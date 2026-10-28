@@ -99,7 +99,7 @@ function readMetrics(raw: unknown): DailyMetricsRow | null {
   const nullable = (v: unknown) => (v === null ? null : finite(v) ? v : undefined)
   const [dueAtStart, learnPool, dailyLimit] = [nullable(raw.dueAtStart), nullable(raw.learnPool), nullable(raw.dailyLimit)]
   if (!finite(raw.newWords) || !finite(raw.reviewsDone) || !finite(raw.reviewsLapsed) || dueAtStart === undefined || learnPool === undefined || dailyLimit === undefined) return null
-  return { date: raw.date, newWords: raw.newWords, reviewsDone: raw.reviewsDone, reviewsLapsed: raw.reviewsLapsed, dueAtStart, learnPool, dailyLimit, active: raw.active }
+  return { date: raw.date, newWords: raw.newWords, reviewsDone: raw.reviewsDone, reviewsLapsed: raw.reviewsLapsed, dueAtStart, learnPool, dailyLimit, active: raw.active, learnCardsSeen: finite(raw.learnCardsSeen) && raw.learnCardsSeen >= 0 ? Math.floor(raw.learnCardsSeen) : 0 } // a row queued by an earlier version has none
 }
 
 const text = (v: unknown): v is string => typeof v === 'string'

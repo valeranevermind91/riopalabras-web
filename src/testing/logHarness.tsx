@@ -28,7 +28,7 @@ const params = new URLSearchParams(location.search)
 const screen = params.get('screen') ?? 'review'
 const reports: FeedbackReport[] = []
 ;(window as never as { __reports: FeedbackReport[] }).__reports = reports
-const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number; settings: SettingsPatch[]; hidden: unknown[]; favorites: unknown[]; active: number } = {
+const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: number; settings: SettingsPatch[]; hidden: unknown[]; favorites: unknown[]; active: number; seen: number[] } = {
   log: [],
   progress: [],
   logAttempts: 0,
@@ -36,6 +36,7 @@ const sent: { log: ReviewLogEntry[]; progress: ProgressUpdate[]; logAttempts: nu
   hidden: [],
   favorites: [],
   active: 0,
+  seen: [],
 }
 ;(window as never as { __log: ReviewLogEntry[]; __progress: ProgressUpdate[]; __sent: typeof sent }).__log = sent.log
 ;(window as never as { __progress: ProgressUpdate[] }).__progress = sent.progress
@@ -120,7 +121,7 @@ export function Harness() {
     return (
       <LearnScreen
         {...common}
-        metrics={{ markActiveToday: () => void sent.active++ }}
+        metrics={{ markActiveToday: () => void sent.active++, noteLearnCardsSeen: (position: number) => void sent.seen.push(position) }}
         sendReport={params.get('report') === '1' ? async (report) => (reports.push(report), { ok: true as const }) : undefined}
         onReview={() => {}}
         onBack={native ? undefined : back}

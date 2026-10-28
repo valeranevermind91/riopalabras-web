@@ -111,6 +111,7 @@ export function toMetricsRow(userId: string, row: DailyMetricsRow, nowIso: strin
     learn_pool: row.learnPool,
     daily_limit: row.dailyLimit,
     active: row.active,
+    learn_cards_seen: row.learnCardsSeen,
     updated_at: nowIso,
   }
 }
@@ -125,13 +126,22 @@ export async function upsertDailyMetrics(
   if (rows.length === 0) return
 
   const nowIso = now.toISOString()
-  const { error, status } = await client
-    .from('user_daily_metrics')
-    .upsert(
-      rows.map((r) => toMetricsRow(userId, r, nowIso)),
+  const first = await client.from('user_daily_metrics').upsert(
+    rows.map((r) => toMetricsRow(userId, r, nowIso)),
+    { onConflict: 'user_id,date' },
+  )
+  // A database that does not have learn_cards_seen yet (sql/user_daily_metrics_learn_cards_seen.sql not run) refuses it by name, and the day's other numbers must not wait for
+  // a column: the rows are sent again without it. Only a complaint about this column is worked around.
+  if (first.error && /learn_cards_seen/.test(first.error.message)) {
+    const { error, status } = await client.from('user_daily_metrics').upsert(
+      rows.map((r) => {
+        const { learn_cards_seen: _seen, ...rest } = toMetricsRow(userId, r, nowIso)
+        return rest
+      }),
       { onConflict: 'user_id,date' },
     )
-  if (error) fail('user_daily_metrics', error, status)
+    if (error) fail('user_daily_metrics', error, status)
+  } else if (first.error) fail('user_daily_metrics', first.error, first.status)
 }
 
 /**

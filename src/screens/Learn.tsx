@@ -9,7 +9,7 @@ import { learnedToday } from '../data/daily'
 import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
 import { offerOutcome, reminderOfferAnsweredPatch, reminderOfferShownPatch, shouldOfferReminder } from '../data/reminderOffer'
 import { saveSetting } from '../data/settingsActions'
-import { UNDO_WINDOW_MS, createBatchFinisher, learnPhase, markKnown, selectLearnBatch, undoKnown } from '../data/learn'
+import { UNDO_WINDOW_MS, createBatchKeeper, learnPhase, markKnown, selectLearnBatch, undoKnown, type BatchKeeper } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import { wordKey } from '../data/words'
@@ -27,7 +27,7 @@ import { MatchingScreen } from './Matching'
 interface LearnScreenProps {
   data: UserData
   queue: WriteQueue
-  metrics: Pick<MetricsRecorder, 'markActiveToday'> | null
+  metrics: (Pick<MetricsRecorder, 'markActiveToday'> & Partial<Pick<MetricsRecorder, 'noteLearnCardsSeen'>>) | null
   /** The daily reminder (App owns it). Without it the end screen makes no offer. */
   reminders?: RemindersControl
   /** The review log (App makes it once the user is signed in). Without it nothing is logged. */
@@ -45,8 +45,8 @@ interface LearnScreenProps {
 export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendReport, onHome, onReview, onBack, registerBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
-  // The finisher is made when "Finish batch" is first pressed, from the batch as it is then (known words swapped out).
-  const finisher = useRef<(() => QueueTicket) | null>(null)
+  // The keeper counts the batch as it is read: a word is learned the moment its card is reached (see createBatchKeeper), not when "Finish batch" is pressed. One per batch.
+  const keeper = useRef<BatchKeeper | null>(null)
   const knownDeps = { queue, applyHidden: data.applyHidden, applyFavorite: data.applyFavorite }
 
   // The review log: a batch is one sitting, so it has a session id of its own (a new batch gets a new one).
@@ -146,21 +146,33 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
     enabled: reading && reporting === null,
   })
 
-  // Hands the batch to the queue (a double tap just returns the same ticket); nothing here awaits the network.
-  const finish = () => {
-    haptic('tap')
-    setUndoOffer(null)
-    finisher.current ??= createBatchFinisher(batch, {
+  const theKeeper = () =>
+    (keeper.current ??= createBatchKeeper({
       queue,
       getSettings: data.getSettings,
       getWords: data.getWords,
       applyProgress: data.applyProgress,
       applySettings: data.applySettings,
       applyFavorite: data.applyFavorite,
+      onKept: () => metrics?.markActiveToday(),
       onFinished: () => metrics?.markActiveToday(),
       ...(reviewLog ? { log: reviewLog, sessionId } : {}),
-    })
-    setTicket(finisher.current())
+    }))
+
+  // A card reached is a word learned: each time the card in front changes (and when Learn opens on the first), the keeper counts it, or takes back the one that was hidden
+  // from the place it stood. The furthest card of the day goes to the day's row: it is what tells someone who left at card 8 from someone who never opened Learn.
+  useEffect(() => {
+    if (!reading || !words[index]) return
+    theKeeper().reach(batch, index)
+    metrics?.noteLearnCardsSeen?.(index + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the card in front (index in this batch) is what it runs for; the keeper and the metrics recorder are stable for the screen's life
+  }, [reading, index, batch])
+
+  // "Finish batch": what is left to count is counted (nothing, when every card was reached) and the screen is done; nothing here awaits the network.
+  const finish = () => {
+    haptic('tap')
+    setUndoOffer(null)
+    setTicket(theKeeper().finish(batch))
   }
 
   // "Already know it": hidden for good (Learn, Review, practice) through the write queue; the next candidate takes its place.
@@ -186,7 +198,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
     haptic('tap')
     setUndoOffer(null)
     setBatch(selectLearnBatch(data.words, data.settings, new Date()))
-    finisher.current = null
+    keeper.current = null
     setSessionId(reviewLog?.startSession() ?? null)
     setTicket(null)
     setIndex(0)

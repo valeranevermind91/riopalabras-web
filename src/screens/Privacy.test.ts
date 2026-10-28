@@ -161,7 +161,8 @@ describe('what is stored: the columns the code writes are the ones the page desc
   it('study history: one row per answer (word, time, rating, mode, how long, schedule) and one per day (counts, due, active)', () => {
     const answer = toReviewLogRow('u', { id: 'i', esWord: 'casa', reviewedAt: 'x', rating: 3, mode: 'review', stateBefore: 'new', elapsedDays: 0, scheduledDays: 1, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: 1 })
     expect(keys(answer)).toEqual(['algo', 'difficulty_after', 'duration_ms', 'ease_after', 'elapsed_days', 'es_word', 'id', 'interval_after', 'mode', 'rating', 'repetitions_after', 'reviewed_at', 'scheduled_days', 'session_id', 'stability_after', 'state_before', 'user_id'])
-    expect(keys(toMetricsRow('u', emptyRow('2026-01-01'), 'x'))).toEqual(['active', 'daily_limit', 'date', 'due_at_start', 'learn_pool', 'new_words', 'reviews_done', 'reviews_lapsed', 'updated_at', 'user_id'])
+    // learn_cards_seen is a count in that daily summary (how far into Learn the day got): a number per day, with no time, no card and no device; the page's "a summary for each day" covers it, so the policy date does not move
+    expect(keys(toMetricsRow('u', emptyRow('2026-01-01'), 'x'))).toEqual(['active', 'daily_limit', 'date', 'due_at_start', 'learn_cards_seen', 'learn_pool', 'new_words', 'reviews_done', 'reviews_lapsed', 'updated_at', 'user_id'])
     // what the page lists for an answer is a true part of that row (the word, the time, the rating, the duration), and it says there is a daily summary too
     expect(pageText(en)).toContain('Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day')
     for (const column of ['es_word', 'reviewed_at', 'rating', 'duration_ms']) expect(keys(answer)).toContain(column)

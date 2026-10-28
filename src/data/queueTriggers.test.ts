@@ -85,7 +85,7 @@ describe('closing confirmation follows the queue', () => {
     await h.queue.retry()
     expect(calls).toEqual([true, false, true, false])
 
-    h.queue.enqueueMetrics({ date: '2026-10-04', newWords: 0, reviewsDone: 1, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: true })
+    h.queue.enqueueMetrics({ date: '2026-10-04', newWords: 0, reviewsDone: 1, reviewsLapsed: 0, dueAtStart: null, learnPool: null, dailyLimit: null, active: true, learnCardsSeen: 0 })
     expect(calls).toEqual([true, false, true, false]) // no sender for metrics here, and metrics are not "unsaved" anyway
     unbind()
   })
