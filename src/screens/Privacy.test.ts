@@ -406,10 +406,10 @@ describe.skipIf(!existsSync(`${PROXY}/telegram-auth.js`))('what the proxy does, 
     expect([...columns.matchAll(/^\s{2}([a-z_]+)\s+(?:uuid|boolean|text|date|integer|timestamptz)/gm)].map((m) => m[1])).toEqual(['user_id', 'enabled', 'timezone', 'last_sent_on', 'consecutive_ignored', 'paused', 'unreachable', 'updated_at'])
   })
 
-  it('every table the proxy reads or writes either holds no user rows (global_usage, job_runs) or is on the verified list, so the sentence about deletion stays true of it', () => {
+  it('every table the proxy reads or writes either holds no user rows (global_usage, job_runs, digest_sent) or is on the verified list, so the sentence about deletion stays true of it', () => {
     const tables = new Set<string>()
     for (const f of readdirSync(PROXY).filter((name) => name.endsWith('.js') && !name.endsWith('.test.js'))) for (const m of p(f).matchAll(/\.from\('([a-z0-9_]+)'\)/g)) tables.add(m[1])
-    expect([...tables].filter((t) => t !== 'global_usage' && t !== 'job_runs' && !['enrichment_usage', 'feedback', 'reminders', 'review_log', 'user_daily_metrics', 'user_favorites', 'user_hidden_words', 'user_progress', 'user_settings', 'user_words'].includes(t))).toEqual([])
+    expect([...tables].filter((t) => t !== 'global_usage' && t !== 'job_runs' && t !== 'digest_sent' && !['enrichment_usage', 'feedback', 'reminders', 'review_log', 'user_daily_metrics', 'user_favorites', 'user_hidden_words', 'user_progress', 'user_settings', 'user_words'].includes(t))).toEqual([])
     expect(tables.has('enrichment_usage') && tables.has('reminders') && tables.has('feedback')).toBe(true) // and the scan is looking at the right files
   })
 
@@ -421,6 +421,16 @@ describe.skipIf(!existsSync(`${PROXY}/telegram-auth.js`))('what the proxy does, 
     // the reminders step records its run summary (counts and Telegram's own error texts) and, when it stops, why: nothing keyed by a person
     const step = p('reminders-job.js')
     expect(step.match(/record\(\{[^}]*\}\)/g)).toEqual(["record({ status: 'stopped', error: redact(err && err.message ? err.message : err, token).slice(0, 300) })", "record({ status: 'done', ...stats })"])
+  })
+
+  it('digest_sent, the record of which local days the owner\'s digest went out for, holds no user rows: its definition has no user_id (or any column that could name a person), and what is written to it is a date, an instant, an hour and the owner\'s zone', () => {
+    const sql = p('sql/digest-local-day.sql')
+    const table = sql.slice(sql.indexOf('create table if not exists public.digest_sent ('), sql.indexOf('alter table public.digest_sent enable row level security;'))
+    expect([...table.matchAll(/^\s{2}([a-z_]+)\s+(?:date|timestamptz|smallint|text)/gm)].map((m) => m[1])).toEqual(['digest_date', 'sent_at', 'hour', 'time_zone'])
+    expect(table).not.toMatch(/user_id|auth\.users|telegram/i)
+    expect(sql).toContain('revoke all on public.digest_sent from anon, authenticated;') // and only the service role touches it
+    // the one write: the day the digest is for, when it went, and the hour and zone the owner configured
+    expect(p('digest-db.js')).toContain("upsert({ digest_date: date, sent_at: at, hour, time_zone: timeZone }, { onConflict: 'digest_date' })")
   })
 
   it('an IP address is only ever used in memory by the rate limiter: no file but server.js reads it', () => {
