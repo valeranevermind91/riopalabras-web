@@ -18,6 +18,8 @@ interface PlacementTestProps {
   onSkip: () => void
   /** Back from the first set. */
   onBack: () => void
+  /** Whether a starting point is already stored: a test with nothing ticked then changes nothing, and the result says so. */
+  hasStartRank: boolean
   /** The line saying the test can be taken later from Settings (the intro says it; Settings does not need to). */
   showSkipNote: boolean
   /** Lets the back button (Telegram's or the page's) step back through the sets before it leaves. */
@@ -28,7 +30,7 @@ interface PlacementTestProps {
  * The placement test: five sets of five words, one set per screen, ascending in rarity. "Which of these do you know?" The words toggle;
  * nothing is right or wrong and none marked is fine. No score, no praise. Skip is on every set. The words are picked once, when the test opens.
  */
-export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipNote, interceptBack }: PlacementTestProps) {
+export function PlacementTest({ words, onSave, onDone, onSkip, onBack, hasStartRank, showSkipNote, interceptBack }: PlacementTestProps) {
   const [bands] = useState(() => buildPlacement(words))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<ReadonlySet<string>[]>(() => Array.from({ length: 5 }, () => new Set<string>()))
@@ -91,6 +93,20 @@ export function PlacementTest({ words, onSave, onDone, onSkip, onBack, showSkipN
 
   const positions = probePositions(bands.length)
   if (found) {
+    // Nothing ticked with a stored starting point: nothing was written (savePlacement), so there is no new place to show on the scale, only that the old one stays.
+    if (found.marked.length === 0 && hasStartRank) {
+      return (
+        <div className="place" data-state="result" data-unchanged="true">
+          <h2 className="place-question">{labels.resultTitle}</h2>
+          <p className="intro-text">{labels.resultUnchanged}</p>
+          <div className="place-footer is-single">
+            <button type="button" className="btn btn-primary" onClick={onDone}>
+              {showSkipNote ? labels.next : labels.resultDone}
+            </button>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="place" data-state="result">
         <h2 className="place-question">{labels.resultTitle}</h2>

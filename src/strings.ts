@@ -458,6 +458,8 @@ export const en = {
       resultTitle: 'Test finished',
       resultMarked: (n: number) => `${n} ${plural(n, { one: 'word was', other: 'words were' })} marked as known and will stay out of Learn and Review.`,
       resultNoneMarked: 'No words were marked as known.',
+      // nothing ticked while a starting point is already stored: the test changed nothing (see savePlacement); said instead of the two lines above and below it
+      resultUnchanged: "You didn't mark any words, so nothing changed: Learn will carry on from the same place.",
       resultHarder: 'Learn will start from a harder point.',
       resultBeginning: 'Learn will start with the most common words.',
       resultApprox: 'The starting point is approximate and corrects itself: Learn keeps mixing in some easier words, so a wrong guess works itself out within a few days.',

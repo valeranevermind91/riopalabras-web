@@ -109,8 +109,11 @@ export interface PlacementDeps {
 
 /**
  * Keeps what the test found: `start_rank` through the settings lane (it replaces an earlier one), and the marked words hidden through the
- * hidden lane, in one batch. Taking the test again only ever hides more: nothing is un-hidden. With nothing to keep, nothing is written; a beginner
- * result on a retake clears the start_rank an earlier run left.
+ * hidden lane, in one batch. Taking the test again only ever hides more: nothing is un-hidden. With nothing to keep, nothing is written.
+ *
+ * A beginner result on a retake clears the start_rank an earlier run left, but only when something was ticked: an answer of "I know almost
+ * none of these" is an answer, five sets of nothing ticked is not (it is what tapping through without reading looks like), so it changes nothing
+ * and a stored level survives it.
  */
 export function savePlacement(result: PlacementResult, deps: PlacementDeps): void {
   if (result.marked.length > 0) {
@@ -118,8 +121,9 @@ export function savePlacement(result: PlacementResult, deps: PlacementDeps): voi
     deps.queue.enqueueHiddenBatch(result.marked, true)
   }
   // A beginner's answers (null) after an earlier result mean that start was too high: the key is removed (patched to null), so Learn starts
-  // at the beginning again. With no earlier result there is nothing to clear and nothing is written.
-  const patch: SettingsPatch | null = result.startRank !== null ? { [START_RANK_KEY]: result.startRank } : START_RANK_KEY in deps.getSettings().raw ? { [START_RANK_KEY]: null } : null
+  // at the beginning again. With no earlier result there is nothing to clear and nothing is written; with nothing ticked there is no answer to act on.
+  const clears = result.startRank === null && result.marked.length > 0 && START_RANK_KEY in deps.getSettings().raw
+  const patch: SettingsPatch | null = result.startRank !== null ? { [START_RANK_KEY]: result.startRank } : clears ? { [START_RANK_KEY]: null } : null
   if (patch) {
     deps.applySettings(patch)
     deps.queue.enqueueSettings(patch)

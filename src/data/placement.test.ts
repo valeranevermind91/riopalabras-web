@@ -230,6 +230,32 @@ describe('keeping the result', () => {
     expect(t.deps.applySettings.mock.calls.map((c) => c[0])).toEqual([{ start_rank: 401 }])
   })
 
+  it('an empty result with a start_rank stored changes nothing: not cleared, nothing hidden, no write queued (five sets of nothing ticked is not an answer)', async () => {
+    const t = target({ start_rank: 801, daily_new_word_limit: 12 })
+    savePlacement({ startRank: null, marked: [] }, t.deps)
+    await vi.waitFor(() => expect(t.queue.getStatus().unsaved).toBe(false))
+    expect(t.settings).toEqual([])
+    expect(t.hidden).toEqual([])
+    expect(t.batches).toEqual([])
+    expect(t.deps.applySettings).not.toHaveBeenCalled()
+    expect(t.settingsNow().startRank).toBe(801)
+    expect(t.settingsNow().raw).toEqual({ start_rank: 801, daily_new_word_limit: 12 })
+  })
+
+  it('a single ticked word is enough to be an answer: the beginner pattern then clears a stored start_rank, as before', async () => {
+    const t = target({ start_rank: 801 })
+    savePlacement({ startRank: null, marked: ['w1'] }, t.deps)
+    await vi.waitFor(() => expect(t.queue.getStatus().unsaved).toBe(false))
+    expect(t.settings).toEqual([{ start_rank: null }])
+    expect(t.settingsNow().startRank).toBeNull()
+  })
+
+  it('nothing ticked in all five sets is what the test turns into an empty result, whatever the bands', () => {
+    const bands = Array.from({ length: BAND_COUNT }, (_, k) => ({ startRank: 100 * (k + 1), words: Array.from({ length: BAND_SIZE }, (_, i) => makeWord(`b${k}w${i}`, { rank: 100 * (k + 1) + i })) }))
+    expect(placementResult(bands, Array.from({ length: BAND_COUNT }, () => new Set<string>()))).toEqual({ startRank: null, marked: [] })
+    expect(placementResult(bands, [new Set(['b0w0']), ...Array.from({ length: BAND_COUNT - 1 }, () => new Set<string>())])).toEqual({ startRank: null, marked: ['b0w0'] }) // one tick: still the beginner pattern, now with a word in it
+  })
+
   it('an empty result writes nothing at all (and a skip never gets here)', async () => {
     const t = target()
     savePlacement({ startRank: null, marked: [] }, t.deps)

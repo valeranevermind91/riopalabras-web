@@ -300,6 +300,63 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
         await none.close()
       }, 120_000)
 
+      it('with a starting point already stored, five sets with nothing ticked change nothing: no start_rank write, no hides, the point stays, and the result says so', async () => {
+        const page = await openStandalone('goal=12&lang=en&start_rank=2000')
+        await takeTest(page, [0, 0, 0, 0, 0], false)
+        const result = await page.$eval('.place[data-state="result"]', (e) => ({ unchanged: e.getAttribute('data-unchanged'), title: e.querySelector('.place-question')!.textContent, lines: Array.from(e.querySelectorAll('.intro-text')).map((p) => p.textContent), scale: e.querySelector('[role="img"]') !== null, note: e.querySelector('.place-approx') !== null, buttons: Array.from(e.querySelectorAll('.btn')).map((b) => b.textContent) }))
+        expect(result).toEqual({ unchanged: 'true', title: 'Test finished', lines: [en.onboarding.placement.resultUnchanged], scale: false, note: false, buttons: ['Done'] })
+        expect(await sent(page)).toEqual({ settings: [], hidden: [] })
+        await forward(page)
+        await page.waitForSelector('.settings')
+        expect(await page.$eval('#settings-learning ~ .settings-group .setting-nav .setting-hint', (e) => e.textContent)).toBe('Learn starts from a harder point than the most common words.')
+        expect(await sent(page)).toEqual({ settings: [], hidden: [] })
+        await page.close()
+      }, 120_000)
+
+      it('in Russian the result says «Вы не отметили ни одного слова, поэтому ничего не изменилось: Learn продолжит с того же места.»', async () => {
+        const page = await openStandalone('goal=12&lang=ru&start_rank=2000')
+        await takeTest(page, [0, 0, 0, 0, 0], false)
+        expect((await resultText(page)).lines).toEqual(['Вы не отметили ни одного слова, поэтому ничего не изменилось: Learn продолжит с того же места.'])
+        expect(ru.onboarding.placement.resultUnchanged).toBe('Вы не отметили ни одного слова, поэтому ничего не изменилось: Learn продолжит с того же места.')
+        await page.close()
+      }, 120_000)
+
+      it('one word ticked is an answer: the point is cleared as before, the word is hidden, and the result is the usual one', async () => {
+        const page = await openStandalone('goal=12&lang=en&start_rank=2000')
+        await takeTest(page, [1, 0, 0, 0, 0], false)
+        expect(await resultText(page)).toMatchObject({ lines: ['1 word was marked as known and will stay out of Learn and Review.', 'Learn will start with the most common words.'] })
+        expect(await page.$('.place[data-unchanged]')).toBeNull()
+        const written = await sent(page)
+        expect(written.settings).toEqual([{ start_rank: null }])
+        expect(written.hidden).toHaveLength(1)
+        expect(written.hidden[0]).toHaveLength(1)
+        await page.close()
+      }, 120_000)
+
+      it('with no point stored, nothing ticked says what it always said (there is nothing to keep unchanged)', async () => {
+        const page = await openStandalone('goal=12&lang=en')
+        await takeTest(page, [0, 0, 0, 0, 0], false)
+        expect(await page.$('.place[data-unchanged]')).toBeNull()
+        expect(await page.$('.place [role="img"]')).not.toBeNull()
+        expect((await resultText(page)).lines).toEqual(['No words were marked as known.', 'Learn will start with the most common words.'])
+        expect(await sent(page)).toEqual({ settings: [], hidden: [] })
+        await page.close()
+      }, 120_000)
+
+      it('in a replay of the intro, tapping through the test with nothing ticked leaves the point and the hidden words alone, and the intro goes on', async () => {
+        const page = await open('goal=12&lang=en&start_rank=2000')
+        await toSettings(page)
+        await page.evaluate(() => (Array.from(document.querySelectorAll('.setting-nav')).find((b) => b.textContent?.startsWith('Run the intro again')) as HTMLElement).click())
+        await page.waitForSelector('.onboarding[data-mode="replay"]')
+        await toPlacement(page)
+        await takeTest(page, [0, 0, 0, 0, 0], false)
+        expect(await page.$eval('.place[data-state="result"]', (e) => e.getAttribute('data-unchanged'))).toBe('true')
+        await forward(page) // Continue
+        await page.waitForFunction(() => document.querySelector('.intro-progress span')?.textContent === 'Step 6 of 7')
+        expect(await sent(page)).toEqual({ settings: [], hidden: [] })
+        await page.close()
+      }, 120_000)
+
       it('a beginner who marked words still hears that they were marked, and that Learn starts at the beginning', async () => {
         const page = await openStandalone('goal=12&lang=en')
         await takeTest(page, [2, 5, 5, 5, 5], false)

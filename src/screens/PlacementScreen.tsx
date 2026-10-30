@@ -28,6 +28,7 @@ export function PlacementScreen({ data, queue, onExit, registerBack, onBack }: P
           onDone={onExit}
           onSkip={onExit}
           onBack={onExit}
+          hasStartRank={data.settings.startRank !== null}
           showSkipNote={false}
           interceptBack={registerBack}
         />
