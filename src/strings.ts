@@ -415,7 +415,11 @@ export const en = {
     continue: 'Continue',
     done: 'Done',
     language: { title: 'App language', text: 'Choose the language the app uses.' },
-    about: { sentence: 'The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.' },
+    // step 2, which says what the app is: what it is (the sentence), then what it is for (why). The why is the owner's text; it makes a promise, not a measurement.
+    about: {
+      sentence: 'The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.',
+      why: 'Until you have enough vocabulary, speech in a foreign language sounds like one unbroken stream. The app builds it up quickly, and listening and speaking both get easier.',
+    },
     inside: {
       title: 'What is inside',
       items: [

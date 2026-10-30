@@ -101,6 +101,36 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
         return { buttons, viewport: window.innerHeight, main: rect(document.querySelector('.onboarding')!) }
       })
 
+    for (const [width, height] of [[390, 800], [320, 568]]) {
+      for (const [lang, query] of [['English', ''], ['Russian', '&lang=ru']] as const) {
+        it(`step 2 says what the app is and what it is for, and all of it fits without scrolling (${lang}, ${width} x ${height}); there is no eighth step`, async () => {
+          const page = await open(`fresh=1&goal=default${query}`)
+          await page.setViewport({ width, height, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+          await page.waitForSelector('.intro-footer .btn')
+          await clickText(page, '.intro-footer .btn', lang === 'English' ? 'Continue' : 'Дальше')
+          await page.waitForSelector('[data-step="about"]')
+          const step = await page.evaluate(() => {
+            const body = document.querySelector('.intro-body')!
+            return {
+              progress: document.querySelector('.intro-progress span')?.textContent,
+              paragraphs: Array.from(document.querySelectorAll('[data-step="about"] .intro-text')).map((e) => e.textContent),
+              scrolls: body.scrollHeight > body.clientHeight,
+              wide: document.documentElement.scrollWidth > window.innerWidth,
+            }
+          })
+          expect(step.progress).toBe(lang === 'English' ? 'Step 2 of 7' : 'Шаг 2 из 7')
+          expect(step.paragraphs).toEqual(
+            lang === 'English'
+              ? ['The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.', 'Until you have enough vocabulary, speech in a foreign language sounds like one unbroken stream. The app builds it up quickly, and listening and speaking both get easier.']
+              : ['Испанский, на котором говорят в Уругвае и Аргентине, а не тот, что в учебнике.', 'Пока не хватает словарного запаса, речь на чужом языке звучит сплошным потоком. Приложение быстро его расширяет — и слушать, и говорить становится легче.'],
+          )
+          expect(step.scrolls).toBe(false)
+          expect(step.wide).toBe(false)
+          await page.close()
+        }, 60_000)
+      }
+    }
+
     for (const [width, height] of [[390, 800], [320, 568]]) it(`on all seven steps, and on every set of the placement test, the buttons sit at the bottom of the screen: the same height, the same place (${width} x ${height})`, async () => {
       const page = await open('fresh=1&goal=default&dict=1')
       await page.setViewport({ width, height, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })

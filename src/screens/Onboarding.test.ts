@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
-import { effectiveLanguage, languagePatch } from '../lib/language'
+import { effectiveLanguage, languagePatch, setLanguage } from '../lib/language'
 import { backTarget } from '../lib/nav'
 import { en } from '../strings'
 import { ru } from '../strings.ru'
@@ -46,10 +46,25 @@ describe('the seven steps', () => {
     expect(step('language')).toContain('role="radiogroup"')
   })
 
-  it('1: what this is: the app name in the display face and one sentence', () => {
+  it('1: what this is: the app name in the display face, one sentence on what it is and one on what it is for', () => {
     const html = step('about')
     expect(html).toContain('<h1 class="brand intro-brand">Riopalabras</h1>')
-    expect(html).toContain('The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.')
+    expect(html).toContain('<p class="intro-text">The Spanish actually spoken in Uruguay and Argentina, not textbook Spanish.</p><p class="intro-text">Until you have enough vocabulary, speech in a foreign language sounds like one unbroken stream. The app builds it up quickly, and listening and speaking both get easier.</p>')
+  })
+
+  it('the thought on vocabulary is in step 2 and nowhere else in the intro, and it did not add a step', () => {
+    expect(STEPS).toHaveLength(7)
+    expect(STEPS.map((s) => s.id)).toEqual(['language', 'about', 'inside', 'translation', 'placement', 'goal', 'pronunciation'])
+    for (const id of STEPS.map((s) => s.id).filter((id) => id !== 'about')) expect(step(id)).not.toContain('unbroken stream')
+  })
+
+  it('in Russian: the owner\'s text, word for word', () => {
+    setLanguage('ru')
+    try {
+      expect(step('about')).toContain('<p class="intro-text">Испанский, на котором говорят в Уругвае и Аргентине, а не тот, что в учебнике.</p><p class="intro-text">Пока не хватает словарного запаса, речь на чужом языке звучит сплошным потоком. Приложение быстро его расширяет — и слушать, и говорить становится легче.</p>')
+    } finally {
+      setLanguage('en')
+    }
   })
 
   it('2: what is inside: Learn, Review, Matching and Cloze, Words, each with what to expect (the given text)', () => {

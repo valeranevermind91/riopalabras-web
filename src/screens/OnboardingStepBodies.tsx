@@ -59,6 +59,7 @@ export function AboutStep() {
     <div className="intro-step" data-step="about">
       <h1 className="brand intro-brand">{strings.appTitle}</h1>
       <p className="intro-text">{t.about.sentence}</p>
+      <p className="intro-text">{t.about.why}</p>
     </div>
   )
 }
