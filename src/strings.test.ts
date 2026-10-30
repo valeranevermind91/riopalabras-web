@@ -128,8 +128,8 @@ describe('strings reads the current language at the moment it is used', () => {
 
   it('word content does not follow the interface language: the Cloze nudge and the EN / RU labels are picked by the translation flags', () => {
     setLanguage('ru')
-    expect(strings.wordContent.en.inSentence('x')).toBe('in this sentence: x')
-    expect(strings.wordContent.ru.inSentence('x')).toBe('в этом предложении: x')
+    expect(strings.wordContent.en.inSentence('x')).toBe('In this sentence: x')
+    expect(strings.wordContent.ru.inSentence('x')).toBe('В этом предложении: x')
     expect(strings.card).toEqual({ en: 'EN', ru: 'RU' })
   })
 

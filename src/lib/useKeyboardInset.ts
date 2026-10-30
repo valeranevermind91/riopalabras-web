@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 
 /** Below this the difference between the page and what can be seen is browser chrome or a zoom, not a keyboard (a phone keyboard is well over 200 px). */
 export const KEYBOARD_MIN_PX = 100
@@ -45,4 +45,33 @@ export function useKeyboardInset(): number {
     }
   }, [])
   return inset
+}
+
+/**
+ * Keeps `ref`'s element in the part of the page that can be seen while the person is typing in it: with the keyboard drawn over the page (`inset` > 0), or with
+ * the focus inside the element, which is what a page that shrinks for the keyboard has (no inset there: what can be seen is the whole page). It scrolls the
+ * element's bottom to just above the bottom of what can be seen, when it is below it, and does it again whenever that changes (the keyboard rising or its
+ * suggestion bar, a rotation) and whenever `settled` changes (a new question, an answer that made the dock taller). It never scrolls back, or on a scroll of
+ * the person's own: reading the top of the page while the keyboard is up is theirs to do.
+ */
+export function useKeepInView(ref: RefObject<HTMLElement | null>, inset: number, settled: unknown): void {
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const reveal = () => {
+      if (inset === 0 && !element.contains(document.activeElement)) return
+      const visible = window.visualViewport
+      const visibleBottom = visible ? visible.offsetTop + visible.height : window.innerHeight
+      const delta = scrollDeltaToClear(element.getBoundingClientRect().bottom, visibleBottom)
+      if (delta > 0) window.scrollBy({ top: delta })
+    }
+    reveal()
+    const visible = window.visualViewport
+    visible?.addEventListener('resize', reveal)
+    window.addEventListener('resize', reveal)
+    return () => {
+      visible?.removeEventListener('resize', reveal)
+      window.removeEventListener('resize', reveal)
+    }
+  }, [ref, inset, settled])
 }

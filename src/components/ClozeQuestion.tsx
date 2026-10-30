@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   CLOZE_BLANK,
   blankSentence,
@@ -15,7 +15,7 @@ import {
 import { clozeFeedback } from '../data/clozeFeedback'
 import { lemmaOfForm } from '../data/lemmaNote'
 import type { UserSettings } from '../data/types'
-import { scrollDeltaToClear } from '../lib/useKeyboardInset'
+import { useKeepInView } from '../lib/useKeyboardInset'
 import { strings } from '../strings'
 
 interface ClozeQuestionProps {
@@ -35,18 +35,13 @@ type Answer = { kind: ClozeKind | 'gaveUp'; outcome: ClozeOutcome }
 export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, onChecked }: ClozeQuestionProps) {
   const t = strings.practice
   const dock = useRef<HTMLFormElement>(null)
-  // With the keyboard up, the answer field, Hint, Reveal and Check/Continue must all be in the part of the page that can be seen: scroll the dock up
-  // to just above the keyboard (the screen's padding gives the page room to). It runs for each new question too, since the keyboard stays up between them.
-  useEffect(() => {
-    const visible = window.visualViewport
-    const element = dock.current
-    if (keyboardInset === 0 || !visible || !element) return
-    const delta = scrollDeltaToClear(element.getBoundingClientRect().bottom, visible.offsetTop + visible.height)
-    if (delta > 0) window.scrollBy({ top: delta })
-  }, [keyboardInset])
   const [typed, setTyped] = useState('')
   const [hintShown, setHintShown] = useState(false)
   const [answer, setAnswer] = useState<Answer | null>(null)
+  // While the answer field is in use, the field, Hint, Reveal and Check/Continue must all be in the part of the page that can be seen, whether the keyboard
+  // is drawn over the page (the screen then pads for it) or the page itself shrinks for it: the dock is scrolled up to just above the keyboard. It runs for
+  // each new question too, since the keyboard stays up between them, and again when the visible part changes.
+  useKeepInView(dock, keyboardInset, answer)
   const sent = useRef(false)
   const { sentence, spans, target } = item.target
   const cue = clozeCueLines(item.word, settings)
@@ -101,9 +96,6 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
         )}
         {/* One slot for both: the hint is spent once the question is answered, and the note takes its place, so nothing moves. */}
         <p className={lemma ? 'cz-hint cz-lemma' : 'cz-hint'}>{lemma ? t.lemmaNote(target, lemma) : hintShown && !answer ? buildHint(target) : ''}</p>
-        <p className={`cz-feedback cz-${fb?.tone ?? 'none'}`} role="status">
-          {fb?.text ?? ''}
-        </p>
       </div>
 
       <form
@@ -128,14 +120,20 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
           spellCheck={false}
           autoFocus
         />
-        {/* Spent once the question is answered: hidden, not removed, so Continue stays where the thumb was going for Check. */}
-        <div className={answer ? 'cz-secondary is-spent' : 'cz-secondary'}>
-          <button type="button" className="btn btn-secondary" disabled={answer !== null || hintShown} onClick={() => setHintShown(true)}>
-            {t.hint}
-          </button>
-          <button type="button" className="btn btn-secondary" disabled={answer !== null} onClick={reveal}>
-            {t.reveal}
-          </button>
+        {/* One row for two things that are never there together: Hint and Reveal before the answer, the feedback after it. Hint and Reveal are hidden, not removed
+            (Continue stays where the thumb was going for Check), and the feedback sits over them, so the card has no slot of its own for it. */}
+        <div className="cz-row">
+          <div className={answer ? 'cz-secondary is-spent' : 'cz-secondary'}>
+            <button type="button" className="btn btn-secondary" disabled={answer !== null || hintShown} onClick={() => setHintShown(true)}>
+              {t.hint}
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={answer !== null} onClick={reveal}>
+              {t.reveal}
+            </button>
+          </div>
+          <p className={`cz-feedback cz-${fb?.tone ?? 'none'}`} role="status">
+            {fb?.text ?? ''}
+          </p>
         </div>
         {answer ? (
           <button type="button" className="btn btn-primary" onClick={next}>

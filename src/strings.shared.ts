@@ -12,10 +12,10 @@ export const card = {
 export const wordContent = {
   en: {
     // Cloze nudge when the headword was typed instead of the form in the sentence
-    inSentence: (form: string) => `in this sentence: ${form}`,
+    inSentence: (form: string) => `In this sentence: ${form}`,
   },
   ru: {
-    inSentence: (form: string) => `в этом предложении: ${form}`,
+    inSentence: (form: string) => `В этом предложении: ${form}`,
   },
 } as const
 

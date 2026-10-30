@@ -360,8 +360,8 @@ describe('Cloze: checking answers', () => {
   it('the dictionary headword is accepted for an inflected target, with the "in this sentence" nudge', () => {
     const v = checkClozeAnswer({ typed: 'tener', target: 'tenés', headword: 'tener' })
     expect(v).toEqual({ outcome: 'correct', kind: 'headword' })
-    expect(strings.wordContent.en.inSentence('tenés')).toBe('in this sentence: tenés')
-    expect(strings.wordContent.ru.inSentence('tenés')).toBe('в этом предложении: tenés')
+    expect(strings.wordContent.en.inSentence('tenés')).toBe('In this sentence: tenés')
+    expect(strings.wordContent.ru.inSentence('tenés')).toBe('В этом предложении: tenés')
     expect(checkClozeAnswer({ typed: 'TENER ', target: 'tenés', headword: 'tener' }).kind).toBe('headword')
     expect(checkClozeAnswer({ typed: 'tenés', target: 'tenés', headword: 'tener' }).kind).toBe('exact') // the sentence form still wins
     expect(checkClozeAnswer({ typed: 'tenes', target: 'tenés', headword: 'tener' }).kind).toBe('accent')
@@ -446,11 +446,21 @@ describe('Cloze: checking answers', () => {
       expect(clozeFeedback('wrong', 'tenés', lang)).toEqual({ text: 'Not quite — the word was: tenés', tone: 'bad' })
       expect(clozeFeedback('gaveUp', 'tenés', lang)).toEqual({ text: 'The word was: tenés', tone: 'neutral' })
     }
-    expect(clozeFeedback('headword', 'tenés', 'en').text).toBe('Correct! in this sentence: tenés')
-    expect(clozeFeedback('headword', 'tenés', 'ru').text).toBe('Correct! в этом предложении: tenés')
+    expect(clozeFeedback('headword', 'tenés', 'en').text).toBe('Correct! In this sentence: tenés')
+    expect(clozeFeedback('headword', 'tenés', 'ru').text).toBe('Correct! В этом предложении: tenés')
     // another form of the verb shows the sentence's form in place, in the same words: no label for the person or the tense
-    expect(clozeFeedback('form', 'tenés', 'en')).toEqual({ text: 'Correct! in this sentence: tenés', tone: 'ok' })
-    expect(clozeFeedback('form', 'tenés', 'ru')).toEqual({ text: 'Correct! в этом предложении: tenés', tone: 'ok' })
+    expect(clozeFeedback('form', 'tenés', 'en')).toEqual({ text: 'Correct! In this sentence: tenés', tone: 'ok' })
+    expect(clozeFeedback('form', 'tenés', 'ru')).toEqual({ text: 'Correct! В этом предложении: tenés', tone: 'ok' })
+  })
+
+  it('the second part of a feedback line starts with a capital, in every interface language and every nudge language', () => {
+    for (const t of [en.practice, ru.practice]) {
+      for (const lang of ['en', 'ru'] as const) {
+        for (const second of [t.accentNudge('está'), strings.wordContent[lang].inSentence('está')]) {
+          expect(`${t.correct} ${second}`).toMatch(/^\S+! \p{Lu}/u)
+        }
+      }
+    }
   })
 
   it('the chrome strings exist in both interface languages and take the word', () => {

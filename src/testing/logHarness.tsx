@@ -8,6 +8,7 @@
 // given and how many times today was marked active, and window.__state() is the words' scheduling fields and the settings as they are now. report=1 gives the Learn
 // screen a sender for "Report a problem" (as for a signed-in user) that records every report in window.__reports and answers ok. verbs=1 makes the learned words twelve real verbs
 // (tener, poder ...) whose example shows the voseo form (Vos tenés tiempo), for Cloze answered in another form of the verb.
+// shape=one|wrap|glosses|tall makes the Cloze card taller or shorter (see SHAPES below), for the on-screen keyboard tests.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -72,6 +73,20 @@ const REPS = Number(params.get('reps') ?? 2)
 const INFLECTED = params.get('inflected') === '1'
 const VERBS = params.get('verbs') === '1'
 const pad = (n: number) => String(n).padStart(2, '0')
+// shape=one|wrap|glosses|tall: how tall a Cloze card is. one is the short sentence and the short glosses; wrap a sentence of two lines; glosses a sentence of two
+// lines with the Russian and the English gloss each on a line of their own; tall a sentence of three lines and glosses of two lines each (the tallest card).
+const SHAPE = params.get('shape') ?? 'one'
+const SHAPES: Record<string, { sentence: (word: string) => string; ru?: string; en?: string }> = {
+  one: { sentence: (w) => `Esta es la ${w} del día.` },
+  wrap: { sentence: (w) => `Esta es la ${w} que te mostré ayer.` },
+  glosses: { sentence: (w) => `Esta es la ${w} que te mostré ayer.`, ru: 'давняя знакомая, старая подруга', en: 'long-time acquaintance, old friend' },
+  tall: {
+    sentence: (w) => `Esta es la ${w} de la que te hablé ayer por la tarde, cuando nos vimos en la plaza.`,
+    ru: 'давняя знакомая, старая подруга, с которой давно не виделись',
+    en: 'long-time acquaintance, an old friend you have not seen for a long time',
+  },
+}
+const shape = SHAPES[SHAPE] ?? SHAPES.one
 const WORDS: readonly Word[] = [
   // learned and due, with an example the Cloze can blank and a translation each: Review, Matching and Cloze all use these
   ...Array.from({ length: LEARNED }, (_, i) =>
@@ -80,10 +95,10 @@ const WORDS: readonly Word[] = [
       repetitions: REPS,
       interval: INTERVAL,
       nextReview: new Date(Date.now() - DAY - i * 3_600_000),
-      enTranslation: `old${i + 1}`,
-      ruTranslation: `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,
+      enTranslation: shape.en ?? `old${i + 1}`,
+      ruTranslation: shape.ru ?? `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,
       // inflected=1: the example shows the plural (vieja01s), a form of the word, so Cloze can say which word it comes from
-      exampleSentence: VERBS ? `Vos ${VOSEO_VERBS[i % VOSEO_VERBS.length].vos} tiempo.` : `Esta es la vieja${pad(i + 1)}${INFLECTED ? 's' : ''} del día.`,
+      exampleSentence: VERBS ? `Vos ${VOSEO_VERBS[i % VOSEO_VERBS.length].vos} tiempo.` : shape.sentence(`vieja${pad(i + 1)}${INFLECTED ? 's' : ''}`),
       wordFormInExample: VERBS ? VOSEO_VERBS[i % VOSEO_VERBS.length].vos : `vieja${pad(i + 1)}${INFLECTED ? 's' : ''}`,
       ...(VERBS ? { pos: 'v' } : {}),
     }),

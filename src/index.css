@@ -1487,7 +1487,7 @@ mark {
   text-transform: uppercase;
 }
 
-/* Fixed-height slots: showing a hint or the feedback never moves the input below. */
+/* A fixed-height slot: showing a hint never moves the input below. */
 .cz-hint {
   height: 24px;
   margin: 0;
@@ -1507,6 +1507,18 @@ mark {
   line-height: 24px;
 }
 
+/*
+ * One row of the dock holds both Hint/Reveal (before the answer) and the feedback (after it): they are never there together, so they share the cell instead of the
+ * card keeping a slot for each. The row is as tall as the taller of the two (48px at least), and the feedback never takes a tap meant for the buttons under it.
+ */
+.cz-row {
+  display: grid;
+}
+
+.cz-row > * {
+  grid-area: 1 / 1;
+}
+
 .cz-feedback {
   min-height: 48px;
   margin: 0;
@@ -1515,6 +1527,7 @@ mark {
   border-radius: var(--radius-small);
   font-size: 14px;
   font-weight: 700;
+  pointer-events: none;
 }
 
 .cz-feedback.cz-none {

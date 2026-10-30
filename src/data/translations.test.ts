@@ -185,11 +185,11 @@ describe('the Cloze cue, the summary gloss and the "in this sentence" nudge', ()
 
   it('the nudge is written in the language of the first cue line', () => {
     const nudge = (w: Word, flags: typeof BOTH) => clozeFeedback('headword', 'casa', cueLang(w, flags)).text
-    expect(nudge(word(), RU_ONLY)).toContain('в этом предложении: casa')
-    expect(nudge(word(), EN_ONLY)).toContain('in this sentence: casa')
-    expect(nudge(word(), BOTH)).toContain('в этом предложении') // RU before EN
-    expect(nudge(noRu, RU_ONLY)).toContain('in this sentence') // the cue fell back to English, so the nudge does too
-    expect(nudge(noEn, EN_ONLY)).toContain('в этом предложении')
+    expect(nudge(word(), RU_ONLY)).toContain('В этом предложении: casa')
+    expect(nudge(word(), EN_ONLY)).toContain('In this sentence: casa')
+    expect(nudge(word(), BOTH)).toContain('В этом предложении') // RU before EN
+    expect(nudge(noRu, RU_ONLY)).toContain('In this sentence') // the cue fell back to English, so the nudge does too
+    expect(nudge(noEn, EN_ONLY)).toContain('В этом предложении')
   })
 
   it('the question renders the cue lines as the rule says', () => {

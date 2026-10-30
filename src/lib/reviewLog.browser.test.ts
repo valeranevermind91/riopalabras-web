@@ -357,7 +357,7 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
         const accentOnly = how === 'tu' && plain(verb.tu) === plain(verb.vos)
         if (how === 'vos') expect(feedback.text).toBe('Correct!')
         else if (accentOnly) expect(feedback.text).toBe(`Correct! Mind the accent: ${verb.vos}`)
-        else expect(feedback.text).toMatch(new RegExp(`^Correct! (in this sentence|в этом предложении): ${verb.vos}$`))
+        else expect(feedback.text).toMatch(new RegExp(`^Correct! (In this sentence|В этом предложении): ${verb.vos}$`))
         await page.click('.cz-dock .btn-primary')
         kinds.push(accentOnly ? 'accent' : how === 'tu' ? 'form' : how === 'lemma' ? 'headword' : 'exact')
       }
