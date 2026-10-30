@@ -33,6 +33,7 @@ import { FeedbackScreen } from './screens/Feedback'
 import { SettingsScreen } from './screens/Settings'
 import { AboutScreen } from './screens/About'
 import { HowItWorks } from './screens/HowItWorks'
+import { WhatsNewScreen } from './screens/WhatsNew'
 import { PlacementScreen } from './screens/PlacementScreen'
 import { Onboarding } from './screens/Onboarding'
 import { needsOnboarding } from './data/onboarding'
@@ -286,6 +287,7 @@ function App() {
         onTakePlacement={() => setScreen('placement')}
         onOpenAbout={() => setScreen('about')}
         onOpenHow={() => setScreen('how')}
+        onOpenWhatsNew={() => setScreen('whatsnew')}
         onRunIntro={() => setScreen('onboarding')}
         onOpenFeedback={
           sendReport
@@ -347,6 +349,9 @@ function App() {
   }
 
   if (screen === 'how') return <HowItWorks onBack={inPageBack} onDone={goBack} />
+
+  // "What's new": opened from Settings; opening it is what clears the dot.
+  if (screen === 'whatsnew' && readyData && queue) return <WhatsNewScreen data={readyData} queue={queue} onBack={inPageBack} />
 
   // The placement test on its own, from Settings; finishing or skipping it goes back to Settings.
   if (screen === 'placement' && readyData && queue) {

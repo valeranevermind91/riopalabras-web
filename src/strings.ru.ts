@@ -64,6 +64,7 @@ export const ru: Strings = {
     },
     wordsButton: 'Words',
     settingsButton: 'Настройки',
+    settingsButtonNew: 'Настройки, есть новое',
     unsavedProgress: 'Часть прогресса еще не сохранена. Пробуем снова…',
     signInRejected: 'Прогресс не сохраняется: вход отклонен. Нажмите «Повторить сейчас» или закройте приложение и откройте его снова, чтобы войти заново.',
   },
@@ -256,6 +257,8 @@ export const ru: Strings = {
     placementNone: 'Отметьте слова, которые вы уже знаете, чтобы Learn начал с подходящего места.',
     placementDone: 'Learn начнет с более трудных слов, чем самые частые.',
     howItWorks: 'Как это работает',
+    whatsNew: 'Что нового',
+    whatsNewUnread: 'Что нового, есть непрочитанное',
     runIntro: 'Показать введение снова',
     debug: 'Debug',
     debugLock: 'Заблокировать Debug',
@@ -404,6 +407,11 @@ export const ru: Strings = {
     },
   },
 
+  whatsNew: {
+    title: 'Что нового',
+    newPill: 'Новое',
+    empty: 'Пока ничего нового.',
+  },
   howItWorks: {
     title: 'Как это работает',
     sections: [

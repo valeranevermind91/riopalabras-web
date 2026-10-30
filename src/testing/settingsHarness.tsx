@@ -32,6 +32,8 @@ import { Onboarding } from '../screens/Onboarding'
 import { PlacementScreen } from '../screens/PlacementScreen'
 import { AboutScreen } from '../screens/About'
 import { SettingsScreen } from '../screens/Settings'
+import { WhatsNewScreen } from '../screens/WhatsNew'
+import type { NewsEntry } from '../data/whatsNew'
 import { useReminders } from '../lib/useReminders'
 
 const params = new URLSearchParams(location.search)
@@ -61,6 +63,20 @@ const HOME_WORDS_WITH_RELEARN: readonly Word[] =
 // endofday=N: the first N learned words are the day's own (first review tomorrow), the rest are not due for days: nothing is due now, and the allowance is spent.
 const endOfDay = Number(params.get('endofday') ?? 0)
 const END_OF_DAY_WORDS = HOME_WORDS.map((w, i) => (i < 8 ? (i < endOfDay ? { ...w, interval: 0, nextReview: learnedState(new Date()).nextReview } : { ...w, nextReview: new Date(Date.now() + 5 * 86_400_000) }) : w))
+// news=1: two current "What's new" entries (today 10:00 and yesterday 09:00), long enough to wrap; without it there are none, so the other tests see no dot and no row.
+// seen=old: the older one has been opened, seen=all: both; without seen, neither.
+const stamp = (daysAgo: number, time: string) => {
+  const day = new Date()
+  day.setDate(day.getDate() - daysAgo)
+  return `${localDateKey(day)}T${time}`
+}
+const NEWS: readonly NewsEntry[] =
+  params.get('news') === '1'
+    ? [
+        { id: 'newer', at: stamp(0, '10:00'), en: { title: 'A newer thing you can do now', text: 'It works like this, and it takes a few words to say so that the text wraps on a narrow screen.' }, ru: { title: 'Новая возможность', text: 'Это работает так, и чтобы текст перенесся на узком экране, нужно сказать это несколькими словами подлиннее.' } },
+        { id: 'older', at: stamp(1, '09:00'), en: { title: 'An older change', text: 'Before this, it worked differently.' }, ru: { title: 'Старое изменение', text: 'Раньше это работало иначе.' } },
+      ]
+    : []
 const taps: string[] = []
 ;(window as never as { __taps: string[] }).__taps = taps
 
@@ -98,6 +114,7 @@ export function Harness() {
       ...(params.get('lang') ? { ui_language: params.get('lang') } : {}),
       ...(params.get('start_rank') ? { start_rank: Number(params.get('start_rank')) } : {}),
       ...(params.get('unlocked') === '1' ? { debug_unlocked: true } : {}),
+      ...(params.get('seen') === 'old' ? { whats_new_seen: stamp(1, '09:00') } : params.get('seen') === 'all' ? { whats_new_seen: stamp(0, '10:00') } : {}),
       ...(endOfDay > 0 ? { new_words_learned_today_count: Number(params.get('todaycount') ?? params.get('goal') ?? 18), new_words_learned_today_date: localDateKey(new Date()) } : {}),
     }),
   )
@@ -138,6 +155,7 @@ export function Harness() {
   useScreenScroll(screen, null) // as App does
 
   // origin: a fixed address, so the privacy link in About reads the same wherever the test runs
+  if (screen === 'whatsnew') return <WhatsNewScreen data={data} queue={queue} news={NEWS} onBack={back} />
   if (screen === 'about') return <AboutScreen data={data} queue={queue} origin="https://app.test" onBack={back} />
   // as App does: where Telegram's own BackButton exists (native=1) the header draws no Back, and the end of the page has one that does the same
   if (screen === 'how') return <HowItWorks onBack={params.get('native') === '1' ? undefined : back} onDone={back} />
@@ -154,6 +172,8 @@ export function Harness() {
         onTakePlacement={() => setScreen('placement')}
         onOpenAbout={() => setScreen('about')}
         onOpenHow={() => setScreen('how')}
+        onOpenWhatsNew={() => setScreen('whatsnew')}
+        news={NEWS}
         onRunIntro={() => setScreen('onboarding')}
         onBack={back}
       />
@@ -187,6 +207,7 @@ export function Harness() {
       onClozeToday={() => void taps.push('cloze-today')}
       onWords={() => {}}
       onSettings={() => setScreen('settings')}
+      news={NEWS}
       queue={null}
       metrics={null}
     />

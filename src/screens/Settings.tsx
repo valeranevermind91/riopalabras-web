@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { WHATS_NEW, currentNews, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
 import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
@@ -26,6 +27,11 @@ interface SettingsScreenProps {
   onOpenAbout?: () => void
   /** Opens "How it works" (About). Without it the row is left out. */
   onOpenHow?: () => void
+  /** Opens "What's new". Without it, or with no current entry, the row is left out. */
+  onOpenWhatsNew?: () => void
+  /** The entries and the moment, for a test; the real ones otherwise. */
+  news?: readonly NewsEntry[]
+  now?: Date
   /** Replays the intro from step 1 (About). Without it the row is left out. */
   onRunIntro?: () => void
   /** Opens the form for a note to the developer (About). Without it (signed out) the row is left out. */
@@ -48,11 +54,26 @@ const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ decli
 
 const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
-export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onOpenWhatsNew, news = WHATS_NEW, now, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
   const link = botLink(botUsername)
+  // "What's new": while something in it is unread the row leads the screen (a dot on the gear that led here must not point at a row at the bottom); once it has been opened it settles into About.
+  const when = now ?? new Date()
+  const unreadNews = hasUnreadNews(settings, when, news)
+  const newsRow =
+    onOpenWhatsNew && currentNews(when, news).length > 0 ? (
+      <button type="button" className="setting-row setting-nav" aria-label={unreadNews ? t.whatsNewUnread : undefined} onClick={onOpenWhatsNew}>
+        <span className="setting-label">
+          {t.whatsNew}
+          {unreadNews && <span className="news-dot news-dot-inline" aria-hidden="true" />}
+        </span>
+        <span className="setting-chevron" aria-hidden="true">
+          ›
+        </span>
+      </button>
+    ) : null
 
   const step = (delta: 1 | -1) => {
     if (stepDailyLimit(delta, deps)) haptic('select')
@@ -82,6 +103,12 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
   return (
     <main className="screen settings">
       <ScreenHeader title={t.title} onBack={onBack} />
+
+      {unreadNews && newsRow && (
+        <section className="settings-section" aria-label={t.whatsNew}>
+          <div className="settings-group">{newsRow}</div>
+        </section>
+      )}
 
       <section className="settings-section" aria-labelledby="settings-learning">
         <h2 id="settings-learning" className="settings-label">
@@ -262,6 +289,7 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
               </span>
             </button>
           )}
+          {!unreadNews && newsRow}
           {onRunIntro && (
             <button type="button" className="setting-row setting-nav" onClick={onRunIntro}>
               <span className="setting-label">{t.runIntro}</span>

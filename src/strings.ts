@@ -81,6 +81,8 @@ export const en = {
     },
     wordsButton: 'Words',
     settingsButton: 'Settings',
+    // the same button while there is something unread in "What's new" (the dot is decoration; this says it)
+    settingsButtonNew: 'Settings, something new',
     unsavedProgress: "Some progress hasn't been saved yet. Retrying…",
     signInRejected: "Your progress can't be saved: the sign-in was refused. Retry, or close and reopen the app to sign in again.",
   },
@@ -295,6 +297,9 @@ export const en = {
     placementNone: 'Mark the words you already know, so Learn starts at the right point.',
     placementDone: 'Learn starts from a harder point than the most common words.',
     howItWorks: 'How it works',
+    whatsNew: "What's new",
+    // the row's name while it has a dot
+    whatsNewUnread: "What's new, unread",
     runIntro: 'Run the intro again',
     debug: 'Debug',
     debugLock: 'Lock Debug',
@@ -467,6 +472,12 @@ export const en = {
   },
 
   // The "How it works" screen (About in Settings, and the end of the intro). Plain paragraphs, in the words of the app's own buttons.
+  // The "What's new" screen; its entries are in data/whatsNew.ts, in both languages.
+  whatsNew: {
+    title: "What's new",
+    newPill: 'New',
+    empty: 'Nothing new yet.',
+  },
   howItWorks: {
     title: 'How it works',
     sections: [

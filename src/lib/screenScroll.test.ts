@@ -9,12 +9,12 @@ const saved = new Map<Screen, number>([
 ])
 
 describe('where the page sits when one screen replaces another', () => {
-  it('a screen opened from Settings starts at the top: "How it works", Debug, the intro, the placement test', () => {
-    for (const screen of ['how', 'debug', 'onboarding', 'placement'] as const) expect(scrollTargetFor('settings', screen, saved, null), screen).toBe(0)
+  it('a screen opened from Settings starts at the top: "How it works", the news, Debug, the intro, the placement test', () => {
+    for (const screen of ['how', 'whatsnew', 'debug', 'onboarding', 'placement'] as const) expect(scrollTargetFor('settings', screen, saved, null), screen).toBe(0)
   })
 
   it('the screen Back leads to gets its place back: Settings after "How it works", and after the intro or the placement test it was left for', () => {
-    for (const from of ['how', 'debug', 'onboarding', 'placement'] as const) expect(scrollTargetFor(from, 'settings', saved, null), from).toBe(730)
+    for (const from of ['how', 'whatsnew', 'debug', 'onboarding', 'placement'] as const) expect(scrollTargetFor(from, 'settings', saved, null), from).toBe(730)
   })
 
   it('Home keeps its place across the screens that lead back to it, and every screen opened from Home starts at the top', () => {

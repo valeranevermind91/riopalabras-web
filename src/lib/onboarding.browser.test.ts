@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { WHATS_NEW } from '../data/whatsNew'
 
 /**
  * The intro in a real browser (src/testing/settingsHarness.tsx: the real Onboarding, Settings, How it works and Home, with Back
@@ -202,7 +203,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await page.waitForSelector('.home')
       expect(await page.$('.onboarding')).toBeNull()
       const writes = (await sent(page)).filter((p) => 'onboarding_done' in p)
-      expect(writes).toEqual([{ onboarding_done: true, daily_new_word_limit: 5 }]) // exactly once, with the goal that was on screen: finishing flips the implicit goal, so it is written down
+      expect(writes).toEqual([{ onboarding_done: true, daily_new_word_limit: 5, whats_new_seen: WHATS_NEW[0].at }]) // exactly once, with the goal that was on screen (finishing flips the implicit goal, so it is written down) and the news as it stands marked read
       await page.close()
     }, 60_000)
 
@@ -214,7 +215,7 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await goTo(page, 7)
       await clickText(page, '.intro-footer .btn', 'Done')
       await page.waitForSelector('.home')
-      expect((await sent(page)).filter((p) => 'onboarding_done' in p)).toEqual([{ onboarding_done: true, daily_new_word_limit: 8 }])
+      expect((await sent(page)).filter((p) => 'onboarding_done' in p)).toEqual([{ onboarding_done: true, daily_new_word_limit: 8, whats_new_seen: WHATS_NEW[0].at }])
       await page.close()
     }, 60_000)
 

@@ -62,6 +62,7 @@ const render = (over: Record<string, unknown> = {}, words: readonly Word[] = [..
       queue: null,
       metrics: null,
       now: NOW,
+      news: [], // the real entries would put a dot on the gear; what that looks like is tested below with entries of its own
       ...over,
     } as never),
   )
@@ -347,6 +348,59 @@ describe('the header: the app name, then Words and the gear', () => {
     expect(html).not.toContain('data-theme-choice')
     expect(html).not.toContain('Tap to switch')
     expect(html.match(/class="icon-btn"/g)).toHaveLength(2)
+  })
+
+  describe("the dot on the gear: something in What's new has not been opened", () => {
+    const entry = (id: string, at: string) => ({ id, at, en: { title: id, text: id }, ru: { title: id, text: id } })
+    const dayAgo = (n: number) => {
+      const d = new Date(NOW.getTime() - n * 86_400_000)
+      const pad = (v: number) => String(v).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00`
+    }
+    const NEWS = [entry('b', dayAgo(2)), entry('a', dayAgo(20))]
+    /** The gear: the last button in the header's actions, whatever the language. */
+    const gear = (html: string) => {
+      const actions = html.match(/<div class="screen-header-actions">(.*?)<\/div>/)![1]
+      return actions.match(/<button .*?<\/button>/g)!.at(-1)!
+    }
+
+    it('shows while an entry is unread: a dot inside the gear, and the gear says there is something new', () => {
+      const button = gear(render({ onSettings: () => {}, news: NEWS }))
+      expect(button).toContain('aria-label="Settings, something new"')
+      expect(button).toContain('title="Settings, something new"')
+      expect(button).toContain('<span class="news-dot news-dot-corner" aria-hidden="true"></span>')
+    })
+
+    it('is gone once the newest entry has been opened, and the gear is the plain one', () => {
+      const button = gear(render({ onSettings: () => {}, news: NEWS }, undefined, { whats_new_seen: NEWS[0].at }))
+      expect(button).toContain('aria-label="Settings"')
+      expect(button).not.toContain('news-dot')
+    })
+
+    it('an older watermark still shows it, and a new entry brings it back', () => {
+      expect(gear(render({ onSettings: () => {}, news: NEWS }, undefined, { whats_new_seen: NEWS[1].at }))).toContain('news-dot')
+      expect(gear(render({ onSettings: () => {}, news: [entry('newest', dayAgo(0)), ...NEWS] }, undefined, { whats_new_seen: NEWS[0].at }))).toContain('news-dot')
+    })
+
+    it('no entry is current: no dot, even for an account that has never opened the screen', () => {
+      expect(gear(render({ onSettings: () => {}, news: [] }))).not.toContain('news-dot')
+      expect(gear(render({ onSettings: () => {}, news: [entry('stale', dayAgo(120))] }))).not.toContain('news-dot')
+    })
+
+    it('there is no dot before the settings have loaded (it would say something about an account not yet known)', () => {
+      const loading = renderToStaticMarkup(createElement(HomeScreen, { auth: { status: 'signed-in', userId: 'u', telegramFirstName: null, source: 'existing' }, data: { status: 'loading' }, queue: null, metrics: null, now: NOW, news: NEWS, onSettings: () => {} } as never))
+      expect(loading).toContain('aria-label="Settings"')
+      expect(loading).not.toContain('news-dot')
+    })
+
+    it('in Russian the gear says «Настройки, есть новое»', () => {
+      setLanguage('ru')
+      try {
+        expect(gear(render({ onSettings: () => {}, news: NEWS }))).toContain('aria-label="Настройки, есть новое"')
+      } finally {
+        setLanguage('en')
+      }
+    })
   })
 
   it('each button is there only when it is given a way to open its screen', () => {

@@ -309,6 +309,61 @@ describe('the Settings screen', () => {
     })
   })
 
+  describe("what's new", () => {
+    const NOW = new Date(2026, 0, 31, 12, 0)
+    const entry = (id: string, at: string) => ({ id, at, en: { title: id, text: id }, ru: { title: id, text: id } })
+    const NEWS = [entry('b', '2026-01-30T10:00'), entry('a', '2026-01-10T08:30')]
+    const props = { onOpenWhatsNew: noop, onOpenAbout: noop, onOpenHow: noop, news: NEWS, now: NOW }
+    const unreadRow = /<button type="button" class="setting-row setting-nav" aria-label="What&#x27;s new, unread"><span class="setting-label">What&#x27;s new<span class="news-dot news-dot-inline" aria-hidden="true"><\/span><\/span>/
+    const readRow = '<button type="button" class="setting-row setting-nav"><span class="setting-label">What&#x27;s new</span>'
+
+    it('while something is unread the row leads the screen, above Learning, with a dot and a label that says so', () => {
+      const html = render({}, props)
+      expect(html).toMatch(unreadRow)
+      expect(html.indexOf("What&#x27;s new")).toBeLessThan(html.indexOf('id="settings-learning"'))
+      expect(html.match(/What&#x27;s new/g)).toHaveLength(3) // the section's label, the row's label and the row's accessible name; the row is not also in About
+      expect(html).not.toContain(readRow)
+    })
+
+    it('an older watermark is still unread, the newest one is read', () => {
+      expect(render({ whats_new_seen: '2026-01-10T08:30' }, props)).toMatch(unreadRow)
+      expect(render({ whats_new_seen: '2026-01-30T10:00' }, props)).not.toContain('news-dot')
+    })
+
+    it('once read the row settles into About, after "How it works" and before "Run the intro again", with no dot', () => {
+      const html = render({ whats_new_seen: '2026-01-30T10:00' }, { ...props, onRunIntro: noop })
+      expect(html).toContain(readRow)
+      expect(html).not.toContain('news-dot')
+      expect(html).not.toContain('unread')
+      const rows = [...html.matchAll(/<button type="button" class="setting-row setting-nav"><span class="setting-label">([^<]+)<\/span>/g)].map((m) => m[1])
+      expect(rows).toEqual(['About Riopalabras', 'How it works', 'What&#x27;s new', 'Run the intro again'])
+      expect(html.indexOf(readRow)).toBeGreaterThan(html.indexOf('id="settings-about"'))
+    })
+
+    it('with no current entry there is no row at all (an expired list is not a dead end), and with no way to open it there is none either', () => {
+      expect(render({}, { ...props, news: [] })).not.toContain('What&#x27;s new')
+      expect(render({}, { ...props, news: [entry('stale', '2025-06-01T10:00')] })).not.toContain('What&#x27;s new')
+      expect(render({}, { ...props, onOpenWhatsNew: undefined })).not.toContain('What&#x27;s new')
+    })
+
+    it('the section order is not changed by the row: the labelled sections are the same with or without it', () => {
+      expect(labels(render({}, props))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About'])
+      expect(labels(render({ whats_new_seen: '2026-01-30T10:00' }, props))).toEqual(['Learning', 'Language', 'Appearance', 'Notifications', 'About'])
+    })
+
+    it('in Russian: «Что нового», «Что нового, есть непрочитанное»', () => {
+      setLanguage('ru')
+      try {
+        const unread = render({}, props)
+        expect(unread).toContain('aria-label="Что нового, есть непрочитанное"')
+        expect(unread).toContain('Что нового<span class="news-dot')
+        expect(render({ whats_new_seen: '2026-01-30T10:00' }, props)).toContain('<span class="setting-label">Что нового</span>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+  })
+
   describe('debug', () => {
     it('is not in the DOM at all until it is unlocked: no row, no section label, no word "Debug"', () => {
       const html = render({})
@@ -398,6 +453,8 @@ describe('where Back goes', () => {
   it('Settings goes Home; Debug goes back to Settings (its only way in); a word goes back to where it was opened', () => {
     expect(backTarget('settings', null)).toBe('home')
     expect(backTarget('debug', null)).toBe('settings')
+    expect(backTarget('whatsnew', null)).toBe('settings')
+    expect(backTarget('whatsnew', 'home')).toBe('settings')
     expect(backTarget('word', 'words')).toBe('words')
     expect(backTarget('word', 'home')).toBe('home')
     expect(backTarget('word', null)).toBe('home')
@@ -410,6 +467,12 @@ describe('where Back goes', () => {
     expect(app).toMatch(/onSettings=\{\(\) => setScreen\('settings'\)\}/)
     expect(app).toMatch(/onOpenDebug=\{\(\) => setScreen\('debug'\)\}/)
     expect(app).toMatch(/if \(!debugUnlocked\) return <NotAvailable \/>/)
+  })
+
+  it("App opens What's new from Settings and gives it the same Back as the other screens under Settings", () => {
+    const app = readFileSync('src/App.tsx', 'utf8')
+    expect(app).toMatch(/onOpenWhatsNew=\{\(\) => setScreen\('whatsnew'\)\}/)
+    expect(app).toMatch(/screen === 'whatsnew' && readyData && queue\) return <WhatsNewScreen data=\{readyData\} queue=\{queue\} onBack=\{inPageBack\} \/>/)
   })
 
   it('App lets Debug in only for an account that unlocked it, and opens every screen at the top of the page', () => {

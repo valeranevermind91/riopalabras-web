@@ -1,4 +1,5 @@
 import { languagesPatch } from './settingsActions'
+import { NEWS_SEEN_KEY, WHATS_NEW, newestNewsAt } from './whatsNew'
 import type { SettingsPatch, UserSettings } from './types'
 
 // The first-run intro. It is shown once per account: finishing it writes `onboarding_done: true` into the settings blob, and
@@ -11,10 +12,11 @@ export const needsOnboarding = (settings: Pick<UserSettings, 'raw'>): boolean =>
 
 /**
  * What finishing writes: the key, once, and the daily goal that is on screen, in the same patch, so the account does not depend on an implicit default afterwards
- * (finishing flips the implicit goal from five to ten, see implicitDailyGoal). Null when the intro is already done (replaying it writes nothing).
+ * (finishing flips the implicit goal from five to ten, see implicitDailyGoal). It also marks the newest "What's new" entry as seen: a new account has no use for the history
+ * of an app it has only just met, so it starts with no dot. Null when the intro is already done (replaying it writes nothing).
  */
-export const finishOnboardingPatch = (settings: Pick<UserSettings, 'raw' | 'dailyNewWordLimit'>): SettingsPatch | null =>
-  needsOnboarding(settings) ? { [ONBOARDING_KEY]: true, daily_new_word_limit: settings.dailyNewWordLimit } : null
+export const finishOnboardingPatch = (settings: Pick<UserSettings, 'raw' | 'dailyNewWordLimit'>, latestNews: string | null = newestNewsAt(WHATS_NEW)): SettingsPatch | null =>
+  needsOnboarding(settings) ? { [ONBOARDING_KEY]: true, daily_new_word_limit: settings.dailyNewWordLimit, ...(latestNews ? { [NEWS_SEEN_KEY]: latestNews } : {}) } : null
 
 /** The translation step offers Russian, English or both. */
 export type LanguageChoice = 'ru' | 'en' | 'both'

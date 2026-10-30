@@ -71,6 +71,8 @@ node tools/icon/make-icon.mjs --avatar avatar.png    # and renders the 512x512 P
 - **lance:** a rare word whose everyday sense cannot be told.
 - **Judged not to be mismatches (34):** the example shows a sub-sense or a near-synonym of the first gloss. obra, registro, crítica, vencer, entrega, extremo, categoría, joya, urgencia, consulta, cinturón, pozo, conquistar, fuga, maduro, culto, montado, antigüedad, programación, panorama, sanción, gala, liquidar, voltear, perder, referir, mundial, conservar, coincidir, correo, ánimo, situar, mudo, subida.
 
+**Every change is asked whether it needs a "What's new" entry.** The question, before each commit: *does this change what a person sees or how a rule works?* If yes, an entry is written in `src/data/whatsNew.ts`, in both languages, and the Russian is proofread by the owner before it ships. If no, the commit message says "no entry". Entries are written by hand for changes a person would notice and are never generated from commits; invisible plumbing, fixes and copy edits are not entries, however much work they were. An entry is dated history and never states a current rule ("From 29 October, new accounts start at 5", not "the default is 5"): the rules as they stand live in "How it works". Entries stop being shown 90 days after their date, so the failure mode is silence and not a stale list; the file needs no pruning for that, only to stay under `NEWS_FILE_CAP`. `src/data/whatsNew.test.ts` pins the shape (both languages, newest first, dated `YYYY-MM-DDTHH:mm`, no current-rule wording, the app's names for things).
+
 ## Tests
 
 ```bash

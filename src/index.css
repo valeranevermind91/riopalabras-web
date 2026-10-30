@@ -230,6 +230,7 @@ dd {
 }
 
 .icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2243,6 +2244,50 @@ mark {
   color: var(--text-2);
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* The dot that says "What's new" has something unread: on the gear (a corner of the round button) and beside the row's name. Decoration: the names carry the words. */
+.news-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.news-dot-corner {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.news-dot-inline {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* The "What's new" screen: the date over each entry, a "New" label on the ones that were unread, the title and the text in a card. */
+.news-pill {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: 10px;
+  letter-spacing: 0.9px;
+  line-height: 1.6;
+}
+
+.news-title {
+  margin: 0;
+}
+
+.news-text {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 /* ---- Settings: small uppercase section labels over grouped rows (at least 48px tall, each labelled) ---- */

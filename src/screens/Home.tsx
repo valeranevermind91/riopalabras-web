@@ -9,6 +9,7 @@ import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
 import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../data/daily'
 import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
+import { WHATS_NEW, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
 import { wordKey } from '../data/words'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
@@ -36,6 +37,8 @@ interface HomeScreenProps {
   onWords?: () => void
   /** Opens Settings (theme, daily goal, translation, About, and Debug for those allowed). */
   onSettings?: () => void
+  /** The "What's new" entries, for a test; the real ones otherwise. */
+  news?: readonly NewsEntry[]
   queue: WriteQueue | null
   metrics: Pick<MetricsRecorder, 'captureStartOfDaySnapshotIfNeeded'> & Partial<Pick<MetricsRecorder, 'today'>> | null
   /** Dates with activity in the last days, read from the server (user_daily_metrics); null hides the dots. */
@@ -44,7 +47,7 @@ interface HomeScreenProps {
   now?: Date
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday, onWords, onSettings, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday, onWords, onSettings, news = WHATS_NEW, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
   // The time the counts are taken at: when Home is shown (it remounts on navigation), so "due" and "today" are never stale. A word rated Again is
   // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
   // was while Home stays open, the counts are taken again the moment the next such word comes due, and when the app comes back to the foreground
@@ -98,7 +101,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
           (onWords || onSettings) && (
             <>
               {onWords && <WordsButton onClick={onWords} />}
-              {onSettings && <SettingsButton onClick={onSettings} />}
+              {onSettings && <SettingsButton onClick={onSettings} unread={data.status === 'ready' && hasUnreadNews(data.data.settings, now, news)} />}
             </>
           )
         }
@@ -336,9 +339,11 @@ function WordsButton({ onClick }: { onClick: () => void }) {
 }
 
 /** The way into Settings: a gear, the last button in the header. */
-function SettingsButton({ onClick }: { onClick: () => void }) {
+function SettingsButton({ onClick, unread }: { onClick: () => void; unread: boolean }) {
+  const label = unread ? strings.home.settingsButtonNew : strings.home.settingsButton
   return (
-    <button type="button" className="icon-btn" aria-label={strings.home.settingsButton} title={strings.home.settingsButton} onClick={onClick}>
+    <button type="button" className="icon-btn" aria-label={label} title={label} onClick={onClick}>
+      {unread && <span className="news-dot news-dot-corner" aria-hidden="true" />}
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />

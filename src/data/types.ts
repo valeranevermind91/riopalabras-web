@@ -62,6 +62,8 @@ export interface UserSettings {
   readonly pendingWordDeletes: readonly string[]
   /** How many times the offer to turn on the daily reminder has counted as made (see data/reminderOffer.ts): 0 is never, REMINDER_OFFER_MAX is over (answered, or made that many times with no answer). */
   readonly reminderOfferShows: number
+  /** The `at` of the newest "What's new" entry this person has opened (see data/whatsNew.ts); null if they never have. */
+  readonly whatsNewSeen: string | null
   /** The Debug section of Settings was unlocked on this account (seven taps on the version row, see lib/tapCount.ts). Never set by default. */
   readonly debugUnlocked: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

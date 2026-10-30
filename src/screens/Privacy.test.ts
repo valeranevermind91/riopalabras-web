@@ -195,7 +195,7 @@ describe('what is stored: the columns the code writes are the ones the page desc
 
   it('settings: the keys the app reads from the blob are these, and the page names the kinds of thing they are', () => {
     const keysRead = [...new Set([...read('src/data/settings.ts').matchAll(/raw\.([a-z_]+)/g)].map((m) => m[1]))].sort()
-    expect(keysRead).toEqual(['cards_done_today_count', 'cards_done_today_date', 'daily_new_word_limit', 'debug_unlocked', 'new_words_learned_today_count', 'new_words_learned_today_date', 'pending_word_deletes', 'reminder_offer_shown', 'show_en_translation', 'show_ru_translation', 'start_rank', 'streak_count', 'streak_last_activity_date'])
+    expect(keysRead).toEqual(['cards_done_today_count', 'cards_done_today_date', 'daily_new_word_limit', 'debug_unlocked', 'new_words_learned_today_count', 'new_words_learned_today_date', 'pending_word_deletes', 'reminder_offer_shown', 'show_en_translation', 'show_ru_translation', 'start_rank', 'streak_count', 'streak_last_activity_date', 'whats_new_seen'])
     expect(pageText(en)).toContain('your settings')
   })
 
