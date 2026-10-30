@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import puppeteer, { type Browser, type Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { VOSEO_VERBS } from '../testing/voseoVerbs'
 
 /**
  * The review log in a real browser (src/testing/logHarness.tsx: ONE of the real Review, Learn, Matching or Cloze screens over the real write queue and the
@@ -24,6 +25,8 @@ interface Row {
   repetitionsAfter: number
   sessionId: string | null
   durationMs: number | null
+  /** Cloze rows only. */
+  answerKind?: string
 }
 
 describe.skipIf(!CHROME)('the review log in the four modes', () => {
@@ -333,6 +336,38 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
       return word
     }
 
+    it('a verb answered in another form counts as right: the sentence shows its own form in place, the feedback says so, and the row says "form" (the dictionary word and the sentence form have kinds of their own)', async () => {
+      const page = await open('screen=cloze&learned=12&verbs=1')
+      await page.waitForSelector('.cz-card')
+      const kinds: string[] = []
+      const plain = (text: string) => text.normalize('NFD').replace(/\p{Mn}/gu, '')
+      for (const how of ['tu', 'lemma', 'vos'] as const) {
+        await page.waitForSelector('.cz-input:not([disabled])')
+        const n = Number((await page.$eval('.cz-cue', (e) => e.textContent ?? '')).match(/old(\d+)/)![1])
+        const verb = VOSEO_VERBS[n - 1]
+        const typed = how === 'tu' ? verb.tu : how === 'lemma' ? verb.lemma : verb.vos
+        await page.type('.cz-input', typed)
+        await page.click('.cz-dock .btn-primary')
+        await page.waitForSelector('.cz-sentence mark')
+        expect(await page.$eval('.cz-sentence mark', (e) => e.textContent)).toBe(verb.vos) // the sentence's own form, in place, whatever was typed
+        expect(await page.$eval('.cz-input', (e) => (e as HTMLInputElement).value)).toBe(typed) // and what was typed is still there to compare
+        const feedback = await page.$eval('.cz-feedback', (e) => ({ text: e.textContent, ok: e.classList.contains('cz-ok') }))
+        expect(feedback.ok).toBe(true)
+        // hacés / haces, ponés / pones, sabés / sabes differ by an accent only, and that has always been an accent slip, with its own nudge; the others are another form
+        const accentOnly = how === 'tu' && plain(verb.tu) === plain(verb.vos)
+        if (how === 'vos') expect(feedback.text).toBe('Correct!')
+        else if (accentOnly) expect(feedback.text).toBe(`Correct! Mind the accent: ${verb.vos}`)
+        else expect(feedback.text).toMatch(new RegExp(`^Correct! (in this sentence|в этом предложении): ${verb.vos}$`))
+        await page.click('.cz-dock .btn-primary')
+        kinds.push(accentOnly ? 'accent' : how === 'tu' ? 'form' : how === 'lemma' ? 'headword' : 'exact')
+      }
+      await waitForRows(page, 3)
+      const rows = await log(page)
+      expect(rows.map((r) => [r.mode, r.rating, r.answerKind])).toEqual(kinds.map((kind) => ['cloze', 3, kind]))
+      expect(JSON.stringify(rows)).not.toMatch(/tienes|puedes|quieres|haces|dices|vienes|pones|sabes|piensas|vuelves|pides|vives/) // what was typed is not in the log
+      await page.close()
+    }, 120_000)
+
     it('a row per answered question, right (3) or wrong (1), with the time it took; giving up is not an answer; one session for the Cloze session', async () => {
       const page = await open('screen=cloze&learned=12')
       await page.waitForSelector('.cz-card')
@@ -343,7 +378,7 @@ describe.skipIf(!CHROME)('the review log in the four modes', () => {
       const fourth = await answer(page, 'right')
       await waitForRows(page, 3)
       const rows = await log(page)
-      expect(rows.map((r) => [r.esWord, r.rating, r.mode])).toEqual([[first, 3, 'cloze'], [second, 1, 'cloze'], [fourth, 3, 'cloze']])
+      expect(rows.map((r) => [r.esWord, r.rating, r.mode, r.answerKind])).toEqual([[first, 3, 'cloze', 'exact'], [second, 1, 'cloze', 'wrong'], [fourth, 3, 'cloze', 'exact']])
       for (const r of rows) {
         expect(r).toMatchObject({ stateBefore: 'review', scheduledDays: 3, intervalAfter: 3, easeAfter: 2.5, repetitionsAfter: 2 })
         expect(r.durationMs).toBeGreaterThan(0)

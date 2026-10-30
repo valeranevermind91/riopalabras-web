@@ -154,6 +154,47 @@ describe('a queued row survives a restart and is replayed once', () => {
     expect(r.log.flat()).toEqual([row])
   })
 
+  it('a Cloze row keeps its answer kind through a restart; a kind no build has written is dropped from the row, and the row is kept', async () => {
+    const storage = memoryStorage()
+    const rows = (['exact', 'accent', 'headword', 'form', 'wrong'] as const).map((answerKind, i) => entry({ id: `k${i}`, mode: 'cloze', answerKind }))
+    const first = open(storage, recorder({ hangLog: true }).sender)
+    for (const row of rows) first.enqueueLog(row)
+    const r = recorder()
+    const q = open(storage, r.sender)
+    expect(q.restore()).toMatchObject({ restored: 5, droppedUnreadable: 0 })
+    await drained(q)
+    expect(r.log.flat()).toEqual(rows)
+
+    const odd = memoryStorage()
+    open(odd, recorder({ hangLog: true }).sender).enqueueLog(entry({ id: 'odd', mode: 'cloze', answerKind: 'form' }))
+    for (const [key, value] of odd.items) odd.items.set(key, value.replace('"form"', '"typo"'))
+    const r2 = recorder()
+    const q2 = open(odd, r2.sender)
+    expect(q2.restore()).toMatchObject({ restored: 1, droppedUnreadable: 0 })
+    await drained(q2)
+    expect(r2.log.flat()).toEqual([entry({ id: 'odd', mode: 'cloze' })]) // no answerKind at all
+
+    const other = memoryStorage()
+    open(other, recorder({ hangLog: true }).sender).enqueueLog(entry({ id: 'm', mode: 'matching', answerKind: 'exact' }))
+    const r3 = recorder()
+    const q3 = open(other, r3.sender)
+    q3.restore()
+    await drained(q3)
+    expect(r3.log.flat()).toEqual([entry({ id: 'm', mode: 'matching' })]) // a kind on a row that is not Cloze is not read back
+  })
+
+  it('a row an earlier build queued, with no kind, is read back as it was', async () => {
+    const storage = memoryStorage()
+    const row = entry({ id: 'old', mode: 'cloze' })
+    open(storage, recorder({ hangLog: true }).sender).enqueueLog(row)
+    const r = recorder()
+    const q = open(storage, r.sender)
+    q.restore()
+    await drained(q)
+    expect(r.log.flat()).toEqual([row])
+    expect('answerKind' in r.log.flat()[0]).toBe(false)
+  })
+
   it('a "practice" row is read back as it was written (it is a mode of this build), and a mode no build has written is still refused', async () => {
     const storage = memoryStorage()
     const row = entry({ mode: 'practice', scheduledDays: null, stateBefore: 'learning', intervalAfter: 0, repetitionsAfter: 1 })

@@ -14,6 +14,7 @@ import {
   recordPracticeCompleted,
   startCloze,
   type ClozeItem,
+  type ClozeKind,
   type ClozeOutcome,
   type ClozeProgress,
 } from '../data/practice'
@@ -56,7 +57,7 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack, s
 
   const header = <ScreenHeader title={t.clozeTitle} onBack={onBack} />
 
-  const answered = (outcome: ClozeOutcome) => {
+  const answered = (outcome: ClozeOutcome, kind: ClozeKind | 'gaveUp') => {
     if (!session) return
     // Each answered question is a card toward the streak (giving up is not an answer); once per finished session, today's metrics row.
     const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue, metrics, getWords: () => data.words }
@@ -64,7 +65,8 @@ export function ClozeScreen({ data, queue, metrics, reviewLog, onHome, onBack, s
     // One log row per answered question, right or wrong (giving up is not an answer). The clock is read for every question, so the next starts afresh.
     const durationMs = answeredIn.current
     answeredIn.current = null
-    if (reviewLog && outcome !== 'gaveUp') reviewLog.practice({ word: session[index].word, mode: 'cloze', correct: outcome === 'correct', sessionId, durationMs, now: new Date() })
+    // The kind of answer goes in the row too (exact, accent, headword, form, wrong), so that we can see how often people answer with the dictionary word or another form of it.
+    if (reviewLog && outcome !== 'gaveUp' && kind !== 'gaveUp') reviewLog.practice({ word: session[index].word, mode: 'cloze', correct: outcome === 'correct', answerKind: kind, sessionId, durationMs, now: new Date() })
     timer.start() // the next question is in front of the user from now
     const next = answerCloze(progress, session.length, outcome, () => {
       haptic('success')

@@ -6,7 +6,8 @@
 // introduced by Learn and not reviewed yet, which has no schedule in days), native=1 (the screen draws no Back arrow of its own: the back press is window.__nativeBack(),
 // as with Telegram's BackButton). Besides the log and the progress rows, window.__sent records every settings patch, hidden-word and favourite write the queue is
 // given and how many times today was marked active, and window.__state() is the words' scheduling fields and the settings as they are now. report=1 gives the Learn
-// screen a sender for "Report a problem" (as for a signed-in user) that records every report in window.__reports and answers ok.
+// screen a sender for "Report a problem" (as for a signed-in user) that records every report in window.__reports and answers ok. verbs=1 makes the learned words twelve real verbs
+// (tener, poder ...) whose example shows the voseo form (Vos tenés tiempo), for Cloze answered in another form of the verb.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -23,6 +24,7 @@ import { LearnScreen } from '../screens/Learn'
 import { MatchingScreen } from '../screens/Matching'
 import { ReviewScreen } from '../screens/Review'
 import { makeWord } from './makeWord'
+import { VOSEO_VERBS } from './voseoVerbs'
 
 const params = new URLSearchParams(location.search)
 const screen = params.get('screen') ?? 'review'
@@ -68,11 +70,12 @@ const FRESH = Number(params.get('fresh') ?? 12)
 const INTERVAL = Number(params.get('interval') ?? 3)
 const REPS = Number(params.get('reps') ?? 2)
 const INFLECTED = params.get('inflected') === '1'
+const VERBS = params.get('verbs') === '1'
 const pad = (n: number) => String(n).padStart(2, '0')
 const WORDS: readonly Word[] = [
   // learned and due, with an example the Cloze can blank and a translation each: Review, Matching and Cloze all use these
   ...Array.from({ length: LEARNED }, (_, i) =>
-    makeWord(`vieja${pad(i + 1)}`, {
+    makeWord(VERBS ? VOSEO_VERBS[i % VOSEO_VERBS.length].lemma : `vieja${pad(i + 1)}`, {
       rank: i + 1,
       repetitions: REPS,
       interval: INTERVAL,
@@ -80,8 +83,9 @@ const WORDS: readonly Word[] = [
       enTranslation: `old${i + 1}`,
       ruTranslation: `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,
       // inflected=1: the example shows the plural (vieja01s), a form of the word, so Cloze can say which word it comes from
-      exampleSentence: `Esta es la vieja${pad(i + 1)}${INFLECTED ? 's' : ''} del día.`,
-      wordFormInExample: `vieja${pad(i + 1)}${INFLECTED ? 's' : ''}`,
+      exampleSentence: VERBS ? `Vos ${VOSEO_VERBS[i % VOSEO_VERBS.length].vos} tiempo.` : `Esta es la vieja${pad(i + 1)}${INFLECTED ? 's' : ''} del día.`,
+      wordFormInExample: VERBS ? VOSEO_VERBS[i % VOSEO_VERBS.length].vos : `vieja${pad(i + 1)}${INFLECTED ? 's' : ''}`,
+      ...(VERBS ? { pos: 'v' } : {}),
     }),
   ),
   // new words for Learn

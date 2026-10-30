@@ -14,6 +14,9 @@
 -- The rows are the history of every answer (Review ratings, Learn introductions, Matching and Cloze answers, and Matching on a Learn batch: mode 'practice').
 -- Only Review ratings change a word's schedule; every other mode is marked with its mode and changes nothing (src/data/reviewLog.ts has the rules per column).
 --
+-- answer_kind: added later, by sql/review_log_answer_kind.sql (applied by the owner; the definition below is the table as it is with it). It is set for Cloze rows only and says what the
+-- answer was (exact, accent, headword, form, wrong); every other row, and the Cloze rows logged before it existed, have NULL.
+--
 -- History of the mode list: review_log_mode_check allowed review, learn, matching and cloze until 'practice' was added to it by the owner on the live database
 -- (Matching on the words of a Learn batch just finished, offered on Learn's end screen). It is told apart from 'matching' so that it can be left out of anything
 -- fitted to the user's own memory: it happens minutes after the words were met, not days.
@@ -38,10 +41,12 @@ create table if not exists public.review_log (
   algo               text        not null default 'sm2',                                -- which scheduler made the numbers
   session_id         uuid,                                                              -- the sitting: a Review session, a Learn batch, a Matching group or practice run, a Cloze session
   duration_ms        integer,
+  answer_kind        text,                                                              -- Cloze rows only: exact, accent, headword, form or wrong; null otherwise (sql/review_log_answer_kind.sql)
 
   constraint review_log_pkey primary key (id),
   constraint review_log_user_id_fkey foreign key (user_id) references auth.users (id) on delete cascade,
   constraint review_log_algo_check check ((algo = ANY (ARRAY['sm2'::text, 'fsrs'::text]))),
+  constraint review_log_answer_kind_check check (((answer_kind IS NULL) OR (answer_kind = ANY (ARRAY['exact'::text, 'accent'::text, 'headword'::text, 'form'::text, 'wrong'::text])))),
   constraint review_log_duration_ms_check check (((duration_ms IS NULL) OR (duration_ms >= 0))),
   constraint review_log_mode_check check ((mode = ANY (ARRAY['review'::text, 'learn'::text, 'matching'::text, 'cloze'::text, 'practice'::text]))),
   constraint review_log_rating_check check (((rating >= 1) AND (rating <= 4))),

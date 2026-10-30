@@ -378,8 +378,8 @@ describe('what the text says about the scheduler is what the scheduler does', ()
   })
 
   it('"How it works", Cloze: what it shows and what you do, then what Hint does, then what Reveal does, then where the words come from', () => {
-    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a word missing, and you type that word in. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.')
-    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропущенным словом, которое нужно вписать. «Подсказка» показывает первую букву слова и сколько в нем букв. «Ответ» показывает само слово, и вопрос засчитывается как «Не вспомнили». Слова здесь тоже берутся из тех, которые вы уже начали учить.')
+    expect(section(en, 'cloze')).toBe('Cloze shows a sentence with a blank: type in the missing word, in any form. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.')
+    expect(section(ru, 'cloze')).toBe('Cloze показывает предложение с пропуском: нужно вписать пропущенное слово в любой форме. «Подсказка» показывает первую букву слова и сколько в нем букв. «Ответ» показывает само слово, и вопрос засчитывается как «Не вспомнили». Слова здесь тоже берутся из тех, которые вы уже начали учить.')
     for (const map of [en, ru]) expect(section(map, 'cloze').split(/(?<=[.!?])\s/)).toHaveLength(4)
     // and it is what the screen does: a typed answer, a Hint button that shows the first letter and the length, and a Reveal button that gives the question up
     expect(en.practice.clozeHint).toBe('Type the missing word, in any form.')

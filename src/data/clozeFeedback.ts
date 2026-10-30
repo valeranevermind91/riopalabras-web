@@ -19,6 +19,7 @@ export function clozeFeedback(kind: ClozeKind | 'gaveUp', target: string, lang: 
     case 'accent':
       return { text: `${t.correct} ${t.accentNudge(target)}`, tone: 'ok' }
     case 'headword':
+    case 'form':
       return { text: `${t.correct} ${strings.wordContent[lang].inSentence(target)}`, tone: 'ok' }
     case 'gaveUp':
       return { text: t.gaveUp(target), tone: 'neutral' }

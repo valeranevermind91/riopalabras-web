@@ -58,7 +58,7 @@ describe('the privacy page, as drawn', () => {
     expect(html.match(/role="radio"/g)).toHaveLength(2)
     expect(text(html)).toContain('Riopalabras is a free app for learning the Spanish of Uruguay and Argentina, inside Telegram.')
     expect(headings(html)).toEqual(['stored:What it keeps', 'shared:Who else sees it', 'ads:What\'s not here', 'delete:Deleting your data'])
-    expect(text(html)).toContain('Last updated: 25 October 2026')
+    expect(text(html)).toContain('Last updated: 30 October 2026')
   })
 
   it('Russian: the same, in Russian, with the date written as Russian writes it', () => {
@@ -67,7 +67,7 @@ describe('the privacy page, as drawn', () => {
     expect(html).toContain('<h1>Конфиденциальность</h1>')
     expect(html).toContain('aria-label="Язык"')
     expect(headings(html)).toEqual(['stored:Что хранится', 'shared:Кто еще это видит', 'ads:Чего здесь нет', 'delete:Удаление данных'])
-    expect(text(html)).toContain('Последнее обновление: 25 октября 2026 г.')
+    expect(text(html)).toContain('Последнее обновление: 30 октября 2026 г.')
   })
 
   it('the language switch names each language in its own language, and marks the one shown', () => {
@@ -91,9 +91,9 @@ describe('the privacy page, as drawn', () => {
     expect([...render().matchAll(/href="([^"]+)"/g)].map((m) => m[1])).toEqual(['https://t.me/valeranevermind'])
   })
 
-  it('stays short: well under half of what the first version was (854 words in English, 740 in Russian; this one is about 43%)', () => {
-    expect(wordCount(en)).toBeLessThan(400)
-    expect(wordCount(ru)).toBeLessThan(360)
+  it('stays short: about half of what the first version was (854 words in English, 740 in Russian; this one is 49% and 51%)', () => {
+    expect(wordCount(en)).toBeLessThan(430)
+    expect(wordCount(ru)).toBeLessThan(390)
   })
 
   it('names every party that gets data, in both languages: Telegram, Supabase, Vercel, Railway, Gemini, Google Fonts', () => {
@@ -161,6 +161,15 @@ describe('what is stored: the columns the code writes are the ones the page desc
   it('study history: one row per answer (word, time, rating, mode, how long, schedule) and one per day (counts, due, active)', () => {
     const answer = toReviewLogRow('u', { id: 'i', esWord: 'casa', reviewedAt: 'x', rating: 3, mode: 'review', stateBefore: 'new', elapsedDays: 0, scheduledDays: 1, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: 1 })
     expect(keys(answer)).toEqual(['algo', 'difficulty_after', 'duration_ms', 'ease_after', 'elapsed_days', 'es_word', 'id', 'interval_after', 'mode', 'rating', 'repetitions_after', 'reviewed_at', 'scheduled_days', 'session_id', 'stability_after', 'state_before', 'user_id'])
+    // a Cloze answer also says what kind it was (the word's own form, an accent slip, the dictionary word, another form of it, or a wrong answer): a label, never the text the person typed. It is
+    // user data, not a dictionary field, so the page says so (the phrase below) and the policy date moved to 30 October 2026 with it.
+    const cloze = toReviewLogRow('u', { id: 'i', esWord: 'casa', reviewedAt: 'x', rating: 3, mode: 'cloze', stateBefore: 'new', elapsedDays: 0, scheduledDays: 1, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: 1, answerKind: 'form' })
+    expect(keys(cloze)).toEqual([...keys(answer), 'answer_kind'].sort())
+    expect(['exact', 'accent', 'headword', 'form', 'wrong']).toContain(cloze.answer_kind)
+    expect(pageText(en)).toContain('In Cloze, what kind of answer it was is logged too: exact, an accent slip, the dictionary form, or another form of the word.')
+    expect(pageText(ru)).toContain('В Cloze записывается еще и то, каким был ответ:')
+    for (const kind of ['exact', 'an accent slip', 'the dictionary form', 'another form of the word']) expect(pageText(en)).toContain(kind) // what the page says the kinds are
+    for (const kind of ['точный', 'с ошибкой в ударении', 'словарная форма', 'другая форма слова']) expect(pageText(ru)).toContain(kind)
     // learn_cards_seen is a count in that daily summary (how far into Learn the day got): a number per day, with no time, no card and no device; the page's "a summary for each day" covers it, so the policy date does not move
     expect(keys(toMetricsRow('u', emptyRow('2026-01-01'), 'x'))).toEqual(['active', 'daily_limit', 'date', 'due_at_start', 'learn_cards_seen', 'learn_pool', 'new_words', 'reviews_done', 'reviews_lapsed', 'updated_at', 'user_id'])
     // what the page lists for an answer is a true part of that row (the word, the time, the rating, the duration), and it says there is a daily summary too
@@ -297,7 +306,7 @@ describe('the policy text and its date move together', () => {
   // When this fails the policy changed in substance: set PRIVACY_UPDATED in src/lib/privacy.ts to the day of the change, then put the new value here.
   // A change of spelling (е for ё) or of spacing is not a change of the policy, so the text is compared normalised: е and ё are one letter and
   // whitespace is one space. The fingerprint is still of the real text, just read that way; it never skips a word.
-  const FINGERPRINT = '15969cba2798137b'
+  const FINGERPRINT = '2ee6964f9b56f1ae'
   const normalise = (text: string) => text.replace(/ё/g, 'е').replace(/Ё/g, 'Е').replace(/\s+/g, ' ').trim()
   const fingerprintOf = (privacy: { en: unknown; ru: unknown }) =>
     createHash('sha256')
@@ -315,7 +324,7 @@ describe('the policy text and its date move together', () => {
   const raw = (privacy: { en: unknown; ru: unknown }) => JSON.stringify(privacy, (_k, v) => (typeof v === 'function' ? v('DATE') : v))
 
   it('is the text as it was when it was last dated', () => {
-    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-25', text: FINGERPRINT })
+    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-30', text: FINGERPRINT })
   })
 
   it('does not move for spelling or spacing: е and ё are the same letter, and a run of whitespace is one space', () => {

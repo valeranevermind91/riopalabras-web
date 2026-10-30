@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { REVIEW_LOG_MODES } from '../testing/fakeServer'
-import type { LogMode, LogState } from './reviewLog'
+import type { LogAnswerKind, LogMode, LogState } from './reviewLog'
 import { toReviewLogRow } from './writes'
 
 // sql/review_log.sql is the record of the table (it is already applied; nothing runs it). It must not drift from what the app writes.
@@ -10,6 +10,8 @@ const sql = readFileSync('sql/review_log.sql', 'utf8')
 const constraints = Object.fromEntries(
   [...sql.matchAll(/^ {2}constraint ([a-z_]+) (.*?),?$/gm)].map((m) => [m[1], m[2].replace(/\s+/g, ' ')]),
 )
+const migration = readFileSync('sql/review_log_answer_kind.sql', 'utf8')
+const answerKinds = { exact: true, accent: true, headword: true, form: true, wrong: true } satisfies Record<LogAnswerKind, true> // fails to compile when LogAnswerKind gains a kind
 const modes = { review: true, learn: true, matching: true, cloze: true, practice: true } satisfies Record<LogMode, true> // fails to compile when LogMode gains a mode
 
 describe('sql/review_log.sql', () => {
@@ -30,7 +32,7 @@ describe('sql/review_log.sql', () => {
       .split('\n')
       .map((line) => line.match(/^ {2}([a-z_]+) {2,}/)?.[1])
       .filter((c): c is string => Boolean(c))
-    const row = toReviewLogRow('u', { id: 'i', esWord: 'a', reviewedAt: new Date(0).toISOString(), rating: 3, mode: 'practice', stateBefore: 'new', elapsedDays: null, scheduledDays: null, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: null })
+    const row = toReviewLogRow('u', { id: 'i', esWord: 'a', reviewedAt: new Date(0).toISOString(), rating: 3, mode: 'practice', stateBefore: 'new', elapsedDays: null, scheduledDays: null, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: null, answerKind: 'form' })
     expect(columns.sort()).toEqual(Object.keys(row).sort())
   })
 
@@ -54,13 +56,15 @@ describe('sql/review_log.sql', () => {
     expect(column('algo')).toBe("algo text not null default 'sm2'")
     expect(column('session_id')).toBe('session_id uuid')
     expect(column('duration_ms')).toBe('duration_ms integer')
+    expect(column('answer_kind')).toBe('answer_kind text')
   })
 
-  it('has the five CHECK constraints exactly as the live database defines them, the primary key and the foreign key', () => {
+  it('has the CHECK constraints exactly as the live database defines them, the primary key and the foreign key', () => {
     expect(constraints).toEqual({
       review_log_pkey: 'primary key (id)',
       review_log_user_id_fkey: 'foreign key (user_id) references auth.users (id) on delete cascade',
       review_log_algo_check: "check ((algo = ANY (ARRAY['sm2'::text, 'fsrs'::text])))",
+      review_log_answer_kind_check: "check (((answer_kind IS NULL) OR (answer_kind = ANY (ARRAY['exact'::text, 'accent'::text, 'headword'::text, 'form'::text, 'wrong'::text]))))",
       review_log_duration_ms_check: 'check (((duration_ms IS NULL) OR (duration_ms >= 0)))',
       review_log_mode_check: "check ((mode = ANY (ARRAY['review'::text, 'learn'::text, 'matching'::text, 'cloze'::text, 'practice'::text])))",
       review_log_rating_check: 'check (((rating >= 1) AND (rating <= 4)))',
@@ -110,5 +114,40 @@ describe('sql/review_log.sql', () => {
     // service_role is a database role here (the grant to it, and its mention in the header and the grant's comment), not a key: those are taken out, nothing else may name it
     const rest = sql.replace(/^grant all on public\.review_log to service_role;$/m, '').replace(/^-- .*service_role and postgres.*$/m, '')
     expect(rest).not.toMatch(/eyJ|sk-|service_role|[A-Za-z0-9+/]{40,}/)
+  })
+})
+
+describe('sql/review_log_answer_kind.sql', () => {
+  it('is for the owner to run, before the app that writes the column is deployed, and says what happens if it is not', () => {
+    expect(migration).toMatch(/NOT RUN BY THE REPOSITORY/)
+    expect(migration).toMatch(/BEFORE the version of the app that writes the column is deployed/)
+    expect(migration).toMatch(/rows stay on the device/)
+  })
+
+  it('adds one nullable text column with no default, and does it twice without harm', () => {
+    expect(migration).toMatch(/^alter table public\.review_log add column if not exists answer_kind text;$/m)
+    expect(migration.match(/add column/g)).toHaveLength(1)
+    expect(migration).toMatch(/drop constraint if exists review_log_answer_kind_check;/) // put back as it was when run again
+  })
+
+  it('allows null and exactly the kinds the app can log: the constraint, the file that records the table and LogAnswerKind are one list', () => {
+    const allowed = [...(migration.match(/answer_kind in \(([^)]*)\)/)![1].matchAll(/'([a-z]+)'/g))].map((m) => m[1]).sort()
+    expect(allowed).toEqual(Object.keys(answerKinds).sort())
+    expect(migration).toMatch(/check \(answer_kind is null or answer_kind in/)
+    const recorded = [...constraints.review_log_answer_kind_check.matchAll(/'([a-z]+)'::text/g)].map((m) => m[1]).sort()
+    expect(recorded).toEqual(allowed)
+    expect(constraints.review_log_answer_kind_check).toContain('answer_kind IS NULL')
+  })
+
+  it('changes no policy, grant or other column: the table stays append-only for users', () => {
+    const statements = migration.split('\n').filter((line) => !line.trim().startsWith('--')).join('\n') // the SQL itself, without the comments that explain it
+    expect(statements).not.toMatch(/policy|grant|revoke|row level security/i)
+    expect(statements.match(/^alter table /gm)).toHaveLength(3) // the column, and the constraint dropped and added
+    expect(statements).not.toMatch(/\b(update|delete|insert|drop column|drop table)\b/i)
+  })
+
+  it('names the typed text as never logged, and holds no secret', () => {
+    expect(migration).toMatch(/never logged/)
+    expect(migration).not.toMatch(/eyJ|sk-|service_role|[A-Za-z0-9+/]{40,}/)
   })
 })

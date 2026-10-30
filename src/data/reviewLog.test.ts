@@ -213,6 +213,24 @@ describe('the other modes', () => {
     for (const row of rows) expect(row).toMatchObject({ stateBefore: 'review', intervalAfter: 3, easeAfter: 2.3, repetitionsAfter: 2 })
   })
 
+  it('a Cloze row says what the answer was; no other mode has a kind, whatever is passed, and a row made without one has none', () => {
+    const { log, rows } = collecting()
+    for (const kind of ['exact', 'accent', 'headword', 'form', 'wrong'] as const) log.practice({ word: learnedWord, mode: 'cloze', correct: kind !== 'wrong', answerKind: kind, sessionId: 'c', durationMs: 1, now: T0 })
+    log.practice({ word: learnedWord, mode: 'matching', correct: true, answerKind: 'exact', sessionId: 'g', durationMs: null, now: T0 })
+    log.practice({ word: learnedWord, mode: 'practice', correct: true, answerKind: 'form', sessionId: 'p', durationMs: null, now: T0 })
+    log.practice({ word: learnedWord, mode: 'cloze', correct: true, sessionId: 'c', durationMs: 1, now: T0 })
+    expect(rows.map((r) => r.answerKind)).toEqual(['exact', 'accent', 'headword', 'form', 'wrong', undefined, undefined, undefined])
+    expect(rows.map((r) => 'answerKind' in r)).toEqual([true, true, true, true, true, false, false, false]) // absent, not undefined: the row stays what it was
+    expect(rows.map((r) => r.rating)).toEqual([3, 3, 3, 3, 1, 3, 3, 3]) // right is 3 whichever kind: another form of the word counts as the word
+  })
+
+  it('a Review rating and a Learn row have none', () => {
+    const { log, rows } = collecting()
+    log.learned([makeWord('a')], learnedState(T0), 'batch', T0)
+    log.review({ word: learnedWord, rating: 3, update: { interval: 8, easeFactor: 2.5, repetitions: 3 }, sessionId: 's', durationMs: 1, now: T0 })
+    expect(rows.map((r) => 'answerKind' in r)).toEqual([false, false])
+  })
+
   it('practice (Matching on a Learn batch): a row of its own mode, the word exactly as it is, 3 when right at the first try and 1 when it needed another', () => {
     const { log, rows } = collecting()
     const justLearned = makeWord('nueva', { ...learnedState(T0) }) // repetitions 1, interval 0, due tomorrow

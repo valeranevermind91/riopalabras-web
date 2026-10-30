@@ -6,6 +6,7 @@ import { firstGloss, type Lang } from './rio'
 import { shuffle } from './review'
 import { firstTranslation, translationLines, type TranslationFlags } from './translations'
 import type { Word } from './types'
+import { verbForms } from './verbForms'
 import { hasTranslations, isReviewablePos, wordKey } from './words'
 import type { WriteQueue } from './writeQueue'
 
@@ -355,24 +356,33 @@ export function foldAccents(text: string): string {
 
 const canon = (s: string) => s.normalize('NFC').trim().toLowerCase()
 
-export type ClozeKind = 'exact' | 'accent' | 'headword' | 'wrong'
+export type ClozeKind = 'exact' | 'accent' | 'headword' | 'form' | 'wrong'
 
 export interface ClozeVerdict {
-  /** Exact and accent-only answers are correct; so is the headword when it differs from the sentence form. */
+  /** Exact and accent-only answers are correct; so is the headword when it differs from the sentence form, and so is any other form of the card's verb. */
   readonly outcome: 'correct' | 'wrong'
   /**
    * exact: the sentence form. accent: the sentence form with a missing or extra accent (nudge
    * with `target`). headword: the dictionary headword, typed instead of the inflected form (nudge
-   * "in this sentence: <target>").
+   * "in this sentence: <target>"). form: another form of the card's verb (tienes for tenés, voy for vas), told apart from the headword so the log can say how often each is typed;
+   * the same nudge.
    */
   readonly kind: ClozeKind
 }
 
 /**
- * Trimmed and case-insensitive. Accepts the form in the sentence and the headword; a missing or
+ * The forms Cloze takes for the card's word besides the sentence form and the headword: any form of its verb (see verbForms.ts), folded, or null for a word that is not a verb
+ * we can vouch for. A word the user added is never decided by this: nothing is known about it.
+ */
+export function clozeVerbForms(word: Pick<Word, 'pos' | 'isCustom'>, head: string): ReadonlySet<string> | null {
+  return word.pos === 'v' && !word.isCustom ? verbForms(head) : null
+}
+
+/**
+ * Trimmed and case-insensitive. Accepts the form in the sentence, the headword and, for a verb, any other form of it (`forms`); a missing or
  * extra accent is still correct (the screen nudges); ñ is never folded to n.
  */
-export function checkClozeAnswer({ typed, target, headword: head }: { typed: string; target: string; headword: string }): ClozeVerdict {
+export function checkClozeAnswer({ typed, target, headword: head, forms = null }: { typed: string; target: string; headword: string; forms?: ReadonlySet<string> | null }): ClozeVerdict {
   const t = canon(typed)
   if (t === '') return { outcome: 'wrong', kind: 'wrong' }
   const form = canon(target)
@@ -383,6 +393,7 @@ export function checkClozeAnswer({ typed, target, headword: head }: { typed: str
   if (headwordDiffers && t === headForm) return { outcome: 'correct', kind: 'headword' }
   if (foldAccents(t) === foldAccents(form)) return { outcome: 'correct', kind: 'accent' }
   if (headwordDiffers && foldAccents(t) === foldAccents(headForm)) return { outcome: 'correct', kind: 'headword' }
+  if (forms?.has(foldAccents(t))) return { outcome: 'correct', kind: 'form' }
   return { outcome: 'wrong', kind: 'wrong' }
 }
 

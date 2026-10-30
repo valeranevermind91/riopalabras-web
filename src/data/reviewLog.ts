@@ -23,6 +23,13 @@ export type LogMode = 'review' | 'learn' | 'matching' | 'cloze' | 'practice'
  */
 export type LogState = 'new' | 'learning' | 'review' | 'relearning'
 
+/**
+ * What a Cloze answer was, for the rows of mode 'cloze' and no others: the sentence's own form (exact), that form missing or wrongly adding an accent (accent), the dictionary word
+ * typed instead of the form (headword), another form of the word (form: tienes for tenés), or none of those (wrong). It is fixed by the live table's review_log_answer_kind_check
+ * (sql/review_log_answer_kind.sql). Giving up is not an answer and has no row. The typed text is never logged, only this.
+ */
+export type LogAnswerKind = 'exact' | 'accent' | 'headword' | 'form' | 'wrong'
+
 /** One row of the log as the app holds it (camelCase); writes.ts turns it into the table's columns. The user id is added when it is sent. */
 export interface ReviewLogEntry {
   /** Generated here, once, so a retry (or a replay after a restart) can never make a second row: the insert ignores a repeated id. */
@@ -51,6 +58,8 @@ export interface ReviewLogEntry {
   readonly sessionId: string | null
   /** Milliseconds from the card being shown to the answer, where the screen has that naturally; null otherwise (never a guess). */
   readonly durationMs: number | null
+  /** What a Cloze answer was (see LogAnswerKind); absent for every other mode, and for a row queued before this existed. */
+  readonly answerKind?: LogAnswerKind
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -181,6 +190,7 @@ export interface BuildInput {
   durationMs: number | null
   now: Date
   learnedAtMs?: number | null
+  answerKind?: LogAnswerKind
 }
 
 /** A row, from what was true before and what the answer made true. Pure: nothing here reads the clock or storage. */
@@ -200,6 +210,7 @@ export function buildLogEntry(input: BuildInput): ReviewLogEntry {
     repetitionsAfter: input.after.repetitions,
     sessionId: input.sessionId,
     durationMs: input.durationMs !== null && Number.isFinite(input.durationMs) ? Math.max(0, Math.round(input.durationMs)) : null,
+    ...(input.answerKind !== undefined && input.mode === 'cloze' ? { answerKind: input.answerKind } : {}),
   }
 }
 
@@ -235,9 +246,10 @@ export interface ReviewLog {
    * A matched pair (Matching) or an answered question (Cloze). Nothing is scheduled and the word's state is unchanged, so the "after" columns repeat
    * its current values, and scheduled_days is the interval the word already had (null if it has none: see ReviewLogEntry.scheduledDays). Rating: 3 when
    * it was right at the first try, 1 when it was wrong (Cloze) or needed another try (Matching): a stand-in. Mode 'practice' is Matching on the words of a
-   * Learn batch just finished (from the end screen): the same row, told apart so that it can be left out of any fit to the user's own memory.
+   * Learn batch just finished (from the end screen): the same row, told apart so that it can be left out of any fit to the user's own memory. A Cloze answer also says what kind it was
+   * (`answerKind`); the other modes have none.
    */
-  practice: (input: { word: Word; mode: 'matching' | 'cloze' | 'practice'; correct: boolean; sessionId: string | null; durationMs: number | null; now: Date }) => void
+  practice: (input: { word: Word; mode: 'matching' | 'cloze' | 'practice'; correct: boolean; answerKind?: LogAnswerKind; sessionId: string | null; durationMs: number | null; now: Date }) => void
 }
 
 /**
@@ -274,7 +286,7 @@ export function createReviewLog(deps: { enqueue: (entry: ReviewLogEntry) => void
         }
       }),
 
-    practice: ({ word, mode, correct, sessionId, durationMs, now }) =>
+    practice: ({ word, mode, correct, answerKind, sessionId, durationMs, now }) =>
       safely(() => {
         deps.enqueue(
           buildLogEntry({
@@ -288,6 +300,7 @@ export function createReviewLog(deps: { enqueue: (entry: ReviewLogEntry) => void
             durationMs,
             now,
             learnedAtMs: deps.learnedAt.get(wordKey(word.esWord)),
+            answerKind,
           }),
         )
       }),

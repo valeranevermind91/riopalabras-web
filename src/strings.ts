@@ -346,7 +346,7 @@ export const en = {
         heading: 'What it keeps',
         paragraphs: [
           'Your account comes from your Telegram ID, with your first name and username (if any) and a made-up email-style address like {email}; it is not a real mailbox and nothing is sent to it.',
-          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or hide. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
+          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or hide. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. In Cloze, what kind of answer it was is logged too: exact, an accent slip, the dictionary form, or another form of the word. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
           "Not kept: your phone number, contacts, location or passwords. No cookies; unsent changes and your sign-in stay in Telegram's browser storage.",
         ],
       },
@@ -505,7 +505,7 @@ export const en = {
       {
         id: 'cloze',
         heading: 'Cloze',
-        text: 'Cloze shows a sentence with a word missing, and you type that word in. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.',
+        text: 'Cloze shows a sentence with a blank: type in the missing word, in any form. Hint shows the word\'s first letter and how many letters it has. Reveal shows the word itself, and the question counts as “Gave up”. The words here also come from the ones you have started learning.',
       },
       {
         id: 'spaced',

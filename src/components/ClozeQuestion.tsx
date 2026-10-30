@@ -5,6 +5,7 @@ import {
   buildHint,
   checkClozeAnswer,
   clozeCueLines,
+  clozeVerbForms,
   cueLang,
   splitSentence,
   type ClozeItem,
@@ -23,7 +24,7 @@ interface ClozeQuestionProps {
   /** How much of the page the on-screen keyboard covers (0 when none, or when the page shrinks for it): the dock is kept above it. */
   keyboardInset?: number
   /** Fires once, when Continue is pressed after the question was answered or given up. */
-  onAnswered: (outcome: ClozeOutcome) => void
+  onAnswered: (outcome: ClozeOutcome, kind: ClozeKind | 'gaveUp') => void
   /** The moment the answer is committed (Check, or giving up), before the feedback is read: where the time spent on the question ends. */
   onChecked?: () => void
 }
@@ -52,7 +53,7 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
 
   const check = () => {
     if (answer || typed.trim() === '') return
-    const verdict = checkClozeAnswer({ typed, target, headword: item.headword })
+    const verdict = checkClozeAnswer({ typed, target, headword: item.headword, forms: clozeVerbForms(item.word, item.headword) })
     setAnswer({ kind: verdict.kind, outcome: verdict.outcome })
     onChecked?.()
   }
@@ -65,7 +66,7 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
   const next = () => {
     if (!answer || sent.current) return
     sent.current = true
-    onAnswered(answer.outcome)
+    onAnswered(answer.outcome, answer.kind)
   }
 
   const fb = answer ? clozeFeedback(answer.kind, target, cueLang(item.word, settings)) : null

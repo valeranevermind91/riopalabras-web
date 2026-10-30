@@ -1,5 +1,5 @@
 import type { DailyMetricsRow } from './metrics'
-import type { LogMode, LogState, ReviewLogEntry } from './reviewLog'
+import type { LogAnswerKind, LogMode, LogState, ReviewLogEntry } from './reviewLog'
 import type { CustomWordOp, CustomWordRow, ProgressUpdate, SettingsPatch } from './types'
 
 /**
@@ -106,6 +106,7 @@ const text = (v: unknown): v is string => typeof v === 'string'
 
 const LOG_MODES: readonly string[] = ['review', 'learn', 'matching', 'cloze', 'practice']
 const LOG_STATES: readonly string[] = ['new', 'learning', 'review', 'relearning']
+const LOG_ANSWER_KINDS: readonly string[] = ['exact', 'accent', 'headword', 'form', 'wrong']
 
 function readLogEntry(raw: unknown): ReviewLogEntry | null {
   if (!isObject(raw) || !text(raw.id) || !raw.id || !text(raw.esWord) || !raw.esWord || !text(raw.reviewedAt) || Number.isNaN(Date.parse(raw.reviewedAt))) return null
@@ -130,6 +131,8 @@ function readLogEntry(raw: unknown): ReviewLogEntry | null {
     repetitionsAfter: raw.repetitionsAfter,
     sessionId: raw.sessionId,
     durationMs: raw.durationMs,
+    // a row queued by an earlier version has none; a value that is not one of ours is dropped, not the row (the answer still happened)
+    ...(raw.mode === 'cloze' && text(raw.answerKind) && LOG_ANSWER_KINDS.includes(raw.answerKind) ? { answerKind: raw.answerKind as LogAnswerKind } : {}),
   }
 }
 

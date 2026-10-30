@@ -213,6 +213,8 @@ export function toReviewLogRow(userId: string, entry: ReviewLogEntry) {
     algo: 'sm2',
     session_id: entry.sessionId,
     duration_ms: entry.durationMs,
+    // only a Cloze answer has one. Left out of every other row, so that those rows do not depend on the column being there.
+    ...(entry.answerKind !== undefined ? { answer_kind: entry.answerKind } : {}),
   }
 }
 

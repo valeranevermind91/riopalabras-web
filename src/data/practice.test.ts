@@ -38,6 +38,7 @@ import {
   type MatchGroup,
   type MatchItem,
   type MatchingState,
+  clozeVerbForms,
 } from './practice'
 import { applySettingsPatch } from './mutations'
 import { parseFallbackExamples, parseRioOverlay } from './rio'
@@ -47,6 +48,7 @@ import { createSupabaseWriteQueue } from './writeQueue'
 import { en, strings } from '../strings'
 import { ru } from '../strings.ru'
 import { clozeFeedback } from './clozeFeedback'
+import { verbForms } from './verbForms'
 import { RU_ONLY } from '../testing/translationFlags'
 
 const dictionary = parseDictionary(
@@ -369,6 +371,60 @@ describe('Cloze: checking answers', () => {
     expect(checkClozeAnswer({ typed: 'oir', target: 'oís', headword: 'oír' })).toEqual({ outcome: 'correct', kind: 'headword' })
   })
 
+  describe('another form of the card\'s verb', () => {
+    const answer = (typed: string, target: string, headword: string) => checkClozeAnswer({ typed, target, headword, forms: verbForms(headword) })
+
+    it('is correct, with kind "form": tienes for tenés, voy for vas, ven for vení', () => {
+      expect(answer('tienes', 'tenés', 'tener')).toEqual({ outcome: 'correct', kind: 'form' })
+      expect(answer('voy', 'vas', 'ir')).toEqual({ outcome: 'correct', kind: 'form' })
+      expect(answer('ven', 'vení', 'venir')).toEqual({ outcome: 'correct', kind: 'form' })
+      expect(answer('  Tuvimos ', 'tenés', 'tener')).toEqual({ outcome: 'correct', kind: 'form' })
+      expect(answer('pienso', 'pensás', 'pensar').kind).toBe('form')
+      expect(answer('hablábamos', 'habla', 'hablar').kind).toBe('form')
+    })
+
+    it('the sentence form, its accent-less spelling and the headword still come first, and are told apart from it', () => {
+      expect(answer('tenés', 'tenés', 'tener').kind).toBe('exact')
+      expect(answer('tenes', 'tenés', 'tener').kind).toBe('accent')
+      expect(answer('tener', 'tenés', 'tener').kind).toBe('headword')
+      expect(answer('Tener', 'tenés', 'tener').kind).toBe('headword')
+      expect(answer('tienes', 'tienes', 'tener').kind).toBe('exact') // tú in the sentence: the person typed what is there
+    })
+
+    it('an accent missing from the typed form is not held against it', () => {
+      expect(answer('estas', 'esté', 'estar').kind).toBe('form') // estás
+      expect(answer('vivi', 'vivís', 'vivir').kind).toBe('form')
+    })
+
+    it('another word is wrong, however much it looks like the verb', () => {
+      for (const [typed, target, head] of [['tenerlo', 'tenés', 'tener'], ['teno', 'tenés', 'tener'], ['tenerse', 'tenés', 'tener'], ['pensión', 'pensás', 'pensar'], ['hablador', 'habla', 'hablar'], ['cantante', 'canta', 'cantar'], ['comes', 'tenés', 'tener']] as const) {
+        expect(answer(typed, target, head), typed).toEqual({ outcome: 'wrong', kind: 'wrong' })
+      }
+    })
+
+    it('ñ is not folded here either', () => {
+      expect(answer('enseno', 'enseñás', 'enseñar').kind).toBe('wrong')
+      expect(answer('enseño', 'enseñás', 'enseñar').kind).toBe('form')
+    })
+
+    it('a verb we cannot vouch for takes nothing but what it took before, and so does a word with no forms', () => {
+      expect(answer('salgo', 'salís', 'salir')).toEqual({ outcome: 'wrong', kind: 'wrong' }) // no table yet
+      expect(answer('salir', 'salís', 'salir').kind).toBe('headword')
+      expect(answer('casas', 'casa', 'casa')).toEqual({ outcome: 'wrong', kind: 'wrong' })
+      expect(checkClozeAnswer({ typed: 'tienes', target: 'tenés', headword: 'tener' })).toEqual({ outcome: 'wrong', kind: 'wrong' }) // no forms given
+      expect(checkClozeAnswer({ typed: 'tienes', target: 'tenés', headword: 'tener', forms: null }).kind).toBe('wrong')
+    })
+
+    it('which words are checked this way: a dictionary verb, not a word the user added and not another part of speech', () => {
+      const verb = makeWord('tener', { pos: 'v' })
+      expect(clozeVerbForms(verb, 'tener')).toBe(verbForms('tener'))
+      expect(clozeVerbForms({ ...verb, isCustom: true }, 'tener')).toBeNull()
+      expect(clozeVerbForms({ ...verb, pos: 'n' }, 'tener')).toBeNull()
+      expect(clozeVerbForms(makeWord('oír', { pos: 'v' }), 'oír')).toBeNull()
+      expect(clozeVerbForms(makeWord('sentarse', { pos: 'v' }), 'sentarse')).toBe(verbForms('sentar'))
+    })
+  })
+
   it('when the headword is the sentence form, there is nothing extra to accept', () => {
     expect(checkClozeAnswer({ typed: 'pucho', target: 'pucho', headword: 'pucho' }).kind).toBe('exact')
   })
@@ -392,6 +448,9 @@ describe('Cloze: checking answers', () => {
     }
     expect(clozeFeedback('headword', 'tenés', 'en').text).toBe('Correct! in this sentence: tenés')
     expect(clozeFeedback('headword', 'tenés', 'ru').text).toBe('Correct! в этом предложении: tenés')
+    // another form of the verb shows the sentence's form in place, in the same words: no label for the person or the tense
+    expect(clozeFeedback('form', 'tenés', 'en')).toEqual({ text: 'Correct! in this sentence: tenés', tone: 'ok' })
+    expect(clozeFeedback('form', 'tenés', 'ru')).toEqual({ text: 'Correct! в этом предложении: tenés', tone: 'ok' })
   })
 
   it('the chrome strings exist in both interface languages and take the word', () => {

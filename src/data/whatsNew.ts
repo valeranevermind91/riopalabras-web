@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'cloze-verb-forms',
+    at: '2026-10-30T18:09',
+    en: {
+      title: 'Cloze accepts other forms of a verb',
+      text: 'If the sentence needs “tenés”, typing “tienes” or “tuve” now counts as right, and the sentence shows “tenés” in place. This works for most verbs; a few irregular ones are not covered yet, and for those the dictionary form still counts.',
+    },
+    ru: {
+      title: 'Cloze принимает другие формы глагола',
+      text: 'Если в предложении нужно «tenés», ответ «tienes» или «tuve» засчитывается, а в предложении появляется «tenés». Это работает для большинства глаголов; для нескольких неправильных пока нет, и там по-прежнему засчитывается словарная форма.',
+    },
+  },
+  {
     id: 'cloze-any-form',
     at: '2026-10-30T17:23',
     en: {

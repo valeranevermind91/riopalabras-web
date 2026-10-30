@@ -116,6 +116,26 @@ describe('the review log, end to end', () => {
     expect(rows().map((r) => [r.es_word, r.scheduled_days, r.interval_after, r.duration_ms])).toEqual([['quince', 15, 15, null], ['cuarenta', 40, 40, null], ['nueva', null, 0, 4000]])
   })
 
+  it('a Cloze row reaches the table with its answer kind; every other row has no answer_kind in it, so it does not depend on the column', async () => {
+    const app = await openApp()
+    const at = new Date(T0 + DAY)
+    const word = makeWord('tener', { repetitions: 5, interval: 15, nextReview: new Date(T0 + 15 * DAY) })
+    for (const kind of ['exact', 'accent', 'headword', 'form', 'wrong'] as const) app.log.practice({ word, mode: 'cloze', correct: kind !== 'wrong', answerKind: kind, sessionId: 's', durationMs: null, now: at })
+    app.log.practice({ word, mode: 'matching', correct: true, sessionId: 's', durationMs: null, now: at })
+    rater(app)(learned('casa'), 3, new Date(T0 + 3 * DAY), true, { sessionId: null, durationMs: null })
+    await vi.waitFor(() => expect(rows()).toHaveLength(7))
+    expect(rows().map((r) => r.answer_kind)).toEqual(['exact', 'accent', 'headword', 'form', 'wrong', undefined, undefined])
+    expect(rows().filter((r) => 'answer_kind' in r)).toHaveLength(5)
+    // and it is the kind that is stored, never what the person typed
+    expect(JSON.stringify(rows())).not.toMatch(/typed|answer_text/)
+  })
+
+  it('a kind the table\'s check does not allow is refused as one row\'s own fault (23514), like a mode it does not know', async () => {
+    const app = await openApp()
+    await expect(insertReviewLog(app.client, app.userId, [{ id: 'x', esWord: 'casa', reviewedAt: new Date(T0).toISOString(), rating: 3, mode: 'cloze', stateBefore: 'new', elapsedDays: 0, scheduledDays: null, intervalAfter: 0, easeAfter: 2.5, repetitionsAfter: 1, sessionId: null, durationMs: null, answerKind: 'typo' as never }])).rejects.toThrow()
+    expect(rows()).toHaveLength(0)
+  })
+
   it('a practice row (Matching on a Learn batch) reaches the table with the mode "practice", which review_log_mode_check allows; a mode it does not know is refused', async () => {
     const app = await openApp()
     app.log.practice({ word: makeWord('nueva', { repetitions: 1, interval: 0, nextReview: new Date(T0 + DAY) }), mode: 'practice', correct: true, sessionId: 's', durationMs: null, now: new Date(T0) })
