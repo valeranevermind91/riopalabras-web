@@ -44,8 +44,11 @@ const real = parseDictionary(
   parseFallbackExamples(JSON.parse(readFileSync('public/examples_fallback.json', 'utf8'))),
 )
 
-const dataFor = (words: readonly Word[], raw: Record<string, unknown> = {}, degraded: string[] = []) =>
-  ({ status: 'ready', data: { words, settings: parseSettings(raw), getSettings: () => parseSettings(raw), degraded, retryDegraded: () => {} } }) as never
+// The screens are checked at a goal of 10 unless a test says otherwise (the default for a new account is 5; its own tests are in dailyGoalDefault.test.ts and below).
+const dataFor = (words: readonly Word[], raw: Record<string, unknown> = {}, degraded: string[] = []) => {
+  const settings = parseSettings({ daily_new_word_limit: 10, ...raw })
+  return { status: 'ready', data: { words, settings, getSettings: () => settings, degraded, retryDegraded: () => {} } } as never
+}
 
 const render = (over: Record<string, unknown> = {}, words: readonly Word[] = [...learnedWords(8, 3), ...unlearned(20)], raw: Record<string, unknown> = {}, degraded: string[] = []) =>
   renderToStaticMarkup(
@@ -581,6 +584,22 @@ describe('the status row: how far today is from counting for the streak', () => 
   it('starts the day at 0 / 10: no counter, or one from another day', () => {
     expect(todayOf(withCards({}))).toBe('0 / 10 today')
     expect(todayOf(withCards({ cards_done_today_count: 9, cards_done_today_date: YESTERDAY }))).toBe('0 / 10 today')
+  })
+
+  it('the bar is the daily goal, up to ten: "4 / 5 today" at a goal of 5, "5 / 7" at 7, and ten at 10, at 20 and at 0', () => {
+    const at = (goal: number, done: number) => todayOf(withCards({ daily_new_word_limit: goal, cards_done_today_count: done, cards_done_today_date: TODAY }))
+    expect(at(5, 4)).toBe('4 / 5 today')
+    expect(at(5, 0)).toBe('0 / 5 today')
+    expect(at(7, 5)).toBe('5 / 7 today')
+    expect(at(1, 0)).toBe('0 / 1 today')
+    expect(at(10, 4)).toBe('4 / 10 today')
+    expect(at(20, 4)).toBe('4 / 10 today')
+    expect(at(0, 4)).toBe('4 / 10 today')
+  })
+
+  it('a new account (no stored goal, intro not finished) sees "0 / 5 today": the default goal is the bar', () => {
+    expect(todayOf(withCards({ daily_new_word_limit: undefined }))).toBe('0 / 5 today') // undefined: the fixture\'s goal of 10 is taken out again
+    expect(todayOf(withCards({ daily_new_word_limit: undefined, onboarding_done: true }))).toBe('0 / 10 today') // a finished intro with no stored goal has always had 10
   })
 
   it('in Russian: "4 / 10 сегодня"', () => {

@@ -87,7 +87,8 @@ describe('a brand-new user, first ever session (the proxy signs them up)', () =>
     app.rateSome(batch)
     await settled(app.queue)
     expect(ticket.saved()).toBe(true)
-    expect(server.rows('user_progress').length).toBe(12)
+    expect(batch.words).toHaveLength(5) // a brand-new account's goal is five
+    expect(server.rows('user_progress').length).toBe(5 + 2) // the batch and the two ratings
     expect(server.rows('user_settings').length).toBe(1)
     expect(anonWrites()).toEqual([])
   })
@@ -105,7 +106,8 @@ describe('a brand-new user, first ever session (the proxy signs them up)', () =>
 
     expect(anonWrites(), 'a write went out with the anon key').toEqual([])
     expect(ticket.saved()).toBe(true)
-    expect(server.rows('user_progress').length).toBe(12)
+    expect(batch.words).toHaveLength(5) // a brand-new account's goal is five
+    expect(server.rows('user_progress').length).toBe(5 + 2) // the batch and the two ratings
     expect(server.rows('user_settings').length).toBe(1)
   })
 
@@ -128,7 +130,7 @@ describe('a brand-new user, first ever session (the proxy signs them up)', () =>
     server.break.forgetSessions = false
     expect(await app.queue.retry()).toBe(true)
     expect(ticket.saved()).toBe(true)
-    expect(server.rows('user_progress').length).toBe(10)
+    expect(server.rows('user_progress').length).toBe(5)
   })
 
   it('a write refused by policy while signed in is surfaced at once as a rejection, not retried quietly', async () => {

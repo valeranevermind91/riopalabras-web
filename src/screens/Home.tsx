@@ -7,7 +7,7 @@ import { PRACTICE_MIN_WORDS, batchPracticeAvailable, clozeEligibleCount, matchin
 import { REVIEW_SESSION_SIZE } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
-import { STREAK_CARDS, cardsToday, learnedToday, streakCountedToday } from '../data/daily'
+import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../data/daily'
 import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
 import { wordKey } from '../data/words'
 import { activityDots } from '../data/streakDots'
@@ -111,7 +111,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
             activity={activity}
             todayActive={metrics?.today?.(now)?.active === true}
             now={now}
-            today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: STREAK_CARDS }}
+            today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: streakCards(data.data.settings.dailyNewWordLimit) }}
           />
 
           {advice && <p className="home-advice">{adviceText(advice, stats, day)}</p>}
@@ -182,7 +182,7 @@ function StatusRow({ streak, activity, todayActive, now, today }: { streak: numb
           </span>
         )}
         {streak !== null && <span>{strings.home.streak(streak)}</span>}
-        {/* How far today is from counting (10 cards; see dayPatch), as a few words, not a bar: nothing once the day counts. */}
+        {/* How far today is from counting (the daily goal in cards, up to 10; see streakCards and dayPatch), as a few words, not a bar: nothing once the day counts. */}
         {streak !== null && today && <span className="streak-today">{strings.home.streakToday(today.done, today.needed)}</span>}
       </div>
     </div>

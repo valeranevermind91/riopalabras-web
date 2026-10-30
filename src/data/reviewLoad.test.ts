@@ -5,8 +5,8 @@ import { ru } from '../strings.ru'
 import { applyReview, learnedState, type Sm2Card } from '../sm2/sm2'
 
 /**
- * The sentence under the daily goal says what a goal means in reviews: every word learned comes back, so ten new words a day is roughly 40 to 60 reviews
- * a day within a couple of months, and five a day is about half. This runs the real scheduler to see whether that is so, so a change to it (the
+ * The sentence under the daily goal says what a goal means in reviews: every word learned comes back, so five new words a day is roughly 20 to 30 reviews
+ * a day within a couple of months, and ten a day is about twice that. This runs the real scheduler to see whether that is so, so a change to it (the
  * interval cap, FSRS) that makes the sentence untrue fails here, and the sentence gets rewritten with it.
  */
 const DAY = 86_400_000
@@ -54,14 +54,14 @@ describe('the review load a daily goal makes, by the real scheduler', () => {
   const [low, high] = (en.settings.dailyGoalWhy.match(/(\d+) to (\d+) reviews/) ?? []).slice(1).map(Number)
 
   it('the English sentence gives a range, and the Russian one the same range', () => {
-    expect(low).toBe(40)
-    expect(high).toBe(60)
+    expect(low).toBe(20)
+    expect(high).toBe(30)
     expect(ru.settings.dailyGoalWhy).toContain(`${low}–${high} повторений`)
   })
 
-  it('at ten new words a day, two months in, the load is the sentence\'s range: about forty when every answer is Good, about sixty with some Hard and Again', () => {
-    const best = around(reviewsPerDay(10, ALL_GOOD, 70), 60)
-    const typical = around(reviewsPerDay(10, SOME_LAPSES, 70), 60)
+  it('at five new words a day, two months in, the load is the sentence\'s range: about twenty when every answer is Good, about thirty with some Hard and Again', () => {
+    const best = around(reviewsPerDay(5, ALL_GOOD, 70), 60)
+    const typical = around(reviewsPerDay(5, SOME_LAPSES, 70), 60)
     expect(best, 'every answer Good').toBeGreaterThanOrEqual(low * 0.85)
     expect(best).toBeLessThanOrEqual(high)
     expect(typical, 'some Hard and Again').toBeGreaterThanOrEqual(low)
@@ -69,28 +69,28 @@ describe('the review load a daily goal makes, by the real scheduler', () => {
   })
 
   it('the load is not flat after that: it keeps rising while the vocabulary grows (so the sentence says "within a couple of months", not "settles")', () => {
-    const counts = reviewsPerDay(10, SOME_LAPSES, 130)
+    const counts = reviewsPerDay(5, SOME_LAPSES, 130)
     expect(around(counts, 120)).toBeGreaterThan(around(counts, 60))
   })
 
-  it('at five a day the reviews come to about half of ten a day, whatever the answers', () => {
+  it('at ten a day the reviews come to about twice those of five a day, whatever the answers', () => {
     for (const mix of [ALL_GOOD, SOME_LAPSES]) {
-      const ratio = around(reviewsPerDay(5, mix, 70), 60) / around(reviewsPerDay(10, mix, 70), 60)
-      expect(ratio).toBeGreaterThan(0.45)
-      expect(ratio).toBeLessThan(0.55)
+      const ratio = around(reviewsPerDay(10, mix, 70), 60) / around(reviewsPerDay(5, mix, 70), 60)
+      expect(ratio).toBeGreaterThan(1.8)
+      expect(ratio).toBeLessThan(2.2)
     }
   })
 })
 
 describe('what the daily goal says about itself, in both languages', () => {
-  it('two sentences: the arithmetic (words come back, ten a day makes this many reviews), and that a smaller goal is a real choice, not a lesser one', () => {
+  it('two sentences: the arithmetic (words come back, five a day makes this many reviews), and that a bigger goal is a real choice too, with the reviews it makes', () => {
     for (const text of [en.settings.dailyGoalWhy, ru.settings.dailyGoalWhy]) expect(text.match(/[.!?](\s|$)/g)).toHaveLength(2)
     expect(en.settings.dailyGoalWhy).toContain('comes back for review')
-    expect(en.settings.dailyGoalWhy).toContain('a real choice, not a lesser one')
-    expect(en.settings.dailyGoalWhy).toContain('at five a day the reviews come to about half')
+    expect(en.settings.dailyGoalWhy).toContain('a real choice too')
+    expect(en.settings.dailyGoalWhy).toContain('at ten a day the reviews come to about twice as many')
     expect(ru.settings.dailyGoalWhy).toContain('возвращается на повторение')
-    expect(ru.settings.dailyGoalWhy).toContain('полноценный выбор, а не уступка')
-    expect(ru.settings.dailyGoalWhy).toContain('при пяти словах в день повторений вдвое меньше')
+    expect(ru.settings.dailyGoalWhy).toContain('тоже нормальный выбор')
+    expect(ru.settings.dailyGoalWhy).toContain('при десяти словах повторений будет примерно вдвое\u00a0больше')
   })
 
   it('it explains and does not instruct: no "you should", no "we recommend", no "try", and no praise', () => {

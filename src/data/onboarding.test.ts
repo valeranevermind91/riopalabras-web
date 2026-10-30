@@ -26,8 +26,26 @@ describe('who sees the intro', () => {
 })
 
 describe('finishing', () => {
-  it('writes onboarding_done: true, and nothing else', () => {
-    expect(finishOnboardingPatch(parseSettings({ daily_new_word_limit: 12 }))).toEqual({ onboarding_done: true })
+  it('writes onboarding_done: true and the daily goal that is on screen, and nothing else', () => {
+    expect(finishOnboardingPatch(parseSettings({ daily_new_word_limit: 12 }))).toEqual({ onboarding_done: true, daily_new_word_limit: 12 })
+  })
+
+  it('with no goal stored, the goal it writes is the default of five: finishing flips the implicit goal to ten, so it must be written down', () => {
+    const fresh = parseSettings({})
+    expect(fresh.dailyNewWordLimit).toBe(5)
+    const patch = finishOnboardingPatch(fresh)!
+    expect(patch).toEqual({ onboarding_done: true, daily_new_word_limit: 5 })
+    expect(applySettingsPatch(fresh, patch).dailyNewWordLimit).toBe(5) // five after finishing, not the ten the key alone would give
+    expect(parseSettings({ onboarding_done: true }).dailyNewWordLimit).toBe(10) // that is the blob the old intro left: the key alone
+  })
+
+  it('a goal chosen in the intro is the one written: the stepper\'s value, not the default', () => {
+    const stepped = applySettingsPatch(parseSettings({}), { daily_new_word_limit: 8 })
+    expect(finishOnboardingPatch(stepped)).toEqual({ onboarding_done: true, daily_new_word_limit: 8 })
+  })
+
+  it('a goal of 0 chosen in the intro is written as 0, not replaced by a default', () => {
+    expect(finishOnboardingPatch(parseSettings({ daily_new_word_limit: 0 }))).toEqual({ onboarding_done: true, daily_new_word_limit: 0 })
   })
 
   it('writes it once: with the key there, finishing (a replay, or a second tap) writes nothing', () => {

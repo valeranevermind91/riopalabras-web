@@ -81,9 +81,9 @@ describe('the seven steps', () => {
     expect(readFileSync('src/screens/OnboardingPlacement.tsx', 'utf8')).not.toMatch(/PLACEHOLDER/)
   })
 
-  it('5: the daily goal: the shared stepper on the current value, 10 when nothing is stored', () => {
+  it('5: the daily goal: the shared stepper on the current value, 5 when nothing is stored (the intro is not finished)', () => {
     const goal = (html: string) => html.match(/<output[^>]*>(\d+)<\/output>/)![1]
-    expect(goal(step('goal'))).toBe('10')
+    expect(goal(step('goal'))).toBe('5')
     expect(goal(step('goal', { daily_new_word_limit: 14 }))).toBe('14')
     const html = step('goal')
     expect(html).toContain('aria-label="Decrease the daily goal"')
@@ -91,7 +91,7 @@ describe('the seven steps', () => {
     expect(html).not.toContain('batches of 10 words')
     expect(step('goal', { daily_new_word_limit: 18 })).toContain('split into batches of 10 words')
     // the step has room for the reasoning: under the stepper, the same two sentences Settings shows
-    expect(html).toContain('<p class="intro-note">Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.</p>')
+    expect(html).toContain('<p class="intro-note">Every word you learn comes back for review: at five new words a day that is roughly 20 to 30 reviews a day within a couple of months. A bigger goal is a real choice too: at ten a day the reviews come to about twice as many.</p>')
     expect(html.indexOf('class="stepper"')).toBeLessThan(html.indexOf('Every word you learn comes back'))
   })
 

@@ -9,8 +9,12 @@ export const ONBOARDING_KEY = 'onboarding_done'
 /** True for an account that has not finished the intro: there is no `onboarding_done: true` in its settings. */
 export const needsOnboarding = (settings: Pick<UserSettings, 'raw'>): boolean => settings.raw[ONBOARDING_KEY] !== true
 
-/** What finishing writes: the key, once. Null when it is already there (replaying the intro writes nothing). */
-export const finishOnboardingPatch = (settings: Pick<UserSettings, 'raw'>): SettingsPatch | null => (needsOnboarding(settings) ? { [ONBOARDING_KEY]: true } : null)
+/**
+ * What finishing writes: the key, once, and the daily goal that is on screen, in the same patch, so the account does not depend on an implicit default afterwards
+ * (finishing flips the implicit goal from five to ten, see implicitDailyGoal). Null when the intro is already done (replaying it writes nothing).
+ */
+export const finishOnboardingPatch = (settings: Pick<UserSettings, 'raw' | 'dailyNewWordLimit'>): SettingsPatch | null =>
+  needsOnboarding(settings) ? { [ONBOARDING_KEY]: true, daily_new_word_limit: settings.dailyNewWordLimit } : null
 
 /** The translation step offers Russian, English or both. */
 export type LanguageChoice = 'ru' | 'en' | 'both'

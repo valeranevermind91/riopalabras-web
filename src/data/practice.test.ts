@@ -464,7 +464,7 @@ describe('finishing: each pair and each answer is a card toward the streak; the 
 
   function app() {
     const fake = fakeSupabase()
-    let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
+    let settings = parseSettings({ daily_new_word_limit: 10, streak_count: 3, streak_last_activity_date: '2026-10-04' })
     const getSettings = () => settings
     const queue = createSupabaseWriteQueue(fake.client, 'user-1', getSettings, { retryDelaysMs: [1, 1, 1], metricsRetryDelaysMs: [1], sleep: () => Promise.resolve() })
     const store = createLocalMetricsStore('u', { getItem: () => null, setItem: () => {}, removeItem: () => {} })
@@ -494,7 +494,7 @@ describe('finishing: each pair and each answer is a card toward the streak; the 
   it('recordPracticeCompleted marks the day active and writes NO streak: finishing a group is not what counts the day, the cards in it are', () => {
     const markActiveToday = vi.fn()
     const enqueueSettings = vi.fn()
-    let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
+    let settings = parseSettings({ daily_new_word_limit: 10, streak_count: 3, streak_last_activity_date: '2026-10-04' })
     const deps = { getSettings: () => settings, applySettings: (p: Record<string, unknown>) => (settings = applySettingsPatch(settings, p)), queue: { enqueueSettings }, metrics: { markActiveToday } }
     recordPracticeCompleted(deps, NOW)
     recordPracticeCompleted(deps, NOW)
@@ -505,7 +505,7 @@ describe('finishing: each pair and each answer is a card toward the streak; the 
 
   it('recordPracticeCards: a card is counted (a settings write), and the streak is written the moment the 10th is done', () => {
     const enqueueSettings = vi.fn()
-    let settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-04' })
+    let settings = parseSettings({ daily_new_word_limit: 10, streak_count: 3, streak_last_activity_date: '2026-10-04' })
     const deps = { getSettings: () => settings, applySettings: (p: Record<string, unknown>) => (settings = applySettingsPatch(settings, p)), queue: { enqueueSettings }, metrics: null }
     for (let i = 0; i < 9; i++) recordPracticeCards(deps, 1, NOW)
     expect(enqueueSettings).toHaveBeenCalledTimes(9)

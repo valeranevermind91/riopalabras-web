@@ -216,7 +216,7 @@ describe('the exact user_progress rows the four ratings send', () => {
 
 describe('createRater', () => {
   function setup(rawSettings: Record<string, unknown>) {
-    let settings = parseSettings(rawSettings)
+    let settings = parseSettings({ daily_new_word_limit: 10, ...rawSettings })
     const applied: ProgressUpdate[] = []
     const progress: ProgressUpdate[] = []
     const patches: SettingsPatch[] = []
@@ -302,7 +302,7 @@ describe('createRater', () => {
 
   it('goes through a real queue: ratings and one streak write reach the server, once each', async () => {
     const fake = fakeSupabase()
-    let settings = parseSettings({ streak_count: 4, streak_last_activity_date: '2026-10-04', learn_picks: ['ser'] })
+    let settings = parseSettings({ daily_new_word_limit: 10, streak_count: 4, streak_last_activity_date: '2026-10-04', learn_picks: ['ser'] })
     const queue = createSupabaseWriteQueue(fake.client, 'user-1', () => settings)
     const rate = createRater({
       applyProgress: () => {},

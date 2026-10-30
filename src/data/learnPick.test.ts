@@ -351,7 +351,7 @@ describe('the daily counter counts only words actually learned', () => {
   afterEach(() => {
     vi.useRealTimers()
   })
-  const settings = () => parseSettings({ streak_count: 2, streak_last_activity_date: '2026-10-04', new_words_learned_today_count: 2, new_words_learned_today_date: '2026-10-05' })
+  const settings = () => parseSettings({ daily_new_word_limit: 10, streak_count: 2, streak_last_activity_date: '2026-10-04', new_words_learned_today_count: 2, new_words_learned_today_date: '2026-10-05' })
 
   function session() {
     const fake = fakeSupabase()

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { makeWord } from '../testing/makeWord'
-import { STREAK_CARDS, cardsToday, dayPatch, streakCountedToday } from './daily'
+import { STREAK_CARDS, cardsToday, dayPatch, streakCards, streakCountedToday } from './daily'
 import { nothingDueNow, recordCards } from './dayCards'
 import { batchOf, learnSettingsPatch, markKnown, selectLearnBatch, type KnownDeps } from './learn'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
@@ -9,7 +9,7 @@ import { createRater, rateWord } from './review'
 import { parseSettings } from './settings'
 import type { SettingsPatch, UserSettings, Word } from './types'
 
-// When a day counts for the streak: 10 cards in any modes, or everything that was available. The streak is written the moment the day first
+// When a day counts for the streak: the daily goal's worth of cards (up to 10) in any modes, or everything that was available. The streak is written the moment the day first
 // qualifies, not at the first activity; the date rule (today / yesterday / a gap) is the old one; existing streaks are not recalculated.
 
 const NOW = new Date(2026, 9, 5, 14, 0)
@@ -87,6 +87,52 @@ describe('the bar: 10 cards', () => {
   })
 })
 
+describe('the bar follows the daily goal, up to ten', () => {
+  it('streakCards: the goal, never more than ten, and ten for a goal of 0', () => {
+    expect([0, 1, 3, 5, 9, 10, 11, 20].map(streakCards)).toEqual([10, 1, 3, 5, 9, 10, 10, 10])
+    expect(streakCards(-1)).toBe(10)
+  })
+
+  it('a goal of 5: four cards do not count the day and the fifth does', () => {
+    const a = app({ daily_new_word_limit: 5 })
+    recordCards(a.deps, 4, NOW)
+    expect(a.streakWrites()).toEqual([])
+    recordCards(a.deps, 1, NOW)
+    expect(a.streakWrites()).toEqual([{ cards_done_today_count: 5, cards_done_today_date: TODAY, streak_count: 5, streak_last_activity_date: TODAY }])
+  })
+
+  it('a goal of 5 with reviews still due: the five new words alone count the day (the case that a bar of ten would fail)', () => {
+    const a = app({ daily_new_word_limit: 5 }, [dueWord('a'), dueWord('b')])
+    const batch = batchOf([1, 2, 3, 4, 5].map((i) => makeWord(`n${i}`, { rank: i })))
+    const patch = learnSettingsPatch(a.settings(), batch, NOW, nothingDueNow(a.deps.getWords, NOW))
+    expect(patch).toMatchObject({ cards_done_today_count: 5, streak_count: 5, streak_last_activity_date: TODAY })
+  })
+
+  it('a goal above ten still needs ten, not the goal; a goal of 0 needs ten', () => {
+    for (const goal of [11, 20, 0]) {
+      const a = app({ daily_new_word_limit: goal }, [dueWord('x')]) // a review stays due, so the light day cannot count it
+      recordCards(a.deps, 9, NOW)
+      expect(a.streakWrites(), `goal ${goal}, 9 cards`).toEqual([])
+      recordCards(a.deps, 1, NOW)
+      expect(a.streakWrites(), `goal ${goal}, 10 cards`).toHaveLength(1)
+    }
+  })
+
+  it('a goal of 1 counts the day at the first card', () => {
+    const a = app({ daily_new_word_limit: 1 })
+    recordCards(a.deps, 1, NOW)
+    expect(a.streakWrites()).toHaveLength(1)
+  })
+
+  it('a stored goal of 7 is the bar: the setting a person chose, not a number of the app\'s', () => {
+    const a = app({ daily_new_word_limit: 7 })
+    recordCards(a.deps, 6, NOW)
+    expect(a.streakWrites()).toEqual([])
+    recordCards(a.deps, 1, NOW)
+    expect(a.streakWrites()).toHaveLength(1)
+  })
+})
+
 describe('the light day: everything that was available was done', () => {
   it('the goal reached and nothing due counts a day with fewer than 10 cards: three due words, the goal met, the last one rated', () => {
     const a = app({ daily_new_word_limit: 5, new_words_learned_today_count: 5, new_words_learned_today_date: TODAY }, [dueWord('a'), dueWord('b'), dueWord('c')])
@@ -99,9 +145,10 @@ describe('the light day: everything that was available was done', () => {
   })
 
   it('a Learn batch that reaches the goal with no review due counts the day', () => {
-    const a = app({ daily_new_word_limit: 3 })
-    const batch = batchOf([makeWord('n1'), makeWord('n2'), makeWord('n3')])
-    expect(learnSettingsPatch(a.settings(), batch, NOW, true)).toMatchObject({ cards_done_today_count: 3, streak_count: 5 })
+    // two words already counted today (not cards of this event), one more in this batch: 1 card, below the bar of 3, but the goal of 3 is reached
+    const a = app({ daily_new_word_limit: 3, new_words_learned_today_count: 2, new_words_learned_today_date: TODAY })
+    const batch = batchOf([makeWord('n3')])
+    expect(learnSettingsPatch(a.settings(), batch, NOW, true)).toMatchObject({ cards_done_today_count: 1, streak_count: 5 })
     expect(learnSettingsPatch(a.settings(), batch, NOW, false)).not.toHaveProperty('streak_count') // a review is still due
   })
 
@@ -126,8 +173,8 @@ describe('the light day: everything that was available was done', () => {
     expect(dayPatch(a.settings(), NOW, { cards: 0, nothingDue: true })).toBeNull()
   })
 
-  it('without the words (getWords absent) the light day cannot hold: only the ten-card half counts', () => {
-    const a = app({ daily_new_word_limit: 1, new_words_learned_today_count: 1, new_words_learned_today_date: TODAY })
+  it('without the words (getWords absent) the light day cannot hold: only the card-bar half counts', () => {
+    const a = app({ daily_new_word_limit: 12, new_words_learned_today_count: 12, new_words_learned_today_date: TODAY })
     const deps = { ...a.deps, getWords: undefined }
     recordCards(deps, 3, NOW)
     expect(a.streakWrites()).toEqual([])

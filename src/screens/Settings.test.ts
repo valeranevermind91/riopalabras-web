@@ -56,9 +56,15 @@ describe('the Settings screen', () => {
       expect(button(html, 'Increase the daily goal')).not.toContain('disabled')
     })
 
-    it('a user who had a goal of 10 still sees 10, and 10 is also what a user with no stored goal gets', () => {
+    it('a user who had a goal of 10 still sees 10; with no stored goal, the intro decides: 10 for an account that finished it (it has always had 10), 5 for one that has not', () => {
       expect(goal(render({ daily_new_word_limit: 10 }))).toBe('10')
-      expect(goal(render({}))).toBe('10')
+      expect(goal(render({ onboarding_done: true }))).toBe('10')
+      expect(goal(render({}))).toBe('5')
+      expect(goal(render({ onboarding_done: false }))).toBe('5')
+    })
+
+    it('a stored goal is shown as stored, whether or not the intro was finished', () => {
+      for (const done of [true, false]) for (const limit of [0, 5, 7, 10, 20]) expect(goal(render({ daily_new_word_limit: limit, onboarding_done: done })), `${limit} ${done}`).toBe(String(limit))
     })
 
     it('the buttons are off at the ends: nothing to decrease at 0, nothing to increase at 20', () => {
@@ -68,8 +74,8 @@ describe('the Settings screen', () => {
       expect(button(render({ daily_new_word_limit: 20 }), 'Decrease the daily goal')).not.toContain('disabled')
     })
 
-    it('says what the goal means, under the stepper, at every value: the arithmetic, then that a smaller goal is a real choice', () => {
-      const why = 'Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.'
+    it('says what the goal means, under the stepper, at every value: the arithmetic, then that a bigger goal is a real choice too', () => {
+      const why = 'Every word you learn comes back for review: at five new words a day that is roughly 20 to 30 reviews a day within a couple of months. A bigger goal is a real choice too: at ten a day the reviews come to about twice as many.'
       for (const limit of [0, 5, 10, 20]) {
         const html = render({ daily_new_word_limit: limit })
         expect(html, String(limit)).toContain(`<p class="setting-note">${why}</p>`)
@@ -81,7 +87,7 @@ describe('the Settings screen', () => {
     it('in Russian too', () => {
       setLanguage('ru')
       try {
-        expect(render({})).toContain('<p class="setting-note">Каждое выученное слово возвращается на повторение: при десяти новых словах в день это примерно 40–60 повторений в день через пару месяцев. Меньшая цель — полноценный выбор, а не уступка: при пяти словах в день повторений вдвое меньше.</p>')
+        expect(render({})).toContain('<p class="setting-note">Каждое выученное слово возвращается на повторение: при пяти новых словах в день через пару месяцев набирается 20–30 повторений ежедневно. Цель побольше — тоже нормальный выбор: при десяти словах повторений будет примерно вдвое\u00a0больше.</p>')
       } finally {
         setLanguage('en')
       }

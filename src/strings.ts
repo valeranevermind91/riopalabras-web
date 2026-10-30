@@ -64,7 +64,7 @@ export const en = {
       poolEmpty: 'No new words left — add your own, or practise',
       allClear: 'All caught up',
     },
-    // How far today is from counting for the streak (10 cards): shown until the day counts, then nothing.
+    // How far today is from counting for the streak (the daily goal in cards, up to 10): shown until the day counts, then nothing.
     streakToday: (done: number, needed: number) => `${done} / ${needed} today`,
     // the letters under the week of dots, Monday first
     weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as readonly string[],
@@ -259,7 +259,7 @@ export const en = {
     dailyGoal: 'Daily goal',
     dailyGoalHint: 'New words per day',
     // the arithmetic behind the number, not advice: every learned word comes back, so the goal sets the review load (checked against the scheduler in reviewLoad.test.ts)
-    dailyGoalWhy: 'Every word you learn comes back for review: at ten new words a day that is roughly 40 to 60 reviews a day within a couple of months. A smaller goal is a real choice, not a lesser one: at five a day the reviews come to about half.',
+    dailyGoalWhy: 'Every word you learn comes back for review: at five new words a day that is roughly 20 to 30 reviews a day within a couple of months. A bigger goal is a real choice too: at ten a day the reviews come to about twice as many.',
     decrease: 'Decrease the daily goal',
     increase: 'Increase the daily goal',
     // from 16 up the day is split into Learn batches of 10 (as in the Flutter app)

@@ -202,7 +202,19 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await page.waitForSelector('.home')
       expect(await page.$('.onboarding')).toBeNull()
       const writes = (await sent(page)).filter((p) => 'onboarding_done' in p)
-      expect(writes).toEqual([{ onboarding_done: true }]) // exactly once
+      expect(writes).toEqual([{ onboarding_done: true, daily_new_word_limit: 5 }]) // exactly once, with the goal that was on screen: finishing flips the implicit goal, so it is written down
+      await page.close()
+    }, 60_000)
+
+    it('Done writes the goal that was chosen: stepping to 8 and finishing writes 8, not the default', async () => {
+      const page = await open('fresh=1&goal=default')
+      await goTo(page, 6)
+      for (let i = 0; i < 3; i++) await page.click('.stepper-btn[aria-label="Increase the daily goal"]')
+      expect(await page.$eval('output.stepper-value', (e) => e.textContent)).toBe('8')
+      await goTo(page, 7)
+      await clickText(page, '.intro-footer .btn', 'Done')
+      await page.waitForSelector('.home')
+      expect((await sent(page)).filter((p) => 'onboarding_done' in p)).toEqual([{ onboarding_done: true, daily_new_word_limit: 8 }])
       await page.close()
     }, 60_000)
 
@@ -254,16 +266,23 @@ describe.skipIf(!CHROME)('the intro in a browser', () => {
       await settings.close()
     }, 90_000)
 
-    it('daily goal: daily_new_word_limit, one step each, from 10 when nothing is stored, like the Settings stepper', async () => {
+    it('daily goal: daily_new_word_limit, one step each, from 5 when nothing is stored, like the Settings stepper', async () => {
       const intro = await open('fresh=1&goal=default')
       await goTo(intro, 6)
-      expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('10')
+      expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('5')
       await intro.click('.stepper-btn[aria-label="Increase the daily goal"]')
       await intro.click('.stepper-btn[aria-label="Increase the daily goal"]')
       await intro.click('.stepper-btn[aria-label="Decrease the daily goal"]')
-      expect(await sent(intro)).toEqual([{ ui_language: 'en' }, { daily_new_word_limit: 11 }, { daily_new_word_limit: 12 }, { daily_new_word_limit: 11 }])
-      expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('11')
+      expect(await sent(intro)).toEqual([{ ui_language: 'en' }, { daily_new_word_limit: 6 }, { daily_new_word_limit: 7 }, { daily_new_word_limit: 6 }])
+      expect(await intro.$eval('output.stepper-value', (e) => e.textContent)).toBe('6')
       await intro.close()
+
+      // an account that finished the intro with no goal stored (all of them, before the intro wrote one) has always had 10 in Settings, and still does
+      const legacy = await open('goal=default&ru=1&en=1')
+      await toSettings(legacy)
+      expect(await legacy.$eval('output.stepper-value', (e) => e.textContent)).toBe('10')
+      expect(await sent(legacy)).toEqual([]) // looking at it writes nothing
+      await legacy.close()
 
       const settings = await open('goal=10&ru=1&en=1')
       await toSettings(settings)

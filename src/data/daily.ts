@@ -52,8 +52,11 @@ export function learnedToday(settings: UserSettings, now: Date): number {
   return settings.newWordsLearnedTodayDate === localDateKey(now) ? settings.newWordsLearnedTodayCount : 0
 }
 
-/** A day counts for the streak at this many cards done today, in any modes. */
+/** The most cards a day needs to count for the streak, in any modes. */
 export const STREAK_CARDS = 10
+
+/** The cards that count a day: the daily goal's worth, never more than ten. A goal of 0 asks for no new words, so the bar stays at ten. */
+export const streakCards = (goal: number): number => (goal >= 1 ? Math.min(STREAK_CARDS, goal) : STREAK_CARDS)
 
 /** Cards done today (0 if the stored counter is from another day). */
 export function cardsToday(settings: UserSettings, now: Date): number {
@@ -65,7 +68,7 @@ export const streakCountedToday = (settings: UserSettings, now: Date): boolean =
 
 /**
  * What a card done (or several) writes. A day counts for the streak when EITHER
- *   - 10 cards have been done today, in any modes: a word finished in Learn, a rating in Review, a matched pair in Matching, an answered
+ *   - the day's bar in cards has been done today (streakCards: the goal, up to 10; 10 when the goal is 0), in any modes: a word finished in Learn, a rating in Review, a matched pair in Matching, an answered
  *     question in Cloze ("Already know it" is not a card, and a relearning re-queue is the same card: callers count it once); OR
  *   - everything that was available today has been done: today's new-word goal is reached and no review is due (a light day still counts).
  * The streak is written at the moment the day first qualifies, not at the first activity: until then only the day's card counter is
@@ -80,7 +83,7 @@ export function dayPatch(settings: UserSettings, now: Date, { cards, nothingDue,
   const done = cardsToday(settings, now) + Math.max(0, cards)
   const goalReached = (learnedNow ?? learnedToday(settings, now)) >= settings.dailyNewWordLimit
   // A light day still needs something done: with nothing at all done today, "everything available" is not an achievement.
-  const qualifies = done >= STREAK_CARDS || (done > 0 && goalReached && nothingDue)
+  const qualifies = done >= streakCards(settings.dailyNewWordLimit) || (done > 0 && goalReached && nothingDue)
   if (!qualifies && cards <= 0) return null
   return { cards_done_today_count: done, cards_done_today_date: localDateKey(now), ...(qualifies ? streakPatch(settings, now) : {}) }
 }

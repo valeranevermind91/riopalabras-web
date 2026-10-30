@@ -185,7 +185,8 @@ describe('what Finish writes', () => {
   })
 
   it('settings: a light day counts too: the goal reached with this batch and no review due', () => {
-    const settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01', daily_new_word_limit: 2 })
+    // one word already counted today, two in this batch: 2 cards, below the bar of 3, but the goal of 3 is reached
+    const settings = parseSettings({ streak_count: 3, streak_last_activity_date: '2026-10-01', daily_new_word_limit: 3, new_words_learned_today_count: 1, new_words_learned_today_date: '2026-10-02' })
     expect(learnSettingsPatch(settings, batch, NOW, true)).toMatchObject({ cards_done_today_count: 2, streak_count: 4 })
     expect(learnSettingsPatch(settings, batch, NOW, false)).not.toHaveProperty('streak_count') // reviews still due: not everything was done
   })

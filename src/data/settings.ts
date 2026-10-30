@@ -1,5 +1,6 @@
 import { LANGUAGE_SETTING_KEY, parseUiLanguage } from '../lib/language'
 import { THEME_SETTING_KEY, parseThemeChoice } from '../lib/theme'
+import { ONBOARDING_KEY } from './onboarding'
 import { parseReminderOfferShows } from './reminderOffer'
 import type { UserSettings } from './types'
 
@@ -19,10 +20,21 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
 }
 
+/** The goal an account that has not stored one starts with: five, which most people who chose a goal chose and which a sitting finishes. */
+export const DEFAULT_DAILY_GOAL = 5
+/** What an account that has not stored a goal but has finished the intro has always had. The intro now writes the goal when it finishes, so this is only the accounts that finished before that. */
+export const LEGACY_DAILY_GOAL = 10
+
+/**
+ * The daily goal when none is stored: an account that has finished the intro keeps ten (it has had ten all along, and changing a default must not change what it is given);
+ * one that has not gets five, and the intro writes it down when it finishes, so nothing depends on this afterwards.
+ */
+export const implicitDailyGoal = (raw: Record<string, unknown>): number => (raw[ONBOARDING_KEY] === true ? LEGACY_DAILY_GOAL : DEFAULT_DAILY_GOAL)
+
 export function parseSettings(blob: Record<string, unknown> | null): UserSettings {
   const raw = blob ?? {}
   return {
-    dailyNewWordLimit: num(raw.daily_new_word_limit, 10),
+    dailyNewWordLimit: num(raw.daily_new_word_limit, implicitDailyGoal(raw)),
     streakCount: num(raw.streak_count, 0),
     streakLastActivityDate: str(raw.streak_last_activity_date),
     newWordsLearnedTodayCount: num(raw.new_words_learned_today_count, 0),
