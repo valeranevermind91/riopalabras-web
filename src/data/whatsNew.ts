@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'cloze-any-form',
+    at: '2026-10-30T17:23',
+    en: {
+      title: 'Cloze accepts the dictionary form of the word',
+      text: 'If the sentence needs “vas”, typing “ir” counts as right, and “vas” then appears in the sentence. The line under the question now says so: “Type the missing word, in any form.”',
+    },
+    ru: {
+      title: 'Cloze принимает слово в словарной форме',
+      text: 'Если в предложении нужно «vas», ответ «ir» засчитывается, а в предложении появляется «vas». Строка под вопросом теперь так и говорит: «Впишите пропущенное слово — в любой форме».',
+    },
+  },
+  {
     id: 'cloze-lemma',
     at: '2026-10-29T23:03',
     en: {

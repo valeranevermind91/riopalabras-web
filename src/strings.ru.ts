@@ -507,7 +507,7 @@ export const ru: Strings = {
     needWords: 'Не менее 5 слов',
     matchingTitle: 'Matching',
     matchingHint: 'Выберите слово, затем его перевод.',
-    clozeHint: 'Впишите пропущенное слово.',
+    clozeHint: 'Впишите пропущенное слово — в любой форме.',
     matchingInsufficient: 'Сначала выучите и повторите несколько слов, потом возвращайтесь к Matching.',
     groupComplete: 'Сессия завершена',
     nextGroup: 'Новая сессия',

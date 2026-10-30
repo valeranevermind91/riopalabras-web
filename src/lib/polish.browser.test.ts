@@ -137,7 +137,7 @@ describe.skipIf(!CHROME)('the polish pass in a browser, at 320px', () => {
     it('says what to type, under the progress bar', async () => {
       const page = await openCloze()
       await page.waitForSelector('.cz-card')
-      expect(await page.$eval('.cz-instruction', (e) => e.textContent)).toBe('Type the missing word.')
+      expect(await page.$eval('.cz-instruction', (e) => e.textContent)).toBe('Type the missing word, in any form.')
       expect(await page.$eval('.cz-instruction', (e) => (e.previousElementSibling as HTMLElement).getAttribute('role'))).toBe('progressbar')
       await page.close()
     }, 60_000)
@@ -145,7 +145,7 @@ describe.skipIf(!CHROME)('the polish pass in a browser, at 320px', () => {
     it('in Russian too, and "Ответ" fits its button on one line (it used to wrap as «Показать ответ»)', async () => {
       const page = await open('logHarness', 'screen=cloze&learned=12', 'ru')
       await page.waitForSelector('.cz-card')
-      expect(await page.$eval('.cz-instruction', (e) => e.textContent)).toBe('Впишите пропущенное слово.')
+      expect(await page.$eval('.cz-instruction', (e) => e.textContent)).toBe('Впишите пропущенное слово — в любой форме.')
       const lines = await page.$$eval('.cz-secondary .btn', (els) => els.map((b) => {
         const range = document.createRange()
         range.selectNodeContents(b)

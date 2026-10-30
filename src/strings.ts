@@ -584,7 +584,7 @@ export const en = {
     needWords: 'At least 5 words',
     matchingTitle: 'Matching',
     matchingHint: 'Tap a word, then its translation.',
-    clozeHint: 'Type the missing word.',
+    clozeHint: 'Type the missing word, in any form.',
     matchingInsufficient: 'Learn and review some words first, then come back to practice matching.',
     groupComplete: 'Session complete',
     nextGroup: 'New session',

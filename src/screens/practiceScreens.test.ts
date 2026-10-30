@@ -132,7 +132,7 @@ describe('Cloze screen and question', () => {
 
   it('says what to do, in one line under the progress bar, like Matching does', () => {
     const html = render(words(12), { show_ru_translation: false, show_en_translation: true })
-    expect(html).toContain('<p class="cz-instruction">Type the missing word.</p>')
+    expect(html).toContain('<p class="cz-instruction">Type the missing word, in any form.</p>')
     expect(html.indexOf('role="progressbar"')).toBeLessThan(html.indexOf('cz-instruction'))
     expect(html.indexOf('cz-instruction')).toBeLessThan(html.indexOf('class="cz-card"'))
   })
