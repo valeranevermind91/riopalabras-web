@@ -120,7 +120,7 @@ export function Harness({ start }: { start: readonly Word[] }) {
     tombstones.use({ read: getSettings, apply: applySettings })
     return () => tombstones.use(null)
   }, [getSettings, applySettings])
-  const data = { words, settings, getSettings, applySettings, applyFavorite, applyHidden, upsertCustomWord: upsertCustom, removeCustomWord: removeCustom } as never
+  const data = { words, settings, getSettings, applySettings, degraded: [], applyFavorite, applyHidden, upsertCustomWord: upsertCustom, removeCustomWord: removeCustom } as never
 
   const opened = open ? words.find((w) => wordKey(w.esWord) === open) : undefined
   if (opened) return <WordDetail word={opened} data={data} queue={queue} registerBack={registerBack} onDeleted={() => setOpen(null)} onReport={reportable ? (what) => void reported.push(what) : undefined} onBack={() => setOpen(null)} />

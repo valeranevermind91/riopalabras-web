@@ -12,6 +12,7 @@ import {
   type ClozeOutcome,
 } from '../data/practice'
 import { clozeFeedback } from '../data/clozeFeedback'
+import { lemmaOfForm } from '../data/lemmaNote'
 import type { UserSettings } from '../data/types'
 import { scrollDeltaToClear } from '../lib/useKeyboardInset'
 import { strings } from '../strings'
@@ -68,6 +69,8 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
   }
 
   const fb = answer ? clozeFeedback(answer.kind, target, cueLang(item.word, settings)) : null
+  // Where the answer is shown for the person to learn from (given up, or wrong), not after a correct one: the word the form comes from, when it is a form of it.
+  const lemma = answer && (answer.kind === 'gaveUp' || answer.kind === 'wrong') ? lemmaOfForm(item.word, target) : null
 
   return (
     <section className="cz-card">
@@ -95,7 +98,8 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
             ))}
           </p>
         )}
-        <p className="cz-hint">{hintShown && !answer ? buildHint(target) : ''}</p>
+        {/* One slot for both: the hint is spent once the question is answered, and the note takes its place, so nothing moves. */}
+        <p className={lemma ? 'cz-hint cz-lemma' : 'cz-hint'}>{lemma ? t.lemmaNote(target, lemma) : hintShown && !answer ? buildHint(target) : ''}</p>
         <p className={`cz-feedback cz-${fb?.tone ?? 'none'}`} role="status">
           {fb?.text ?? ''}
         </p>

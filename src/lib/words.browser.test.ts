@@ -764,6 +764,57 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 60_000)
 
+    for (const [language, query, hint, description] of [
+      ['English', '?lang=en&stars=0', 'Tap the star on a word: it goes into Learn ahead of the others.', 'The word goes into Learn ahead of the others.'],
+      ['Russian', '?lang=ru&stars=0', 'Нажмите звездочку у слова — оно попадет в Learn раньше остальных.', 'Слово попадет в Learn раньше остальных.'],
+    ] as const) {
+      it(`${language}, 320px: with nothing starred a line above the list says what the star does, fits the screen and ends on more than one word; the first star takes it away`, async () => {
+        const page = await open(query)
+        await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const line = await page.$eval('.words-star-hint', (e) => {
+          const r = e.getBoundingClientRect()
+          const node = e.firstChild!
+          const words: { top: number }[] = []
+          const re = /\S+/g
+          let m: RegExpExecArray | null
+          while ((m = re.exec(node.textContent ?? ''))) {
+            const range = document.createRange()
+            range.setStart(node, m.index)
+            range.setEnd(node, m.index + m[0].length)
+            words.push({ top: Math.round(range.getClientRects()[0].top) })
+          }
+          const last = words[words.length - 1].top
+          return { text: e.textContent, left: r.left, right: r.right, bottom: r.bottom, listTop: document.querySelector('.vlist')!.getBoundingClientRect().top, lastLineWords: words.filter((x) => x.top === last).length, lines: new Set(words.map((x) => x.top)).size, page: document.documentElement.scrollWidth <= window.innerWidth }
+        })
+        expect(line.text).toBe(hint)
+        expect(line.left).toBeGreaterThanOrEqual(0)
+        expect(line.right).toBeLessThanOrEqual(320)
+        expect(line.bottom).toBeLessThanOrEqual(line.listTop) // above the list, not over it
+        if (line.lines > 1) expect(line.lastLineWords).toBeGreaterThan(1)
+        expect(line.page).toBe(true)
+
+        // a screen reader is told what each star does: the description of the star in the accessibility tree (rows with a star: a few fresh words, found by search)
+        const fx = await fixture(page)
+        await search(page, fx.fresh[1])
+        await page.waitForSelector('.word-row-star')
+        const client = await page.createCDPSession()
+        await client.send('Accessibility.enable')
+        const { nodes } = (await client.send('Accessibility.getFullAXTree')) as { nodes: { ignored?: boolean; role?: { value: string }; name?: { value: string }; description?: { value: string } }[] }
+        await client.detach()
+        const stars = nodes.filter((n) => !n.ignored && n.role?.value === 'button' && /sooner|раньше/.test(n.name?.value ?? ''))
+        expect(stars.length).toBeGreaterThan(0)
+        for (const star of stars) expect(star.description?.value, star.name?.value).toBe(description)
+
+        await page.evaluate(() => (document.querySelector('.word-row-star') as HTMLElement).click())
+        await page.waitForFunction(() => document.querySelector('.word-row-star')?.getAttribute('aria-pressed') === 'true')
+        expect(await page.$('.words-star-hint')).toBeNull() // one star: understood
+        await page.evaluate(() => (document.querySelector('.word-row-star.is-on') as HTMLElement).click()) // and taken off again
+        await page.waitForFunction(() => document.querySelector('.word-row-star.is-on') === null)
+        expect(await page.$('.words-star-hint')).not.toBeNull() // nothing starred again: the line comes back
+        await page.close()
+      }, 60_000)
+    }
+
     for (const [language, query, label] of [
       ['English', '?lang=en', (w: string) => `Learn ${w} sooner`],
       ['Russian', '?lang=ru', (w: string) => `Учить «${w}» раньше`],
@@ -846,6 +897,32 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         expect(button.right).toBeLessThanOrEqual(320)
         expect(button.height).toBeLessThan(60) // one line, not wrapped
         expect(button.page).toBe(true)
+
+        // and says what it does in a line right under it, inside the screen, whole, and not ending on a single word
+        const hint = await page.$eval('#learn-sooner-hint', (e) => {
+          const r = e.getBoundingClientRect()
+          const b = document.querySelector('.detail-actions .btn[aria-pressed]')!.getBoundingClientRect()
+          const words: { w: string; top: number }[] = []
+          const node = e.firstChild!
+          const re = /\S+/g
+          let m: RegExpExecArray | null
+          while ((m = re.exec(node.textContent ?? ''))) {
+            const range = document.createRange()
+            range.setStart(node, m.index)
+            range.setEnd(node, m.index + m[0].length)
+            words.push({ w: m[0], top: Math.round(range.getClientRects()[0].top) })
+          }
+          const lastLine = words.filter((x) => x.top === words[words.length - 1].top)
+          return { text: e.textContent, left: r.left, right: r.right, gap: r.top - b.bottom, clipped: e.scrollWidth > e.clientWidth, lines: new Set(words.map((x) => x.top)).size, lastLineWords: lastLine.length }
+        })
+        expect(hint.text).toBe(language === 'English' ? 'The word goes into Learn ahead of the others.' : 'Слово попадет в Learn раньше остальных.')
+        expect(hint.left).toBeGreaterThanOrEqual(0)
+        expect(hint.right).toBeLessThanOrEqual(320)
+        expect(hint.clipped).toBe(false)
+        expect(hint.gap).toBeGreaterThanOrEqual(0)
+        expect(hint.gap).toBeLessThan(12) // against the button, not floating between it and what follows
+        if (hint.lines > 1) expect(hint.lastLineWords).toBeGreaterThan(1)
+        expect(await page.$eval('.detail-actions .btn[aria-pressed]', (e) => e.getAttribute('aria-describedby'))).toBe('learn-sooner-hint')
         await page.close()
       }, 60_000)
     }

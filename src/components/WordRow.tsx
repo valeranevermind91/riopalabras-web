@@ -8,6 +8,9 @@ import { strings } from '../strings'
 
 const t = strings.words
 
+/** The element every row's star points at for its description (the Words screen renders it once): the rows have no room for words, so what the star does is said there. */
+export const LEARN_SOONER_HINT_ID = 'learn-sooner-hint-list'
+
 /** The row height in px. The windowed list lays rows out by multiplying with it, so every row is exactly this tall. */
 export const WORD_ROW_HEIGHT = 72
 
@@ -76,6 +79,7 @@ export function WordRow({ row, settings, onOpen, onToggleFavourite, onBringBack 
             className={word.isFavorite ? 'word-row-star is-on' : 'word-row-star'}
             aria-pressed={word.isFavorite}
             aria-label={t.learnSoonerRow(head)}
+            aria-describedby={LEARN_SOONER_HINT_ID}
             onClick={() => onToggleFavourite(word.esWord, !word.isFavorite)}
           >
             <StarIcon filled={word.isFavorite} />

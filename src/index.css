@@ -48,6 +48,7 @@ h3,
 .learn-undo span,
 .wc-shift,
 .cz-sentence,
+.cz-lemma,
 .cz-feedback {
   text-wrap: balance;
 }
@@ -1494,6 +1495,17 @@ mark {
   letter-spacing: 2px;
 }
 
+/* The note that takes the hint's slot once the answer is shown: plain text, not the hint's spaced-out letters. */
+.cz-lemma {
+  height: auto;
+  min-height: 24px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 24px;
+}
+
 .cz-feedback {
   min-height: 48px;
   margin: 0;
@@ -2205,6 +2217,14 @@ mark {
 /* What the last action says under the buttons ("Saved." after an edit). Quiet, like the state note. */
 .detail-actions .detail-note {
   margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* What a button above it does, in one line, tucked up against it (the grid's gap is for separate things). */
+.detail-actions .detail-hint {
+  margin: -6px 0 0;
   color: var(--text-2);
   font-size: 14px;
   line-height: 1.5;

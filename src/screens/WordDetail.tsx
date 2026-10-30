@@ -158,9 +158,20 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
 
       <div className="detail-actions">
         {starrable && (
-          <button type="button" className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'} aria-pressed={word.isFavorite} onClick={toggleFavourite}>
-            <StarIcon filled={word.isFavorite} /> {t.learnSooner}
-          </button>
+          <>
+            <button
+              type="button"
+              className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'}
+              aria-pressed={word.isFavorite}
+              aria-describedby="learn-sooner-hint"
+              onClick={toggleFavourite}
+            >
+              <StarIcon filled={word.isFavorite} /> {t.learnSooner}
+            </button>
+            <p id="learn-sooner-hint" className="detail-hint">
+              {t.learnSoonerHint}
+            </p>
+          </>
         )}
         {said && said.esWord === word.esWord && (
           <p className="detail-note" role="status">

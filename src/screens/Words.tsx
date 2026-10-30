@@ -3,12 +3,13 @@ import { ScreenHeader } from '../components/ScreenHeader'
 import { WordForm, type SubmitResult } from '../components/WordForm'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { VirtualList } from '../components/VirtualList'
-import { WORD_ROW_HEIGHT, WordRow } from '../components/WordRow'
+import { LEARN_SOONER_HINT_ID, WORD_ROW_HEIGHT, WordRow } from '../components/WordRow'
 import { FiltersSheet, SortSheet } from '../components/WordsSheets'
 import { blankValues } from '../data/customWords'
 import type { UserData } from '../data/useUserData'
 import { addCustomWord } from '../data/customWords'
 import { noEnrichment, type EnrichResult } from '../data/enrich'
+import { canStar } from '../data/starred'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
 import { wordStatus } from '../data/wordState'
 import type { WriteQueue } from '../data/writeQueue'
@@ -107,6 +108,9 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const emptyBecauseFiltered = list.rows.length === 0 && (list.searching || anyFilter)
   const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'started' ? t.emptyStarted : t.emptyAll
   const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.stage}|${view.filters.due}|${view.filters.favourites}|${view.filters.custom}|${view.filters.pos}`
+  // The line about the star, only until a word has one: a person who has starred a word has understood it. Not while the stars could not be read (nothing starred
+  // would then be a guess), and only over a list that has a star on it to point at.
+  const showStarHint = !data.words.some((w) => w.isFavorite) && !data.degraded.includes('user_favorites') && list.rows.some((r) => canStar(r.word))
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 
@@ -202,6 +206,13 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         </p>
       )}
       {list.searching && <p className="words-note">{t.count(list.rows.length)}</p>}
+      {showStarHint && (
+        <p className="words-note words-star-hint">{t.learnSoonerListHint}</p>
+      )}
+      {/* What every row's star does, for the screen reader: the rows have no room for words. */}
+      <span id={LEARN_SOONER_HINT_ID} hidden>
+        {t.learnSoonerHint}
+      </span>
 
       {emptyText ? (
         <div className="words-empty">

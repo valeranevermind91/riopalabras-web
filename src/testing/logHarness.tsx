@@ -67,6 +67,7 @@ const LEARNED = Number(params.get('learned') ?? 12)
 const FRESH = Number(params.get('fresh') ?? 12)
 const INTERVAL = Number(params.get('interval') ?? 3)
 const REPS = Number(params.get('reps') ?? 2)
+const INFLECTED = params.get('inflected') === '1'
 const pad = (n: number) => String(n).padStart(2, '0')
 const WORDS: readonly Word[] = [
   // learned and due, with an example the Cloze can blank and a translation each: Review, Matching and Cloze all use these
@@ -78,8 +79,9 @@ const WORDS: readonly Word[] = [
       nextReview: new Date(Date.now() - DAY - i * 3_600_000),
       enTranslation: `old${i + 1}`,
       ruTranslation: `старое${'абвгдежзиклмнопр'[i % 16]}${i + 1}`,
-      exampleSentence: `Esta es la vieja${pad(i + 1)} del día.`,
-      wordFormInExample: `vieja${pad(i + 1)}`,
+      // inflected=1: the example shows the plural (vieja01s), a form of the word, so Cloze can say which word it comes from
+      exampleSentence: `Esta es la vieja${pad(i + 1)}${INFLECTED ? 's' : ''} del día.`,
+      wordFormInExample: `vieja${pad(i + 1)}${INFLECTED ? 's' : ''}`,
     }),
   ),
   // new words for Learn

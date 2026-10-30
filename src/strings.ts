@@ -121,9 +121,13 @@ export const en = {
     // the detail screen's State line: the word's kind (a due word keeps its stage; "due now" is a note under Next review)
     kindName: { hidden: 'Hidden', reference: 'Reference only', new: 'New', learning: 'Learning', wellLearned: 'Well learned' } as Record<string, string>,
     // The star on a list row has no visible text (the translation needs the room); this is its accessible name, the same whether it is pressed or not.
+    // Above the list, while no word is starred yet: the same idea with the star it is about (the list's rows have no room for words).
+    learnSoonerListHint: 'Tap the star on a word: it goes into Learn ahead of the others.',
     learnSoonerRow: (word: string) => `Learn ${word} sooner`,
     // The same words on the detail screen's button, pressed or not: the button only looks active, it never claims something happened.
     learnSooner: 'Learn sooner',
+    // The line next to that button, and the description the list's stars point at: what it does (the name alone does not say Learn has an order). Said no more exactly than it holds whatever the queue does: starred words lead a batch, up to a share of it, oldest first (starred.ts).
+    learnSoonerHint: 'The word goes into Learn ahead of the others.',
     // the user's own words: add (the "+" in the header), edit and delete from the detail
     custom: 'Custom',
     addWord: 'Add a word',
@@ -581,6 +585,8 @@ export const en = {
     accentNudge: (form: string) => `Mind the accent: ${form}`,
     wrong: (form: string) => `Not quite — the word was: ${form}`,
     gaveUp: (form: string) => `The word was: ${form}`,
+    // under the answer, when it was given up or wrong: which dictionary word the form is of (and nothing about person or tense, which our data does not hold)
+    lemmaNote: (form: string, lemma: string) => `${form} — from ${lemma}`,
     sessionComplete: 'Session complete',
     score: (n: number, m: number) => `${n} of ${m} correct`,
     newSession: 'New session',

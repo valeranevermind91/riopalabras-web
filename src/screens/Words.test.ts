@@ -8,6 +8,7 @@ import { parseSettings } from '../data/settings'
 import type { Word } from '../data/types'
 import { NO_FILTERS, type ListView } from '../data/wordList'
 import { createWriteQueue } from '../data/writeQueue'
+import { setLanguage } from '../lib/language'
 import { makeWord } from '../testing/makeWord'
 import { FiltersSheet, SortSheet } from '../components/WordsSheets'
 import { WordDetail } from './WordDetail'
@@ -19,7 +20,7 @@ const word = (esWord: string) => real.find((w) => w.esWord === esWord)!
 const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
 const noop = () => {}
 
-const dataFor = (words: readonly Word[], settings = parseSettings({})) => ({ words, settings, applyFavorite: noop, applyHidden: noop }) as never
+const dataFor = (words: readonly Word[], settings = parseSettings({}), degraded: string[] = []) => ({ words, settings, degraded, applyFavorite: noop, applyHidden: noop }) as never
 
 // Five ordinary words (nouns, verbs, adjectives) with progress: the first just seen (learning, interval 0), the third due, the rest well learned (interval 30).
 const ordinary = real.filter((w) => ['n', 'v', 'adj'].includes(w.pos)).slice(0, 5)
@@ -31,8 +32,8 @@ const learnedSome = (): Word[] => {
   ]
 }
 
-const render = (words: readonly Word[], savedView: ListView | null = null, settings = parseSettings({})) =>
-  renderToStaticMarkup(createElement(WordsScreen, { data: dataFor(words, settings), queue, savedView, onViewChange: noop, onOpen: noop }))
+const render = (words: readonly Word[], savedView: ListView | null = null, settings = parseSettings({}), degraded: string[] = []) =>
+  renderToStaticMarkup(createElement(WordsScreen, { data: dataFor(words, settings, degraded), queue, savedView, onViewChange: noop, onOpen: noop }))
 const view = (over: Partial<ListView> = {}): ListView => ({ segment: 'all', sort: 'frequency', seed: 1, filters: NO_FILTERS, query: '', scrollTop: 0, ...over })
 
 describe('the Words screen', () => {
@@ -123,6 +124,44 @@ describe('the Words screen', () => {
     expect(html.match(/class="word-row"/g)).toHaveLength(1)
   })
 
+  describe('the line above the list about the star: only until a word has one', () => {
+    const LINE = '<p class="words-note words-star-hint">Tap the star on a word: it goes into Learn ahead of the others.</p>'
+    const plain = [makeWord('uno', { rank: 1 }), makeWord('tres', { rank: 3 })]
+
+    it('nothing starred yet and a star to point at: the line is there, above the list', () => {
+      const html = render(plain, view({ segment: 'all' }))
+      expect(html).toContain(LINE)
+      expect(html.indexOf(LINE)).toBeLessThan(html.indexOf('word-row-star'))
+      expect(html.indexOf('words-controls')).toBeLessThan(html.indexOf(LINE))
+    })
+
+    it('once a word is starred it is gone, in every segment and filter', () => {
+      const starred = [...plain, makeWord('dos', { rank: 2, isFavorite: true, starredAt: 5 })]
+      for (const v of [view({ segment: 'all' }), view({ segment: 'started' }), view({ segment: 'hidden' }), view({ filters: { ...NO_FILTERS, favourites: true } })]) expect(render(starred, v)).not.toContain('words-star-hint')
+    })
+
+    it('not while the stars could not be read: nothing starred would be a guess', () => {
+      expect(render(plain, view({ segment: 'all' }), parseSettings({}), ['user_favorites'])).not.toContain('words-star-hint')
+      expect(render(plain, view({ segment: 'all' }), parseSettings({}), ['user_hidden_words'])).toContain(LINE) // another table failing does not matter
+    })
+
+    it('not over a list with no star on it: learned words only, the hidden list, an empty list', () => {
+      const learned = [makeWord('cuatro', { rank: 4, repetitions: 3, nextReview: new Date(Date.now() + 5 * day) })]
+      expect(render(learned, view({ segment: 'all' }))).not.toContain('words-star-hint')
+      expect(render([...plain, makeWord('seis', { rank: 6, isHidden: true })], view({ segment: 'hidden' }))).not.toContain('words-star-hint')
+      expect(render(plain, view({ query: 'zzzzz' }))).not.toContain('words-star-hint')
+    })
+
+    it('in Russian', () => {
+      setLanguage('ru')
+      try {
+        expect(render(plain, view({ segment: 'all' }))).toContain('<p class="words-note words-star-hint">Нажмите звездочку у слова — оно попадет в Learn раньше остальных.</p>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+  })
+
   describe('the star on the row: "Learn sooner"', () => {
     const fresh = [makeWord('uno', { rank: 1 }), makeWord('dos', { rank: 2, isFavorite: true, starredAt: 5 }), makeWord('tres', { rank: 3 })]
     const learnedWord = makeWord('cuatro', { rank: 4, repetitions: 3, nextReview: new Date(Date.now() + 5 * day) })
@@ -152,6 +191,13 @@ describe('the Words screen', () => {
       for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain(`class="word-row-star" aria-pressed="false" aria-label="Learn ${name} sooner"`)
       expect(html).not.toContain('word-row-queue')
       expect(html).not.toMatch(/Queue|Queued|Saved|Save /)
+    })
+
+    it('every star points at one description of what it does, in the screen: hidden, so only a screen reader reads it', () => {
+      const html = render(all, view({ segment: 'all' }))
+      expect(html.match(/aria-describedby="learn-sooner-hint-list"/g)).toHaveLength(3) // one on each star
+      expect(html.match(/id="learn-sooner-hint-list"/g)).toHaveLength(1) // and the one description they share
+      expect(html).toContain('<span id="learn-sooner-hint-list" hidden="">The word goes into Learn ahead of the others.</span>')
     })
 
     it('the row and the "Learn sooner" filter agree: the filter lists exactly the rows with a pressed star', () => {
@@ -433,6 +479,28 @@ describe('the word detail', () => {
         expect(html).not.toContain('Learn sooner')
         expect(html).not.toContain('aria-pressed')
       }
+    })
+
+    it('a line next to the button says what it does, pressed or not, and the button points at it', () => {
+      for (const word of [base, { ...base, isFavorite: true, starredAt: 3 }]) {
+        const html = detail(word)
+        expect(html).toContain('<p id="learn-sooner-hint" class="detail-hint">The word goes into Learn ahead of the others.</p>')
+        expect(button(html)).toContain('aria-describedby="learn-sooner-hint"')
+        expect(html).toContain(`${button(html)}<p id="learn-sooner-hint"`) // right under the button, not elsewhere on the page
+      }
+    })
+
+    it('in Russian the line is Russian', () => {
+      setLanguage('ru')
+      try {
+        expect(detail(base)).toContain('<p id="learn-sooner-hint" class="detail-hint">Слово попадет в Learn раньше остальных.</p>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+
+    it('where there is no button there is no line', () => {
+      expect(detail({ ...base, repetitions: 4, interval: 30, nextReview: new Date(NOWISH + 30 * day) })).not.toContain('learn-sooner-hint')
     })
 
     it('there is no queue on the detail any more: no place in line, no "beyond today\'s batch"', () => {
