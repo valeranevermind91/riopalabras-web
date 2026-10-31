@@ -23,7 +23,7 @@ describe('fonts', () => {
   it('Manrope is the default face; Fraunces is set only on Spanish words', () => {
     expect(rule('body')).toMatch(/font-family: var\(--font-ui\)/)
     const selectors = [...css.matchAll(/([^{}]+)\{[^}]*font-family: var\(--font-display\)[^}]*\}/g)].map((m) => m[1].trim().replace(/\s+/g, ' '))
-    expect(selectors.sort()).toEqual(['.brand', '.cz-input', '.cz-result-word', '.intro-es', '.match-tile.is-es', '.place-chip', '.tile-sub', '.wc-headword', '.wotd-word', '.word-row-alt', '.word-row-head'].sort())
+    expect(selectors.sort()).toEqual(['.brand', '.cz-input', '.cz-result-word', '.intro-es', '.match-tile.is-es', '.mode-sub', '.place-chip', '.tile-sub', '.wc-headword', '.wotd-word', '.word-row-alt', '.word-row-head'].sort())
   })
 
   it('Cyrillic is covered by the UI face (Manrope has it), so the Russian UI of the future needs no change', () => {
@@ -39,6 +39,9 @@ describe('the type scale', () => {
     ['.tile-label', ['font-size: 16px', 'font-weight: 700']],
     ['.tile-sub', ['font-size: 12.5px', 'font-style: italic']],
     ['.tile-count', ['font-size: 19px', 'font-weight: 800']],
+    ['.mode-label', ['font-size: 15px', 'font-weight: 700']],
+    ['.mode-sub', ['font-size: 12.5px', 'font-style: italic']],
+    ['.home-progress', ['font-size: 13px', 'font-weight: 600']],
     ['.pill', ['font-size: 10px', 'font-weight: 700', 'letter-spacing: 0.9px', 'text-transform: uppercase']],
     ['.wotd-sentence', ['font-size: 16px', 'line-height: 1.55']],
     ['.wotd-translation', ['font-size: 14px']],
@@ -63,6 +66,8 @@ describe('shapes', () => {
     ['.cz-card', 'var(--radius-card)'],
     ['.word-card', 'var(--radius-card-lg)'],
     ['.tile', 'var(--radius-tile)'],
+    ['.mode', 'var(--radius-tile)'],
+    ['.home-panel', 'var(--radius-card)'],
     ['.btn', 'var(--radius-button)'],
     ['.rate-btn', 'var(--radius-button)'],
     ['.wc-note', 'var(--radius-small)'],
@@ -82,7 +87,7 @@ describe('wrapping and focus (the polish pass)', () => {
   it('paragraphs avoid a lone last word (pretty), and short blocks are balanced: titles, advice, tile reasons, labels, hints and notes', () => {
     expect(rule('body')).toMatch(/text-wrap: pretty/)
     const balanced = css.match(/([^{}]+)\{\s*text-wrap: balance;\s*\}/)![1].split('*/').pop()!.split(',').map((s) => s.trim())
-    for (const selector of ['h1', 'h2', 'h3', '.subtitle', '.home-advice', '.tile-text', '.setting-label', '.setting-hint', '.words-note', '.post-batch-why', '.intro-note', '.intro-text', '.intro-line', '.wc-translation', '.wc-row-text', '.learn-undo span', '.wc-shift', '.cz-sentence', '.cz-feedback', '.match-hint', '.cz-instruction']) expect(balanced, selector).toContain(selector)
+    for (const selector of ['h1', 'h2', 'h3', '.subtitle', '.home-advice', '.tile-text', '.mode', '.setting-label', '.setting-hint', '.words-note', '.post-batch-why', '.intro-note', '.intro-text', '.intro-line', '.wc-translation', '.wc-row-text', '.learn-undo span', '.wc-shift', '.cz-sentence', '.cz-feedback', '.match-hint', '.cz-instruction']) expect(balanced, selector).toContain(selector)
   })
 
   it('the intro list puts the name above its line, so a long name no longer squeezes the text into a narrow column', () => {

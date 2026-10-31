@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'home-practice',
+    at: '2026-10-30T22:58',
+    en: {
+      title: 'Matching and Cloze are under Practice',
+      text: 'On Home, Matching and Cloze now open from one Practice button: tap it and they appear in a panel under the buttons. Below the buttons there is also a line with the new words you have learned today and your daily goal.',
+    },
+    ru: {
+      title: 'Matching и Cloze теперь в Practice',
+      text: 'На главном экране Matching и Cloze теперь открываются с одной кнопки Practice: нажмите на нее, и они появятся в панели под кнопками. Под кнопками также есть строка: сколько новых слов вы выучили сегодня и какая у вас дневная цель.',
+    },
+  },
+  {
     id: 'cloze-verb-forms',
     at: '2026-10-30T18:09',
     en: {

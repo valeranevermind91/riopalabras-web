@@ -56,9 +56,13 @@ export const ru: Strings = {
     wotdPill: 'palabra del día',
     wotdTitle: 'Слово дня',
     seeCard: 'Открыть карточку →',
+    progress: (done, goal) => `Новых слов сегодня: ${done} из ${goal}`,
+    progressReached: (done, goal) => `Дневная цель выполнена: ${done} из ${goal}`,
+    practicePanel: 'Упражнения для практики',
     tiles: {
       learn: { label: 'Learn', es: 'aprender' },
       review: { label: 'Review', es: 'repasar' },
+      practice: { label: 'Practice', es: 'practicar' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
     },

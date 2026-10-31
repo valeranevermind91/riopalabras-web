@@ -44,13 +44,13 @@ const home = (list: Word[], raw: Record<string, unknown> = {}) =>
     }),
   )
 
-describe('Home: the two practice buttons', () => {
-  it('are disabled with "At least 5 words" below 5 eligible words, in English whatever the translation language', () => {
+describe('Home: the two practice buttons (in the panel the Practice tile opens)', () => {
+  it('are disabled with "At least 5 words" below 5 eligible words, in English whatever the translation language: the Practice tile says it too, since neither can run', () => {
     const en = home(words(4), { show_ru_translation: false, show_en_translation: true })
-    expect(en.match(/At least 5 words/g)).toHaveLength(2)
+    expect(en.match(/At least 5 words/g)).toHaveLength(3) // the Practice tile, and Matching and Cloze in its panel
     expect(en).not.toContain('Practice Matching')
     const ru = home(words(4)) // Russian translations are the default: the buttons are still English
-    expect(ru.match(/At least 5 words/g)).toHaveLength(2)
+    expect(ru.match(/At least 5 words/g)).toHaveLength(3)
     expect(ru).not.toMatch(/[А-Яа-яЁё]/)
     const needs = en.split('<button').filter((b) => b.includes('At least 5 words'))
     expect(needs.every((b) => b.includes('disabled'))).toBe(true)
@@ -58,12 +58,12 @@ describe('Home: the two practice buttons', () => {
 
   it('are enabled and named once 5 words qualify, in English with either translation language', () => {
     const en = home(words(6), { show_ru_translation: false, show_en_translation: true })
-    expect(en).toContain('tile-label">Matching<')
-    expect(en).toContain('tile-label">Cloze<')
+    expect(en).toContain('mode-label">Matching<')
+    expect(en).toContain('mode-label">Cloze<')
     expect(en).not.toContain('At least 5 words')
     const ru = home(words(6)) // default settings: Russian translations
-    expect(ru).toContain('tile-label">Matching<')
-    expect(ru).toContain('tile-label">Cloze<')
+    expect(ru).toContain('mode-label">Matching<')
+    expect(ru).toContain('mode-label">Cloze<')
     expect(ru).not.toMatch(/[А-Яа-яЁё]/) // no Russian chrome anywhere on Home
   })
 
@@ -79,9 +79,9 @@ describe('Home: the two practice buttons', () => {
     expect(tileOf(html2, 'cloze')).toContain('disabled')
   })
 
-  it('sit below Learn and Review, in the grid order', () => {
+  it('come after Learn, Review and the Practice tile that opens them, in that order', () => {
     const html = home(words(6), { show_ru_translation: false, show_en_translation: true })
-    expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'matching', 'cloze'])
+    expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'practice', 'matching', 'cloze'])
   })
 })
 

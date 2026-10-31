@@ -58,15 +58,15 @@ describe('the primary tile follows the state', () => {
     for (const quiet of ['allDoneToday', 'poolEmpty', 'allClear'] as const) expect(primaryTile(quiet)).toBeNull()
   })
 
-  it('is never Cloze, and Matching only at the end of the day (below): practice is not advice for any other state', () => {
+  it('is never Matching or Cloze (they are in the Practice tile\'s panel), and Practice only at the end of the day (below): practice is not advice for any other state', () => {
     for (const state of ['reviewFirst', 'learnNew', 'allDoneToday', 'poolEmpty', 'allClear'] as const) {
       expect(['review', 'learn', null]).toContain(primaryTile(state)) // the usual call: never a practice tile
-      expect(['review', 'learn', 'matching', null]).toContain(primaryTile(state, true))
+      expect(['review', 'learn', 'practice', null]).toContain(primaryTile(state, true))
     }
   })
 
-  it('at the end of the day, with practice to do on today\'s words, Matching is the one primary tile, and only then', () => {
-    expect(primaryTile('allDoneToday', true)).toBe('matching')
+  it('at the end of the day, with practice to do on today\'s words, Practice is the one primary tile (where Matching was), and only then', () => {
+    expect(primaryTile('allDoneToday', true)).toBe('practice')
     expect(primaryTile('allDoneToday', false)).toBeNull() // nothing to practise on: the state stays quiet
     expect(primaryTile('allDoneToday')).toBeNull()
     // practice never outranks what is due or what can still be learned, and the other quiet states stay quiet

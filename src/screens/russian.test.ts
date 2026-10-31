@@ -45,7 +45,7 @@ const learned = (n: number): Word[] =>
 const unlearned = (n: number) => Array.from({ length: n }, (_, i) => makeWord(`nueva${i}`, { rank: 100 + i, ruTranslation: `новое${i}`, enTranslation: `new${i}` }))
 
 /** The English words that may stay: screen names, and the Spanish of the content and examples. */
-const KEEP = new Set(['Learn', 'Review', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'boom', 'palabra', 'nueva', 'nuevo', 'para', 'Esta', 'del', 'día', 'aprender', 'repasar', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes'])
+const KEEP = new Set(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'boom', 'palabra', 'nueva', 'nuevo', 'para', 'Esta', 'del', 'día', 'aprender', 'repasar', 'practicar', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes'])
 
 /** What a person reads or hears on a screen: its text, plus the labels that are not text (aria-label, placeholder, title). */
 function visible(html: string): string[] {

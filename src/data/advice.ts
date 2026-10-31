@@ -8,7 +8,7 @@
  *   5. learnNew      nothing due, new words are waiting and the allowance has room.
  * "Pool empty" and "allowance spent" are told apart on purpose, so the two raw numbers are passed, never min(pool, remaining). Unlike the Flutter
  * app, no state ever offers reviews when none are due. Matching and Cloze are practice and are not part of this, with one exception: once today's allowance is spent
- * (allDoneToday) and today's words can be practised, the practice is the one thing left to do, so its tile is the one drawn as primary (see primaryTile).
+ * (allDoneToday) and today's words can be practised, the practice is the one thing left to do, so the Practice tile (which opens Matching and Cloze) is the one drawn as primary (see primaryTile).
  */
 export type HomeAdvice = 'reviewFirst' | 'learnNew' | 'allDoneToday' | 'poolEmpty' | 'allClear'
 
@@ -21,12 +21,12 @@ export function homeAdvice({ reviewDue, learnPool, remainingToday }: { reviewDue
 }
 
 /**
- * The tile the advice points at, drawn as the primary (filled) one; the other states point at none. The one tile that is ever primary besides Review and Learn is Matching,
+ * The tile the advice points at, drawn as the primary (filled) one; the other states point at none. The one tile that is ever primary besides Review and Learn is Practice,
  * and only at the end of the day (`practiceNow`: today's new words are done, and there is practice to do on them): never a review that is not due, never Learn past the goal.
  */
-export function primaryTile(advice: HomeAdvice, practiceNow = false): 'review' | 'learn' | 'matching' | null {
+export function primaryTile(advice: HomeAdvice, practiceNow = false): 'review' | 'learn' | 'practice' | null {
   if (advice === 'reviewFirst') return 'review'
   if (advice === 'learnNew') return 'learn'
-  if (advice === 'allDoneToday' && practiceNow) return 'matching'
+  if (advice === 'allDoneToday' && practiceNow) return 'practice'
   return null
 }

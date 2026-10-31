@@ -60,7 +60,7 @@ describe('the two maps', () => {
   })
 
   it('a Russian string is Russian: no English words are left in the interface, except the names of the app\'s own screens and Spanish examples', () => {
-    const allowed = new Set(['Learn', 'Review', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'Debug', 'English', 'Telegram', 'Start' /* the name of Telegram's own button: the unreachable-reminder line tells the user to press it */, 'Supabase', 'Vercel', 'Railway', 'Gemini', 'Google', 'Fonts' /* names of the services the privacy page lists, and of the dictionary the About screen cites (DAMER): proper nouns, never translated */, 'DAMER', 'FreeLing' /* the tagger the source repository credits, named in About > Sources */, 'calabacín', 'zapallito', 'agarrar', 'coger' /* the Rioplatense form's hint: the standard word and its everyday Rioplatense one */, 'palabra', 'del', 'día', 'aprender', 'repasar', 'parejas', 'completar', 'calle', 'yo', 'vos', 'tenés', 'tú', 'tienes'])
+    const allowed = new Set(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'Debug', 'English', 'Telegram', 'Start' /* the name of Telegram's own button: the unreachable-reminder line tells the user to press it */, 'Supabase', 'Vercel', 'Railway', 'Gemini', 'Google', 'Fonts' /* names of the services the privacy page lists, and of the dictionary the About screen cites (DAMER): proper nouns, never translated */, 'DAMER', 'FreeLing' /* the tagger the source repository credits, named in About > Sources */, 'calabacín', 'zapallito', 'agarrar', 'coger' /* the Rioplatense form's hint: the standard word and its everyday Rioplatense one */, 'palabra', 'del', 'día', 'aprender', 'repasar', 'practicar', 'parejas', 'completar', 'calle', 'yo', 'vos', 'tenés', 'tú', 'tienes'])
     const leftovers: string[] = []
     const walk = (node: unknown, path: string) => {
       if (typeof node === 'string') {
@@ -141,7 +141,7 @@ describe('strings reads the current language at the moment it is used', () => {
 
   it('the names of the app\'s own screens stay in Latin in Russian', () => {
     setLanguage('ru')
-    expect([strings.home.tiles.learn.label, strings.home.tiles.review.label, strings.home.tiles.matching.label, strings.home.tiles.cloze.label, strings.words.title]).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'Words'])
+    expect([strings.home.tiles.learn.label, strings.home.tiles.review.label, strings.home.tiles.practice.label, strings.home.tiles.matching.label, strings.home.tiles.cloze.label, strings.words.title]).toEqual(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words'])
   })
 
   it('the language names are each in their own language, in both', () => {

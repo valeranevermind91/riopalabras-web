@@ -71,9 +71,9 @@ const tile = (html: string, id: string) => html.match(new RegExp(`<button[^>]*da
 const part = (html: string, id: string, cls: string) => tile(html, id).match(new RegExp(`${cls}">(.*?)</span>`))?.[1]
 
 describe('Home structure', () => {
-  it('header, status row, word of the day, then the action grid', () => {
+  it('header, status row, word of the day, then the action block (the three tiles and the dock)', () => {
     const html = render({ onOpenWord: () => {}, activity: new Set<string>() }, real)
-    const order = ['screen-header', 'home-status', 'class="wotd"', 'class="home-grid"'].map((c) => html.indexOf(c))
+    const order = ['screen-header', 'home-status', 'class="wotd"', 'class="home-actions"'].map((c) => html.indexOf(c))
     expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
@@ -187,7 +187,7 @@ describe('the status row: the week of dots, and the stored streak', () => {
       expect(dotsOf(html)).toEqual([])
       expect(streakOf(html)).toBe('7')
     }
-    expect(render({ activity: null }).match(/class="tile /g)).toHaveLength(4)
+    expect(render({ activity: null }).match(/class="tile /g)).toHaveLength(3)
   })
 
   it('settings not loaded: no status row at all, so no zero where a streak should be', () => {
@@ -219,24 +219,76 @@ describe('the status row: the week of dots, and the stored streak', () => {
 })
 
 describe('the action tiles', () => {
-  it('Learn, Review / Matching, Cloze, each with its label, its Spanish word and the right class', () => {
+  it('Learn, Review, Practice, each with its label, its Spanish word and the right class; Matching and Cloze are in the panel after them', () => {
     const html = render()
-    expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'matching', 'cloze'])
-    expect([part(html, 'learn', 'tile-label'), part(html, 'review', 'tile-label'), part(html, 'matching', 'tile-label'), part(html, 'cloze', 'tile-label')]).toEqual(['Learn', 'Review', 'Matching', 'Cloze'])
-    expect([part(html, 'learn', 'tile-sub'), part(html, 'review', 'tile-sub'), part(html, 'matching', 'tile-sub'), part(html, 'cloze', 'tile-sub')]).toEqual(['aprender', 'repasar', 'parejas', 'completar'])
-    for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id)).toMatch(new RegExp(`class="tile tile-${id}( is-primary)?"`))
-    for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id)).toMatch(/<svg class="tile-icon"[^>]*aria-hidden="true"/)
+    expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'practice', 'matching', 'cloze'])
+    expect(html.match(/class="tile /g)).toHaveLength(3) // three tiles: the row above the dock
+    expect([part(html, 'learn', 'tile-label'), part(html, 'review', 'tile-label'), part(html, 'practice', 'tile-label')]).toEqual(['Learn', 'Review', 'Practice'])
+    expect([part(html, 'learn', 'tile-sub'), part(html, 'review', 'tile-sub'), part(html, 'practice', 'tile-sub')]).toEqual(['aprender', 'repasar', 'practicar'])
+    expect([part(html, 'matching', 'mode-label'), part(html, 'cloze', 'mode-label')]).toEqual(['Matching', 'Cloze'])
+    expect([part(html, 'matching', 'mode-sub'), part(html, 'cloze', 'mode-sub')]).toEqual(['parejas', 'completar'])
+    for (const id of ['learn', 'review', 'practice']) expect(tile(html, id)).toMatch(new RegExp(`class="tile tile-${id}( is-primary)?"`))
+    for (const id of ['matching', 'cloze']) expect(tile(html, id)).toMatch(new RegExp(`class="mode mode-${id}"`))
+    for (const id of ['learn', 'review', 'practice']) expect(tile(html, id)).toMatch(/<svg class="tile-icon"[^>]*aria-hidden="true"/)
   })
 
-  it('Learn and Review show their counts; the practice tiles never do', () => {
+  it('Learn and Review show their counts; Practice and the exercises in its panel never do', () => {
     const html = render()
     expect(part(html, 'learn', 'tile-count')).toBe('10') // the daily limit, with a bigger pool behind it
     expect(part(html, 'review', 'tile-count')).toBe('3')
-    expect(tile(html, 'matching')).not.toContain('tile-count')
-    expect(tile(html, 'cloze')).not.toContain('tile-count')
+    for (const id of ['practice', 'matching', 'cloze']) expect(tile(html, id)).not.toContain('tile-count')
     const more = render({}, [...learnedWords(8, 8), ...unlearned(4)])
     expect(part(more, 'learn', 'tile-count')).toBe('4')
     expect(part(more, 'review', 'tile-count')).toBe('8')
+  })
+
+  describe('the Practice tile and its panel', () => {
+    const panel = (html: string) => html.match(/<div[^>]*class="home-panel"[^>]*>/)![0]
+    const attr = (el: string, name: string) => el.match(new RegExp(` ${name}="([^"]*)"`))?.[1]
+
+    it('opens a group of Matching and Cloze: the tile says whether it is expanded and names the panel, the panel is a labelled group, closed to begin with', () => {
+      const html = render()
+      expect(attr(tile(html, 'practice'), 'aria-expanded')).toBe('false')
+      expect(attr(tile(html, 'practice'), 'aria-controls')).toBe(attr(panel(html), 'id'))
+      expect(attr(panel(html), 'role')).toBe('group')
+      expect(attr(panel(html), 'aria-label')).toBe('Practice exercises')
+      expect(panel(html)).toContain('hidden=""') // not shown, not focusable, until the tile is pressed
+      expect(html.match(/class="mode /g)).toHaveLength(2) // Matching and Cloze: two of the three slots (the grid has room for a third)
+    })
+
+    it('is not marked open while the panel is closed (the open state is tested in a browser: homePanel.browser.test.ts)', () => {
+      expect(render()).not.toContain('is-open')
+      expect(readFileSync('src/screens/Home.tsx', 'utf8')).toMatch(/tile\.id === 'practice' && open \? ' is-open'/)
+    })
+
+    it('is available while either exercise can run, and says so in no state of its own: it is enabled, with its Spanish word', () => {
+      const html = render() // both can run
+      expect(tile(html, 'practice')).not.toContain('disabled')
+      expect(part(html, 'practice', 'tile-sub')).toBe('practicar')
+      const sameGloss = learnedWords(6).map((w) => ({ ...w, ruTranslation: 'одно и то же' })) // Matching cannot, Cloze can
+      expect(tile(render({}, sameGloss), 'practice')).not.toContain('disabled')
+      const noBlank = learnedWords(6).map((w) => ({ ...w, exampleSentence: 'Una frase sin la palabra buscada.' })) // Cloze cannot, Matching can
+      expect(tile(render({}, noBlank), 'practice')).not.toContain('disabled')
+    })
+
+    it('is disabled only when neither can run, and then says why in place of its Spanish word, like the other tiles; the buttons in the panel say the same', () => {
+      const html = render({}, [...learnedWords(4, 4), ...unlearned(5)])
+      expect(tile(html, 'practice')).toContain('disabled=""')
+      expect(part(html, 'practice', 'tile-sub')).toBe('At least 5 words')
+      expect(tile(html, 'practice')).not.toContain('practicar')
+      for (const id of ['matching', 'cloze']) {
+        expect(tile(html, id)).toContain('disabled=""')
+        expect(part(html, id, 'mode-sub')).toBe('At least 5 words')
+        expect(tile(html, id)).not.toContain('parejas')
+        expect(tile(html, id)).not.toContain('completar')
+      }
+    })
+
+    it('has no "all done" state and no badge: nothing records that practice was finished, so it is enabled or disabled and nothing else', () => {
+      const html = render({}, learnedTodayWords(8).concat(unlearned(20)), { new_words_learned_today_count: 10, new_words_learned_today_date: TODAY })
+      expect(tile(html, 'practice')).not.toMatch(/tile-count|badge|is-done/)
+      expect(readFileSync('src/screens/Home.tsx', 'utf8')).not.toMatch(/is-done|badge/)
+    })
   })
 
   describe('disabled tiles say why, in place of the Spanish word, with no count', () => {
@@ -264,17 +316,7 @@ describe('the action tiles', () => {
       expect(tile(html, 'review')).not.toContain('tile-count')
     })
 
-    it('At least 5 words, on each practice tile', () => {
-      const html = render({}, [...learnedWords(4, 4), ...unlearned(5)])
-      for (const id of ['matching', 'cloze']) {
-        expect(part(html, id, 'tile-sub')).toBe('At least 5 words')
-        expect(tile(html, id)).toContain('disabled=""')
-        expect(tile(html, id)).not.toContain('parejas')
-        expect(tile(html, id)).not.toContain('completar')
-      }
-    })
-
-    it('Matching and Cloze count their words independently', () => {
+    it('Matching and Cloze (the buttons in the panel) count their words independently', () => {
       const sameGloss = learnedWords(6).map((w) => ({ ...w, ruTranslation: 'одно и то же' }))
       const a = render({}, sameGloss)
       expect(tile(a, 'matching')).toContain('disabled=""') // six words, one gloss: no group
@@ -287,7 +329,7 @@ describe('the action tiles', () => {
 
     it('enabled tiles are not disabled', () => {
       const html = render()
-      for (const id of ['learn', 'review', 'matching', 'cloze']) expect(tile(html, id), id).not.toContain('disabled')
+      for (const id of ['learn', 'review', 'practice', 'matching', 'cloze']) expect(tile(html, id), id).not.toContain('disabled')
     })
   })
 })
@@ -304,11 +346,11 @@ describe('notices', () => {
     const html = render({}, real, {}, ['user_hidden_words'])
     expect(html).toContain('class="notice"')
     expect(html).toContain('hidden words')
-    const [status, notice, card, grid] = ['home-status', 'class="notice"', 'class="wotd"', 'class="home-grid"'].map((c) => html.indexOf(c))
+    const [status, notice, card, grid] = ['home-status', 'class="notice"', 'class="wotd"', 'class="home-actions"'].map((c) => html.indexOf(c))
     expect(status).toBeLessThan(notice)
     expect(notice).toBeLessThan(card)
     expect(card).toBeLessThan(grid)
-    expect(html.match(/class="tile /g)).toHaveLength(4)
+    expect(html.match(/class="tile /g)).toHaveLength(3)
   })
 
   it('the unsaved-progress notice appears once the queue is stuck, in the same place, with its Retry button', async () => {
@@ -319,11 +361,11 @@ describe('notices', () => {
     expect(html.indexOf('class="notice"')).toBeLessThan(html.indexOf('class="wotd"'))
   })
 
-  it('both notices together keep the word card and all four tiles', async () => {
+  it('both notices together keep the word card and all three tiles', async () => {
     const html = render({ queue: await stuckQueue() }, real, {}, ['user_favorites', 'user_hidden_words'])
     expect(html.match(/class="notice"/g)).toHaveLength(2)
     expect(html).toContain('class="wotd"')
-    expect(html.match(/class="tile /g)).toHaveLength(4)
+    expect(html.match(/class="tile /g)).toHaveLength(3)
   })
 
   it('no notices, no notice markup', () => {
@@ -554,7 +596,7 @@ describe('the word of the day card', () => {
     const html = render({}, [...learnedWords(8, 3), ...unlearned(20)])
     expect(html).not.toContain('class="wotd"')
     expect(html).toContain('class="home-spacer"')
-    expect(html.match(/class="tile /g)).toHaveLength(4)
+    expect(html.match(/class="tile /g)).toHaveLength(3)
   })
 
   it('is read-only: it has no write path (no queue, no progress)', () => {
@@ -587,41 +629,79 @@ describe('Home layout rules in the stylesheet', () => {
     expect(block('.wotd')).toMatch(/gap: 14px/)
   })
 
-  it('the tiles are at least 96px tall in a two-column grid with 14px gaps; a label is never split, and the count wraps to its own line instead', () => {
-    expect(block('.home-grid')).toMatch(/grid-template-columns: 1fr 1fr/)
-    expect(block('.home-grid')).toMatch(/gap: 14px/)
-    expect(block('.tile')).toMatch(/min-height: 96px/) // as tall as before, and taller when the count has a line of its own
+  // The 2x2 grid of tiles (96px each, two columns, 14px gaps: 206px) became a row of three tiles and a dock under it. The pins below are the same rules for the new shape:
+  // the block as a whole is no taller than the grid was, which is what keeps Home from growing.
+  it('three equal tiles of at least 104px in a row, a dock of 88px under them with 14px between: together no taller than the 2x2 grid (206px); a label is never split', () => {
+    expect(block('.home-actions')).toMatch(/flex-direction: column/)
+    expect(block('.home-actions')).toMatch(/gap: 14px/)
+    expect(block('.home-tiles')).toMatch(/grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
+    expect(block('.tile')).toMatch(/min-height: 104px/)
+    expect(block('.home-dock')).toMatch(/height: 88px/)
+    expect(104 + 14 + 88).toBeLessThanOrEqual(2 * 96 + 14) // the old grid: two rows of 96 and a gap of 14
     expect(block('.tile')).toMatch(/border-radius: var\(--radius-tile\)/)
     expect(block('.tile')).toMatch(/min-width: 0/)
-    expect(block('.tile')).toMatch(/flex-wrap: wrap/)
+    expect(block('.tile')).toMatch(/flex-direction: column/) // icon and count on top, the text under them: three tiles are too narrow for the old side-by-side
     expect(block('.tile-label')).toMatch(/overflow-wrap: normal/) // never "anywhere": a word is not broken
     expect(block('.tile-label')).toMatch(/hyphens: none/)
     expect(block('.tile-label')).not.toMatch(/overflow-wrap: anywhere|word-break/)
-    expect(block('.tile-text')).toMatch(/min-width: min-content/) // never narrower than its longest word
-    expect(block('.tile-count')).toMatch(/margin-left: auto/)
+    expect(block('.tile-text')).toMatch(/min-width: 0/)
+    expect(block('.tile-top')).toMatch(/justify-content: space-between/) // the count on the right
+    expect(block('.tile')).toMatch(/justify-content: flex-start/) // the text is top-aligned under the icon row: the three labels are level, whatever the reason under them takes
+    expect(block('.tile')).not.toMatch(/justify-content: space-between|align-content: center/)
   })
 
-  it('the tile colours follow the design: Learn and Review soft teal, the advised one filled teal, practice lavender, disabled neutral and muted', () => {
+  it('the progress line is at the top of the dock, its box 11px under the tiles (the dock is 14px under them), and the dock keeps its 88px', () => {
+    expect(block('.home-dock')).toMatch(/align-items: flex-start/)
+    expect(block('.home-dock')).not.toMatch(/align-items: center/)
+    expect(block('.home-dock')).toMatch(/height: 88px/)
+    expect(block('.home-progress')).toMatch(/margin: -3px 0 0/)
+    expect(block('.home-actions')).toMatch(/gap: 14px/)
+  })
+
+  it('the Practice tile has an open state that moves nothing: a 2px ring inside its edge, in its own text colour', () => {
+    expect(block('.tile.is-open')).toMatch(/box-shadow: inset 0 0 0 2px currentColor/)
+    expect(block('.tile.is-open')).not.toMatch(/border-width|padding|margin|width:|height:/) // an inset shadow, not a thicker border, so that the tile does not grow
+  })
+
+  it('the panel covers the dock: the same footprint (absolute, inset 0, over a dock of fixed height), three columns for up to three exercises, and gone when closed', () => {
+    expect(block('.home-dock')).toMatch(/position: relative/)
+    expect(block('.home-panel')).toMatch(/position: absolute/)
+    expect(block('.home-panel')).toMatch(/inset: 0/)
+    expect(block('.home-panel')).toMatch(/grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
+    expect(block('.home-panel')).toMatch(/background: var\(--surface\)/) // opaque: the progress line under it does not show through the empty slot
+    expect(block('.home-panel[hidden]')).toMatch(/display: none/)
+    expect(block('.mode-label')).toMatch(/overflow-wrap: normal/)
+    expect(block('.mode-label')).toMatch(/hyphens: none/)
+  })
+
+  it('the tile colours follow the design: Learn and Review soft teal, the advised one filled teal, Practice (and the exercises in its panel) lavender, disabled neutral and muted', () => {
     expect(css).toMatch(/\.tile-learn,\s*\.tile-review \{[^}]*background: var\(--teal-soft\)[^}]*border-color: var\(--teal-soft-border\)[^}]*color: var\(--teal-on-soft\)/)
     expect(block('.tile.is-primary')).toMatch(/background: var\(--teal\)/)
     expect(block('.tile.is-primary')).toMatch(/color: var\(--teal-ink\)/)
-    expect(css).toMatch(/\.tile-matching,\s*\.tile-cloze \{[^}]*background: var\(--lav-soft\)[^}]*color: var\(--lav-on-soft\)/)
+    expect(block('.tile-practice')).toMatch(/background: var\(--lav-soft\)/)
+    expect(block('.tile-practice')).toMatch(/color: var\(--lav-on-soft\)/)
+    expect(block('.mode')).toMatch(/background: var\(--lav-soft\)/)
+    expect(block('.mode')).toMatch(/color: var\(--lav-on-soft\)/)
     const d = block('.tile:disabled')
     expect(d).toMatch(/background: var\(--surface-2\)/)
     expect(d).toMatch(/color: var\(--muted\)/)
+    expect(block('.mode:disabled')).toMatch(/background: var\(--surface-2\)/)
   })
 
   it('the Spanish word under a tile label is Fraunces italic; a disabled tile\'s reason is plain UI type', () => {
     expect(block('.tile-sub')).toMatch(/font-family: var\(--font-display\)/)
     expect(block('.tile-sub')).toMatch(/font-style: italic/)
     expect(block('.tile:disabled .tile-sub')).toMatch(/font-family: var\(--font-ui\)/)
+    expect(block('.mode-sub')).toMatch(/font-family: var\(--font-display\)/) // the same in the panel
+    expect(block('.mode-sub')).toMatch(/font-style: italic/)
+    expect(block('.mode:disabled .mode-sub')).toMatch(/font-family: var\(--font-ui\)/)
   })
 
   it('amber is the highlight and nothing else on Home: only the word card uses --hl-*', () => {
     const uses = [...css.matchAll(/--hl-(?:bg|text)/g)].length
     expect(uses).toBeGreaterThan(0)
     expect(block('mark')).toMatch(/background: var\(--hl-bg\)/)
-    for (const selector of ['.tile', '.tile.is-primary', '.home-advice', '.home-status']) expect(block(selector)).not.toMatch(/--hl-/)
+    for (const selector of ['.tile', '.tile.is-primary', '.mode', '.home-progress', '.home-advice', '.home-status']) expect(block(selector)).not.toMatch(/--hl-/)
   })
 })
 
@@ -684,10 +764,72 @@ describe('the status row: how far today is from counting for the streak', () => 
   })
 })
 
+describe('the dock: today\'s new words against the daily goal, in one quiet line', () => {
+  const lineOf = (html: string) => html.match(/<p class="(home-progress[^"]*)"[^>]*>([^<]*)<\/p>/)?.slice(1) ?? null
+  const withCount = (count: number | null, raw: Record<string, unknown> = {}) =>
+    render({}, undefined, { ...(count === null ? {} : { new_words_learned_today_count: count, new_words_learned_today_date: TODAY }), ...raw })
+
+  it('says how many new words were learned today of the goal, until the goal is reached', () => {
+    expect(lineOf(withCount(3, { daily_new_word_limit: 5 }))).toEqual(['home-progress', 'New words today: 3 of 5'])
+    expect(lineOf(withCount(0, { daily_new_word_limit: 5 }))).toEqual(['home-progress', 'New words today: 0 of 5'])
+    expect(lineOf(withCount(9))).toEqual(['home-progress', 'New words today: 9 of 10'])
+  })
+
+  it('says the goal is reached once it is, in its own colour; a count past the goal (the goal was lowered) never reads as more than the goal', () => {
+    expect(lineOf(withCount(5, { daily_new_word_limit: 5 }))).toEqual(['home-progress is-reached', 'Daily goal reached: 5 of 5'])
+    expect(lineOf(withCount(12, { daily_new_word_limit: 5 }))).toEqual(['home-progress is-reached', 'Daily goal reached: 5 of 5'])
+  })
+
+  it('counts from the new words learned today (the settings counter, for today\'s date), not from the cards done in any mode, and not from yesterday', () => {
+    expect(lineOf(withCount(null, { cards_done_today_count: 7, cards_done_today_date: TODAY, daily_new_word_limit: 5 }))![1]).toBe('New words today: 0 of 5') // Learn was not opened today: 0, whatever else was done
+    expect(lineOf(render({}, undefined, { new_words_learned_today_count: 4, new_words_learned_today_date: '2026-10-04', daily_new_word_limit: 5 }))![1]).toBe('New words today: 0 of 5')
+  })
+
+  it('the goal is the account\'s: 10 for an account that finished the intro before there was a stored goal, 5 for a new one', () => {
+    expect(lineOf(withCount(3, { daily_new_word_limit: undefined, onboarding_done: true }))![1]).toBe('New words today: 3 of 10')
+    expect(lineOf(withCount(3, { daily_new_word_limit: undefined }))![1]).toBe('New words today: 3 of 5')
+    expect(lineOf(withCount(3, { daily_new_word_limit: 7 }))![1]).toBe('New words today: 3 of 7') // a stored goal wins
+  })
+
+  it('at a goal of 0 there is no line (Learn already says "Daily goal is 0"), and the dock keeps its place', () => {
+    const html = withCount(0, { daily_new_word_limit: 0 })
+    expect(lineOf(html)).toBeNull()
+    expect(html).toContain('class="home-dock"')
+  })
+
+  it('in Russian', () => {
+    setLanguage('ru')
+    try {
+      expect(lineOf(withCount(3, { daily_new_word_limit: 5 }))![1]).toBe('Новых слов сегодня: 3 из 5')
+      expect(lineOf(withCount(5, { daily_new_word_limit: 5 }))![1]).toBe('Дневная цель выполнена: 5 из 5')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('is a plain line: not a button, link or bar, with nothing to tap; it is read out unless the panel covers it', () => {
+    const html = withCount(3, { daily_new_word_limit: 5 })
+    expect(html.match(/<div class="home-dock">(.*?)<div[^>]*class="home-panel"/)![1]).toBe('<p class="home-progress">New words today: 3 of 5</p>')
+    expect(readFileSync('src/screens/Home.tsx', 'utf8')).toMatch(/aria-hidden=\{covered \|\| undefined\}/)
+  })
+
+  it('does not say the same thing as the status row: that counts cards of every kind against the streak\'s goal, this one only new words against the daily goal', () => {
+    // 1 new word and 3 reviews: the status row says 4 / 5, the dock says 1 of 5: two numbers, two names
+    const html = render({ activity: new Set<string>() }, undefined, { streak_count: 5, streak_last_activity_date: '2026-10-04', daily_new_word_limit: 5, cards_done_today_count: 4, cards_done_today_date: TODAY, new_words_learned_today_count: 1, new_words_learned_today_date: TODAY })
+    expect(html.match(/<span class="streak-today">([^<]*)<\/span>/)![1]).toBe('4 / 5 today')
+    expect(lineOf(html)![1]).toBe('New words today: 1 of 5')
+    // the goal reached through Learn alone: the day counts for the streak, so the status row says nothing more, and the dock says the goal is reached
+    const done = render({ activity: new Set<string>() }, undefined, { streak_count: 6, streak_last_activity_date: TODAY, daily_new_word_limit: 5, cards_done_today_count: 5, cards_done_today_date: TODAY, new_words_learned_today_count: 5, new_words_learned_today_date: TODAY })
+    expect(done).not.toContain('streak-today')
+    expect(lineOf(done)![1]).toBe('Daily goal reached: 5 of 5')
+  })
+})
+
 describe('the line of advice under the streak, and the tile it points at', () => {
   const spent = { new_words_learned_today_count: 10, new_words_learned_today_date: TODAY }
   const adviceOf = (html: string) => html.match(/<p class="home-advice">([^<]*)<\/p>/)?.[1]?.replaceAll('&#x27;', "'") ?? null
-  const primaries = (html: string) => ['learn', 'review', 'matching', 'cloze'].filter((id) => tile(html, id).includes('is-primary'))
+  // only the tiles can be filled; the buttons in the panel never are
+  const primaries = (html: string) => ['learn', 'review', 'practice'].filter((id) => tile(html, id).includes('is-primary'))
   const states = {
     reviewFirst: () => render({}, [...learnedWords(8, 3), ...unlearned(20)]),
     learnNew: () => render({}, [...learnedWords(8, 0), ...unlearned(20)]),
@@ -726,11 +868,13 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     }
   })
 
-  it('the primary tile follows the state: Review, Learn, Matching at the end of the day, or none; Cloze never', () => {
+  it('the primary tile follows the state: Review, Learn, Practice at the end of the day, or none', () => {
     expect(primaries(states.reviewFirst())).toEqual(['review'])
     expect(primaries(states.learnNew())).toEqual(['learn'])
-    expect(primaries(states.allDoneToday())).toEqual(['matching']) // practice is the one thing left to do
-    expect(primaries(states.allDoneTodayWithWords())).toEqual(['matching'])
+    expect(primaries(states.allDoneToday())).toEqual(['practice']) // practice is the one thing left to do: the Practice tile, where Matching was
+    expect(primaries(states.allDoneTodayWithWords())).toEqual(['practice'])
+    for (const html of [states.reviewFirst(), states.allDoneTodayWithWords()]) expect(html).not.toMatch(/class="mode[^"]*is-primary/) // the panel is not auto-opened and its buttons are never filled
+    expect(states.allDoneTodayWithWords()).toMatch(/aria-expanded="false"/) // not opened for the person either
     for (const quiet of [states.poolEmpty, states.allClear]) expect(primaries(quiet())).toEqual([])
   })
 
@@ -741,9 +885,10 @@ describe('the line of advice under the streak, and the tile it points at', () =>
       expect(adviceOf(dayEnd())).toBe('Today: 10 new words. Tomorrow: 8 reviews and 10 new. Today\'s words are ready to practise.')
     })
 
-    it('Matching is the one filled tile; Learn (past the goal) and Review (nothing due) stay disabled, and Cloze is plain', () => {
+    it('Practice is the one filled tile, with Matching and Cloze available in its panel; Learn (past the goal) and Review (nothing due) stay disabled', () => {
       const html = dayEnd()
-      expect(primaries(html)).toEqual(['matching'])
+      expect(primaries(html)).toEqual(['practice'])
+      expect(tile(html, 'practice')).not.toContain('disabled')
       expect(tile(html, 'matching')).not.toContain('disabled')
       expect(tile(html, 'cloze')).not.toContain('disabled')
       expect(tile(html, 'review')).toContain('disabled') // the app never offers reviews that are not due
@@ -767,6 +912,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
       expect(adviceOf(html)).toBe('Today: 10 new words. Tomorrow: 3 reviews and 10 new.')
       expect(primaries(html)).toEqual([])
       expect(tile(html, 'matching')).toContain('disabled')
+      expect(tile(html, 'practice')).toContain('disabled') // neither exercise can run, so the tile that opens them is the disabled one
     })
 
     it('in Russian', () => {
@@ -784,7 +930,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     const html = states.reviewFirst()
     expect(html.match(/class="home-advice"/g)).toHaveLength(1)
     expect(html.indexOf('home-status')).toBeLessThan(html.indexOf('home-advice'))
-    expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-grid'))
+    expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-actions'))
     expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg|<h[1-6]|<img|<a /)
   })
 

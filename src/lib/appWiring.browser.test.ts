@@ -91,7 +91,7 @@ describe.skipIf(!CHROME)(`the real app (${mode}): what App hands its screens`, (
     })
     await page.setViewport({ width: 390, height: 800, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
     await page.goto(`${base}/`, { waitUntil: 'networkidle0' })
-    await page.waitForSelector('.home .home-grid', { timeout: 30_000 })
+    await page.waitForSelector('.home .home-actions', { timeout: 30_000 })
     return { page, fake, outside }
   }
 

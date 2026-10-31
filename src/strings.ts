@@ -72,10 +72,16 @@ export const en = {
     wotdPill: 'palabra del día',
     wotdTitle: 'Word of the day',
     seeCard: 'See the card →',
+    // the dock under the tiles: new words learned today against the daily goal (the status row above counts cards of every kind, so this says "new words")
+    progress: (done: number, goal: number) => `New words today: ${done} of ${goal}`,
+    progressReached: (done: number, goal: number) => `Daily goal reached: ${done} of ${goal}`,
+    // the panel that opens over the dock from the Practice tile, holding Matching and Cloze
+    practicePanel: 'Practice exercises',
     // action tiles: the English label, the Spanish word under it, and why a tile is disabled
     tiles: {
       learn: { label: 'Learn', es: 'aprender' },
       review: { label: 'Review', es: 'repasar' },
+      practice: { label: 'Practice', es: 'practicar' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
     },

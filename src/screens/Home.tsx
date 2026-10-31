@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
@@ -92,7 +92,33 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     }
   }, [advice, data, at])
   const practiceNow = day !== null && (day.matching || (extras?.matching ?? 0) >= PRACTICE_MIN_WORDS)
-  const tiles = extras && stats ? buildTiles(stats, extras, { onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday }, advice ? primaryTile(advice, practiceNow) : null, day) : []
+  // The practice panel (Matching and Cloze) over the dock under the tiles: open or closed, in memory only. It closes by itself when neither exercise can run.
+  const [panelOpen, setPanelOpen] = useState(false)
+  const panelId = useId()
+  const practiceTile = useRef<HTMLButtonElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
+  const modes = extras ? buildModes(extras, { onMatching, onCloze, onMatchingToday, onClozeToday }, day) : []
+  const tiles = extras && stats ? buildTiles(stats, modes, { onLearn, onReview, onPractice: () => setPanelOpen((open) => !open) }, advice ? primaryTile(advice, practiceNow) : null) : []
+  const open = panelOpen && modes.some((m) => !m.disabled)
+  useEffect(() => {
+    if (!open) return
+    // a tap anywhere else closes it (and still does what it was for: the tile pressed is not swallowed), and so does Escape, which hands the focus back to the tile
+    const away = (e: PointerEvent) => {
+      const target = e.target as Node
+      if (!panel.current?.contains(target) && !practiceTile.current?.contains(target)) setPanelOpen(false)
+    }
+    const escape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setPanelOpen(false)
+      practiceTile.current?.focus()
+    }
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
   const now = nowProp ?? new Date()
 
   return (
@@ -124,29 +150,57 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
 
           {wotd ? <WordOfTheDayCard wotd={wotd} onOpen={onOpenWord} /> : <div className="home-spacer" />}
 
-          <div className="home-grid">
-            {tiles.map((tile) => (
-              <button
-                key={tile.id}
-                type="button"
-                className={`tile tile-${tile.id}${tile.primary ? ' is-primary' : ''}`}
-                data-tile={tile.id}
-                disabled={tile.disabled}
-                onClick={() => {
-                  haptic('tap')
-                  tile.onPress()
-                }}
-              >
-                <svg className="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  {TILE_ICONS[tile.id]}
-                </svg>
-                <span className="tile-text">
-                  <span className="tile-label">{tile.label}</span>
-                  <span className="tile-sub">{tile.disabled ? tile.reason : tile.es}</span>
-                </span>
-                {!tile.disabled && tile.count !== null && <span className="tile-count">{tile.count}</span>}
-              </button>
-            ))}
+          <div className="home-actions">
+            <div className="home-tiles">
+              {tiles.map((tile) => (
+                <button
+                  key={tile.id}
+                  ref={tile.id === 'practice' ? practiceTile : undefined}
+                  type="button"
+                  className={`tile tile-${tile.id}${tile.primary ? ' is-primary' : ''}${tile.id === 'practice' && open ? ' is-open' : ''}`}
+                  data-tile={tile.id}
+                  disabled={tile.disabled}
+                  {...(tile.id === 'practice' ? { 'aria-expanded': open, 'aria-controls': panelId } : {})}
+                  onClick={() => {
+                    haptic('tap')
+                    tile.onPress()
+                  }}
+                >
+                  <span className="tile-top">
+                    <svg className="tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {TILE_ICONS[tile.id]}
+                    </svg>
+                    {!tile.disabled && tile.count !== null && <span className="tile-count">{tile.count}</span>}
+                  </span>
+                  <span className="tile-text">
+                    <span className="tile-label">{tile.label}</span>
+                    <span className="tile-sub">{tile.disabled ? tile.reason : tile.es}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            {/* A fixed-height dock under the tiles: today's progress in it, and the practice panel over it (the same footprint, so opening it moves nothing). */}
+            <div className="home-dock">
+              {stats.dailyLimit > 0 && <DockProgress done={learnedToday(data.data.settings, at)} goal={stats.dailyLimit} covered={open} />}
+              <div ref={panel} id={panelId} className="home-panel" role="group" aria-label={strings.home.practicePanel} hidden={!open}>
+                {modes.map((mode) => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    className={`mode mode-${mode.id}`}
+                    data-tile={mode.id}
+                    disabled={mode.disabled}
+                    onClick={() => {
+                      haptic('tap')
+                      mode.onPress()
+                    }}
+                  >
+                    <span className="mode-label">{mode.label}</span>
+                    <span className="mode-sub">{mode.disabled ? mode.reason : mode.es}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       ) : (
@@ -216,7 +270,18 @@ function WordOfTheDayCard({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word
   )
 }
 
-export type TileId = 'learn' | 'review' | 'matching' | 'cloze'
+/** One quiet line in the dock: the new words learned today against the daily goal (not the cards of the status row, which count every mode). Not tappable. Nothing at a goal of 0. */
+function DockProgress({ done, goal, covered }: { done: number; goal: number; covered: boolean }) {
+  const reached = done >= goal
+  return (
+    <p className={reached ? 'home-progress is-reached' : 'home-progress'} aria-hidden={covered || undefined}>
+      {reached ? strings.home.progressReached(goal, goal) : strings.home.progress(done, goal)}
+    </p>
+  )
+}
+
+export type TileId = 'learn' | 'review' | 'practice'
+type ModeId = 'matching' | 'cloze'
 
 /** What Home knows at the end of the day: today's new words, what tomorrow brings, and whether Matching / Cloze can run on today's words. */
 interface DayEnd {
@@ -226,12 +291,23 @@ interface DayEnd {
   cloze: boolean
 }
 
+interface Mode {
+  id: ModeId
+  label: string
+  /** The Spanish word under the label. */
+  es: string
+  disabled: boolean
+  /** Why a disabled button is disabled, shown in place of the Spanish word. */
+  reason: string
+  onPress: () => void
+}
+
 interface Tile {
   id: TileId
   label: string
   /** The Spanish word under the label. */
   es: string
-  /** Learn and Review show a count; the practice tiles do not. */
+  /** Learn and Review show a count; Practice does not. */
   count: number | null
   disabled: boolean
   /** Why a disabled tile is disabled, shown in place of the Spanish word. */
@@ -259,16 +335,29 @@ function adviceText(advice: HomeAdvice, stats: Stats, day: DayEnd | null): strin
   }
 }
 
-/** The four action tiles, in grid order: Learn, Review / Matching, Cloze. */
-function buildTiles(
-  stats: Stats,
+/** The two exercises in the practice panel, Matching then Cloze (a third slot is kept free). */
+function buildModes(
   practice: { matching: number; cloze: number },
-  on: { onLearn: () => void; onReview: () => void; onMatching: () => void; onCloze: () => void; onMatchingToday?: () => void; onClozeToday?: () => void },
-  primary: TileId | null,
+  on: { onMatching: () => void; onCloze: () => void; onMatchingToday?: () => void; onClozeToday?: () => void },
   day: DayEnd | null,
-): Tile[] {
+): Mode[] {
   const t = strings.home.tiles
   const need = strings.practice.needWords
+  return [
+    // at the end of the day Matching (and Cloze) open on today's words, when they can run on them; otherwise, and at any other time, the usual practice
+    { id: 'matching', label: t.matching.label, es: t.matching.es, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, onPress: day?.matching && on.onMatchingToday ? on.onMatchingToday : on.onMatching },
+    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, onPress: day?.cloze && on.onClozeToday ? on.onClozeToday : on.onCloze },
+  ]
+}
+
+/** The three action tiles, in order: Learn, Review, Practice (which opens the panel with the exercises). Practice is disabled only when no exercise can run. */
+function buildTiles(
+  stats: Stats,
+  modes: readonly Mode[],
+  on: { onLearn: () => void; onReview: () => void; onPractice: () => void },
+  primary: TileId | null,
+): Tile[] {
+  const t = strings.home.tiles
   return [
     {
       id: 'learn',
@@ -281,9 +370,7 @@ function buildTiles(
       onPress: on.onLearn,
     },
     { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
-    // at the end of the day Matching (and Cloze) open on today's words, when they can run on them; otherwise, and at any other time, the usual practice
-    { id: 'matching', label: t.matching.label, es: t.matching.es, count: null, disabled: practice.matching < PRACTICE_MIN_WORDS, reason: need, primary: primary === 'matching', onPress: day?.matching && on.onMatchingToday ? on.onMatchingToday : on.onMatching },
-    { id: 'cloze', label: t.cloze.label, es: t.cloze.es, count: null, disabled: practice.cloze < PRACTICE_MIN_WORDS, reason: need, primary: false, onPress: day?.cloze && on.onClozeToday ? on.onClozeToday : on.onCloze },
+    { id: 'practice', label: t.practice.label, es: t.practice.es, count: null, disabled: modes.every((m) => m.disabled), reason: strings.practice.needWords, primary: primary === 'practice', onPress: on.onPractice },
   ]
 }
 
@@ -300,17 +387,10 @@ const TILE_ICONS: Record<TileId, ReactNode> = {
       <path d="M20 4v5h-5" />
     </>
   ),
-  matching: (
+  practice: (
     <>
-      <rect x="3" y="4" width="7" height="6" rx="1.5" />
-      <rect x="14" y="14" width="7" height="6" rx="1.5" />
-      <path d="M10 7h2a2 2 0 0 1 2 2v6" />
-    </>
-  ),
-  cloze: (
-    <>
-      <path d="M4 7h4M12 7h8M4 12h8M16 12h4M4 17h6" />
-      <path d="M10 17h4" strokeDasharray="1 2.5" />
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.5" />
     </>
   ),
 }

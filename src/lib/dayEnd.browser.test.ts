@@ -43,19 +43,24 @@ describe.skipIf(!CHROME)('Home at the end of the day, in a browser', () => {
   const press = async (page: Page, id: string) => {
     await page.click(`[data-tile="${id}"]`)
   }
+  // Matching and Cloze are in the panel the Practice tile opens: it is opened first (and stays open for the next one)
+  const pressMode = async (page: Page, id: 'matching' | 'cloze') => {
+    if ((await page.$eval('[data-tile="practice"]', (e) => e.getAttribute('aria-expanded'))) !== 'true') await press(page, 'practice')
+    await press(page, id)
+  }
 
   it('says what was done and what comes next, makes Matching the one filled tile, and leaves Learn and Review disabled', async () => {
     const page = await open('endofday=8&goal=10')
     expect(await advice(page)).toBe('Today: 10 new words. Tomorrow: 8 reviews and 10 new. Today\'s words are ready to practise.')
-    expect(await primaries(page)).toEqual(['matching'])
+    expect(await primaries(page)).toEqual(['practice'])
     expect(await disabled(page)).toEqual(['learn', 'review'])
     await page.close()
   }, 60_000)
 
   it('Matching and Cloze open on today\'s words; the disabled Learn and Review do nothing', async () => {
     const page = await open('endofday=8&goal=10')
-    await press(page, 'matching')
-    await press(page, 'cloze')
+    await pressMode(page, 'matching')
+    await pressMode(page, 'cloze')
     await press(page, 'learn')
     await press(page, 'review')
     expect(await taps(page)).toEqual(['matching-today', 'cloze-today'])
@@ -65,19 +70,19 @@ describe.skipIf(!CHROME)('Home at the end of the day, in a browser', () => {
   it('with fewer than five of today\'s words the tiles open the usual practice, not a round too small to run', async () => {
     const page = await open('endofday=3&goal=10')
     expect(await advice(page)).toBe('Today: 10 new words. Tomorrow: 3 reviews and 10 new.') // no pointer to a practice on today\'s words
-    expect(await primaries(page)).toEqual(['matching'])
-    await press(page, 'matching')
-    await press(page, 'cloze')
+    expect(await primaries(page)).toEqual(['practice'])
+    await pressMode(page, 'matching')
+    await pressMode(page, 'cloze')
     expect(await taps(page)).toEqual(['matching', 'cloze'])
     await page.close()
   }, 60_000)
 
-  it('part-way through the day (the allowance not yet spent) Learn is what is advised, and the practice tiles open the usual practice, not today\'s words', async () => {
+  it('part-way through the day (the allowance not yet spent) Learn is what is advised, and Matching and Cloze (in the Practice panel) open the usual practice, not today\'s words', async () => {
     const page = await open('endofday=8&goal=18&todaycount=8')
     expect(await advice(page)).toMatch(/^Nothing to review/)
     expect(await primaries(page)).toEqual(['learn'])
-    await press(page, 'matching')
-    await press(page, 'cloze')
+    await pressMode(page, 'matching')
+    await pressMode(page, 'cloze')
     expect(await taps(page)).toEqual(['matching', 'cloze'])
     await page.close()
   }, 60_000)
@@ -103,12 +108,12 @@ describe.skipIf(!CHROME)('Home at the end of the day, in a browser', () => {
     }
   }, 60_000)
 
-  it('on an ordinary day nothing changes: reviews first, and the tiles open the usual practice', async () => {
+  it('on an ordinary day nothing changes: reviews first, and Matching and Cloze open the usual practice', async () => {
     const page = await open('goal=10')
     expect(await advice(page)).toMatch(/^Review first/)
     expect(await primaries(page)).toEqual(['review'])
-    await press(page, 'matching')
-    await press(page, 'cloze')
+    await pressMode(page, 'matching')
+    await pressMode(page, 'cloze')
     expect(await taps(page)).toEqual(['matching', 'cloze'])
     await page.close()
   }, 60_000)

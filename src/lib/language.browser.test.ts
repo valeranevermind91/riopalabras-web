@@ -13,7 +13,7 @@ import { ru } from '../strings.ru'
 const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find((p) => p && existsSync(p))
 
 /** The English words that may stay in a Russian screen: the names of the app's own screens, and Spanish content. */
-const KEEP = new Set(['Learn', 'Review', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'palabra', 'nueva', 'Esta', 'del', 'día', 'aprender', 'repasar', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes'])
+const KEEP = new Set(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'palabra', 'nueva', 'Esta', 'del', 'día', 'aprender', 'repasar', 'practicar', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes'])
 const latin = (texts: readonly string[]) => texts.filter((t) => !/^@\w+$/.test(t) && !/^v?[0-9a-f]{7}\b/.test(t) && !/^dev · /.test(t)).flatMap((t) => (t.match(/\p{Script=Latin}{3,}\d*/gu) ?? []).map((w) => ({ w: w.replace(/\d+$/, ''), t }))).filter(({ w }) => !KEEP.has(w)).map(({ w, t }) => `${w} ← “${t.slice(0, 60)}”`)
 const cyrillic = (texts: readonly string[]) => texts.filter((t) => /[А-Яа-яЁё]/.test(t.replace(/Русский/g, '')))
 
@@ -289,7 +289,7 @@ describe.skipIf(!CHROME)('the interface language in a browser', () => {
       const texts = await everything(russian, '.home')
       expect(latin(texts)).toEqual([])
       expect(texts).toContain('0 дней подряд')
-      expect(await russian.$$eval('.tile-label', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Matching', 'Cloze'])
+      expect(await russian.$$eval('.tile-label, .mode-label', (els) => els.map((e) => e.textContent))).toEqual(['Learn', 'Review', 'Practice', 'Matching', 'Cloze'])
       expect(await russian.$$eval('.screen-header-actions .icon-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Words', 'Настройки'])
       await russian.close()
 

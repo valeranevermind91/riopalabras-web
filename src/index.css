@@ -33,6 +33,7 @@ h3,
 .subtitle,
 .home-advice,
 .tile-text,
+.mode,
 .setting-label,
 .setting-hint,
 .match-hint,
@@ -492,22 +493,27 @@ mark {
   align-self: flex-start;
 }
 
-.home-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* The action block: a row of three equal tiles, and under it a dock of fixed height. Together they are no taller than the 2x2 grid they replace (206px). */
+.home-actions {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+}
+
+.home-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .tile {
   display: flex;
-  /* The count wraps to a line of its own when the label and the count do not fit side by side (see .tile-text): a label is never split. */
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: center;
-  gap: 6px 10px;
+  flex-direction: column;
+  justify-content: flex-start; /* the text block is top-aligned under the icon row, so the labels of the three tiles sit at the same height */
+  gap: 2px;
   min-width: 0;
-  min-height: 96px;
-  padding: 8px 14px;
+  min-height: 104px;
+  padding: 8px 11px;
   border: 1px solid transparent;
   border-radius: var(--radius-tile);
   font: inherit;
@@ -515,20 +521,25 @@ mark {
   cursor: pointer;
 }
 
+/* The icon on the left and, for Learn and Review, the count on the right. */
+.tile-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .tile-icon {
   flex: none;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .tile-text {
   display: flex;
-  /* Basis 0 and a floor of the widest word: the text takes what is left beside the icon, but never less than its longest word, and when that
-     and the count do not both fit the count is the one that wraps. */
-  flex: 1 1 0;
   flex-direction: column;
   gap: 1px;
-  min-width: min-content;
+  min-width: 0;
 }
 
 .tile-label {
@@ -548,10 +559,96 @@ mark {
 
 .tile-count {
   flex: none;
-  margin-left: auto; /* on the right beside the text, and on the right of its own line when it wraps */
   font-size: 19px;
   font-weight: 800;
   line-height: 1;
+}
+
+/* The dock: fixed height, so that the panel opening over the progress line moves nothing. The line is at the top of it, close under the tiles. */
+.home-dock {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 88px;
+}
+
+.home-progress {
+  margin: -3px 0 0; /* the dock sits 14px under the tiles; the line's box starts 11px under them */
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.home-progress.is-reached {
+  color: var(--teal-on-soft);
+}
+
+/* The panel covers the dock exactly (same footprint) and holds up to three exercises, two of which are there now. */
+.home-panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--lav-soft-border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.home-panel[hidden] {
+  display: none;
+}
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--lav-soft-border);
+  border-radius: var(--radius-tile);
+  background: var(--lav-soft);
+  color: var(--lav-on-soft);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mode-label {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+.mode-sub {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-style: italic;
+  line-height: 1.25;
+  color: var(--lav-on-soft-2);
+}
+
+.mode:disabled {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: default;
+}
+
+.mode:disabled .mode-sub {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .tile-learn,
@@ -595,23 +692,38 @@ mark {
   line-height: 1.35;
 }
 
-.tile-matching,
-.tile-cloze {
+.tile-practice {
   background: var(--lav-soft);
   border-color: var(--lav-soft-border);
   color: var(--lav-on-soft);
 }
 
-.tile-matching .tile-sub,
-.tile-cloze .tile-sub {
+.tile-practice .tile-sub {
   color: var(--lav-on-soft-2);
 }
 
-/* At the narrowest width the icon and the gap take a little less, so that the longest label (Matching) still has its whole word beside the icon. */
+/* While its panel is open the Practice tile says so: a 2px ring in the tile's own text colour, inside the edge so that nothing moves (lavender, or filled teal when it is the advised one). */
+.tile.is-open {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+/* At the narrowest width the tiles and the panel take a little less, so that the longest label still has its whole word. */
 @media (max-width: 340px) {
+  .home-tiles {
+    gap: 6px;
+  }
+
   .tile {
-    gap: 6px 8px;
-    padding-inline: 10px;
+    padding-inline: 7px;
+  }
+
+  .home-panel {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .mode {
+    padding-inline: 6px;
   }
 }
 
@@ -628,6 +740,7 @@ mark {
   font-size: 12px;
   font-style: normal;
   font-weight: 600;
+  line-height: 1.2; /* three lines of it (the longest reasons, at the narrowest widths) still fit the 104px tile */
   color: var(--muted);
   opacity: 1;
 }

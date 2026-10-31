@@ -331,7 +331,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
           primary: tiles.filter((t) => t.classList.contains('is-primary')).map((t) => t.dataset.tile),
           filled: tiles.filter((t) => background(t) === background(tiles.find((x) => x.classList.contains('is-primary')) ?? t) && t.classList.contains('is-primary')).length,
           learnReviewBackgrounds: ['learn', 'review'].map((id) => background(document.querySelector(`[data-tile="${id}"]`) as HTMLElement)),
-          above: line.compareDocumentPosition(document.querySelector('.home-grid')!) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false,
+          above: line.compareDocumentPosition(document.querySelector('.home-actions')!) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false,
           below: document.querySelector('.home-status')!.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false,
         }
       })
@@ -416,7 +416,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     const tilesOf = (page: Page) =>
       page.evaluate(() => {
         const intersects = (a: DOMRect, b: DOMRect) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
-        const grid = document.querySelector('.home-grid') as HTMLElement
+        const grid = document.querySelector('.home-tiles') as HTMLElement
         return (Array.from(document.querySelectorAll('.tile')) as HTMLElement[]).map((tile) => {
           const label = tile.querySelector('.tile-label') as HTMLElement
           const sub = tile.querySelector('.tile-sub') as HTMLElement
@@ -448,12 +448,12 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     for (const language of ['en', 'ru'] as const) {
       for (const [digits, learn, review, query] of [[1, '5', '5', 'due=5&pool=5&limit=300'], [2, '50', '50', 'due=50&pool=50&limit=300'], [3, '300', '500', 'due=500&pool=500&limit=300']] as const) {
         for (const width of [320, 360, 390]) {
-          it(`${language === 'en' ? 'English' : 'Russian'}, ${digits}-digit counts, ${width}px: all four labels whole, nothing overflows or overlaps`, async () => {
+          it(`${language === 'en' ? 'English' : 'Russian'}, ${digits}-digit counts, ${width}px: all three labels whole, nothing overflows or overlaps`, async () => {
             const page = await open(query, language === 'ru' ? 'ru' : undefined)
             await page.setViewport({ width, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
             const tiles = await tilesOf(page)
-            expect(tiles.map((t) => t.label)).toEqual(['Learn', 'Review', 'Matching', 'Cloze'])
-            expect(tiles.map((t) => t.count)).toEqual([learn, review, null, null]) // Learn offers the smaller of the pool and the goal (300), Review the whole backlog
+            expect(tiles.map((t) => t.label)).toEqual(['Learn', 'Review', 'Practice'])
+            expect(tiles.map((t) => t.count)).toEqual([learn, review, null]) // Learn offers the smaller of the pool and the goal (300), Review the whole backlog
             for (const t of tiles) {
               expect(t.lines, `${t.id}: "${t.label}" is split over lines`).toBe(1)
               expect(t.labelOverflows, `${t.id} label overflows`).toBe(false)
@@ -472,7 +472,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       }
     }
 
-    it('also with the practice tiles enabled and a count of 999 in Review: the same, at 320px', async () => {
+    it('also with the Practice tile enabled and a count of 999 in Review: the same, at 320px', async () => {
       const page = await open('due=999&pool=999&limit=999')
       await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
       for (const t of await tilesOf(page)) {
@@ -482,15 +482,20 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       await page.close()
     }, 60_000)
 
-    it('the label and the count stay on one row where they fit (a small count), and the count drops to its own line only where they do not', async () => {
-      const page = await open('due=5&pool=5&limit=300')
-      await page.setViewport({ width: 390, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
-      const sameRow = await page.evaluate(() => {
-        const tile = document.querySelector('[data-tile="review"]')!
-        return Math.abs(tile.querySelector('.tile-label')!.getBoundingClientRect().top - tile.querySelector('.tile-count')!.getBoundingClientRect().top) < 30
-      })
-      expect(sameRow).toBe(true)
-      await page.close()
+    // The tiles are a row of three now, too narrow for the count to sit beside the label (it used to, and dropped to its own line only when it did not fit):
+    // the count is always in the top row with the icon, on the right, above the label.
+    it('the count is in the top row, on the right of the icon and above the label, however many digits it has', async () => {
+      for (const query of ['due=5&pool=5&limit=300', 'due=500&pool=500&limit=300']) {
+        const page = await open(query)
+        await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const place = await page.evaluate(() => {
+          const tile = document.querySelector('[data-tile="review"]')!
+          const rect = (s: string) => tile.querySelector(s)!.getBoundingClientRect()
+          return { aboveLabel: rect('.tile-count').bottom <= rect('.tile-label').top + 0.5, rightOfIcon: rect('.tile-count').left >= rect('.tile-icon').right, sameTop: Math.abs(rect('.tile-count').top - rect('.tile-icon').top) < 6 }
+        })
+        expect(place, query).toEqual({ aboveLabel: true, rightOfIcon: true, sameTop: true })
+        await page.close()
+      }
     }, 60_000)
   })
 })
