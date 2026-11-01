@@ -586,6 +586,29 @@
     "confidence": "high"
   },
   {
+    "es_word": "ayuntamiento",
+    "rio_type": "replacement",
+    "rio_form": "intendencia",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "city hall, municipal government",
+      "ru": "мэрия, муниципалитет"
+    },
+    "std_usage": "not_used",
+    "confidence": "medium",
+    "example": {
+      "es": "Mañana tengo que ir a la intendencia para pagar los impuestos del auto.",
+      "en": "Tomorrow I have to go to the city hall to pay the car taxes.",
+      "ru": "Завтра мне нужно пойти в мэрию, чтобы заплатить налоги на машину.",
+      "word_form": "intendencia"
+    }
+  },
+  {
     "es_word": "ordenador",
     "rio_type": "replacement",
     "rio_form": "computadora",
@@ -638,6 +661,43 @@
     "translation": null,
     "std_usage": "less_common",
     "confidence": "high"
+  },
+  {
+    "es_word": "armario",
+    "rio_type": "replacement",
+    "rio_form": "placard",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "std_usage": "less_common",
+    "confidence": "medium",
+    "example": {
+      "es": "Guardá toda tu ropa en el placard del cuarto de los chicos.",
+      "en": "Put all your clothes in the closet of the kids' room.",
+      "ru": "Убери всю свою одежду в шкаф в детской комнате.",
+      "word_form": "placard"
+    }
+  },
+  {
+    "es_word": "trozo",
+    "rio_type": "replacement",
+    "rio_form": "pedazo",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "piece, chunk",
+      "ru": "кусок, часть"
+    },
+    "std_usage": "less_common",
+    "confidence": "medium"
   },
   {
     "es_word": "piscina",
@@ -848,6 +908,29 @@
     "confidence": "high"
   },
   {
+    "es_word": "gafas",
+    "rio_type": "replacement",
+    "rio_form": "lentes",
+    "alt_form": "anteojos",
+    "alt_region": "ar",
+    "region": "uy",
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "glasses",
+      "ru": "очки"
+    },
+    "std_usage": "less_common",
+    "confidence": "medium",
+    "example": {
+      "es": "Me olvidé los lentes en la rambla mientras tomábamos mate esta tarde.",
+      "en": "I forgot my glasses at the rambla while we were drinking mate this afternoon.",
+      "ru": "Я забыл свои очки на набережной, пока мы пили мате сегодня днем.",
+      "word_form": "lentes"
+    }
+  },
+  {
     "es_word": "colgado",
     "rio_type": "meaning_shift",
     "rio_form": "colgado",
@@ -872,6 +955,23 @@
       "ru": "Извини, что не расслышал, я совсем завис, глядя в окно.",
       "word_form": "colgado"
     }
+  },
+  {
+    "es_word": "vaquero",
+    "rio_type": "replacement",
+    "rio_form": "jean",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "jeans",
+      "ru": "джинсы"
+    },
+    "std_usage": "less_common",
+    "confidence": "medium"
   },
   {
     "es_word": "mantequilla",
@@ -1008,6 +1108,43 @@
     },
     "std_usage": "less_common",
     "confidence": "high"
+  },
+  {
+    "es_word": "enhorabuena",
+    "rio_type": "replacement",
+    "rio_form": "felicitaciones",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "congratulations",
+      "ru": "поздравления, поздравляю"
+    },
+    "std_usage": "not_used",
+    "confidence": "medium"
+  },
+  {
+    "es_word": "píldora",
+    "rio_type": "replacement",
+    "rio_form": "pastilla",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": {
+      "en": "For the contraceptive, \"píldora\" is still the word: \"la píldora\".",
+      "ru": "Противозачаточные таблетки по-прежнему называют «la píldora»"
+    },
+    "std_meaning": null,
+    "translation": {
+      "en": "pill, tablet",
+      "ru": "таблетка"
+    },
+    "std_usage": "less_common",
+    "confidence": "medium"
   },
   {
     "es_word": "guay",
@@ -1236,6 +1373,23 @@
     "confidence": "high"
   },
   {
+    "es_word": "baloncesto",
+    "rio_type": "replacement",
+    "rio_form": "básquet",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "basketball",
+      "ru": "баскетбол"
+    },
+    "std_usage": "not_used",
+    "confidence": "medium"
+  },
+  {
     "es_word": "tejado",
     "rio_type": "replacement",
     "rio_form": "techo",
@@ -1342,6 +1496,26 @@
     }
   },
   {
+    "es_word": "crío",
+    "rio_type": "replacement",
+    "rio_form": "gurí",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "std_usage": "not_used",
+    "confidence": "medium",
+    "example": {
+      "es": "Ese gurí está jugando a la pelota en la calle desde temprano.",
+      "en": "That kid has been playing with the ball in the street since early this morning.",
+      "ru": "Этот ребенок с самого утра играет с мячом на улице.",
+      "word_form": "gurí"
+    }
+  },
+  {
     "es_word": "neumático",
     "rio_type": "replacement",
     "rio_form": "cubierta",
@@ -1400,6 +1574,20 @@
     "alt_region": null,
     "region": null,
     "register": "informal",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "std_usage": "less_common",
+    "confidence": "medium"
+  },
+  {
+    "es_word": "sanidad",
+    "rio_type": "replacement",
+    "rio_form": "salud pública",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
     "notes": null,
     "std_meaning": null,
     "translation": null,

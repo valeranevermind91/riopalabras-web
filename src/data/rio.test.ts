@@ -4,6 +4,7 @@ import { parseDictionary } from './dictionary'
 import { effectiveExample, headword, headwordDecision, highlightTarget } from './headword'
 import { headwordRegion, relationFor, translationsFor } from './relation'
 import { findFormRange, firstGloss, inflectionOf, parseFallbackExamples, parseRioOverlay, type RioInfo } from './rio'
+import { clozeTarget } from './practice'
 import { pickLocalizedAll, type TranslationFlags } from './translations'
 import { en, strings } from '../strings'
 import { ru } from '../strings.ru'
@@ -32,10 +33,10 @@ const highlighted = (w: Word) => {
 const pickLocalized = (value: Parameters<typeof pickLocalizedAll>[0], flags: TranslationFlags) => pickLocalizedAll(value, flags)[0] ?? null
 
 describe('the overlay file', () => {
-  it('has 75 accepted entries, all in the dictionary, none of type none', () => {
-    expect(rawOverlay).toHaveLength(75)
-    expect(overlay.size).toBe(75)
-    expect(words.filter((w) => w.rio)).toHaveLength(75)
+  it('has 85 accepted entries, all in the dictionary, none of type none', () => {
+    expect(rawOverlay).toHaveLength(85)
+    expect(overlay.size).toBe(85)
+    expect(words.filter((w) => w.rio)).toHaveLength(85)
     for (const e of rawOverlay) expect(['replacement', 'meaning_shift', 'regional_only', 'form']).toContain(e.rio_type)
   })
 
@@ -349,18 +350,19 @@ describe('notes, alternatives and translations', () => {
     expect(translationsFor(w)).toEqual({ en: 'to grab, to catch', ru: 'брать, хватать' })
   })
 
-  it('the notes written by hand after proofreading: quizás and quizá (tal vez), mando (el control), balón (more official), portero (golero is Uruguayan), each in both languages', () => {
+  it('the notes written by hand after proofreading: quizás and quizá (tal vez), mando (el control), balón (more official), portero (golero is Uruguayan), píldora (the contraceptive is still "la píldora"), each in both languages', () => {
     const note = (esWord: string) => relationFor(entry(esWord))?.note
     expect(note('quizás')).toEqual({ en: '"Quizás" and "tal vez" are also said — they sound more formal.', ru: 'Говорят и "quizás", и "tal vez" — звучит формальнее.' })
     expect(note('quizá')).toEqual({ en: '"Quizá" and "tal vez" are also said — they sound more formal.', ru: 'Говорят и "quizá", и "tal vez" — звучит формальнее.' })
     expect(note('mando')).toEqual({ en: 'Often just "el control".', ru: 'Часто говорят просто "el control".' })
     expect(note('balón')).toEqual({ en: '"Balón" is used too, but sounds more official, for example in sports reporting.', ru: '"Balón" тоже используют, но звучит официальнее, например в спортивных репортажах.' })
     expect(note('portero')).toEqual({ en: '"Golero" is particularly Uruguayan; "arquero" is also used.', ru: '"Golero" — особенно уругвайское слово; "arquero" тоже используют.' })
+    expect(note('píldora')).toEqual({ en: 'For the contraceptive, "píldora" is still the word: "la píldora".', ru: 'Противозачаточные таблетки по-прежнему называют «la píldora»' })
     // the notes say what the fields cannot, so the fields stay as they were: no country label, no alternative form on golero, and balón / quizás keep their soft hint
     expect([headwordRegion(entry('portero')), relationFor(entry('portero'))?.altForm]).toEqual([null, undefined])
     expect([entry('balón').rio!.stdUsage, entry('quizás').rio!.stdUsage]).toEqual(['less_common', 'less_common'])
     // the entries that carry a note at all
-    expect(words.filter((w) => w.rio?.notes).map((w) => w.esWord).sort()).toEqual(['balón', 'cigarrillo', 'cigarro', 'coger', 'contigo', 'follar', 'mando', 'pastel', 'portero', 'quizá', 'quizás', 'tú', 'vagabundo'])
+    expect(words.filter((w) => w.rio?.notes).map((w) => w.esWord).sort()).toEqual(['balón', 'cigarrillo', 'cigarro', 'coger', 'contigo', 'follar', 'mando', 'pastel', 'portero', 'píldora', 'quizá', 'quizás', 'tú', 'vagabundo'])
   })
 
   it('does not apply a replacement\'s override when the headword stayed the standard word', () => {
@@ -458,11 +460,11 @@ describe('highlight with the overlay', () => {
 describe('overlay examples (pass 2)', () => {
   const withExample = words.filter((w) => w.rio?.example)
 
-  it('22 words carry an example in the client file: the 6 pass-2 replacements, tú and contigo, galleta (hand-written, no mate), and the 13 confirmed meaning_shift / regional_only entries', () => {
+  it('26 words carry an example in the client file: the 10 pass-2 replacements, tú and contigo, galleta (hand-written, no mate), and the 13 confirmed meaning_shift / regional_only entries', () => {
     expect(withExample.map((w) => w.esWord).sort()).toEqual(
-      ['asilo', 'autobús', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'contigo', 'feria', 'foco', 'galleta', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
+      ['armario', 'asilo', 'autobús', 'ayuntamiento', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'contigo', 'crío', 'feria', 'foco', 'gafas', 'galleta', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
     )
-    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(9)
+    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(13)
     expect(withExample.filter((w) => w.rio!.type !== 'replacement')).toHaveLength(13)
     expect(words.filter((w) => w.rio?.type === ('form' as string))).toEqual([]) // tú and contigo are replacements now
   })
@@ -569,9 +571,9 @@ describe('fallback examples (pass 3)', () => {
   const withFallback = words.filter((w) => w.fallbackExample)
   const SAMPLE = ['niño', 'pequeño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
 
-  it('the file has 48 examples (47 generated, plus fila written by hand), none for an overlay word, none for tony (a junk entry)', () => {
-    expect(rawFallback).toHaveLength(48)
-    expect(withFallback).toHaveLength(48)
+  it('the file has 38 examples (37 generated, plus fila written by hand), none for an overlay word, none for tony (a junk entry)', () => {
+    expect(rawFallback).toHaveLength(38)
+    expect(withFallback).toHaveLength(38)
     expect(withFallback.filter((w) => w.rio)).toEqual([])
     expect(entry('tony').fallbackExample).toBeNull()
     expect(entry('casa').fallbackExample).toBeNull()
@@ -647,17 +649,17 @@ describe('std_usage (is the standard word used in everyday speech?)', () => {
   const replacements = words.filter((w) => w.rio?.type === 'replacement')
 
   it('every replacement carries it, and no other type does', () => {
-    expect(replacements).toHaveLength(62)
+    expect(replacements).toHaveLength(72)
     expect(replacements.filter((w) => w.rio!.stdUsage === null).map((w) => w.esWord)).toEqual([])
     expect(words.filter((w) => w.rio && w.rio.type !== 'replacement' && w.rio.stdUsage !== null)).toEqual([])
   })
 
-  it('splits after the manual decisions: 8 not_used (unambiguously Peninsular-only words), 50 less_common, 4 equally_used', () => {
+  it('splits after the manual decisions: 12 not_used (unambiguously Peninsular-only words), 56 less_common, 4 equally_used', () => {
     const count = (u: string) => replacements.filter((w) => w.rio!.stdUsage === u).length
-    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([8, 50, 4])
-    expect(replacements.filter((w) => w.rio!.stdUsage === 'not_used').map((w) => w.esWord).sort()).toEqual(['aparcar', 'chaval', 'gilipollas', 'guay', 'ordenador', 'patata', 'vosotros', 'vuestro'])
+    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([12, 56, 4])
+    expect(replacements.filter((w) => w.rio!.stdUsage === 'not_used').map((w) => w.esWord).sort()).toEqual(['aparcar', 'ayuntamiento', 'baloncesto', 'chaval', 'crío', 'enhorabuena', 'gilipollas', 'guay', 'ordenador', 'patata', 'vosotros', 'vuestro'])
     // words that also exist in the region in another sense, or are used there, are never "rarely used here"
-    for (const w of ['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón', 'pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'autobús', 'piscina', 'gasolina']) {
+    for (const w of ['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón', 'pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'autobús', 'piscina', 'gasolina', 'vaquero', 'píldora', 'gafas', 'sanidad']) {
       expect(entry(w).rio!.stdUsage, w).toBe('less_common')
     }
   })
@@ -709,17 +711,17 @@ describe('standard meaning shows its first gloss only', () => {
 })
 
 describe('what the overlay does to the dictionary', () => {
-  it('62 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4678 are untouched', () => {
+  it('72 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4668 are untouched', () => {
     const withOverlay = words.filter((w) => w.rio)
     const led = withOverlay.filter((w) => headword(w).form === 'rioplatense')
     const noteOnly = withOverlay.filter((w) => headword(w).form === 'standard' && relationFor(w))
-    expect(led).toHaveLength(62)
+    expect(led).toHaveLength(72)
     expect(led.every((w) => w.rio!.type === 'replacement')).toBe(true)
-    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(62)
+    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(72)
     expect(noteOnly).toHaveLength(13)
     expect(noteOnly.every((w) => w.rio!.type !== 'replacement')).toBe(true)
     expect(withOverlay.filter((w) => headword(w).form === 'standard' && !relationFor(w))).toHaveLength(0)
-    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 75)
+    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 85)
     for (const w of words.filter((x) => !x.rio)) {
       expect(headword(w)).toEqual({ text: w.esWord, form: 'standard', secondary: null })
       expect(relationFor(w)).toBeNull()
@@ -743,5 +745,72 @@ describe('what the overlay does to the dictionary', () => {
 
   it('makeWord defaults keep custom and synthetic words overlay-free', () => {
     expect(makeWord('casa').rio).toBeNull()
+  })
+})
+
+// The ten words added after the audit of the cards that still led with a Peninsular word. Their dictionary-level variant was switched off whenever the overlay
+// loaded, so they had no effect. Six are on the dictionary's own example, which already shows the form; four (ayuntamiento, armario, gafas, crío) got a pass-2 example.
+describe('the ten words added after the audit', () => {
+  // [dictionary word, headword on the card, where the example comes from, std_usage]
+  const ADDED: [string, string, 'overlay' | 'dictionary', string][] = [
+    ['ayuntamiento', 'intendencia', 'overlay', 'not_used'],
+    ['trozo', 'pedazo', 'dictionary', 'less_common'],
+    ['vaquero', 'jean', 'dictionary', 'less_common'],
+    ['enhorabuena', 'felicitaciones', 'dictionary', 'not_used'],
+    ['píldora', 'pastilla', 'dictionary', 'less_common'],
+    ['baloncesto', 'básquet', 'dictionary', 'not_used'],
+    ['sanidad', 'salud pública', 'dictionary', 'less_common'],
+    ['armario', 'placard', 'overlay', 'less_common'],
+    ['gafas', 'lentes', 'overlay', 'less_common'],
+    ['crío', 'gurí', 'overlay', 'not_used'],
+  ]
+
+  it.each(ADDED)('%s leads with %s, and the example it shows (%s) contains that word', (esWord, head, source, usage) => {
+    const w = entry(esWord)
+    expect(headword(w)).toEqual({ text: head, form: 'rioplatense', secondary: esWord })
+    expect(headwordDecision(w).exampleSource).toBe(source)
+    expect(effectiveExample(w).sentence.toLowerCase()).toContain(head)
+    expect(w.fallbackExample).toBeNull() // the neutral standard-word sentence left with the scope
+    expect(w.rio!.stdUsage).toBe(usage)
+  })
+
+  it('only gafas carries country labels (lentes in Uruguay, anteojos in Argentina); the other nine have none and no alternative form', () => {
+    const gafas = entry('gafas').rio!
+    expect([gafas.region, gafas.altForm, gafas.altRegion]).toEqual(['uy', 'anteojos', 'ar'])
+    for (const [esWord] of ADDED.filter(([w]) => w !== 'gafas')) {
+      const r = entry(esWord).rio!
+      expect([esWord, r.region, r.altForm, r.altRegion]).toEqual([esWord, null, null, null])
+    }
+  })
+
+  it('crío → gurí is informal; the other nine are neutral', () => {
+    expect(entry('crío').rio!.register).toBe('informal')
+    for (const [esWord] of ADDED.filter(([w]) => w !== 'crío')) expect(entry(esWord).rio!.register, esWord).toBe('neutral')
+  })
+
+  it('enhorabuena\'s Russian gloss starts with the noun (Matching shows the first gloss)', () => {
+    expect(entry('enhorabuena').rio!.translation).toEqual({ en: 'congratulations', ru: 'поздравления, поздравляю' })
+    expect(firstGloss(entry('enhorabuena').rio!.translation!.ru)).toBe('поздравления')
+  })
+
+  it('the demasiado gloss starts with "too much", and does not end on a bare "too"', () => {
+    expect(entry('demasiado').enTranslation).toBe('too much, excessively')
+    expect(firstGloss(entry('demasiado').enTranslation)).toBe('too much')
+  })
+
+  it('four of them share a headword with another card, as torta, pelo and auto already do: lentes, pedazo, pastilla, gurí', () => {
+    const shared = (head: string) => words.filter((w) => headword(w).text === head).map((w) => w.esWord).sort()
+    expect(shared('lentes')).toEqual(['gafas', 'lentes'])
+    expect(shared('pedazo')).toEqual(['pedazo', 'trozo'])
+    expect(shared('pastilla')).toEqual(['pastilla', 'píldora'])
+    expect(shared('gurí')).toEqual(['chico', 'crío'])
+  })
+
+  it('salud pública is two words, but the dictionary stores "salud" as its form in the example: the card highlights salud, and Cloze blanks it ("_____ pública") and takes salud or the headword', () => {
+    const sanidad = entry('sanidad')
+    expect(effectiveExample(sanidad).sentence).toContain('salud pública')
+    expect(highlighted(sanidad)).toBe('salud')
+    expect(clozeTarget(sanidad)?.target).toBe('salud')
+    for (const w of ['ayuntamiento', 'trozo', 'vaquero', 'enhorabuena', 'píldora', 'baloncesto', 'armario', 'gafas', 'crío']) expect(clozeTarget(entry(w))?.target.toLowerCase(), w).toBe(headword(entry(w)).text)
   })
 })

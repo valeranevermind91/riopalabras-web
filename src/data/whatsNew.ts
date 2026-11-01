@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'local-headwords-ten',
+    at: '2026-11-01T00:30',
+    en: {
+      title: 'Ten more cards lead with the word people say here',
+      text: 'Ten cards that opened with the word used in Spain now open with the one used here: “lentes” instead of gafas, “placard” instead of armario, “jean” instead of vaquero, “gurí” instead of crío. The sentence on each card shows the local word too.',
+    },
+    ru: {
+      title: 'Еще десять карточек начинаются со слова, которое говорят здесь',
+      text: 'Десять карточек начинались со слова, принятого в Испании. Теперь они начинаются со слова, которое говорят здесь: «lentes» вместо «gafas», «placard» вместо «armario», «jean» вместо «vaquero», «gurí» вместо «crío». Предложение на каждой карточке тоже показывает местное слово.',
+    },
+  },
+  {
     id: 'home-practice',
     at: '2026-10-30T22:58',
     en: {

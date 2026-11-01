@@ -155,6 +155,25 @@ const MANUAL_ACCEPT = {
     form: 'con vos', confidence: 'high', evidence: 'type changed from form to replacement by decision (standard Peninsular form: contigo)',
     notes: { en: 'Standard (Peninsular) form: "contigo". Rioplatense says "con vos".', ru: 'Стандартная (испанская) форма: "contigo". В Рио-де-ла-Плате: "con vos".' },
   },
+  // Cards that led with the Peninsular word because their dictionary-level variant is switched off whenever the overlay loads (dictionary.ts).
+  // An `alt` is a candidate only: rule 4c keeps its country label when two independent families of sources support it, else drops the pair.
+  // An alt_form with no country cannot be written (rule 6), so ayuntamiento / baloncesto / crío carry their single form only.
+  ayuntamiento: { form: 'intendencia' },
+  trozo: { form: 'pedazo' },
+  vaquero: { form: 'jean' },
+  enhorabuena: { form: 'felicitaciones' },
+  píldora: {
+    form: 'pastilla',
+    notes: {
+      en: 'For the contraceptive, "píldora" is still the word: "la píldora".',
+      ru: 'Противозачаточные таблетки по-прежнему называют «la píldora»',
+    },
+  },
+  baloncesto: { form: 'básquet' },
+  sanidad: { form: 'salud pública' },
+  armario: { form: 'placard' },
+  gafas: { form: 'lentes', region: 'uy', alt: { form: 'anteojos', region: 'ar' } },
+  crío: { form: 'gurí', register: 'informal' }, // register from the blind Claude entry (informal); A calls its own nene neutral
 }
 for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   if (handled.has(w)) throw new Error(`${w} is already handled by an earlier rule`)
@@ -163,7 +182,7 @@ for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   const bMatches = b.rio_type === 'replacement' && low(b.rio_form) === low(m.form)
   const source = aMatches ? a : bMatches ? b : a // register / notes come from a model entry for the same form, else A
   const fields = {
-    rio_type: 'replacement', rio_form: m.form, alt_form: null, alt_region: null, region: m.region ?? null, register: source.register,
+    rio_type: 'replacement', rio_form: m.form, alt_form: m.alt?.form ?? null, alt_region: m.alt?.region ?? null, region: m.region ?? null, register: m.register ?? source.register,
     notes: m.notes ?? (aMatches && a.note_en ? { en: a.note_en, ru: a.note_ru } : null), std_meaning: null,
     translation: a.en_translation ? { en: a.en_translation, ru: a.ru_translation } : b.en_translation && bMatches ? { en: b.en_translation, ru: b.ru_translation } : null,
     confidence: m.confidence ?? 'medium',
@@ -341,11 +360,17 @@ const MANUAL_TRANSLATIONS = {
     form: 'guapo',
     translation: { en: 'brave, tough, handsome, attractive', ru: 'смелый, крутой, красивый, привлекательный' },
   },
+  // Gemini listed the verb form first ("поздравляю, поздравления"); the card is a noun, and Matching shows the first gloss.
+  enhorabuena: {
+    form: 'felicitaciones',
+    translation: { en: 'congratulations', ru: 'поздравления, поздравляю' },
+    reason: 'the noun gloss comes first (Matching shows the first gloss)',
+  },
 }
 for (const [w, ov] of Object.entries(MANUAL_TRANSLATIONS)) {
   const o = result.get(w)
   if (!o || o.status !== 'accepted' || o.rio_form !== ov.form) throw new Error(`manual translation for ${w}: expected an accepted entry with rio_form ${ov.form}`)
-  o.evidence.push(`manual translation (Valera): ${JSON.stringify(o.translation)} -> ${JSON.stringify(ov.translation)}; reason: both senses are ordinary in the region`)
+  o.evidence.push(`manual translation (Valera): ${JSON.stringify(o.translation)} -> ${JSON.stringify(ov.translation)}; reason: ${ov.reason ?? 'both senses are ordinary in the region'}`)
   o.translation = ov.translation
 }
 
@@ -397,8 +422,8 @@ for (const w of words) {
 // Written by tools/rio-overlay/generate-examples.mjs. A replacement example ships to the client now (review "auto");
 // meaning_shift / regional_only / form examples stay "pending" here until they are confirmed by hand.
 // Examples confirmed by hand (Valera): the meaning_shift / regional_only entries read and approved, plus tú and contigo
-// (now replacements). A generated example is "auto" (replacement, automatic checks) or "pending" (waits for this list).
-const CONFIRMED_EXAMPLES = new Set(['galleta', 'foco', 'guapo', 'mina', 'saco', 'feria', 'boleto', 'colgado', 'suprema', 'chance', 'torta', 'marcador', 'propaganda', 'vos', 'tú', 'contigo'])
+// (now replacements), and crío (its Russian and English lines were edited by hand). A generated example is "auto" (replacement, automatic checks) or "pending" (waits for this list).
+const CONFIRMED_EXAMPLES = new Set(['galleta', 'foco', 'guapo', 'mina', 'saco', 'feria', 'boleto', 'colgado', 'suprema', 'chance', 'torta', 'marcador', 'propaganda', 'vos', 'tú', 'contigo', 'crío'])
 const SHIPPED_REVIEWS = ['auto', 'confirmed']
 const examplesPath = path.join(HERE, 'examples.v1.json')
 const pass2 = fs.existsSync(examplesPath) ? JSON.parse(fs.readFileSync(examplesPath, 'utf8')) : null
@@ -436,6 +461,10 @@ const NOT_USED_KEPT = {
   aparcar: 'Peninsular verb for parking (estacionar here); no other sense',
   gilipollas: 'Peninsular vulgar insult (boludo / pelotudo here); no other sense',
   chaval: 'Peninsular slang for a kid (pibe / gurí here); no other sense',
+  ayuntamiento: 'Peninsular word for the town hall (intendencia / municipalidad here); no other sense',
+  enhorabuena: 'Peninsular word for congratulations (felicitaciones here); no other sense',
+  baloncesto: 'Peninsular word for basketball (básquet / básquetbol here); no other sense',
+  crío: 'Peninsular colloquial word for a child (gurí / pibe / nene here); the "young animal" sense is rare',
   guay: 'Peninsular slang for "cool" (copado / bárbaro here); no other sense',
 }
 const DOWNGRADED_BY_PRINCIPLE = {
@@ -455,7 +484,7 @@ const STD_USAGE_OVERRIDES = {
   ...Object.fromEntries(['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${OCCURS_IN_REGION}` }])),
   // contigo is said here as well as con vos, so its card says "also common"
   contigo: { std_usage: 'equally_used', reason: 'contigo is said in the region too, next to con vos (decided by hand)' },
-  ...Object.fromEntries(['pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${ANOTHER_SENSE}` }])),
+  ...Object.fromEntries(['pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'vaquero', 'píldora'].map((w) => [w, { std_usage: 'less_common', reason: `${w} ${ANOTHER_SENSE}` }])),
   ...Object.fromEntries(Object.entries(DOWNGRADED_BY_PRINCIPLE).map(([w, why]) => [w, { std_usage: 'less_common', reason: `${w}: ${why}; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)` }])),
 } // { es_word: { std_usage: 'not_used' | 'less_common' | 'equally_used', reason } }
 const usagePath = path.join(HERE, 'std-usage.v1.json')

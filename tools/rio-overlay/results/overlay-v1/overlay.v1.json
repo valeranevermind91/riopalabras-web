@@ -1576,30 +1576,38 @@
     "rank": 2200,
     "rio_type": "replacement",
     "rio_form": "intendencia",
-    "alt_form": "municipalidad",
-    "alt_region": "ar",
-    "region": "uy",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "translation": {
+      "en": "city hall, municipal government",
+      "ru": "мэрия, муниципалитет"
+    },
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular word for the town hall (intendencia / municipalidad here); no other sense (kept by hand)",
+    "example": {
+      "es": "Mañana tengo que ir a la intendencia para pagar los impuestos del auto.",
+      "en": "Tomorrow I have to go to the city hall to pay the car taxes.",
+      "ru": "Завтра мне нужно пойти в мэрию, чтобы заплатить налоги на машину.",
+      "word_form": "intendencia"
+    },
+    "example_review": "auto",
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
+      "manual accept (Valera)",
       "DAMER: «intendencia» has Ar and Ur labels (rio_form, any sense)",
-      "DAMER: «municipalidad» has Ar label (alt_form, any sense)",
       "A: replacement: intendencia @uy + municipalidad @ar (high)",
       "B: replacement: intendencia (high)",
       "Claude: replacement: intendencia @uy + municipalidad @ar (medium)",
       "legacy: municipalidad",
-      "country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)",
-      "alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it"
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Ayuntamiento' is never used in everyday speech; locals exclusively say 'municipalidad' or 'intendencia'. It sounds very Peninsular.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular word for the town hall (intendencia / municipalidad here); no other sense"
     ]
   },
   {
@@ -1752,20 +1760,27 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "'Armario' is understood and used for freestanding cabinets, but 'placard' is the dominant word for a clothes wardrobe.",
+    "example": {
+      "es": "Guardá toda tu ropa en el placard del cuarto de los chicos.",
+      "en": "Put all your clothes in the closet of the kids' room.",
+      "ru": "Убери всю свою одежду в шкаф в детской комнате.",
+      "word_form": "placard"
+    },
+    "example_review": "auto",
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
+      "manual accept (Valera)",
       "DAMER: «placard» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: placard (high)",
       "B: replacement: ropero (high)",
       "Claude: replacement: placard (medium)",
-      "legacy: ropero"
+      "legacy: ropero",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Armario' is understood and used for freestanding cabinets, but 'placard' is the dominant word for a clothes wardrobe."
     ]
   },
   {
@@ -1779,20 +1794,24 @@
     "register": "neutral",
     "notes": null,
     "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "translation": {
+      "en": "piece, chunk",
+      "ru": "кусок, часть"
+    },
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "'Pedazo' is the everyday default. 'Trozo' is understood and occasionally used, but sounds slightly more formal or bookish in casual conversation.",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
+      "manual accept (Valera)",
       "A: replacement: pedazo (high)",
       "B: replacement: pedazo (high)",
       "Claude: none (medium)",
-      "legacy: pedazo"
+      "legacy: pedazo",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Pedazo' is the everyday default. 'Trozo' is understood and occasionally used, but sounds slightly more formal or bookish in casual conversation."
     ]
   },
   {
@@ -2337,22 +2356,30 @@
       "en": "glasses",
       "ru": "очки"
     },
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "gafas: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)",
+    "example": {
+      "es": "Me olvidé los lentes en la rambla mientras tomábamos mate esta tarde.",
+      "en": "I forgot my glasses at the rambla while we were drinking mate this afternoon.",
+      "ru": "Я забыл свои очки на набережной, пока мы пили мате сегодня днем.",
+      "word_form": "lentes"
+    },
+    "example_review": "auto",
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
+      "manual accept (Valera)",
       "DAMER: «anteojos» has Ar and Ur labels (alt_form, any sense)",
       "A: replacement: lentes @uy + anteojos @ar (high)",
       "B: replacement: anteojos (high)",
       "Claude: replacement: lentes @uy + anteojos @ar (medium)",
       "legacy: anteojos",
       "country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it",
-      "alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it"
+      "alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it",
+      "pass-2 example (gemini-3.1-pro-preview), review: auto",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Gafas' sounds like a word from Spain or dubbed television; locals exclusively use 'lentes' or 'anteojos'.",
+      "std_usage less_common by manual rule (Valera): gafas: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)"
     ]
   },
   {
@@ -2465,19 +2492,21 @@
       "en": "jeans",
       "ru": "джинсы"
     },
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "vaquero has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
+      "manual accept (Valera)",
       "A: replacement: jean (high)",
       "B: meaning_shift: vaquero (high)",
       "Claude: replacement: jean (medium)",
-      "legacy: jean"
+      "legacy: jean",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Jean' is the universal everyday term. 'Vaquero' sounds dated or foreign, though older generations might occasionally use it.",
+      "std_usage less_common by manual override (Valera): vaquero has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -2784,21 +2813,24 @@
     "std_meaning": null,
     "translation": {
       "en": "congratulations",
-      "ru": "поздравляю, поздравления"
+      "ru": "поздравления, поздравляю"
     },
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular word for congratulations (felicitaciones here); no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
+      "manual accept (Valera)",
       "A: replacement: felicitaciones (high)",
       "B: replacement: felicitaciones (high)",
       "Claude: none (low)",
-      "legacy: felicitaciones"
+      "legacy: felicitaciones",
+      "manual translation (Valera): {\"en\":\"congratulations\",\"ru\":\"поздравляю, поздравления\"} -> {\"en\":\"congratulations\",\"ru\":\"поздравления, поздравляю\"}; reason: the noun gloss comes first (Matching shows the first gloss)",
+      "std_usage not_used (gemini-3.1-pro-preview): 'Enhorabuena' is never used naturally by locals; it sounds entirely Peninsular. 'Felicitaciones' is the only natural choice.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular word for congratulations (felicitaciones here); no other sense"
     ]
   },
   {
@@ -2875,25 +2907,30 @@
     "alt_region": null,
     "region": null,
     "register": "neutral",
-    "notes": null,
+    "notes": {
+      "en": "For the contraceptive, \"píldora\" is still the word: \"la píldora\".",
+      "ru": "Противозачаточные таблетки по-прежнему называют «la píldora»"
+    },
     "std_meaning": null,
     "translation": {
       "en": "pill, tablet",
       "ru": "таблетка"
     },
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "píldora has another everyday sense in the region (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
+      "manual accept (Valera)",
       "A: replacement: pastilla (high)",
       "B: replacement: pastilla (high)",
       "Claude: none (medium)",
-      "legacy: pastilla"
+      "legacy: pastilla",
+      "std_usage less_common (gemini-3.1-pro-preview): 'Pastilla' is the generic everyday word. 'Píldora' is used, but mostly restricted to birth control or specific idioms.",
+      "std_usage less_common by manual override (Valera): píldora has another everyday sense in the region (decided by hand)"
     ]
   },
   {
@@ -3476,7 +3513,7 @@
     "es_word": "baloncesto",
     "rank": 4455,
     "rio_type": "replacement",
-    "rio_form": "básquetbol",
+    "rio_form": "básquet",
     "alt_form": null,
     "alt_region": null,
     "region": null,
@@ -3487,20 +3524,22 @@
       "en": "basketball",
       "ru": "баскетбол"
     },
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular word for basketball (básquet / básquetbol here); no other sense (kept by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
-      "DAMER: «básquetbol» has Ar and Ur labels (rio_form, any sense)",
+      "manual accept (Valera)",
+      "DAMER: «básquet» has Ar and Ur labels (rio_form, any sense)",
       "A: replacement: básquetbol (high)",
       "B: replacement: básquet (high)",
       "Claude: replacement: básquet (high)",
-      "legacy: básquet"
+      "legacy: básquet",
+      "std_usage not_used (gemini-3.1-pro-preview): Locals exclusively say 'básquet' or 'básquetbol'. 'Baloncesto' sounds like a foreign sports broadcast and is not used in daily speech.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular word for basketball (básquet / básquetbol here); no other sense"
     ]
   },
   {
@@ -3702,27 +3741,35 @@
     "es_word": "crío",
     "rank": 4685,
     "rio_type": "replacement",
-    "rio_form": "nene",
+    "rio_form": "gurí",
     "alt_form": null,
     "alt_region": null,
     "region": null,
-    "register": "neutral",
+    "register": "informal",
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
+    "std_usage": "not_used",
+    "std_usage_reason": "Peninsular colloquial word for a child (gurí / pibe / nene here); the \"young animal\" sense is rare (kept by hand)",
+    "example": {
+      "es": "Ese gurí está jugando a la pelota en la calle desde temprano.",
+      "en": "That kid has been playing with the ball in the street since early this morning.",
+      "ru": "Этот ребенок с самого утра играет с мячом на улице.",
+      "word_form": "gurí"
+    },
+    "example_review": "confirmed",
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: all differ)",
+      "manual accept (Valera)",
       "A: replacement: nene (high)",
       "B: meaning_shift: crío (high)",
       "Claude: replacement: gurí @uy + pibe @ar (medium)",
-      "legacy: pibe"
+      "legacy: pibe",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
+      "std_usage not_used (gemini-3.1-pro-preview): Crío sounds distinctly Peninsular Spanish or like dubbed TV; locals use pibe, nene, chico, or gurí instead.",
+      "std_usage not_used kept by manual decision (Valera): Peninsular colloquial word for a child (gurí / pibe / nene here); the \"young animal\" sense is rare"
     ]
   },
   {
@@ -3871,8 +3918,8 @@
   {
     "es_word": "sanidad",
     "rank": 4790,
-    "rio_type": "none",
-    "rio_form": null,
+    "rio_type": "replacement",
+    "rio_form": "salud pública",
     "alt_form": null,
     "alt_region": null,
     "region": null,
@@ -3880,19 +3927,21 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "sanidad: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)",
+      "manual accept (Valera)",
       "A: none (high)",
       "B: none (high)",
       "Claude: replacement: salud pública (medium)",
-      "legacy: salud"
+      "legacy: salud",
+      "std_usage not_used (gemini-3.1-pro-preview): Sanidad for the healthcare system sounds Peninsular; locals say salud pública, though sanidad exists in specific technical terms.",
+      "std_usage less_common by manual rule (Valera): sanidad: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)"
     ]
   },
   {

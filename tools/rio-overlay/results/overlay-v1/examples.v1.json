@@ -13,7 +13,28 @@
       "output": 1998,
       "thoughts": 7407
     },
-    "costUsd": 0.11932
+    "costUsd": 0.11932,
+    "additions": [
+      {
+        "run": "p2-examples-batch2",
+        "model": "gemini-3.1-pro-preview",
+        "generatedAt": "2026-11-01T03:20:54.273Z",
+        "words": [
+          "ayuntamiento",
+          "armario",
+          "gafas",
+          "crío"
+        ],
+        "usage": {
+          "requests": 1,
+          "prompt": 787,
+          "output": 414,
+          "thoughts": 1420
+        },
+        "costUsd": 0.023582,
+        "note": "batch 2, added by hand-run merge; crío RU/EN edited by hand"
+      }
+    ]
   },
   "examples": {
     "tú": {
@@ -232,6 +253,46 @@
       "ru": "Принес печенье к полднику.",
       "word_form": "galletitas",
       "rio_form": "galletita",
+      "type": "replacement",
+      "review": "pending",
+      "warnings": []
+    },
+    "ayuntamiento": {
+      "es": "Mañana tengo que ir a la intendencia para pagar los impuestos del auto.",
+      "en": "Tomorrow I have to go to the city hall to pay the car taxes.",
+      "ru": "Завтра мне нужно пойти в мэрию, чтобы заплатить налоги на машину.",
+      "word_form": "intendencia",
+      "rio_form": "intendencia",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "armario": {
+      "es": "Guardá toda tu ropa en el placard del cuarto de los chicos.",
+      "en": "Put all your clothes in the closet of the kids' room.",
+      "ru": "Убери всю свою одежду в шкаф в детской комнате.",
+      "word_form": "placard",
+      "rio_form": "placard",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "gafas": {
+      "es": "Me olvidé los lentes en la rambla mientras tomábamos mate esta tarde.",
+      "en": "I forgot my glasses at the rambla while we were drinking mate this afternoon.",
+      "ru": "Я забыл свои очки на набережной, пока мы пили мате сегодня днем.",
+      "word_form": "lentes",
+      "rio_form": "lentes",
+      "type": "replacement",
+      "review": "auto",
+      "warnings": []
+    },
+    "crío": {
+      "es": "Ese gurí está jugando a la pelota en la calle desde temprano.",
+      "en": "That kid has been playing with the ball in the street since early this morning.",
+      "ru": "Этот ребенок с самого утра играет с мячом на улице.",
+      "word_form": "gurí",
+      "rio_form": "gurí",
       "type": "replacement",
       "review": "pending",
       "warnings": []

@@ -1,16 +1,16 @@
 # Overlay v1 report
 
-134 entries (the stage-1 words). Client export: 75 entries (status accepted and rio_type not none).
+134 entries (the stage-1 words). Client export: 85 entries (status accepted and rio_type not none).
 
 ## Counts
 
 | status | entries | by rio_type |
 |---|---|---|
-| accepted | 94 | replacement 62, none 19, meaning_shift 11, regional_only 2 |
-| pending | 29 | replacement 17, none 8, meaning_shift 3, regional_only 1 |
+| accepted | 104 | replacement 72, none 19, meaning_shift 11, regional_only 2 |
+| pending | 19 | replacement 8, none 7, meaning_shift 3, regional_only 1 |
 | rejected | 11 | none 11 |
 
-By rio_type overall: replacement 79, none 38, meaning_shift 14, regional_only 3.
+By rio_type overall: replacement 80, none 37, meaning_shift 14, regional_only 3.
 
 ## Base used per entry
 
@@ -40,17 +40,27 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 - cigarrillo: manual (form from B / legacy)
 - carro: A (form and register from B), manual accept
 - fila: A (type none; register kept from A)
+- ayuntamiento: A, manual accept
+- armario: A, manual accept
+- trozo: A, manual accept
 - boleto: B (A said none), confidence medium
+- gafas: A, manual accept
+- vaquero: A, manual accept
 - maya: Claude (A said none), confidence medium
+- enhorabuena: A, manual accept
+- píldora: A, manual accept
 - portero: A, rio_form/alt_form swapped by decision
 - cigarro: legacy (A said none), confidence medium
 - polla: A (type none; register kept from A)
 - chance: B (A said none), confidence medium
 - mona: A (type none; register kept from A)
+- baloncesto: A (form and register from B), manual accept
 - marcador: B (A said none), confidence medium
 - foco: B (A said none)
+- crío: A (form set by decision), manual accept
 - picado: A (type none; register kept from A)
 - condón: manual (form from legacy)
+- sanidad: A (form set by decision), manual accept
 
 ## Rejected
 
@@ -68,7 +78,7 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 
 ## Pending (the short list for further checks)
 
-29 entries, by dictionary rank. Each shows the reason and the competing proposals.
+19 entries, by dictionary rank. Each shows the reason and the competing proposals.
 
 - **niño** (rank 147): no questionnaire item; A, B and Claude do not agree (audit class: all differ)
   - A: replacement: nene (high)
@@ -94,31 +104,11 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: rápido (high)
   - Claude: none (medium)
   - legacy: rápido
-- **ayuntamiento** (rank 2200): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - DAMER: «intendencia» has Ar and Ur labels (rio_form, any sense)
-  - DAMER: «municipalidad» has Ar label (alt_form, any sense)
-  - A: replacement: intendencia @uy + municipalidad @ar (high)
-  - B: replacement: intendencia (high)
-  - Claude: replacement: intendencia @uy + municipalidad @ar (medium)
-  - legacy: municipalidad
-  - country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)
-  - alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it
 - **filme** (rank 2266): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: none (high)
   - B: replacement: película (high)
   - Claude: none (medium)
   - legacy: película
-- **armario** (rank 2422): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - DAMER: «placard» has Ar and Ur labels (rio_form, any sense)
-  - A: replacement: placard (high)
-  - B: replacement: ropero (high)
-  - Claude: replacement: placard (medium)
-  - legacy: ropero
-- **trozo** (rank 2423): no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)
-  - A: replacement: pedazo (high)
-  - B: replacement: pedazo (high)
-  - Claude: none (medium)
-  - legacy: pedazo
 - **dormitorio** (rank 2628): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: none (high)
   - B: replacement: habitación (high)
@@ -145,35 +135,17 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: replacement: auto (high)
   - Claude: none (medium)
   - legacy: auto
-- **gafas** (rank 3243): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - DAMER: «anteojos» has Ar and Ur labels (alt_form, any sense)
-  - A: replacement: lentes @uy + anteojos @ar (high)
-  - B: replacement: anteojos (high)
-  - Claude: replacement: lentes @uy + anteojos @ar (medium)
-  - legacy: anteojos
-  - country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it
-  - alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it
 - **tarta** (rank 3342): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: meaning_shift: tarta (high)
   - B: replacement: torta (high)
   - Claude: replacement: torta (medium)
   - legacy: torta
-- **vaquero** (rank 3441): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - A: replacement: jean (high)
-  - B: meaning_shift: vaquero (high)
-  - Claude: replacement: jean (medium)
-  - legacy: jean
 - **acoger** (rank 3510): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - DAMER: «recibir» has Ar and Ur labels (rio_form, any sense)
   - A: replacement: recibir (high)
   - B: none (high)
   - Claude: none (high)
   - legacy: recibir
-- **enhorabuena** (rank 3725): no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)
-  - A: replacement: felicitaciones (high)
-  - B: replacement: felicitaciones (high)
-  - Claude: none (low)
-  - legacy: felicitaciones
 - **fibra** (rank 3751): no questionnaire item; A, B and Claude do not agree (audit class: all differ)
   - DAMER: «fibra» has Ar and Ur labels (rio_form, any sense)
   - A: meaning_shift: fibra @ar (high)
@@ -186,11 +158,6 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - B: none (low)
   - Claude: none (medium)
   - legacy: gil
-- **píldora** (rank 3860): no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)
-  - A: replacement: pastilla (high)
-  - B: replacement: pastilla (high)
-  - Claude: none (medium)
-  - legacy: pastilla
 - **goma** (rank 4079): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: none (medium)
   - B: meaning_shift: goma (high)
@@ -209,27 +176,11 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - legacy: colectivo
   - country label uy dropped for «ómnibus»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
   - alt_form «colectivo» (ar) dropped: the pair needs its other label, and that one fell (a pair stands only if both labels do)
-- **baloncesto** (rank 4455): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - DAMER: «básquetbol» has Ar and Ur labels (rio_form, any sense)
-  - A: replacement: básquetbol (high)
-  - B: replacement: básquet (high)
-  - Claude: replacement: básquet (high)
-  - legacy: básquet
 - **lentes** (rank 4678): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: meaning_shift: lentes (high)
   - B: replacement: lentes @uy + anteojos @ar (high)
   - Claude: meaning_shift: lentes (medium)
   - legacy: anteojos
-- **crío** (rank 4685): no questionnaire item; A, B and Claude do not agree (audit class: all differ)
-  - A: replacement: nene (high)
-  - B: meaning_shift: crío (high)
-  - Claude: replacement: gurí @uy + pibe @ar (medium)
-  - legacy: pibe
-- **sanidad** (rank 4790): no questionnaire item; A, B and Claude do not agree (audit class: A+B agree, Claude differs)
-  - A: none (high)
-  - B: none (high)
-  - Claude: replacement: salud pública (medium)
-  - legacy: salud
 - **refresco** (rank 4871): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - DAMER: «gaseosa» has Ar label (rio_form, any sense)
   - A: replacement: gaseosa @ar (high)
@@ -267,12 +218,9 @@ A `region` (and an `alt_region` with its `alt_form`) is set only when at least t
 - **autobús** → ómnibus (accepted): uy + colectivo @ar → uy + colectivo @ar
   - country label uy kept for «ómnibus»: A + B + Claude (2 independent families) say the other country does not use it
   - alt_form «colectivo» (ar) kept: A + B + Claude say the other country does not use it
-- **ayuntamiento** → intendencia (pending): uy + municipalidad @ar → uy + municipalidad @ar
-  - country label uy kept for «intendencia»: A + Claude (2 independent families) say the other country does not use it; against: B has it in both countries; DAMER labels it for both countries (any sense)
-  - alt_form «municipalidad» (ar) kept: A + Claude + DAMER say the other country does not use it
 - **piscina** → pileta (accepted): ar → ar
   - country label ar kept for «pileta»: A + B + Claude (2 independent families) say the other country does not use it; against: DAMER labels it for both countries (any sense)
-- **gafas** → lentes (pending): uy + anteojos @ar → uy + anteojos @ar
+- **gafas** → lentes (accepted): uy + anteojos @ar → uy + anteojos @ar
   - country label uy kept for «lentes»: A + B + Claude (2 independent families) say the other country does not use it
   - alt_form «anteojos» (ar) kept: A + Claude say the other country does not use it
 - **fibra** → fibra (pending): ar → -
@@ -311,7 +259,7 @@ Reason recorded for each: questionnaire free-text (Salto respondent).
 
 Generated by `gemini-3.1-pro-preview` (run `p2-examples`): 21 of 21 in scope, 0 failed, cost about $0.1193.
 
-Shipped to the client: 22 (6 replacements that passed the automatic checks, 16 confirmed by hand). Still held back (pending): 0.
+Shipped to the client: 26 (9 replacements that passed the automatic checks, 17 confirmed by hand). Still held back (pending): 0.
 
 | word | form | type | review | sentence | EN | RU |
 |---|---|---|---|---|---|---|
@@ -323,10 +271,13 @@ Shipped to the client: 22 (6 replacements that passed the automatic checks, 16 c
 | autobús | ómnibus | replacement | auto | Tomé el ómnibus equivocado y terminé en el centro de Montevideo. | I took the wrong bus and ended up in downtown Montevideo. | Я сел не на тот автобус и оказался в центре Монтевидео. |
 | cigarrillo | pucho | replacement | auto | Salgo un ratito al balcón a fumarme un pucho y vuelvo. | I'm going out to the balcony for a bit to smoke a cigarette and I'll be back. | Я выйду на минутку на балкон выкурить сигарету и вернусь. |
 | mina | mina | meaning_shift | confirmed | Esa mina que trabaja en la panadería es re simpática. | That chick who works at the bakery is really nice. | Та девушка, что работает в пекарне, очень милая. |
+| ayuntamiento | intendencia | replacement | auto | Mañana tengo que ir a la intendencia para pagar los impuestos del auto. | Tomorrow I have to go to the city hall to pay the car taxes. | Завтра мне нужно пойти в мэрию, чтобы заплатить налоги на машину. |
 | saco | saco | meaning_shift | confirmed | Para la entrevista de trabajo, ponete una camisa blanca y un saco azul. | For the job interview, put on a white shirt and a blue blazer. | На собеседование надень белую рубашку и синий пиджак. |
+| armario | placard | replacement | auto | Guardá toda tu ropa en el placard del cuarto de los chicos. | Put all your clothes in the closet of the kids' room. | Убери всю свою одежду в шкаф в детской комнате. |
 | galleta | galletita | replacement | confirmed | Traje galletitas para la merienda. | I brought cookies for the afternoon snack. | Принес печенье к полднику. |
 | feria | feria | meaning_shift | confirmed | Los domingos siempre compro la verdura y la fruta fresca en la feria. | On Sundays I always buy fresh vegetables and fruit at the street market. | По воскресеньям я всегда покупаю свежие овощи и фрукты на рынке. |
 | boleto | boleto | meaning_shift | confirmed | Subió al ómnibus por 18 de Julio y se olvidó de pagar el boleto. | He got on the bus along 18 de Julio and forgot to pay for the ticket. | Он сел в автобус на 18 Июля и забыл купить билет. |
+| gafas | lentes | replacement | auto | Me olvidé los lentes en la rambla mientras tomábamos mate esta tarde. | I forgot my glasses at the rambla while we were drinking mate this afternoon. | Я забыл свои очки на набережной, пока мы пили мате сегодня днем. |
 | colgado | colgado | meaning_shift | confirmed | Perdoná que no te escuché, estaba re colgado mirando por la ventana. | Sorry I didn't hear you, I was totally spaced out looking out the window. | Извини, что не расслышал, я совсем завис, глядя в окно. |
 | guay | de más | replacement | auto | El concierto en la rambla estuvo de más, tocaban todas mis bandas favoritas. | The concert on the promenade was awesome, all my favorite bands played. | Концерт на набережной был просто супер, играли все мои любимые группы. |
 | portero | golero | replacement | auto | El golero de Peñarol atajó un penal decisivo en el último minuto del partido. | Peñarol's goalkeeper saved a decisive penalty in the last minute of the match. | Вратарь Пеньяроля отбил решающий пенальти на последней минуте матча. |
@@ -336,24 +287,29 @@ Shipped to the client: 22 (6 replacements that passed the automatic checks, 16 c
 | torta | torta | meaning_shift | confirmed | Para tu cumpleaños te voy a preparar una torta de chocolate riquísima. | For your birthday I am going to bake you a delicious chocolate cake. | На твой день рождения я испеку тебе очень вкусный шоколадный торт. |
 | marcador | marcador | meaning_shift | confirmed | Prestame un marcador rojo para subrayar los títulos de estos apuntes. | Lend me a red marker to underline the titles of these notes. | Одолжи мне красный маркер, чтобы подчеркнуть заголовки в этих конспектах. |
 | foco | foco | meaning_shift | confirmed | Comprá un foco nuevo en el súper porque se quemó el del pasillo. | Buy a new light bulb at the supermarket because the hallway one burned out. | Купи новую лампочку в супермаркете, потому что в коридоре перегорела. |
+| crío | gurí | replacement | confirmed | Ese gurí está jugando a la pelota en la calle desde temprano. | That kid has been playing with the ball in the street since early this morning. | Этот ребенок с самого утра играет с мячом на улице. |
 | propaganda | propaganda | meaning_shift | confirmed | Vi una propaganda en la tele sobre un champú muy bueno. | I saw an advertisement on TV about a really good shampoo. | Я видел по телевизору рекламу очень хорошего шампуня. |
 
 ## Standard-word usage (pass 4)
 
-Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose form differs from es_word: is es_word itself used in everyday speech in that region? 63 answered, 0 failed, cost about $0.3433. Overrides applied: 31.
+Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose form differs from es_word: is es_word itself used in everyday speech in that region? 63 answered, 0 failed, cost about $0.3433. Overrides applied: 33.
 
-### not_used (8; card shows: hint "rarely used here")
+### not_used (12; card shows: hint "rarely used here")
 
 - vuestro → su: the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense (kept by hand)
 - vosotros → ustedes: Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense (kept by hand)
+- ayuntamiento → intendencia: Peninsular word for the town hall (intendencia / municipalidad here); no other sense (kept by hand)
 - ordenador → computadora: Peninsular word for a computer (computadora here); the "one who orders" sense is rare and bookish (kept by hand)
 - patata → papa: Peninsular word for potato (papa here); no other common sense (kept by hand)
 - chaval → pibe: Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)
 - gilipollas → boludo: Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)
+- enhorabuena → felicitaciones: Peninsular word for congratulations (felicitaciones here); no other sense (kept by hand)
 - guay → de más: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
+- baloncesto → básquet: Peninsular word for basketball (básquet / básquetbol here); no other sense (kept by hand)
 - aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
+- crío → gurí: Peninsular colloquial word for a child (gurí / pibe / nene here); the "young animal" sense is rare (kept by hand)
 
-### less_common (50; card shows: no hint)
+### less_common (56; card shows: no hint)
 
 - aquí → acá: 'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech.
 - tú → vos: 'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall.
@@ -380,6 +336,8 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - carro → auto: carro does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
 - maleta → valija: 'Valija' is the absolute standard. 'Maleta' is understood and appears in some phrases, but sounds a bit foreign or literary in daily speech.
 - camarero → mozo: 'Mozo' is the everyday word. 'Camarero' is understood and seen in formal hospitality contexts, but is much rarer in normal conversation.
+- armario → placard: 'Armario' is understood and used for freestanding cabinets, but 'placard' is the dominant word for a clothes wardrobe.
+- trozo → pedazo: 'Pedazo' is the everyday default. 'Trozo' is understood and occasionally used, but sounds slightly more formal or bookish in casual conversation.
 - piscina → pileta @ar: piscina: used in Uruguay (pileta is the Argentine preference), so not unambiguously Peninsular; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - enfadar → enojar: enfadar: unsure: understood and sometimes used in the region, not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - galleta → galletita: Galletita is the generic term for cookies; galleta is used but usually restricted to specific hard breads, crackers, or a slap.
@@ -388,12 +346,15 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - gasolina → nafta: gasolina: standard in most of Latin America and used in the region too (nafta is just the preferred word); not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - follar → coger: follar does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
 - apresurar → apurar: apresurar: a formal verb, not Peninsular-only; it is used in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
+- gafas → lentes @uy: gafas: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)
+- vaquero → jean: vaquero has another everyday sense in the region (decided by hand)
 - mantequilla → manteca: mantequilla has another everyday sense in the region (decided by hand)
 - coste → costo: coste: unsure: a standard variant of costo that does appear in formal and written Spanish in the region; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - cojón → huevo: cojón does occur in the region, in another sense or less often, so "rarely used here" would be false (decided by hand)
 - balón → pelota: balón has another everyday sense in the region (decided by hand)
 - maya → malla: maya has another everyday sense in the region (decided by hand)
 - falda → pollera: falda has another everyday sense in the region (decided by hand)
+- píldora → pastilla: píldora has another everyday sense in the region (decided by hand)
 - portero → golero: portero has another everyday sense in the region (decided by hand)
 - competición → competencia: "Competencia" is the standard everyday term, while "competición" is mostly restricted to sports journalism or formal contexts.
 - furgoneta → camioneta: furgoneta: used in the region for the commercial vehicle; not clearly Peninsular-only; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
@@ -405,6 +366,7 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - neumático → cubierta: Cubierta or goma are the everyday words for car tires; neumático is used but tends to be reserved for more formal, commercial, or technical contexts.
 - halar → tirar: halar: Latin American, not Peninsular, so the "Peninsular-only" test fails; not unambiguously Peninsular-only, so downgraded from not_used (decided by hand)
 - condón → forro: condón has another everyday sense in the region (decided by hand)
+- sanidad → salud pública: sanidad: not unambiguously Peninsular-only, so downgraded from not_used by the rule (when unsure it goes down) (decided by hand)
 
 ### equally_used (4; card shows: hint "also common")
 
@@ -419,12 +381,16 @@ Not attached (the entry changed since the answer was written): fila
 
 - vuestro → su: the Peninsular possessive of vosotros; Rioplatense uses su / de ustedes, and vuestro has no other sense (kept by hand)
 - vosotros → ustedes: Peninsular-only pronoun; Rioplatense says ustedes in every context, and it has no other sense (kept by hand)
+- ayuntamiento → intendencia: Peninsular word for the town hall (intendencia / municipalidad here); no other sense (kept by hand)
 - ordenador → computadora: Peninsular word for a computer (computadora here); the "one who orders" sense is rare and bookish (kept by hand)
 - patata → papa: Peninsular word for potato (papa here); no other common sense (kept by hand)
 - chaval → pibe: Peninsular slang for a kid (pibe / gurí here); no other sense (kept by hand)
 - gilipollas → boludo: Peninsular vulgar insult (boludo / pelotudo here); no other sense (kept by hand)
+- enhorabuena → felicitaciones: Peninsular word for congratulations (felicitaciones here); no other sense (kept by hand)
 - guay → de más: Peninsular slang for "cool" (copado / bárbaro here); no other sense (kept by hand)
+- baloncesto → básquet: Peninsular word for basketball (básquet / básquetbol here); no other sense (kept by hand)
 - aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
+- crío → gurí: Peninsular colloquial word for a child (gurí / pibe / nene here); the "young animal" sense is rare (kept by hand)
 
 
 ## Validator

@@ -14,7 +14,34 @@
       "output": 2875,
       "thoughts": 24819
     },
-    "costUsd": 0.343308
+    "costUsd": 0.343308,
+    "additions": [
+      {
+        "run": "p4-stdusage-batch2",
+        "model": "gemini-3.1-pro-preview",
+        "generatedAt": "2026-11-01T03:21:44.587Z",
+        "words": [
+          "ayuntamiento",
+          "armario",
+          "trozo",
+          "gafas",
+          "vaquero",
+          "enhorabuena",
+          "píldora",
+          "baloncesto",
+          "crío",
+          "sanidad"
+        ],
+        "usage": {
+          "requests": 2,
+          "prompt": 1140,
+          "output": 475,
+          "thoughts": 4373
+        },
+        "costUsd": 0.060456,
+        "note": "batch 2, added by hand-run merge"
+      }
+    ]
   },
   "usage": {
     "aquí": {
@@ -393,6 +420,66 @@
       "std_usage": "not_used",
       "reason": "Forro (slang) and preservativo (standard) are the local terms; condón sounds like TV dubbing and is rarely used in natural everyday speech.",
       "rio_form": "forro",
+      "warnings": []
+    },
+    "ayuntamiento": {
+      "std_usage": "not_used",
+      "reason": "'Ayuntamiento' is never used in everyday speech; locals exclusively say 'municipalidad' or 'intendencia'. It sounds very Peninsular.",
+      "rio_form": "intendencia",
+      "warnings": []
+    },
+    "armario": {
+      "std_usage": "less_common",
+      "reason": "'Armario' is understood and used for freestanding cabinets, but 'placard' is the dominant word for a clothes wardrobe.",
+      "rio_form": "placard",
+      "warnings": []
+    },
+    "trozo": {
+      "std_usage": "less_common",
+      "reason": "'Pedazo' is the everyday default. 'Trozo' is understood and occasionally used, but sounds slightly more formal or bookish in casual conversation.",
+      "rio_form": "pedazo",
+      "warnings": []
+    },
+    "gafas": {
+      "std_usage": "not_used",
+      "reason": "'Gafas' sounds like a word from Spain or dubbed television; locals exclusively use 'lentes' or 'anteojos'.",
+      "rio_form": "lentes",
+      "warnings": []
+    },
+    "vaquero": {
+      "std_usage": "less_common",
+      "reason": "'Jean' is the universal everyday term. 'Vaquero' sounds dated or foreign, though older generations might occasionally use it.",
+      "rio_form": "jean",
+      "warnings": []
+    },
+    "enhorabuena": {
+      "std_usage": "not_used",
+      "reason": "'Enhorabuena' is never used naturally by locals; it sounds entirely Peninsular. 'Felicitaciones' is the only natural choice.",
+      "rio_form": "felicitaciones",
+      "warnings": []
+    },
+    "píldora": {
+      "std_usage": "less_common",
+      "reason": "'Pastilla' is the generic everyday word. 'Píldora' is used, but mostly restricted to birth control or specific idioms.",
+      "rio_form": "pastilla",
+      "warnings": []
+    },
+    "baloncesto": {
+      "std_usage": "not_used",
+      "reason": "Locals exclusively say 'básquet' or 'básquetbol'. 'Baloncesto' sounds like a foreign sports broadcast and is not used in daily speech.",
+      "rio_form": "básquet",
+      "warnings": []
+    },
+    "crío": {
+      "std_usage": "not_used",
+      "reason": "Crío sounds distinctly Peninsular Spanish or like dubbed TV; locals use pibe, nene, chico, or gurí instead.",
+      "rio_form": "gurí",
+      "warnings": []
+    },
+    "sanidad": {
+      "std_usage": "not_used",
+      "reason": "Sanidad for the healthcare system sounds Peninsular; locals say salud pública, though sanidad exists in specific technical terms.",
+      "rio_form": "salud pública",
       "warnings": []
     }
   },

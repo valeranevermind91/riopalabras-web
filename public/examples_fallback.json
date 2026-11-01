@@ -14,13 +14,6 @@
     "word_form": "aguardar"
   },
   {
-    "es_word": "armario",
-    "es": "Guardé todas mis camperas de invierno en el armario grande del pasillo.",
-    "en": "I put all my winter jackets in the large closet in the hallway.",
-    "ru": "Я убрал все свои зимние куртки в большой шкаф в коридоре.",
-    "word_form": "armario"
-  },
-  {
     "es_word": "automóvil",
     "es": "Mi tío compró un automóvil usado muy barato la semana pasada.",
     "en": "My uncle bought a very cheap used automobile last week.",
@@ -28,25 +21,11 @@
     "word_form": "automóvil"
   },
   {
-    "es_word": "ayuntamiento",
-    "es": "Mañana tenemos que ir al ayuntamiento para pagar los impuestos del auto.",
-    "en": "Tomorrow we have to go to the town hall to pay the car taxes.",
-    "ru": "Завтра нам нужно пойти в мэрию, чтобы заплатить налоги на машину.",
-    "word_form": "ayuntamiento"
-  },
-  {
     "es_word": "baby",
     "es": "El baby lloró toda la noche y no pudimos dormir nada.",
     "en": "The baby cried all night and we couldn't sleep at all.",
     "ru": "Малыш плакал всю ночь, и мы совсем не могли спать.",
     "word_form": "baby"
-  },
-  {
-    "es_word": "baloncesto",
-    "es": "Mis amigos y yo jugamos al baloncesto todos los fines de semana.",
-    "en": "My friends and I play basketball every weekend.",
-    "ru": "Мы с друзьями играем в баскетбол каждые выходные.",
-    "word_form": "baloncesto"
   },
   {
     "es_word": "bello",
@@ -68,13 +47,6 @@
     "en": "I missed the bus because I woke up very late this morning.",
     "ru": "Я опоздал на автобус, потому что сегодня утром проснулся очень поздно.",
     "word_form": "bus"
-  },
-  {
-    "es_word": "crío",
-    "es": "Ese crío siempre está corriendo por el parque con su perro grande.",
-    "en": "That kid is always running through the park with his big dog.",
-    "ru": "Этот ребенок всегда бегает по парку со своей большой собакой.",
-    "word_form": "crío"
   },
   {
     "es_word": "deprisa",
@@ -112,13 +84,6 @@
     "word_form": "empleo"
   },
   {
-    "es_word": "enhorabuena",
-    "es": "Les doy mi más sincera enhorabuena por el nacimiento del bebé.",
-    "en": "I give you my most sincere congratulations on the birth of the baby.",
-    "ru": "Примите мои самые искренние поздравления с рождением ребенка.",
-    "word_form": "enhorabuena"
-  },
-  {
     "es_word": "esposo",
     "es": "Mi esposo preparó la cena anoche mientras yo trabajaba con la computadora.",
     "en": "My husband made dinner last night while I was working on the computer.",
@@ -138,13 +103,6 @@
     "en": "The director presented his latest film at a very important international festival.",
     "ru": "Режиссер представил свой последний фильм на очень важном международном фестивале.",
     "word_form": "filme"
-  },
-  {
-    "es_word": "gafas",
-    "es": "Necesito comprar unas gafas nuevas porque no veo bien de lejos.",
-    "en": "I need to buy new glasses because I can't see well from afar.",
-    "ru": "Мне нужно купить новые очки, потому что я плохо вижу издалека.",
-    "word_form": "gafas"
   },
   {
     "es_word": "garaje",
@@ -238,13 +196,6 @@
     "word_form": "pequeño"
   },
   {
-    "es_word": "píldora",
-    "es": "El médico me indicó tomar una píldora para la presión todos los días.",
-    "en": "The doctor told me to take a blood pressure pill every day.",
-    "ru": "Врач велел мне каждый день принимать таблетку от давления.",
-    "word_form": "píldora"
-  },
-  {
     "es_word": "profundar",
     "es": "El profesor decidió profundar en la historia del arte durante la clase.",
     "en": "The professor decided to delve deeper into the history of art during the class.",
@@ -280,13 +231,6 @@
     "word_form": "salario"
   },
   {
-    "es_word": "sanidad",
-    "es": "El gobierno anunció nuevas medidas para mejorar la sanidad en los hospitales.",
-    "en": "The government announced new measures to improve public health in hospitals.",
-    "ru": "Правительство объявило о новых мерах по улучшению здравоохранения в больницах.",
-    "word_form": "sanidad"
-  },
-  {
     "es_word": "sofá",
     "es": "Mi perro siempre se duerme en el sofá cuando miramos la televisión.",
     "en": "My dog always falls asleep on the sofa when we watch television.",
@@ -308,25 +252,11 @@
     "word_form": "tarta"
   },
   {
-    "es_word": "trozo",
-    "es": "Siempre me gusta comer un trozo de torta de chocolate con el mate.",
-    "en": "I always like to eat a piece of chocolate cake with my mate.",
-    "ru": "Мне всегда нравится съесть кусок шоколадного торта с мате.",
-    "word_form": "trozo"
-  },
-  {
     "es_word": "utilizar",
     "es": "Podés utilizar mi celular para llamar a tu familia si lo necesitás.",
     "en": "You can use my cell phone to call your family if you need it.",
     "ru": "Ты можешь воспользоваться моим сотовым телефоном, чтобы позвонить семье, если тебе нужно.",
     "word_form": "utilizar"
-  },
-  {
-    "es_word": "vaquero",
-    "es": "Me compré un pantalón vaquero azul oscuro para salir esta noche.",
-    "en": "I bought dark blue jeans to go out tonight.",
-    "ru": "Я купил темно-синие джинсы, чтобы пойти куда-нибудь сегодня вечером.",
-    "word_form": "vaquero"
   },
   {
     "es_word": "wow",
