@@ -139,6 +139,8 @@ export const en = {
     // the user's own words: add (the "+" in the header), edit and delete from the detail
     custom: 'Custom',
     addWord: 'Add a word',
+    // the visible face of the "+" in the header: a part of its name above ("Add" is in "Add a word"), so a screen reader hears the whole phrase
+    addWordShort: 'Add',
     customMark: 'Added by you',
     editWord: 'Edit',
     deleteWord: 'Delete',

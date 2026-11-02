@@ -108,6 +108,7 @@ export const ru: Strings = {
     learnSoonerHint: 'Слово попадет в Learn раньше остальных.',
     custom: 'Мои слова',
     addWord: 'Добавить слово',
+    addWordShort: 'Добавить',
     customMark: 'Добавлено вами',
     editWord: 'Изменить',
     deleteWord: 'Удалить',

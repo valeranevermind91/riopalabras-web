@@ -45,6 +45,19 @@ describe('the Words screen', () => {
     expect(html).toContain('role="list"')
   })
 
+  it('the way to add a word is a button in the header with its word beside the plus: "Add", named "Add a word" (the visible word is part of the name)', () => {
+    const html = render(learnedSome())
+    const actions = html.match(/<div class="screen-header-actions">.*?<\/div>/)![0]
+    expect(actions.match(/<button/g)).toHaveLength(1)
+    expect(actions).toMatch(/<button type="button" class="add-btn" aria-label="Add a word" title="Add a word"><svg[^>]*aria-hidden="true">.*?<\/svg><span>Add<\/span><\/button>/)
+    setLanguage('ru')
+    try {
+      expect(render(learnedSome()).match(/<div class="screen-header-actions">.*?<\/div>/)![0]).toMatch(/aria-label="Добавить слово" title="Добавить слово"><svg[^>]*aria-hidden="true">.*?<\/svg><span>Добавить<\/span><\/button>/)
+    } finally {
+      setLanguage('en')
+    }
+  })
+
   it('opens on All, most common first, with nothing filtered', () => {
     const html = render(learnedSome())
     expect(html).toMatch(/class="segment is-active" aria-pressed="true">All/)

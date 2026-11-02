@@ -277,10 +277,11 @@ function SortIcon() {
 
 function AddButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" className="icon-btn" aria-label={t.addWord} title={t.addWord} onClick={onClick}>
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <button type="button" className="add-btn" aria-label={t.addWord} title={t.addWord} onClick={onClick}>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 5v14M5 12h14" />
       </svg>
+      <span>{t.addWordShort}</span>
     </button>
   )
 }

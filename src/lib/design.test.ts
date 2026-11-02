@@ -76,6 +76,11 @@ describe('shapes', () => {
     expect(rule(selector)).toContain(`border-radius: ${radius}`)
   })
 
+  it('the "Add" button in the Words header is as tall as the round icon buttons (38px), on the surface colour with a 1px border and the button radius, its text 14px bold in the text colour, never wrapping', () => {
+    const r = rule('.add-btn')
+    for (const d of ['height: 38px', 'border: 1px solid var(--border)', 'border-radius: var(--radius-button)', 'background: var(--surface)', 'color: var(--text)', 'font-size: 14px', 'font-weight: 700', 'white-space: nowrap']) expect(r).toContain(d)
+  })
+
   it('the theme button is a 38px round with a 1px border on the surface colour and a muted icon', () => {
     const r = rule('.icon-btn')
     for (const d of ['width: 38px', 'height: 38px', 'border: 1px solid var(--border)', 'border-radius: 50%', 'background: var(--surface)', 'color: var(--muted)']) expect(r).toContain(d)

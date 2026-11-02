@@ -1045,7 +1045,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
     it('"+" in the header adds a word: type it, pick a part of speech, the translation is filled in, change anything, save; it is written and set to learn sooner', async () => {
       const page = await open()
-      expect(await page.$$eval('.screen-header-actions .icon-btn', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Add a word'])
+      expect(await page.$$eval('.screen-header-actions button', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Add a word'])
       await startAdding(page, 'Zapallito', 'Noun')
       await page.waitForSelector('.form-word')
       expect(await enrichCalls(page)).toEqual([{ word: 'Zapallito', pos: 'n' }])
@@ -1413,6 +1413,33 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect((await sentAll(page)).words).toHaveLength(1)
       await page.close()
     }, 60_000)
+
+    it('the "+" in the header has its word beside it ("Add"), and keeps its name ("Add a word"), its place at the right edge and the height of the header\'s other buttons; in Russian too', async () => {
+      const measure = (page: Page) =>
+        page.evaluate(() => {
+          const b = document.querySelector('.screen-header-actions .add-btn') as HTMLElement
+          const box = b.getBoundingClientRect()
+          const search = (document.querySelector('.words-search') as HTMLElement).getBoundingClientRect()
+          const title = (document.querySelector('.screen-header h1') as HTMLElement).getBoundingClientRect()
+          return { count: document.querySelectorAll('.screen-header-actions > *').length, name: b.getAttribute('aria-label'), title: b.getAttribute('title'), text: b.textContent?.trim(), icon: b.querySelector('svg[aria-hidden="true"]') !== null, height: Math.round(box.height), right: Math.round(box.right), edge: Math.round(search.right), left: Math.round(box.left), titleRight: Math.round(title.right), scroll: document.documentElement.scrollWidth }
+        })
+      const page = await open()
+      expect(await measure(page)).toMatchObject({ count: 1, name: 'Add a word', title: 'Add a word', text: 'Add', icon: true, height: 38, right: 370, edge: 370 }) // 390 wide, 20 of page padding each side
+      await page.setViewport({ width: 320, height: 640, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      const narrow = await measure(page)
+      expect(narrow.right).toBe(narrow.edge)
+      expect(narrow.left).toBeGreaterThan(narrow.titleRight)
+      expect(narrow.scroll).toBeLessThanOrEqual(320)
+      await page.close()
+
+      const ru = await open('?lang=ru')
+      expect(await measure(ru)).toMatchObject({ name: 'Добавить слово', text: 'Добавить', icon: true, height: 38, right: 370, edge: 370 })
+      await ru.setViewport({ width: 320, height: 640, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      const narrowRu = await measure(ru)
+      expect(narrowRu.left).toBeGreaterThan(narrowRu.titleRight)
+      expect(narrowRu.scroll).toBeLessThanOrEqual(320)
+      await ru.close()
+    }, 90_000)
 
     it('a search that finds nothing offers to add the word: the form opens with it typed in, Back and Cancel do not ask, and the rest of the flow is the usual one', async () => {
       const page = await open()

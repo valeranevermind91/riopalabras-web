@@ -245,9 +245,29 @@ dd {
   cursor: pointer;
 }
 
+/* The "+" of the Words header with its word beside it: the height of the round icon buttons, so the header does not grow. */
+.add-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
 .btn:focus-visible,
 .btn-small:focus-visible,
 .icon-btn:focus-visible,
+.add-btn:focus-visible,
 .tile:focus-visible,
 .rate-btn:focus-visible,
 .match-tile:focus-visible,
