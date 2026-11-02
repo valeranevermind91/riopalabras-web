@@ -324,13 +324,13 @@ export function WordForm({ existing, words, initial, enrich = noEnrichment, onSu
       {!values.isRioplatenseVariant && (
         <label className="form-field">
           <span className="form-label">{f.rioplatenseForm}</span>
-          <input className="form-input" lang="es" value={values.esRioplatense ?? ''} onChange={(e) => set({ esRioplatense: e.target.value === '' ? null : e.target.value })} />
+          <input className="form-input" lang="es" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={values.esRioplatense ?? ''} onChange={(e) => set({ esRioplatense: e.target.value === '' ? null : e.target.value })} />
           <span className="form-hint">{f.rioplatenseFormHint}</span>
         </label>
       )}
       <label className="form-field">
         <span className="form-label">{f.standard}</span>
-        <input className="form-input" lang="es" value={values.esStandard ?? ''} onChange={(e) => set({ esStandard: e.target.value })} />
+        <input className="form-input" lang="es" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={values.esStandard ?? ''} onChange={(e) => set({ esStandard: e.target.value })} />
         <span className="form-hint">{f.standardHint}</span>
       </label>
       <label className="form-field">

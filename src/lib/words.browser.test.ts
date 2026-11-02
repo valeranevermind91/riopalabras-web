@@ -1495,6 +1495,41 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await page.close()
     }, 90_000)
 
+    it('a search typed with a capital (as a keyboard may) is offered, and opens the form, lower-cased; what is typed in the form is left alone', async () => {
+      const page = await open()
+      await search(page, 'Zapallito')
+      await page.waitForSelector('.words-empty')
+      expect(await page.$eval('.words-search', (e) => (e as HTMLInputElement).value)).toBe('Zapallito') // the search is as typed
+      expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters', 'Add “zapallito” as your own Spanish word'])
+      await clickText(page, '.words-empty .btn', strings.words.addAsOwn('zapallito'))
+      await page.waitForSelector('.word-form')
+      expect(await fieldValue(page, f.spanish)).toBe('zapallito')
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet') // an untouched prefill: no question
+      await page.waitForSelector('.words-search')
+      expect(await page.$('.sheet')).toBeNull()
+
+      await clickText(page, '.words-empty .btn', strings.words.addAsOwn('zapallito'))
+      await page.waitForSelector('.word-form')
+      await typeIn(page, f.spanish, 'Zapallito') // typed by hand: kept exactly as typed
+      expect(await fieldValue(page, f.spanish)).toBe('Zapallito')
+      await page.close()
+    }, 60_000)
+
+    it('the Spanish-word fields do not capitalize, correct or spell-check: the word, the Rioplatense form and the standard form; the search box does not capitalize', async () => {
+      const page = await open()
+      expect(await page.$eval('.words-search', (e) => e.getAttribute('autocapitalize'))).toBe('none')
+      await startAdding(page, 'Zapallito', 'Noun')
+      await page.waitForSelector('.form-word')
+      const attributes = (label: string) =>
+        page.evaluate((l) => {
+          const input = Array.from(document.querySelectorAll('.form-field')).find((x) => x.querySelector('.form-label')?.textContent === l)!.querySelector('input')!
+          return [input.getAttribute('autocapitalize'), input.getAttribute('autocorrect'), input.getAttribute('spellcheck')]
+        }, label)
+      expect(await attributes(f.rioplatenseForm)).toEqual(['none', 'off', 'false'])
+      expect(await attributes(f.standard)).toEqual(['none', 'off', 'false'])
+      await page.close()
+    }, 60_000)
+
     it('the offer carries a 50-letter query without widening the page: the label breaks inside the word', async () => {
       const page = await open()
       await search(page, 'z'.repeat(50))

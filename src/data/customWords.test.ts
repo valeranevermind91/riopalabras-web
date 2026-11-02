@@ -169,12 +169,25 @@ function spies(words: readonly Word[], raw: Record<string, unknown> = {}) {
 }
 
 describe('ownWordFromQuery', () => {
-  it('one token of Latin letters is a word that could be added: trimmed, accents, ñ and ü kept, case kept', () => {
+  it('one token of Latin letters is a word that could be added: trimmed, accents, ñ and ü kept', () => {
     expect(ownWordFromQuery('casa')).toBe('casa')
-    expect(ownWordFromQuery('  Zapallito ')).toBe('Zapallito')
+    expect(ownWordFromQuery('  zapallito ')).toBe('zapallito')
     expect(ownWordFromQuery('añejo')).toBe('añejo')
     expect(ownWordFromQuery('pingüino')).toBe('pingüino')
-    expect(ownWordFromQuery('éÉíóúÁ')).toBe('éÉíóúÁ')
+    expect(ownWordFromQuery('éíóúá')).toBe('éíóúá')
+  })
+
+  it('it comes back lower-cased, so a keyboard that capitalized the search ("Zapallito") does not put a capital into the word', () => {
+    expect(ownWordFromQuery('Zapallito')).toBe('zapallito')
+    expect(ownWordFromQuery(' ZAPALLITO ')).toBe('zapallito')
+    expect(ownWordFromQuery('Ñandú')).toBe('ñandú')
+    expect(ownWordFromQuery('ÁÉÍÓÚÜÑ')).toBe('áéíóúüñ')
+    expect(ownWordFromQuery('PINGÜINO')).toBe('pingüino')
+  })
+
+  it('a decomposed capital Ñ or accent is composed and lower-cased: the same letters the dictionary has', () => {
+    expect(ownWordFromQuery('N\u0303ANDU\u0301')).toBe('ñandú')
+    expect(ownWordFromQuery('n\u0303ando\u0301')).toBe('ñandó')
   })
 
   it('a decomposed ñ comes back composed, so the form gets the same letter the dictionary has', () => {

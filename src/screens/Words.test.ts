@@ -58,6 +58,11 @@ describe('the Words screen', () => {
     }
   })
 
+  it('the search box is told not to capitalize, correct or spell-check what is typed', () => {
+    const input = render(learnedSome()).match(/<input type="search" class="words-search"[^>]*>/)![0]
+    for (const attribute of ['autoCapitalize="none"', 'autoCorrect="off"', 'spellCheck="false"', 'autoComplete="off"']) expect(input).toContain(attribute)
+  })
+
   it('opens on All, most common first, with nothing filtered', () => {
     const html = render(learnedSome())
     expect(html).toMatch(/class="segment is-active" aria-pressed="true">All/)
@@ -276,6 +281,14 @@ describe('the Words screen', () => {
 
     it('not Latin script: no button for Cyrillic, other scripts, digits or punctuation, mixed or alone', () => {
       for (const query of ['привет', 'zzzzпривет', 'ありがとう', '12345', 'zzzz1', 'zz-qq', "zz'qq", 'zz.', '¿zz?']) expect(offer(query), query).not.toContain('as your own Spanish word')
+    })
+
+    it('the word is lower-cased, in the label as in the form it opens: a capital from the keyboard is not part of the word', () => {
+      const html = offer('Zapallito')
+      expect(html).toContain(addLabel('zapallito'))
+      expect(html).not.toContain('Add “Zapallito”') // (the search box itself still holds what was typed)
+      expect(offer('ÑANDÚ')).toContain(addLabel('ñandú'))
+      expect(offer('N\u0303ANDU\u0301')).toContain(addLabel('ñandú')) // decomposed capitals too
     })
 
     it('a decomposed ñ (n and a combining tilde, as some keyboards and pastes give it) counts as the Latin letter it is', () => {

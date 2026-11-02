@@ -167,6 +167,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         placeholder={t.searchPlaceholder}
         aria-label={t.searchLabel}
         autoComplete="off"
+        autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}
         onChange={(e) => change({ query: e.target.value })}

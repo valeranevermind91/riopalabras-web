@@ -28,13 +28,15 @@ export function checkSpanish(raw: string): { ok: true; word: string } | { ok: fa
 }
 
 /**
- * The search the Words list found nothing for, as a word that could be added: the trimmed query (composed form) when it is one token of Latin letters (accents, ñ and ü
- * included, nothing else: no digits, no hyphen, no space), otherwise null. This only decides whether the list offers "Add it as your own word"; what
- * the form then does with the word (the length, the duplicate check, the lookup) is checkSpanish and the rest, unchanged.
+ * The search the Words list found nothing for, as a word that could be added: the trimmed query when it is one token of Latin letters (accents, ñ and ü
+ * included, nothing else: no digits, no hyphen, no space), otherwise null. The word comes back lower-cased (Spanish rules), composed first (NFC): a keyboard
+ * that capitalized the first letter of the search ("Zapallito") must not put a capital into a word the person saves as typed. Only this offer is normalized;
+ * the search itself matches as it always did, and what is typed in the form is never changed. This only decides whether the list offers "Add it as your
+ * own word"; what the form then does with the word (the length, the duplicate check, the lookup) is checkSpanish and the rest, unchanged.
  */
 export function ownWordFromQuery(query: string): string | null {
   const word = query.trim().normalize('NFC') // a decomposed ñ (n + a combining tilde) is the same letter, and not Latin script until it is composed
-  return /^\p{Script=Latin}+$/u.test(word) ? word : null
+  return /^\p{Script=Latin}+$/u.test(word) ? word.toLocaleLowerCase('es') : null
 }
 
 export type DuplicateVia = 'es_word' | 'es_rioplatense' | 'overlay'
