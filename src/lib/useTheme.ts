@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { UserSettings } from '../data/types'
-import { getWebApp } from './telegram'
+import { getWebApp, onTelegramViewportStable } from './telegram'
+import { useForeground } from './useForeground'
 import {
   applyTheme,
   effectiveChoice,
@@ -39,6 +40,19 @@ export function useTheme(settings: Pick<UserSettings, 'themeChoice'> | null, per
     const { webApp } = getWebApp()
     applyTheme(document.documentElement, scheme, insideTelegram(webApp) ? webApp : null)
   }, [scheme, env])
+
+  // The client's header and background colour are set when the scheme changes, and may not survive the Mini App being minimized: Telegram's own docs do not say what
+  // a restore leaves of them. So they are put on again each time the app comes back (the page visible again, or Telegram's "activated", Bot API 8.0+) and each time
+  // Telegram has finished resizing it, with the scheme as it is now. Cannot be told from here whether a given Android client needs it; sending the same colour again is harmless.
+  const current = useRef(scheme)
+  useEffect(() => {
+    current.current = scheme
+  })
+  const reapplyColors = useCallback(() => {
+    applyTheme(document.documentElement, current.current, insideTelegram(getWebApp().webApp) ? getWebApp().webApp : null)
+  }, [])
+  useForeground(reapplyColors)
+  useEffect(() => onTelegramViewportStable(reapplyColors), [reapplyColors])
 
   // Follow the OS (outside Telegram) and the client's own theme changes (inside it).
   useEffect(() => {

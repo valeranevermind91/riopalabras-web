@@ -64,8 +64,9 @@ export interface TelegramWebApp {
   disableClosingConfirmation?: () => void
   /** Asks the user to let the bot message them (Bot API 6.9+); the callback says whether they agreed. Absent in the dev mock and in older clients. */
   requestWriteAccess?: (callback?: (granted: boolean) => void) => void
-  onEvent?: (eventType: string, callback: () => void) => void
-  offEvent?: (eventType: string, callback: () => void) => void
+  // A handler is called with the event's data where it has any (viewportChanged: { isStateStable }); one that takes none ignores it.
+  onEvent?: (eventType: string, callback: (eventData?: { isStateStable?: boolean }) => void) => void
+  offEvent?: (eventType: string, callback: (eventData?: { isStateStable?: boolean }) => void) => void
 }
 
 declare global {
@@ -197,6 +198,29 @@ export function onTelegramEvent(event: 'activated' | 'deactivated', callback: ()
 /** Calls `callback` when Telegram re-activates the Mini App (Bot API 8.0+). Returns the unsubscribe; a no-op where the event doesn't exist. */
 export function onTelegramActivated(callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
   return onTelegramEvent('activated', callback, webApp)
+}
+
+/**
+ * Calls `callback` each time Telegram has finished resizing the Mini App (viewportChanged with isStateStable true: not while a drag or an animation is still going).
+ * Returns the unsubscribe; a no-op where there are no events (the dev mock).
+ */
+export function onTelegramViewportStable(callback: () => void, webApp: TelegramWebApp = getWebApp().webApp): () => void {
+  if (!webApp.onEvent) return () => {}
+  const handler = (event?: { isStateStable?: boolean }) => {
+    if (event?.isStateStable === true) callback()
+  }
+  try {
+    webApp.onEvent('viewportChanged', handler)
+  } catch {
+    return () => {}
+  }
+  return () => {
+    try {
+      webApp.offEvent?.('viewportChanged', handler)
+    } catch {
+      // already gone
+    }
+  }
 }
 
 /**
