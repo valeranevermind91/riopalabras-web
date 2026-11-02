@@ -7,7 +7,7 @@ import { LEARN_SOONER_HINT_ID, WORD_ROW_HEIGHT, WordRow } from '../components/Wo
 import { FiltersSheet, SortSheet } from '../components/WordsSheets'
 import { blankValues } from '../data/customWords'
 import type { UserData } from '../data/useUserData'
-import { addCustomWord } from '../data/customWords'
+import { addCustomWord, ownWordFromQuery } from '../data/customWords'
 import { noEnrichment, type EnrichResult } from '../data/enrich'
 import { canStar } from '../data/starred'
 import { NO_FILTERS, activeFilterCount, buildWordList, initialListView, type ListFilters, type ListView, type Segment } from '../data/wordList'
@@ -47,8 +47,9 @@ interface WordsScreenProps {
 export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, registerBack, enrich = noEnrichment, onBack }: WordsScreenProps) {
   const [view, setViewState] = useState<ListView>(() => savedView ?? initialListView())
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null)
-  // The add-a-word form takes the screen; it handles Back itself (and asks before throwing away what was typed).
-  const [adding, setAdding] = useState(false)
+  // The add-a-word form takes the screen; it handles Back itself (and asks before throwing away what was typed). null: not open; otherwise the word it opens with
+  // ('' from the "+", the search that found nothing from the button under "No words match").
+  const [adding, setAdding] = useState<string | null>(null)
   // What the last thing done said ("Added, and set to learn sooner."), until the list is changed.
   const [notice, setNotice] = useState<string | null>(null)
   // The note is a confirmation, not state: it goes by itself after NOTICE_MS (or at once when the list is changed, below).
@@ -106,6 +107,8 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   const filterCount = activeFilterCount(view.filters, view.segment, list.searching)
   const anyFilter = view.filters.stage || view.filters.due || view.filters.favourites || view.filters.custom || view.filters.pos
   const emptyBecauseFiltered = list.rows.length === 0 && (list.searching || anyFilter)
+  // A search that found nothing, with no filter to blame, for one word in Latin letters: the word can be added from here (the form opens with it typed in).
+  const offeredWord = list.rows.length === 0 && !anyFilter ? ownWordFromQuery(view.query) : null
   const emptyText = list.rows.length > 0 ? null : emptyBecauseFiltered ? t.emptyFiltered : view.segment === 'hidden' ? t.emptyHidden : view.segment === 'started' ? t.emptyStarted : t.emptyAll
   const listKey = `${view.segment}|${view.sort}|${view.seed}|${view.query}|${view.filters.stage}|${view.filters.due}|${view.filters.favourites}|${view.filters.custom}|${view.filters.pos}`
   // The line about the star, only until a word has one: a person who has starred a word has understood it. Not while the stars could not be read (nothing starred
@@ -114,7 +117,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
   // A search is ordered by how well it matches; the sort comes back when the search is cleared.
   const sortName = list.searching ? t.bestMatch : t.sorts[view.sort]
 
-  if (adding) {
+  if (adding !== null) {
     const submit = (values: Parameters<typeof addCustomWord>[0]): SubmitResult => {
       const result = addCustomWord(values, {
         words: data.words,
@@ -138,14 +141,14 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
         <WordForm
           existing={null}
           words={data.words}
-          initial={blankValues()}
+          initial={{ ...blankValues(), esWord: adding }}
           enrich={enrich}
           onSubmit={submit}
-          onDone={() => setAdding(false)}
-          onCancel={() => setAdding(false)}
+          onDone={() => setAdding(null)}
+          onCancel={() => setAdding(null)}
           registerBack={registerBack}
           onOpenExisting={(word) => {
-            setAdding(false)
+            setAdding(null)
             onOpen(wordKey(word.esWord))
           }}
         />
@@ -155,7 +158,7 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
 
   return (
     <main className="screen fill words">
-      <ScreenHeader title={t.title} onBack={onBack} actions={<AddButton onClick={() => setAdding(true)} />} />
+      <ScreenHeader title={t.title} onBack={onBack} actions={<AddButton onClick={() => setAdding('')} />} />
 
       <input
         type="search"
@@ -220,6 +223,11 @@ export function WordsScreen({ data, queue, savedView, onViewChange, onOpen, regi
           {emptyBecauseFiltered && (
             <button type="button" className="btn btn-secondary" onClick={() => change({ query: '', filters: NO_FILTERS })}>
               {t.clearSearchAndFilters}
+            </button>
+          )}
+          {offeredWord !== null && (
+            <button type="button" className="btn btn-secondary" onClick={() => setAdding(offeredWord)}>
+              {t.addAsOwn(offeredWord)}
             </button>
           )}
         </div>

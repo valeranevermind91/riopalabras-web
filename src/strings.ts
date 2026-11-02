@@ -231,6 +231,8 @@ export const en = {
     emptyHidden: 'No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.',
     emptyFiltered: 'No words match. Try another search, or clear the filters.',
     clearSearchAndFilters: 'Clear search and filters',
+    // under "No words match", for a search of one word in Latin letters with no filter on: opens the add form with that word typed in
+    addAsOwn: (word: string) => `Add “${word}” as your own Spanish word`,
     count: (shown: number) => `${shown} ${plural(shown, { one: 'word', other: 'words' })}`,
     open: (word: string) => `Open ${word}`,
     detail: {

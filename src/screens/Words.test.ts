@@ -227,6 +227,62 @@ describe('the Words screen', () => {
     expect(render(learnedSome())).not.toContain(button) // a list with rows
   })
 
+  describe('"Add “word” as your own Spanish word" under "No words match"', () => {
+    const offer = (query: string, over: Partial<ListView> = {}) => render([makeWord('uno')], view({ query, ...over }))
+    const addLabel = (word: string) => `Add “${word}” as your own Spanish word</button>`
+
+    it('a search of one Latin-script word that finds nothing, with no filter on: the button is there, second, under "Clear search and filters"', () => {
+      const html = offer('zzzzqq')
+      expect(html).toContain(addLabel('zzzzqq'))
+      expect([...html.matchAll(/<div class="words-empty">.*?<\/div>/g)][0][0].match(/<button[^>]*>([^<]*)</g)!.map((b) => b.replace(/<button[^>]*>/, '').replace('<', ''))).toEqual(['Clear search and filters', 'Add “zzzzqq” as your own Spanish word'])
+    })
+
+    it('the word is the trimmed query, accents, ñ and ü included', () => {
+      expect(offer('  zzzzqq  ')).toContain(addLabel('zzzzqq'))
+      expect(offer('añejoñ')).toContain(addLabel('añejoñ'))
+      expect(offer('pingüínó')).toContain(addLabel('pingüínó'))
+    })
+
+    it('no query: no button (a list empty by nature, or by its segment)', () => {
+      expect(offer('')).not.toContain('as your own Spanish word')
+      expect(offer('', { segment: 'hidden' })).not.toContain('as your own Spanish word')
+      expect(offer('   ')).not.toContain('as your own Spanish word') // blank is not a search
+    })
+
+    it('a filter on: no button, whatever the query (the filter may be why nothing matched)', () => {
+      for (const filters of [{ ...NO_FILTERS, favourites: true }, { ...NO_FILTERS, pos: 'verb' as const }, { ...NO_FILTERS, due: true }, { ...NO_FILTERS, custom: true }, { ...NO_FILTERS, stage: 'learning' as const }]) {
+        expect(offer('zzzzqq', { filters })).not.toContain('as your own Spanish word')
+      }
+    })
+
+    it('a phrase: no button', () => {
+      expect(offer('dos palabras')).not.toContain('as your own Spanish word')
+      expect(offer('zzzz qqqq')).not.toContain('as your own Spanish word')
+      expect(offer('zzzz\tqqqq')).not.toContain('as your own Spanish word')
+    })
+
+    it('not Latin script: no button for Cyrillic, other scripts, digits or punctuation, mixed or alone', () => {
+      for (const query of ['привет', 'zzzzпривет', 'ありがとう', '12345', 'zzzz1', 'zz-qq', "zz'qq", 'zz.', '¿zz?']) expect(offer(query), query).not.toContain('as your own Spanish word')
+    })
+
+    it('a decomposed ñ (n and a combining tilde, as some keyboards and pastes give it) counts as the Latin letter it is', () => {
+      expect(offer('zzan\u0303o')).toContain(addLabel('zzañ' + 'o'))
+    })
+
+    it('a search that finds words: no button', () => {
+      expect(render(real, view({ query: 'casa' }))).not.toContain('as your own Spanish word')
+    })
+
+    it('in Russian, the label says the word is Spanish and carries the query', () => {
+      setLanguage('ru')
+      try {
+        expect(offer('zzzzqq')).toContain('Добавить «zzzzqq» как свое испанское слово</button>')
+      } finally {
+        setLanguage('en')
+      }
+    })
+  })
+
   it('an empty list says what goes there', () => {
     expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.')
     expect(render([makeWord('uno')], view({ segment: 'started' }))).toContain('Nothing started yet.')

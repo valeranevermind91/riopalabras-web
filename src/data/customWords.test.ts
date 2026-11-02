@@ -12,6 +12,7 @@ import {
   editCustomWord,
   fillBlanks,
   findDuplicate,
+  ownWordFromQuery,
   rowFromValues,
   tombstoneClearPatch,
   valuesOf,
@@ -166,6 +167,24 @@ function spies(words: readonly Word[], raw: Record<string, unknown> = {}) {
   }
   return { deps, calls, patches, saves, deletes, progress, stars, settings: () => settings }
 }
+
+describe('ownWordFromQuery', () => {
+  it('one token of Latin letters is a word that could be added: trimmed, accents, ñ and ü kept, case kept', () => {
+    expect(ownWordFromQuery('casa')).toBe('casa')
+    expect(ownWordFromQuery('  Zapallito ')).toBe('Zapallito')
+    expect(ownWordFromQuery('añejo')).toBe('añejo')
+    expect(ownWordFromQuery('pingüino')).toBe('pingüino')
+    expect(ownWordFromQuery('éÉíóúÁ')).toBe('éÉíóúÁ')
+  })
+
+  it('a decomposed ñ comes back composed, so the form gets the same letter the dictionary has', () => {
+    expect(ownWordFromQuery('man\u0303ana')).toBe('mañana')
+  })
+
+  it('nothing else is: empty, blank, a phrase, another script, digits, punctuation, mixed scripts', () => {
+    for (const query of ['', '   ', 'dos palabras', 'a\tb', 'привет', 'zzзз', '漢字', '123', 'ab1', 'a-b', "a'b", 'a.', '¿a?', 'a_b', '<b>']) expect(ownWordFromQuery(query), JSON.stringify(query)).toBeNull()
+  })
+})
 
 describe('adding a word', () => {
   it('saves the row, clears a matching tombstone in one settings patch, and stars the word ("learn sooner")', () => {

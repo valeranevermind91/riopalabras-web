@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'add-from-search',
+    at: '2026-11-01T21:50',
+    en: {
+      title: 'Add a word right from the search',
+      text: 'When you search the Words list for a single Spanish word and it is not there, the list now offers to add it: tap “Add … as your own Spanish word” and the add form opens with the word already typed in.',
+    },
+    ru: {
+      title: 'Слово можно добавить прямо из поиска',
+      text: 'Если вы искали в списке Words испанское слово и его там нет, список предложит добавить его: нажмите «Добавить … как свое испанское слово», и форма откроется с уже введенным словом.',
+    },
+  },
+  {
     id: 'local-headwords-ten',
     at: '2026-11-01T00:30',
     en: {

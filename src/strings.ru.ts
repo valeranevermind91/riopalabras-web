@@ -197,6 +197,7 @@ export const ru: Strings = {
     emptyHidden: 'Скрытых слов пока нет. Сюда попадают слова, которые вы скрыли кнопкой «Скрыть слово» или отметили во входном тесте.',
     emptyFiltered: 'Ничего не найдено. Измените поиск или сбросьте фильтры.',
     clearSearchAndFilters: 'Сбросить поиск и фильтры',
+    addAsOwn: (word) => `Добавить «${word}» как свое испанское слово`,
     count: (shown) => `${shown} ${words(shown)}`,
     open: (word) => `Открыть: ${word}`,
     detail: {

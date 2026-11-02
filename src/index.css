@@ -2079,6 +2079,11 @@ mark {
   margin: 0;
 }
 
+/* "Add “word” as your own Spanish word" carries what was typed, up to 50 letters in one piece: it breaks wherever it must instead of widening the page. */
+.words-empty .btn {
+  overflow-wrap: anywhere;
+}
+
 /* The windowed list: the scroller is the list, and rows sit at fixed offsets (WORD_ROW_HEIGHT in WordRow.tsx). */
 .words .vlist {
   flex: 1 1 0;

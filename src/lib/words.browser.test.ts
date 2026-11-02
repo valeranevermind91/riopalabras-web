@@ -280,7 +280,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await search(page, 'zzzzqq')
     await page.waitForSelector('.words-empty')
     expect(await page.$eval('.words-empty p', (e) => e.textContent)).toBe('No words match. Try another search, or clear the filters.')
-    expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters'])
+    // a single Latin-script word with no filter on also gets the way to add it (see 'custom words'): "Clear search and filters" stays first
+    expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters', strings.words.addAsOwn('zzzzqq')])
     await segment(page, 'Started')
     await page.waitForSelector('.words-empty .btn') // still empty for the same reason: the search is still there
     await page.click('.words-empty .btn')
@@ -1410,6 +1411,72 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await clickText(page, 'button', f.save)
       await page.waitForSelector('.words-search')
       expect((await sentAll(page)).words).toHaveLength(1)
+      await page.close()
+    }, 60_000)
+
+    it('a search that finds nothing offers to add the word: the form opens with it typed in, Back and Cancel do not ask, and the rest of the flow is the usual one', async () => {
+      const page = await open()
+      await search(page, 'zzzzqq')
+      await page.waitForSelector('.words-empty')
+      expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters', 'Add “zzzzqq” as your own Spanish word'])
+      const offer = () => clickText(page, '.words-empty .btn', strings.words.addAsOwn('zzzzqq'))
+
+      await offer()
+      await page.waitForSelector('.word-form')
+      expect(await page.$eval('h1', (e) => e.textContent)).toBe('Add a word')
+      expect(await fieldValue(page, f.spanish)).toBe('zzzzqq') // typed in already: part of speech next
+      expect(await enrichCalls(page)).toEqual([]) // nothing is looked up until Continue
+      expect(await page.$('.sheet')).toBeNull()
+
+      // Back does not ask: the word was not typed here, so the form is untouched
+      expect(await page.evaluate(() => (window as never as { __pressBack: () => string }).__pressBack())).toBe('closed-sheet')
+      await page.waitForSelector('.words-search')
+      expect(await page.$('.sheet')).toBeNull()
+      expect(await page.$eval('.words-search', (e) => (e as HTMLInputElement).value)).toBe('zzzzqq') // the search is as it was left, so is the offer
+      await page.waitForSelector('.words-empty .btn')
+
+      // nor does Cancel
+      await offer()
+      await page.waitForSelector('.word-form')
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.words-search')
+      expect(await page.$('.sheet')).toBeNull()
+
+      // changing the word is a change: then it asks
+      await offer()
+      await page.waitForSelector('.word-form')
+      await typeIn(page, f.spanish, 'zzzzqqx')
+      await clickText(page, 'button', f.cancel)
+      await page.waitForSelector('.sheet')
+      await clickText(page, '.sheet .btn', f.discard)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toEqual([])
+
+      // the flow itself is the one the "+" opens: part of speech, Continue, lookup, Save; the word then shows in the list the search was in
+      await offer()
+      await page.waitForSelector('.word-form')
+      await clickText(page, '[role="radio"]', 'Noun')
+      await clickText(page, 'button', f.continue)
+      await page.waitForSelector('.form-word')
+      expect(await enrichCalls(page)).toEqual([{ word: 'zzzzqq', pos: 'n' }])
+      await clickText(page, 'button', f.save)
+      await page.waitForSelector('.words-search')
+      expect((await sentAll(page)).words).toHaveLength(1)
+      await page.waitForSelector('.word-row')
+      expect(await page.$('.words-empty')).toBeNull()
+      expect((await rows(page))[0]).toBe('zzzzqq')
+      await page.close()
+    }, 90_000)
+
+    it('the offer carries a 50-letter query without widening the page: the label breaks inside the word', async () => {
+      const page = await open()
+      await search(page, 'z'.repeat(50))
+      await page.waitForSelector('.words-empty')
+      expect(await page.$$eval('.words-empty .btn', (els) => els.map((e) => e.textContent))).toEqual(['Clear search and filters', strings.words.addAsOwn('z'.repeat(50))])
+      // the viewport is 390 wide (open); a page that is made wider reports its own width as innerWidth, so the number is the one to hold it to
+      const m = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, button: document.querySelectorAll('.words-empty .btn')[1].getBoundingClientRect().right }))
+      expect(m.scroll).toBeLessThanOrEqual(390)
+      expect(m.button).toBeLessThanOrEqual(390)
       await page.close()
     }, 60_000)
 
