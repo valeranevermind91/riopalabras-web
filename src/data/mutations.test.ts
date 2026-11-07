@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { applyFavoriteFlag, applyFlagLists, applyProgressUpdates, applySettingsPatch } from './mutations'
+import { highlightTarget } from './headword'
+import { clozeTarget } from './practice'
+import { applyFavoriteFlag, applyFlagLists, applyProgressUpdates, applySettingsPatch, upsertCustomWord } from './mutations'
 import { parseSettings } from './settings'
 import type { Word } from './types'
 
@@ -137,5 +139,37 @@ describe('applyFavoriteFlag (the star, optimistic)', () => {
     const on = applyFavoriteFlag(words, ['casa'], true, 100)
     expect(applyFavoriteFlag(on, ['casa'], true, 200)).toBe(on)
     expect(applyFavoriteFlag(on, ['Perro'], false, 200)).toBe(on)
+  })
+})
+
+describe('upsertCustomWord: an edited custom word takes the form of its new sentence', () => {
+  const mine = (overrides: Partial<Word> = {}) =>
+    word('bancar', 1, { isCustom: true, rank: null, repetitions: 3, exampleSentence: 'Te banco siempre.', wordFormInExample: 'banco', ...overrides })
+
+  // "Laburo" -> "laburé": no fallback of the highlight finds one from the other (not the headword, not a word that starts with either)
+  const before = mine({ esWord: 'laburar', exampleSentence: 'Laburo mucho en verano.', wordFormInExample: 'Laburo' })
+  const edited = mine({ esWord: 'laburar', exampleSentence: 'Ayer laburé hasta tarde.', wordFormInExample: 'laburé' })
+
+  it('the stored form follows the sentence', () => {
+    expect(upsertCustomWord([before], edited)[0].wordFormInExample).toBe('laburé')
+  })
+
+  it('so the card highlights the new sentence, and Cloze can blank it, without a reload', () => {
+    const after = upsertCustomWord([before], edited)[0]
+    const { sentence, range } = highlightTarget(after)
+    expect(range, 'the new form is highlighted').not.toBeNull()
+    expect(sentence.slice(range!.start, range!.end)).toBe('laburé')
+    expect(clozeTarget(after)?.target).toBe('laburé')
+  })
+
+  it('a sentence edited by hand that no longer holds the form leaves no form behind', () => {
+    const after = upsertCustomWord([mine()], mine({ exampleSentence: 'Me bancó toda la vida.', wordFormInExample: null }))[0]
+    expect(after.wordFormInExample).toBeNull()
+  })
+
+  it('what is not content stays: progress and flags are the existing word\'s', () => {
+    const after = upsertCustomWord([mine({ isFavorite: true })], mine({ exampleSentence: 'Hay que bancarlo.', wordFormInExample: 'bancarlo', repetitions: 0 }))[0]
+    expect(after.repetitions).toBe(3)
+    expect(after.isFavorite).toBe(true)
   })
 })

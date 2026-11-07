@@ -88,6 +88,8 @@ export function upsertCustomWord(words: readonly Word[], incoming: Word): readon
     exampleSentence: incoming.exampleSentence,
     exampleTranslationEn: incoming.exampleTranslationEn,
     exampleTranslationRu: incoming.exampleTranslationRu,
+    // the form belongs to the sentence: an edited sentence brings its own (or none), and the old one must not stay behind to be looked for in it
+    wordFormInExample: incoming.wordFormInExample,
     isRioplatenseVariant: incoming.isRioplatenseVariant,
     region: incoming.region,
     register: incoming.register,
