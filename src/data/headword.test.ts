@@ -39,7 +39,6 @@ describe('headword: falls back to es_word', () => {
     ['pa', 'word form shorter than the 3-char prefix rule'],
     ['chance', 'sentence uses the standard word'],
     ['vos', 'identical to es_word'],
-    ['Gil', 'identical to es_word apart from case'],
     ['mina', 'value is "mina (slang…)" — a gloss'],
     ['vuestro', 'value is "su/sus" — alternatives'],
     ['solicitar', 'value is "pedir / postularse"'],
@@ -52,6 +51,12 @@ describe('headword: falls back to es_word', () => {
     expect(h.form).toBe('standard')
     expect(h.text).toBe(w.esWord)
     expect(h.secondary).toBeNull()
+  })
+
+  it('a legacy value identical to the entry apart from case is no variant (a capitalised entry, a lower-case value)', () => {
+    const gil = JSON.parse(readFileSync('public/words_enriched.json', 'utf8')).find((d: { es_word: string }) => d.es_word === 'gil')
+    const [w] = parseDictionary([{ ...gil, es_word: 'Gil' }])
+    expect(headword(w)).toEqual({ text: 'Gil', form: 'standard', secondary: null })
   })
 
   it('every dictionary word without a Rioplatense form is its own headword', () => {

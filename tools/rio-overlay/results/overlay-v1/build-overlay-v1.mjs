@@ -29,6 +29,9 @@ const dictionary = new Map(JSON.parse(fs.readFileSync(path.join(TOOLS, '..', '..
 const A = new Map(merged.entries.map((e) => [e.es_word, e]))
 for (const inv of merged.invalid) A.set(inv.es_word, outA.get(inv.es_word))
 // Words taken out of the dictionary after stage 1 ran (boy, baby, wow and tony, which was a junk row with a manual "none" decision here) have no entry here any more: the stage-1 files still name them, and they are skipped.
+// A stage-1 word spelled differently from its dictionary entry only by case (Gil, now gil: the capital was a leftover of the surname) is looked up by the dictionary's spelling.
+const byLowerCase = new Map([...dictionary.values()].map((d) => [d.es_word.toLowerCase(), d]))
+for (const w of A.keys()) if (!dictionary.has(w) && byLowerCase.has(w.toLowerCase())) dictionary.set(w, byLowerCase.get(w.toLowerCase()))
 const REMOVED_FROM_DICTIONARY = [...A.keys()].filter((w) => !dictionary.has(w))
 for (const w of REMOVED_FROM_DICTIONARY) A.delete(w)
 const words = [...A.keys()].sort((x, y) => dictionary.get(x).rank - dictionary.get(y).rank)
@@ -89,7 +92,7 @@ const basis = new Map() // es_word -> short description of the base used
 const notes = [] // things that did not fit the rules
 
 function make(w, fields, status, evidence, flags = [], base = 'A') {
-  result.set(w, { es_word: w, rank: dictionary.get(w).rank, ...fields, status, flags, evidence })
+  result.set(w, { es_word: dictionary.get(w).es_word, rank: dictionary.get(w).rank, ...fields, status, flags, evidence })
   basis.set(w, base)
 }
 const none = (a) => ({ rio_type: 'none', rio_form: null, alt_form: null, alt_region: null, region: null, register: a.register, notes: null, std_meaning: null, translation: null, confidence: a.confidence })
@@ -401,7 +404,7 @@ const validatorIssues = []
 for (const w of words) {
   const o = result.get(w)
   const schemaEntry = {
-    es_word: w, reasoning: `AR: ?; UY: ?; std: ? -> ${o.rio_type}`, rio_type: o.rio_type, rio_form: o.rio_form, region: o.region, alt_form: o.alt_form, alt_region: o.alt_region,
+    es_word: o.es_word, reasoning: `AR: ?; UY: ?; std: ? -> ${o.rio_type}`, rio_type: o.rio_type, rio_form: o.rio_form, region: o.region, alt_form: o.alt_form, alt_region: o.alt_region,
     std_meaning_en: o.std_meaning?.en ?? null, std_meaning_ru: o.std_meaning?.ru ?? null, register: o.register, note_en: o.notes?.en ?? null, note_ru: o.notes?.ru ?? null,
     example_sentence: null, example_translation_en: null, example_translation_ru: null, word_form_in_example: null,
     en_translation: o.translation?.en ?? null, ru_translation: o.translation?.ru ?? null, confidence: o.confidence,

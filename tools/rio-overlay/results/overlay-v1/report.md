@@ -152,7 +152,7 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
   - Claude: meaning_shift: fibra (medium)
   - legacy: fibra
   - country label ar dropped for «fibra»: A says it, and the rule needs 2 independent families (the questionnaire only asked Uruguayans, so it cannot set one)
-- **Gil** (rank 3799): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
+- **gil** (rank 3799): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: regional_only: gil (high)
   - B: none (low)
   - Claude: none (medium)

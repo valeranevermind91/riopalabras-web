@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseDictionary } from './dictionary'
-import { isPracticeWord } from './practice'
+import { headword, highlightTarget } from './headword'
+import { clozeTarget, isPracticeWord } from './practice'
 import { isInLearnPool } from './stats'
 import { wordStatus } from './wordState'
 
@@ -55,15 +56,24 @@ describe('pa: a preposition ("para" shortened), not a noun', () => {
   })
 })
 
-describe('Gil: the gloss leads with the slang, not the surname', () => {
+describe('gil: the gloss leads with the slang, not the surname, and the headword is lower case', () => {
   it('says "fool, sucker (informal)" in English and «дурак, простофиля (разг.)» in Russian', () => {
-    const gil = entry('Gil')!
+    const gil = entry('gil')!
     expect(gil.en_translation).toBe('fool, sucker (informal)')
     expect(gil.ru_translation).toBe('дурак, простофиля (разг.)')
   })
 
-  it('keeps its capitalized key: user progress, hidden and favorite rows are keyed by es_word and upserted on the exact string, so a rename would leave a second row behind', () => {
-    expect(entry('Gil')).toBeDefined()
-    expect(entry('gil')).toBeUndefined()
+  // The capital was left over from the surname Gil, which the frequency list had counted. Nobody had progress, hidden or favorite rows under "Gil" (checked in Supabase
+  // before the rename), so the key could change; the client matches by lower-cased key everywhere (wordKey), but writes upsert on the exact string.
+  it('is keyed "gil", with no "Gil" left, and the card, the highlight and Cloze work with it', () => {
+    expect(entry('gil')).toBeDefined()
+    expect(entry('Gil')).toBeUndefined()
+    const gil = word('gil')
+    expect(gil.wordFormInExample).toBe('gil')
+    expect(headword(gil).text).toBe('gil')
+    const { sentence, range } = highlightTarget(gil)
+    expect(range).not.toBeNull()
+    expect(sentence.slice(range!.start, range!.end)).toBe('gil')
+    expect(clozeTarget(gil)?.target).toBe('gil')
   })
 })
