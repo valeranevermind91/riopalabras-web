@@ -459,11 +459,11 @@ describe('highlight with the overlay', () => {
 describe('overlay examples (pass 2)', () => {
   const withExample = words.filter((w) => w.rio?.example)
 
-  it('27 words carry an example in the client file: the 10 pass-2 replacements, tú and contigo, galleta and conducir (hand-written), and the 13 confirmed meaning_shift / regional_only entries', () => {
+  it('28 words carry an example in the client file: the 10 pass-2 replacements, tú and contigo, galleta, conducir and pequeño (hand-written), and the 13 confirmed meaning_shift / regional_only entries', () => {
     expect(withExample.map((w) => w.esWord).sort()).toEqual(
-      ['armario', 'asilo', 'autobús', 'ayuntamiento', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'conducir', 'contigo', 'crío', 'feria', 'foco', 'gafas', 'galleta', 'guapo', 'guay', 'marcador', 'mina', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
+      ['armario', 'asilo', 'autobús', 'ayuntamiento', 'boleto', 'chance', 'chico', 'cigarrillo', 'colgado', 'conducir', 'contigo', 'crío', 'feria', 'foco', 'gafas', 'galleta', 'guapo', 'guay', 'marcador', 'mina', 'pequeño', 'portero', 'propaganda', 'saco', 'suprema', 'torta', 'tú', 'vos'].sort(),
     )
-    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(14)
+    expect(withExample.filter((w) => w.rio!.type === 'replacement')).toHaveLength(15)
     expect(withExample.filter((w) => w.rio!.type !== 'replacement')).toHaveLength(13)
     expect(words.filter((w) => w.rio?.type === ('form' as string))).toEqual([]) // tú and contigo are replacements now
   })

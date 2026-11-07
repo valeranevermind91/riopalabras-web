@@ -144,8 +144,13 @@
     "flags": [],
     "std_usage": "less_common",
     "std_usage_reason": "pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand).",
-    "example": null,
-    "example_review": null,
+    "example": {
+      "es": "Mirá, este departamento es muy chico para cuatro personas.",
+      "en": "Look, this apartment is too small for four people.",
+      "ru": "Смотри, эта квартира слишком маленькая для четырех человек.",
+      "word_form": "chico"
+    },
+    "example_review": "confirmed",
     "evidence": [
       "manual accept (Valera)",
       "approved by the owner after a teacher's review: chico is the everyday adjective for \"small\" in both countries; run A typed it a replacement, B and Claude said none",
@@ -154,6 +159,7 @@
       "B: none (high)",
       "Claude: none (high)",
       "legacy: chico",
+      "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)",
       "std_usage less_common (gemini-3.1-pro-preview): pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand)."
     ]
   },

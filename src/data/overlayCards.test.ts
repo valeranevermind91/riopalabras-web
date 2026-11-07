@@ -63,29 +63,32 @@ describe('pequeño → chico (adjective): the everyday word for "small" leads, p
   // the card carries no country. ASALE's DAMER has no sense for it (it lists americanisms only: chico there is a Mexican fruit, a Chilean vulgarity and a Uruguayan drum),
   // so DAMER neither supports nor contradicts it. The two stage-1 runs both list chico for Argentina and for Uruguay, but they are one family (Gemini), and only run A
   // typed it as a replacement. pequeño is understood and common, hence less_common. That is thinner evidence than for most entries; the owner approved it.
-  it('is a replacement with no country, neutral, less common, and takes its example from the dictionary', () => {
+  it('is a replacement with no country, neutral, less common, and carries its own example about size', () => {
     const entry = overlayEntry('pequeño') as Record<string, unknown>
     expect(entry).toMatchObject({ rio_type: 'replacement', rio_form: 'chico', region: null, alt_form: null, register: 'neutral', std_usage: 'less_common' })
-    expect(entry.example).toBeUndefined()
+    expect(entry.example).toEqual({ es: 'Mirá, este departamento es muy chico para cuatro personas.', en: 'Look, this apartment is too small for four people.', ru: 'Смотри, эта квартира слишком маленькая для четырех человек.', word_form: 'chico' })
   })
 
-  it('the card leads with chico, the standard word is pequeño, and the example is the dictionary\'s «Mi hermano es re chico»', () => {
+  it('the card leads with chico, the standard word is pequeño, and the example is about physical size, in the voseo', () => {
     const pequeno = word('pequeño')
     expect(headword(pequeno)).toEqual({ text: 'chico', form: 'rioplatense', secondary: 'pequeño' })
-    expect(headwordDecision(pequeno)).toMatchObject({ switched: true, reason: 'dictionary-example-has-form' })
+    expect(headwordDecision(pequeno)).toMatchObject({ switched: true, reason: 'overlay-example-has-form' })
     expect(relationFor(pequeno)).toMatchObject({ type: 'replacement', standardWord: 'pequeño', standardUsage: 'less_common' })
     expect(headwordRegion(pequeno)).toBeNull()
     expect(translationsFor(pequeno)).toEqual({ en: 'small', ru: 'маленький' })
     const example = effectiveExample(pequeno)
-    expect(example).toMatchObject({ source: 'dictionary', sentence: 'Mi hermano es re chico, todavía va al jardín.', wordForm: 'chico' })
+    expect(example).toMatchObject({ source: 'overlay', sentence: 'Mirá, este departamento es muy chico para cuatro personas.', wordForm: 'chico' })
+    expect(example.sentence).not.toMatch(/\bpequeñ/i)
+    expect(example.en).toMatch(/\bsmall\b/) // the first gloss, a size, not an age
+    expect(example.ru).toMatch(/маленьк/)
     const { sentence, range } = highlightTarget(pequeno)
     expect(sentence.slice(range!.start, range!.end)).toBe('chico')
     expect(clozeTarget(pequeno)?.target).toBe('chico')
   })
 
   // The fallback sentence («…muy pequeño para cuatro personas») is published only for words outside the overlay (build-examples-fallback.mjs drops it once the word enters), and
-  // an overlay or fallback example would win over the dictionary's. The generated source keeps it, as the record of what the model wrote.
-  it('has no fallback example any more in the shipped file, so nothing can override the dictionary\'s', () => {
+  // the overlay's own example wins over any fallback. The dictionary's «Mi hermano es re chico, todavía va al jardín.» is about age, not size, and stays for the Flutter app.
+  it('has no fallback example any more in the shipped file, and the overlay example is what the card shows', () => {
     expect(word('pequeño').fallbackExample).toBeNull()
     const shipped: { es_word: string }[] = json('examples_fallback.json')
     expect(shipped.map((e) => e.es_word)).not.toContain('pequeño')

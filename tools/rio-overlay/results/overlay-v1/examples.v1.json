@@ -42,6 +42,15 @@
           "conducir"
         ],
         "note": "written by hand with the approved change conducir -> manejar (not a stage-1 word); review confirmed"
+      },
+      {
+        "run": "by-hand",
+        "model": "none",
+        "generatedAt": "2026-11-07",
+        "words": [
+          "pequeño"
+        ],
+        "note": "written by hand with the owner's request (an example about physical size, in the voseo); review confirmed"
       }
     ]
   },
@@ -312,6 +321,16 @@
       "ru": "Ты водишь ночью? Мне не нравится, там очень много движения.",
       "word_form": "manejás",
       "rio_form": "manejar",
+      "type": "replacement",
+      "review": "confirmed",
+      "warnings": []
+    },
+    "pequeño": {
+      "es": "Mirá, este departamento es muy chico para cuatro personas.",
+      "en": "Look, this apartment is too small for four people.",
+      "ru": "Смотри, эта квартира слишком маленькая для четырех человек.",
+      "word_form": "chico",
+      "rio_form": "chico",
       "type": "replacement",
       "review": "confirmed",
       "warnings": []

@@ -68,7 +68,13 @@
     "std_meaning": null,
     "translation": null,
     "std_usage": "less_common",
-    "confidence": "medium"
+    "confidence": "medium",
+    "example": {
+      "es": "Mirá, este departamento es muy chico para cuatro personas.",
+      "en": "Look, this apartment is too small for four people.",
+      "ru": "Смотри, эта квартира слишком маленькая для четырех человек.",
+      "word_form": "chico"
+    }
   },
   {
     "es_word": "contigo",
