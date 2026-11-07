@@ -66388,20 +66388,6 @@
     "word_form_in_example": "retomar"
   },
   {
-    "es_word": "boy",
-    "pos": "n",
-    "frequency": 7497,
-    "rank": 4006,
-    "en_translation": "boy",
-    "ru_translation": "мальчик",
-    "es_rioplatense": "pibe",
-    "is_rioplatense_variant": true,
-    "example_sentence": "Ese pibe juega re bien a la pelota.",
-    "example_translation_en": "That kid plays soccer really well.",
-    "example_translation_ru": "Тот мальчик очень хорошо играет в футбол.",
-    "word_form_in_example": "pibe"
-  },
-  {
     "es_word": "proclamar",
     "pos": "v",
     "frequency": 7417,

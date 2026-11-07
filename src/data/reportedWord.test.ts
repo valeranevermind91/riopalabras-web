@@ -22,7 +22,7 @@ const context: FeedbackContext = { appVersion: 'test', uiLanguage: 'en', screen:
 
 describe('what a word report names', () => {
   it('for every word of the dictionary: the word on the card comes first, and the standard form follows, labelled, exactly when the card leads with another', () => {
-    expect(words).toHaveLength(4753)
+    expect(words).toHaveLength(4752)
     for (const w of words) {
       const shown = headword(w).text
       const named = reportedWord(w)

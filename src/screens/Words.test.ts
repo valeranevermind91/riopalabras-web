@@ -41,7 +41,7 @@ describe('the Words screen', () => {
     const html = render(learnedSome())
     expect(html).toContain('<h1>Words</h1>')
     expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English, Russian"/)
-    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 5', 'Hidden 0'])
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4752', 'Started 5', 'Hidden 0'])
     expect(html).toContain('role="list"')
   })
 
@@ -86,7 +86,7 @@ describe('the Words screen', () => {
   it('the Started count is the studied words that are not hidden: a studied word that is hidden is counted under Hidden, not under Started', () => {
     const words = learnedSome().map((w) => (w.esWord === ordinary[1].esWord ? ({ ...w, isHidden: true } as Word) : w))
     const html = render(words)
-    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4753', 'Started 4', 'Hidden 1'])
+    expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4752', 'Started 4', 'Hidden 1'])
   })
 
   it('Filters shows how many are on, and Sort names the current order', () => {
@@ -103,12 +103,12 @@ describe('the Words screen', () => {
     expect(html).toContain('<span class="control-label">Best match</span>')
   })
 
-  it('renders only a screenful of 4,753 words: a window, not the list', () => {
+  it('renders only a screenful of 4,752 words: a window, not the list', () => {
     const html = render(real, view())
     const rows = html.match(/class="word-row"/g) ?? []
     expect(rows.length).toBeGreaterThan(5)
     expect(rows.length).toBeLessThan(40)
-    expect(html).toContain(`style="height:${4753 * 72}px"`) // but the scroll height is the whole list
+    expect(html).toContain(`style="height:${4752 * 72}px"`) // but the scroll height is the whole list
   })
 
   it('a row: the headword in the display face, a part-of-speech tag, a state dot, one muted line with the translation in the user\'s language, a star', () => {

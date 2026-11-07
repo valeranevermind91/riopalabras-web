@@ -60,10 +60,10 @@ describe('headword: falls back to es_word', () => {
     }
   })
 
-  it('applies to exactly 113 of the 134 Rioplatense entries (the audit figure)', () => {
+  it('applies to exactly 112 of the 133 Rioplatense entries (the audit figure)', () => {
     const withRio = dictionary.filter((w) => w.esRioplatense !== null)
-    expect(withRio).toHaveLength(134)
-    expect(withRio.filter((w) => headword(w).form === 'rioplatense')).toHaveLength(113)
+    expect(withRio).toHaveLength(133)
+    expect(withRio.filter((w) => headword(w).form === 'rioplatense')).toHaveLength(112)
   })
 })
 
@@ -231,11 +231,11 @@ describe('highlightTarget', () => {
   it('finds a highlight for every dictionary word', () => {
     const missing = dictionary.filter((w) => highlightTarget(w).range === null).map((w) => w.esWord)
     expect(missing).toEqual([])
-  }) // walks all 4,753 words: about 2.5 s alone, and the global timeout in vitest.config.ts covers it when the whole suite runs at once
+  }) // walks all 4,752 words: about 2.5 s alone, and the global timeout in vitest.config.ts covers it when the whole suite runs at once
 
   it('never leaves ** markers in the sentence', () => {
     for (const w of dictionary) expect(highlightTarget(w).sentence).not.toContain('*')
-  }) // the same walk over all 4,753 words as the test above
+  }) // the same walk over all 4,752 words as the test above
 })
 
 describe('relationFor', () => {

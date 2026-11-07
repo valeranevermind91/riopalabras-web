@@ -17,7 +17,7 @@ interface VirtualListProps {
 }
 
 /**
- * A scrolling list that renders only the rows in view: all 4,753 words are in memory, but only a screenful of them is in
+ * A scrolling list that renders only the rows in view: all 4,752 words are in memory, but only a screenful of them is in
  * the page. The scroller is the list itself, so the screen around it keeps its place.
  */
 export function VirtualList({ count, rowHeight, getKey, renderRow, initialScrollTop = 0, onScrollTop, label }: VirtualListProps) {

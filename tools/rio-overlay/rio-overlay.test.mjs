@@ -659,7 +659,7 @@ describe('generate.mjs against a fake Gemini', () => {
     const env = { GEMINI_API_KEY: undefined, GEMINI_BASE_URL: 'http://127.0.0.1:9' }
     const estimate = await cli(['--stage1', '--estimate'], { url: 'http://127.0.0.1:9', env })
     expect(estimate.code).toBe(0)
-    expect(estimate.stdout).toContain('Selection: 134 words -> 14 requests')
+    expect(estimate.stdout).toContain('Selection: 133 words -> 14 requests')
     expect(estimate.stdout).toContain('gemini-2.5-flash')
     const prompt = await cli(['--print-prompt'], { url: 'http://127.0.0.1:9', env })
     expect(prompt.code).toBe(0)
@@ -667,11 +667,11 @@ describe('generate.mjs against a fake Gemini', () => {
     expect(prompt.stdout).toContain('"type": "ARRAY"')
   })
 
-  it('--stage1 selects exactly the 134 entries that have es_rioplatense', async () => {
+  it('--stage1 selects exactly the 133 entries that have es_rioplatense', async () => {
     const stage1 = dictionary.filter((e) => e.es_rioplatense)
-    expect(stage1).toHaveLength(134)
+    expect(stage1).toHaveLength(133)
     const out = await cli(['--stage1', '--estimate', '--batch-size', '10'], { url: 'http://127.0.0.1:9', env: { GEMINI_API_KEY: undefined } })
-    expect(out.stdout).toContain('134 words')
+    expect(out.stdout).toContain('133 words')
   })
 })
 

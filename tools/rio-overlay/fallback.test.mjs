@@ -20,8 +20,8 @@ const { scope, excluded } = selectFallbackScope(dictionary, overlay)
 const find = (w) => scope.find((i) => i.es_word === w)
 
 describe('selectFallbackScope', () => {
-  it('finds the 38 words (plus tony, excluded) whose old example shows another word (fila joined the 47 when its overlay entry was rejected; ten left when they entered the overlay)', () => {
-    expect(scope).toHaveLength(38)
+  it('finds the 37 words (plus tony, excluded) whose old example shows another word (fila joined the 47 when its overlay entry was rejected; ten left when they entered the overlay; boy left when it was removed from the dictionary)', () => {
+    expect(scope).toHaveLength(37)
     const left = ['ayuntamiento', 'trozo', 'vaquero', 'enhorabuena', 'píldora', 'baloncesto', 'sanidad', 'armario', 'gafas', 'crío']
     for (const w of left) expect(scope.map((i) => i.es_word), w).not.toContain(w)
     expect(find('fila')).toMatchObject({ old_word_form: 'cola', avoid: ['cola'] })
@@ -229,10 +229,10 @@ async function cli(args, { url, env = {} }) {
 const runArgs = (name) => ['--run', name, '--out', path.join(tmp, `${name}.out.json`), '--delay-ms', '0', '--retry-base-ms', '5', '--batch-size', '20']
 
 describe('generate-examples.mjs --pass fallback', () => {
-  it('dry run lists the 38 words and the excluded one, estimates the cost and calls nothing', async () => {
+  it('dry run lists the 37 words and the excluded one, estimates the cost and calls nothing', async () => {
     const out = await cli([], { url: 'http://127.0.0.1:9', env: { GEMINI_API_KEY: undefined } })
     expect(out.code).toBe(0)
-    expect(out.out).toContain('38 entries need a new example')
+    expect(out.out).toContain('37 entries need a new example')
     expect(out.out).toMatch(/niño\s+n\s+pibe/)
     expect(out.out).toContain('excluded: tony')
     expect(out.out).toMatch(/gemini-3\.1-pro-preview\s+≈ \$/)
@@ -255,7 +255,7 @@ describe('generate-examples.mjs --pass fallback', () => {
     expect(g.requests[0].text).not.toContain('"rio_form"') // the overlay pass's fields are not sent
 
     const result = JSON.parse(fs.readFileSync(args[args.indexOf('--out') + 1], 'utf8'))
-    expect(result.meta).toMatchObject({ pass: 'fallback', selected: 38, generated: 37, failed: 1 })
+    expect(result.meta).toMatchObject({ pass: 'fallback', selected: 37, generated: 36, failed: 1 })
     expect(result.examples['mona']).toMatchObject({ word_form: 'mona', warnings: [] })
     expect(Object.keys(result.examples.mona).sort()).toEqual(['en', 'es', 'ru', 'warnings', 'word_form'])
     expect(result.failed).toHaveLength(1)

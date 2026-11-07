@@ -118,9 +118,9 @@ describe('selectLearnBatch', () => {
     expect(selectLearnBatch(afterFirst, parseSettings(null), NOW).words.map((w) => w.esWord)).toEqual(['niño'])
   })
 
-  it('uses real dictionary headwords: the six "pibe" words never share a batch', () => {
-    const cluster = dictionary.filter((w) => ['chico', 'niño', 'muchacho', 'chaval', 'crío', 'boy', 'casa'].includes(w.esWord))
-    expect(cluster.filter((w) => headword(w).text === 'pibe')).toHaveLength(6)
+  it('uses real dictionary headwords: the five "pibe" words never share a batch', () => {
+    const cluster = dictionary.filter((w) => ['chico', 'niño', 'muchacho', 'chaval', 'crío', 'casa'].includes(w.esWord))
+    expect(cluster.filter((w) => headword(w).text === 'pibe')).toHaveLength(5)
     const batch = selectLearnBatch(cluster, parseSettings(null), NOW)
     expect(batch.words.filter((w) => headword(w).text === 'pibe')).toHaveLength(1)
     expect(batch.words.map((w) => w.esWord)).toContain('casa')
