@@ -168,6 +168,29 @@
     "confidence": "high"
   },
   {
+    "es_word": "conducir",
+    "rio_type": "replacement",
+    "rio_form": "manejar",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": {
+      "en": "to drive, to manage",
+      "ru": "водить (машину), управлять"
+    },
+    "std_usage": "less_common",
+    "confidence": "medium",
+    "example": {
+      "es": "¿Vos manejás de noche? A mí no me gusta, hay mucho tránsito.",
+      "en": "Do you drive at night? I don't like it, there's a lot of traffic.",
+      "ru": "Ты водишь ночью? Мне не нравится, там очень много движения.",
+      "word_form": "manejás"
+    }
+  },
+  {
     "es_word": "vuestro",
     "rio_type": "replacement",
     "rio_form": "su",

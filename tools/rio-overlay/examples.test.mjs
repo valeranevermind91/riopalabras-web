@@ -23,9 +23,9 @@ describe('selectScope', () => {
   const words = scope.map((s) => s.es_word)
 
   it('takes replacements only when the dictionary example lacks the form', () => {
-    expect(words).toEqual(expect.arrayContaining(['autobús', 'cigarrillo', 'chico', 'guay', 'portero', 'asilo', 'ayuntamiento', 'armario', 'gafas', 'crío']))
+    expect(words).toEqual(expect.arrayContaining(['autobús', 'cigarrillo', 'chico', 'guay', 'portero', 'asilo', 'ayuntamiento', 'armario', 'gafas', 'crío', 'conducir']))
     for (const shown of ['aquí', 'periódico', 'metro', 'coger', 'vuestro', 'trozo', 'vaquero', 'enhorabuena', 'píldora', 'baloncesto', 'sanidad']) expect(words).not.toContain(shown) // the example already shows the form
-    expect(scope.filter((s) => s.type === 'replacement').map((s) => s.reason)).toEqual(Array(10).fill('replacement: dictionary example lacks the form'))
+    expect(scope.filter((s) => s.type === 'replacement').map((s) => s.reason)).toEqual(Array(11).fill('replacement: dictionary example lacks the form'))
   })
 
   it('takes every accepted meaning_shift and regional_only entry (tú and contigo became replacements, and their dictionary examples already show vos / con vos)', () => {
@@ -41,7 +41,7 @@ describe('selectScope', () => {
     expect(words).not.toContain('mona')
     expect(words).not.toContain('niño')
     expect(scope.map((s) => s.rank)).toEqual([...scope.map((s) => s.rank)].sort((a, b) => a - b))
-    expect(scope).toHaveLength(23)
+    expect(scope).toHaveLength(24)
   })
 
   it('uses the overlay translation as the meaning, and keeps the standard meaning for meaning_shift only', () => {

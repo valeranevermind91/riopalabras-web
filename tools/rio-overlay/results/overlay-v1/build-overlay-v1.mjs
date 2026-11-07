@@ -34,7 +34,12 @@ const byLowerCase = new Map([...dictionary.values()].map((d) => [d.es_word.toLow
 for (const w of A.keys()) if (!dictionary.has(w) && byLowerCase.has(w.toLowerCase())) dictionary.set(w, byLowerCase.get(w.toLowerCase()))
 const REMOVED_FROM_DICTIONARY = [...A.keys()].filter((w) => !dictionary.has(w))
 for (const w of REMOVED_FROM_DICTIONARY) A.delete(w)
-const words = [...A.keys()].sort((x, y) => dictionary.get(x).rank - dictionary.get(y).rank)
+const byRank = (x, y) => dictionary.get(x).rank - dictionary.get(y).rank
+const stageWords = [...A.keys()].sort(byRank)
+// Words that were never in stage 1 but are decided by hand (rule 1 below makes their entry): the stage-1 runs, the questionnaire and the audit know nothing about them.
+const MANUAL_ADDITIONS = ['conducir']
+for (const w of MANUAL_ADDITIONS) if (A.has(w) || !dictionary.has(w)) throw new Error(`${w}: a hand-added word must be in the dictionary and not in stage 1`)
+const words = [...stageWords, ...MANUAL_ADDITIONS].sort(byRank)
 
 // agreement classes straight from audit.md (column "agreement"), cross-checked below
 const auditClass = new Map()
@@ -45,7 +50,7 @@ for (const line of fs.readFileSync(path.join(TOOLS, 'results', 'stage1', 'audit.
 }
 const low = (v) => (v == null ? null : String(v).toLowerCase())
 const sig = (e) => JSON.stringify([e.rio_type, low(e.rio_form), e.region ?? null, low(e.alt_form)])
-for (const w of words) {
+for (const w of stageWords) {
   const three = sig(A.get(w)) === sig(outB.get(w)) && sig(outB.get(w)) === sig(claude.get(w))
   if ((auditClass.get(w) === '3-way agree') !== three) throw new Error(`audit.md class disagrees with a recomputation for ${w}`)
 }
@@ -144,6 +149,20 @@ for (const [w, id] of Object.entries(REJECT)) {
   make('portero', { ...fromA(a), rio_form: 'golero', region: 'uy', alt_form: 'arquero', alt_region: 'ar' }, 'accepted',
     [qEvidence(d24, ' (item 24: golero)'), 'questionnaire item 23: «arquero» n=8, yes=' + qByWord.get('portero').find((x) => x.id === 23).yes, 'golero proposed by Claude (uy) with arquero (ar); A said arquero', ...damerEvidence({ rio_form: 'arquero' })], [], 'A, rio_form/alt_form swapped by decision')
   handled.add('portero')
+}
+
+// conducir -> manejar (a teacher's review: Argentines say «manejar»; checked against ASALE's DAMER, SpanishDict and the DLE). Not a stage-1 word.
+{
+  make('conducir', {
+    rio_type: 'replacement', rio_form: 'manejar', alt_form: null, alt_region: null, region: null, register: 'neutral', notes: null, std_meaning: null,
+    translation: { en: 'to drive, to manage', ru: 'водить (машину), управлять' }, confidence: 'medium',
+  }, 'accepted', [
+    'manual decision (Valera): replacement manejar, both countries, no country label',
+    'DAMER (looked up for this change): «manejar» "Conducir un vehículo" is labelled for 18 countries, Ar and Ur among them; «conducir» has one sense, "Dirigir una institución" (Bo, Ar, Ur), and nothing against its driving sense',
+    'SpanishDict: manejar is a "regionalism used in Latin America. Does not include Spain."; the DLE lists Argentina and Uruguay for manejar "guiar un vehículo" (seen through a search summary: the page refuses automated reads)',
+    'conducir stays understood and is the word of «licencia de conducir» (std_usage less_common, set below); the stage-1 runs and the questionnaire never asked about it, so confidence is medium',
+  ], [], 'manual (not a stage-1 word)')
+  handled.add('conducir')
 }
 
 // manual triage (Valera): accepted replacements, rejected non-dialect differences, and words deliberately left pending
@@ -549,7 +568,7 @@ for (const s of ['accepted', 'rejected', 'pending']) counts.statusByType[s] = ta
 
 const md = []
 md.push('# Overlay v1 report', '')
-md.push(`${ordered.length} entries (the stage-1 words). Client export: ${client.length} entries (status accepted and rio_type not none).`, '')
+md.push(`${ordered.length} entries (the ${stageWords.length} stage-1 words${MANUAL_ADDITIONS.length ? `, plus ${MANUAL_ADDITIONS.join(', ')} added by hand` : ''}). Client export: ${client.length} entries (status accepted and rio_type not none).`, '')
 md.push('## Counts', '', '| status | entries | by rio_type |', '|---|---|---|')
 for (const s of ['accepted', 'pending', 'rejected']) md.push(`| ${s} | ${counts.status[s] ?? 0} | ${Object.entries(counts.statusByType[s]).map(([k, v]) => `${k} ${v}`).join(', ')} |`)
 md.push('', `By rio_type overall: ${Object.entries(counts.type).map(([k, v]) => `${k} ${v}`).join(', ')}.`, '')

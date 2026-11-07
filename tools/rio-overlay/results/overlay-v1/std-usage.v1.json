@@ -40,6 +40,15 @@
         },
         "costUsd": 0.060456,
         "note": "batch 2, added by hand-run merge"
+      },
+      {
+        "run": "by-hand",
+        "model": "none",
+        "generatedAt": "2026-11-07",
+        "words": [
+          "conducir"
+        ],
+        "note": "written by hand with the approved change conducir -> manejar (not a stage-1 word)"
       }
     ]
   },
@@ -480,6 +489,12 @@
       "std_usage": "not_used",
       "reason": "Sanidad for the healthcare system sounds Peninsular; locals say salud pública, though sanidad exists in specific technical terms.",
       "rio_form": "salud pública",
+      "warnings": []
+    },
+    "conducir": {
+      "std_usage": "less_common",
+      "reason": "conducir is understood and used in formal and legal speech (licencia de conducir), but manejar is the everyday verb (decided by hand).",
+      "rio_form": "manejar",
       "warnings": []
     }
   },

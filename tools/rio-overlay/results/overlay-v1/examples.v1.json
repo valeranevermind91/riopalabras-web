@@ -33,6 +33,15 @@
         },
         "costUsd": 0.023582,
         "note": "batch 2, added by hand-run merge; crío RU/EN edited by hand"
+      },
+      {
+        "run": "by-hand",
+        "model": "none",
+        "generatedAt": "2026-11-07",
+        "words": [
+          "conducir"
+        ],
+        "note": "written by hand with the approved change conducir -> manejar (not a stage-1 word); review confirmed"
       }
     ]
   },
@@ -295,6 +304,16 @@
       "rio_form": "gurí",
       "type": "replacement",
       "review": "pending",
+      "warnings": []
+    },
+    "conducir": {
+      "es": "¿Vos manejás de noche? A mí no me gusta, hay mucho tránsito.",
+      "en": "Do you drive at night? I don't like it, there's a lot of traffic.",
+      "ru": "Ты водишь ночью? Мне не нравится, там очень много движения.",
+      "word_form": "manejás",
+      "rio_form": "manejar",
+      "type": "replacement",
+      "review": "confirmed",
       "warnings": []
     }
   },

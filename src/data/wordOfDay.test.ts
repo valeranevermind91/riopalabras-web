@@ -26,9 +26,9 @@ const only = (names: string[]) => real.filter((w) => !w.rio || names.includes(w.
 describe('the pool today', () => {
   const names = new Set(pool.map((w) => w.esWord))
 
-  it('is 80 words, so the cycle is 80 days (almost three months)', () => {
-    expect(N).toBe(80)
-    expect(real.filter((w) => w.rio).length).toBe(85)
+  it('is 81 words, so the cycle is 81 days (almost three months)', () => {
+    expect(N).toBe(81)
+    expect(real.filter((w) => w.rio).length).toBe(86)
   })
 
   it('is the overlay entries whose card can highlight an example, the dictionary\'s when there is no overlay one, minus the five kept off the home screen', () => {
@@ -161,7 +161,7 @@ describe('words the user has marked as known', () => {
     for (const w of picks(400, undefined, hide(...known))) expect(known).not.toContain(w)
   })
 
-  it('leave the cycle as long as it was: every other word still has its own day, and the known words\' days show others (3 known: 80 days, 77 different words)', () => {
+  it('leave the cycle as long as it was: every other word still has its own day, and the known words\' days show others (3 known: 81 days, 78 different words)', () => {
     const known = pool.slice(0, 3).map((w) => w.esWord)
     for (let start = 0; start < 200; start += 13) {
       const shown = picks(N, day(start), hide(...known))
@@ -302,9 +302,9 @@ describe('no two days in a row show the same word, whatever is hidden', () => {
   })
 })
 
-describe('with nothing hidden, 80 days show 80 different words', () => {
+describe('with nothing hidden, 81 days show 81 different words', () => {
   it('from any start: no repeat inside a cycle, and the same word again exactly one cycle later', () => {
-    expect(N).toBe(80)
+    expect(N).toBe(81)
     for (let start = 0; start < 400; start += 37) {
       const shown = picks(N, day(start))
       expect(new Set(shown).size, `from day ${start}`).toBe(N)
