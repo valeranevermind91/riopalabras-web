@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'own-words-and-dictionary',
+    at: '2026-11-07T17:22',
+    en: {
+      title: 'Your own words work better; the dictionary is closer to Rioplatense',
+      text: 'Adding a word no longer opens the card of another word, and after you edit a word, its highlight in the example and Cloze work right away. Based on your feedback we fixed part of the dictionary: “manejar” instead of “conducir”, “chico” instead of “pequeño”, removed English words (“boy”, “baby”, “wow”) and replaced awkward examples.',
+    },
+    ru: {
+      title: 'Свои слова работают надежнее, а словарь ближе к Риоплате',
+      text: 'При добавлении своего слова больше не открывается карточка другого слова, а после правки слова подсветка в примере и Cloze работают сразу. По вашим отзывам поправили часть словаря: «manejar» вместо «conducir», «chico» вместо «pequeño», убрали английские слова («boy», «baby», «wow»), заменили неудачные примеры.',
+    },
+  },
+  {
     id: 'add-from-search',
     at: '2026-11-01T21:50',
     en: {
