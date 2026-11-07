@@ -3096,29 +3096,6 @@
     ]
   },
   {
-    "es_word": "boy",
-    "rank": 4006,
-    "rio_type": "none",
-    "rio_form": null,
-    "alt_form": null,
-    "alt_region": null,
-    "region": null,
-    "register": "neutral",
-    "notes": null,
-    "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "accepted",
-    "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
-    "evidence": [
-      "3-way agree"
-    ]
-  },
-  {
     "es_word": "furgoneta",
     "rank": 4068,
     "rio_type": "replacement",

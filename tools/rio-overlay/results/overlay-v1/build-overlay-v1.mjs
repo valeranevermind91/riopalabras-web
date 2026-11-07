@@ -28,6 +28,9 @@ const dictionary = new Map(JSON.parse(fs.readFileSync(path.join(TOOLS, '..', '..
 // A: valid entries from the merged file, plus the held-back one(s) from the raw run
 const A = new Map(merged.entries.map((e) => [e.es_word, e]))
 for (const inv of merged.invalid) A.set(inv.es_word, outA.get(inv.es_word))
+// Words taken out of the dictionary after stage 1 ran (boy, baby, wow, tony) have no entry here any more: the stage-1 files still name them, and they are skipped.
+const REMOVED_FROM_DICTIONARY = [...A.keys()].filter((w) => !dictionary.has(w))
+for (const w of REMOVED_FROM_DICTIONARY) A.delete(w)
 const words = [...A.keys()].sort((x, y) => dictionary.get(x).rank - dictionary.get(y).rank)
 
 // agreement classes straight from audit.md (column "agreement"), cross-checked below

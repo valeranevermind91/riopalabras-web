@@ -1,16 +1,16 @@
 # Overlay v1 report
 
-134 entries (the stage-1 words). Client export: 85 entries (status accepted and rio_type not none).
+133 entries (the stage-1 words). Client export: 85 entries (status accepted and rio_type not none).
 
 ## Counts
 
 | status | entries | by rio_type |
 |---|---|---|
-| accepted | 104 | replacement 72, none 19, meaning_shift 11, regional_only 2 |
+| accepted | 103 | replacement 72, none 18, meaning_shift 11, regional_only 2 |
 | pending | 19 | replacement 8, none 7, meaning_shift 3, regional_only 1 |
 | rejected | 11 | none 11 |
 
-By rio_type overall: replacement 80, none 37, meaning_shift 14, regional_only 3.
+By rio_type overall: replacement 80, none 36, meaning_shift 14, regional_only 3.
 
 ## Base used per entry
 
