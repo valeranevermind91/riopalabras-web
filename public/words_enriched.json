@@ -190,9 +190,9 @@
     "ru_translation": "иметь",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
-    "example_sentence": "¿Vos **tenés** ganas de ir al cine?",
-    "example_translation_en": "Do you feel like going to the cinema?",
-    "example_translation_ru": "Тебе хочется пойти в кино?",
+    "example_sentence": "¿Vos **tenés** un perro o un gato en tu casa?",
+    "example_translation_en": "Do you have a dog or a cat at home?",
+    "example_translation_ru": "У тебя дома есть собака или кошка?",
     "word_form_in_example": "tenés"
   },
   {
@@ -274,9 +274,9 @@
     "ru_translation": "делать",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
-    "example_sentence": "¿Vos **hacés** la comida hoy?",
-    "example_translation_en": "Are you making dinner today?",
-    "example_translation_ru": "Ты готовишь еду сегодня?",
+    "example_sentence": "¿Qué **hacés** los domingos?",
+    "example_translation_en": "What do you do on Sundays?",
+    "example_translation_ru": "Что ты делаешь по воскресеньям?",
     "word_form_in_example": "hacés"
   },
   {
@@ -694,9 +694,9 @@
     "ru_translation": "давать",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
-    "example_sentence": "¿Me podés **dar** una mano con esto?",
-    "example_translation_en": "Can you give me a hand with this?",
-    "example_translation_ru": "Можешь мне помочь с этим?",
+    "example_sentence": "¿Me podés **dar** el mate, por favor?",
+    "example_translation_en": "Can you give me the mate, please?",
+    "example_translation_ru": "Можешь дать мне мате, пожалуйста?",
     "word_form_in_example": "dar"
   },
   {
