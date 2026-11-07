@@ -48,13 +48,15 @@ export interface Duplicate {
 /**
  * Whether the typed word is already there: it equals a word's es_word, its legacy es_rioplatense, or a Rioplatense form of
  * its overlay entry, the main one or the alternative (the web has overlay data the Flutter app does not). Trimmed and lowercased, no accent folding (café ≠ cafe),
- * against every word, hidden ones included. The first word that matches, es_word before the Rioplatense forms.
+ * against every word, hidden ones included. An exact es_word anywhere wins; failing that, the first word (in list order) with a matching Rioplatense form.
  */
 export function findDuplicate(words: readonly Word[], typed: string): Duplicate | null {
   const target = wordKey(typed)
   if (target === '') return null
+  // Two passes, so that es_word really does come first: a word typed that is some entry's own word opens THAT entry, not an earlier-ranked card that happens to
+  // lead with it (conducir leads with manejar; typing manejar must open manejar).
+  for (const word of words) if (wordKey(word.esWord) === target) return { word, via: 'es_word' }
   for (const word of words) {
-    if (wordKey(word.esWord) === target) return { word, via: 'es_word' }
     if (word.esRioplatense && wordKey(word.esRioplatense) === target) return { word, via: 'es_rioplatense' }
     if (word.rio && (wordKey(word.rio.form) === target || (word.rio.altForm && wordKey(word.rio.altForm) === target))) return { word, via: 'overlay' }
   }

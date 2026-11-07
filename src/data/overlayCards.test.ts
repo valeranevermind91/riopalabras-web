@@ -129,3 +129,25 @@ describe('pequeño → chico (adjective): the everyday word for "small" leads, p
     })
   })
 })
+
+describe('adding a word that is a Rioplatense form: the entry that is that word opens, not the earlier-ranked card that leads with it', () => {
+  // 11 overlay replacements lead with a form that is also a dictionary word of its own; typing it used to open the standard word's card (the first overlay match in rank order).
+  const forms = ['acá', 'agarrar', 'capaz', 'estancia', 'lentes', 'lindo', 'manejar', 'mozo', 'ruta', 'torta', 'vos']
+
+  it.each(forms)('%s opens its own card', (form) => {
+    expect(findDuplicate(words, form)).toMatchObject({ via: 'es_word', word: { esWord: form } })
+  })
+
+  it('and the rule holds for every overlay replacement form that is a dictionary word, not only these 11', () => {
+    const own = new Set(words.map((w) => w.esWord.toLowerCase()))
+    const led = [...new Set(words.filter((w) => w.rio?.type === 'replacement' && own.has(w.rio.form.toLowerCase())).map((w) => w.rio!.form.toLowerCase()))]
+    expect(led.length).toBeGreaterThan(30)
+    for (const form of led) expect(findDuplicate(words, form), form).toMatchObject({ via: 'es_word' })
+    for (const form of led) expect(findDuplicate(words, form)!.word.esWord.toLowerCase(), form).toBe(form)
+  })
+
+  it('a form that is nobody\'s own word still finds the card that leads with it', () => {
+    expect(findDuplicate(words, 'gurí')).toMatchObject({ via: 'overlay', word: { esWord: 'chico' } })
+    expect(findDuplicate(words, 'subte')).toMatchObject({ via: 'overlay', word: { esWord: 'metro' } })
+  })
+})

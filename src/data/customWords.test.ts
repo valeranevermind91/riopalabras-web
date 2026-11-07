@@ -63,6 +63,23 @@ describe('the typed word', () => {
 })
 
 describe('the duplicate check', () => {
+  // The doc comment says es_word comes before the Rioplatense forms. It has to hold across ALL words, not word by word: a replacement ranked earlier
+  // (conducir, whose overlay form is manejar) must not take the word typed from the entry that really is manejar.
+  it('an exact es_word wins over a Rioplatense form of an earlier-ranked word, the overlay\'s or the legacy field\'s', () => {
+    const lead = (form: string) => ({ ...(rioForm as object), form, altForm: null }) as never
+    const words: Word[] = [
+      makeWord('conducir', { rank: 1, rio: lead('manejar') }),
+      makeWord('coger', { rank: 2, esRioplatense: 'agarrar' }),
+      makeWord('manejar', { rank: 3 }),
+      makeWord('agarrar', { rank: 4 }),
+    ]
+    expect(findDuplicate(words, 'manejar')).toMatchObject({ via: 'es_word', word: { esWord: 'manejar' } })
+    expect(findDuplicate(words, 'Agarrar')).toMatchObject({ via: 'es_word', word: { esWord: 'agarrar' } })
+    // a Rioplatense form that is nobody's own word still finds its entry, and the first of two such entries wins
+    expect(findDuplicate([makeWord('conducir', { rank: 1, rio: lead('manejá') })], 'manejá')).toMatchObject({ via: 'overlay', word: { esWord: 'conducir' } })
+    expect(findDuplicate([makeWord('a', { rank: 1, esRioplatense: 'zzz' }), makeWord('b', { rank: 2, rio: lead('zzz') })], 'zzz')).toMatchObject({ via: 'es_rioplatense', word: { esWord: 'a' } })
+  })
+
   it('catches es_word, the legacy es_rioplatense and the overlay\'s own Rioplatense form, whatever the case or the spaces', () => {
     expect(findDuplicate(dictionary, 'CHICO')).toMatchObject({ via: 'es_word', word: { esWord: 'chico' } })
     expect(findDuplicate(dictionary, '  Agarrar ')).toMatchObject({ via: 'es_rioplatense', word: { esWord: 'coger' } })
