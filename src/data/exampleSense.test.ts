@@ -82,3 +82,32 @@ describe('the light verbs: the example shows the literal first gloss, not an idi
     expect(clozeTarget(w)?.target, 'Cloze can blank it').toBe(shown)
   })
 })
+
+// cerdo is glossed "pig" / «свинья» (the animal) and its Rioplatense word is chancho. DAMER lists chancho for both the animal and the meat (Ar, Ur), but a user report
+// from Uruguay says the everyday word for the meat there is cerdo ("picada de cerdo" on price tags). So the example shows the first gloss, the animal, and never the meat.
+describe('cerdo: the example shows the animal (the first gloss), not the meat', () => {
+  const words = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8')))
+  const cerdo = words.find((w) => w.esWord === 'cerdo')!
+
+  it('the gloss is the animal, and the sentence is about an animal on a farm, in all three languages', () => {
+    const d = entry('cerdo')
+    expect(d.en_translation.startsWith('pig')).toBe(true)
+    expect(d.ru_translation.startsWith('свинья')).toBe(true)
+    expect(d.example_sentence).toMatch(/\bchancho\b/i)
+    expect(d.example_sentence).not.toMatch(/\b(carne|asado|parrilla|chorizo|milanesa|comer|comimos|compr\w*|cocin\w*)\b/i) // no food
+    expect(d.example_sentence).toMatch(/\b(chacra|granja|campo|corral|establo)\b/i) // a place where the animal lives
+    expect(d.example_translation_en).toMatch(/\bpig\b/i)
+    expect(d.example_translation_en).not.toMatch(/\b(pork|meat|bacon|ham|barbecue|roast)\b/i)
+    expect(d.example_translation_ru).toMatch(/свинь/i)
+    expect(d.example_translation_ru).not.toMatch(/свинин|мяс|барбекю|шашлык/i)
+  })
+
+  it('the card still leads with chancho, highlights it in the sentence and can blank it in Cloze', () => {
+    expect(headword(cerdo).text).toBe('chancho')
+    expect(cerdo.wordFormInExample).toBe('chancho')
+    const { sentence, range } = highlightTarget(cerdo)
+    expect(range).not.toBeNull()
+    expect(sentence.slice(range!.start, range!.end)).toBe('chancho')
+    expect(clozeTarget(cerdo)?.target).toBe('chancho')
+  })
+})
