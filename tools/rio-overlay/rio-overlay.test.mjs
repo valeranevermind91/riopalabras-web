@@ -659,7 +659,7 @@ describe('generate.mjs against a fake Gemini', () => {
     const env = { GEMINI_API_KEY: undefined, GEMINI_BASE_URL: 'http://127.0.0.1:9' }
     const estimate = await cli(['--stage1', '--estimate'], { url: 'http://127.0.0.1:9', env })
     expect(estimate.code).toBe(0)
-    expect(estimate.stdout).toContain('Selection: 133 words -> 14 requests')
+    expect(estimate.stdout).toContain('Selection: 130 words -> 13 requests')
     expect(estimate.stdout).toContain('gemini-2.5-flash')
     const prompt = await cli(['--print-prompt'], { url: 'http://127.0.0.1:9', env })
     expect(prompt.code).toBe(0)
@@ -667,11 +667,11 @@ describe('generate.mjs against a fake Gemini', () => {
     expect(prompt.stdout).toContain('"type": "ARRAY"')
   })
 
-  it('--stage1 selects exactly the 133 entries that have es_rioplatense', async () => {
+  it('--stage1 selects exactly the 130 entries that have es_rioplatense', async () => {
     const stage1 = dictionary.filter((e) => e.es_rioplatense)
-    expect(stage1).toHaveLength(133)
+    expect(stage1).toHaveLength(130)
     const out = await cli(['--stage1', '--estimate', '--batch-size', '10'], { url: 'http://127.0.0.1:9', env: { GEMINI_API_KEY: undefined } })
-    expect(out.stdout).toContain('133 words')
+    expect(out.stdout).toContain('130 words')
   })
 })
 
@@ -787,7 +787,7 @@ describe('generate.mjs: hint handling, prompt guard and legacy comparison', () =
 
 describe('generate.mjs: --context', () => {
   const base = ['--delay-ms', '0', '--retry-base-ms', '5']
-  const wordsWithExamples = ['autobús', 'tony', 'cigarrillo']
+  const wordsWithExamples = ['autobús', 'periódico', 'cigarrillo']
   // word_form_in_example is often the headword itself, which the model of course sees as es_word
   const secretsOf = (w) => [input(w).example_sentence.replace(/\*+/g, ''), input(w).example_translation_en, input(w).example_translation_ru, input(w).word_form_in_example, input(w).ru_translation].filter((x) => x !== w)
 
@@ -821,10 +821,10 @@ describe('generate.mjs: --context', () => {
 
   it('full sends the example (the old behaviour, minus the hint)', async () => {
     const g = await fakeGemini((r, n, res) => ok(res, answer(r.words)))
-    await cli(['--words', 'tony', '--run', 't-ctx-full', '--context', 'full', ...base], g)
+    await cli(['--words', 'periódico', '--run', 't-ctx-full', '--context', 'full', ...base], g)
     g.server.close()
     const text = g.requests[0].body.contents[0].parts[0].text
-    expect(text).toContain(input('tony').example_sentence.replace(/\*+/g, ''))
+    expect(text).toContain(input('periódico').example_sentence.replace(/\*+/g, ''))
     expect(text).not.toContain('legacy')
   })
 

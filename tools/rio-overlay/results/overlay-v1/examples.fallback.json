@@ -150,13 +150,6 @@
       "word_form": "filme",
       "warnings": []
     },
-    "wow": {
-      "es": "¡Wow, la vista desde este balcón es verdaderamente espectacular!",
-      "en": "Wow, the view from this balcony is truly spectacular!",
-      "ru": "Вау, вид с этого балкона поистине впечатляющий!",
-      "word_form": "Wow",
-      "warnings": []
-    },
     "armario": {
       "es": "Guardé todas mis camperas de invierno en el armario grande del pasillo.",
       "en": "I put all my winter jackets in the large closet in the hallway.",
@@ -295,13 +288,6 @@
       "en": "I missed the bus because I woke up very late this morning.",
       "ru": "Я опоздал на автобус, потому что сегодня утром проснулся очень поздно.",
       "word_form": "bus",
-      "warnings": []
-    },
-    "baby": {
-      "es": "El baby lloró toda la noche y no pudimos dormir nada.",
-      "en": "The baby cried all night and we couldn't sleep at all.",
-      "ru": "Малыш плакал всю ночь, и мы совсем не могли спать.",
-      "word_form": "baby",
       "warnings": []
     },
     "baloncesto": {

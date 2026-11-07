@@ -45,10 +45,11 @@ Return a JSON array with exactly one object per entry, in the same order, with e
 const stripMarkers = (s) => (s ?? '').replace(/\*+/g, '')
 const lower = (s) => (s ?? '').toLowerCase()
 
-/** Entries with a known reason not to write a sentence for them (junk rows that need re-enrichment first). */
-export const FALLBACK_EXCLUDED = {
-  tony: 'junk entry (a name with a nonsense translation), flagged needs_re_enrichment',
-}
+/**
+ * Entries with a known reason not to write a sentence for them (junk rows that need re-enrichment first). Empty since "tony", the one such row, was
+ * removed from the dictionary; the mechanism stays, and selectFallbackScope takes the list as an argument so a test can pass its own.
+ */
+export const FALLBACK_EXCLUDED = {}
 
 // Peninsular-only (Spain) vocabulary and grammar. The cards are for readers in Uruguay, so the new sentences must not
 // teach it: the prompt names the main cases and this list is what the validator enforces. Each entry: a pattern for
@@ -113,7 +114,7 @@ const wholeMatch = (text, form, pos, loose = true) => {
  * Irregular forms of the same word (ser → sos) fail the first two tests but pass the third in reverse: they are not here.
  * `dictionary` is the raw public/words_enriched.json (it still has es_rioplatense).
  */
-export function selectFallbackScope(dictionary, clientOverlay) {
+export function selectFallbackScope(dictionary, clientOverlay, excludedWords = FALLBACK_EXCLUDED) {
   const accepted = new Set(clientOverlay.map((e) => lower(e.es_word)))
   const scope = []
   const excluded = []
@@ -136,7 +137,7 @@ export function selectFallbackScope(dictionary, clientOverlay) {
       old_sentence: sentence,
       avoid: [...new Set([wf, ...old, ...(d.es_rioplatense ? [] : [])].map((x) => x.trim()).filter(Boolean))],
     }
-    if (FALLBACK_EXCLUDED[d.es_word]) excluded.push({ ...item, reason: FALLBACK_EXCLUDED[d.es_word] })
+    if (excludedWords[d.es_word]) excluded.push({ ...item, reason: excludedWords[d.es_word] })
     else scope.push(item)
   }
   const byRank = (a, b) => a.rank - b.rank

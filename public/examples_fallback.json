@@ -21,13 +21,6 @@
     "word_form": "automóvil"
   },
   {
-    "es_word": "baby",
-    "es": "El baby lloró toda la noche y no pudimos dormir nada.",
-    "en": "The baby cried all night and we couldn't sleep at all.",
-    "ru": "Малыш плакал всю ночь, и мы совсем не могли спать.",
-    "word_form": "baby"
-  },
-  {
     "es_word": "bello",
     "es": "El paisaje del campo uruguayo es realmente bello en primavera.",
     "en": "The landscape of the Uruguayan countryside is truly beautiful in spring.",
@@ -250,12 +243,5 @@
     "en": "You can use my cell phone to call your family if you need it.",
     "ru": "Ты можешь воспользоваться моим сотовым телефоном, чтобы позвонить семье, если тебе нужно.",
     "word_form": "utilizar"
-  },
-  {
-    "es_word": "wow",
-    "es": "¡Wow, la vista desde este balcón es verdaderamente espectacular!",
-    "en": "Wow, the view from this balcony is truly spectacular!",
-    "ru": "Вау, вид с этого балкона поистине впечатляющий!",
-    "word_form": "Wow"
   }
 ]

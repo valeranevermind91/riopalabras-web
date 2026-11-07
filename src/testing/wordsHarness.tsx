@@ -1,5 +1,5 @@
 // A page for the real-browser Words test (src/lib/words.browser.test.ts): the real Words list and word detail over the
-// real 4,752-word dictionary, with a little progress, a few favourites and some hidden words, and a write queue whose
+// real 4,749-word dictionary, with a little progress, a few favourites and some hidden words, and a write queue whose
 // senders just record what they are given (window.__sent). The list and the detail swap the way App swaps them.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'

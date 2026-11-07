@@ -79,7 +79,6 @@ describe('the legacy field is only a fallback', () => {
 
   it('with the overlay loaded, the legacy field is dropped for every dictionary word', () => {
     expect(words.filter((w) => w.esRioplatense !== null)).toEqual([])
-    expect(entry('tony').rio).toBeNull()
   })
 
   describe('loadDictionary', () => {
@@ -316,7 +315,7 @@ describe('headword with the overlay', () => {
     expect(headword(w)).toEqual({ text: 'mona', form: 'standard', secondary: null })
     expect(relationFor(w)).toBeNull()
     expect(translationsFor(w)).toEqual({ en: w.enTranslation, ru: w.ruTranslation })
-    for (const rejected of ['polla', 'picado', 'puto', 'hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamericano', 'tony']) {
+    for (const rejected of ['polla', 'picado', 'puto', 'hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamericano']) {
       expect(entry(rejected).rio).toBeNull()
     }
   })
@@ -449,7 +448,7 @@ describe('highlight with the overlay', () => {
     expect(highlighted(w)).toBe('ómnibus')
   })
 
-  // One pass over all 4752 words (about 2.5 s alone, several times that when the whole suite runs at once; the global timeout covers it).
+  // One pass over all 4749 words (about 2.5 s alone, several times that when the whole suite runs at once; the global timeout covers it).
   it('finds a highlight for every dictionary word, and no ** markers remain', () => {
     const results = words.map((w) => ({ word: w.esWord, result: highlightTarget(w) }))
     expect(results.filter((r) => r.result.range === null).map((r) => r.word)).toEqual([])
@@ -571,11 +570,10 @@ describe('fallback examples (pass 3)', () => {
   const withFallback = words.filter((w) => w.fallbackExample)
   const SAMPLE = ['niño', 'pequeño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
 
-  it('the file has 37 examples (36 generated, plus fila written by hand), none for an overlay word, none for tony (a junk entry)', () => {
-    expect(rawFallback).toHaveLength(37)
-    expect(withFallback).toHaveLength(37)
+  it('the file has 35 examples (34 generated, plus fila written by hand), none for an overlay word', () => {
+    expect(rawFallback).toHaveLength(35)
+    expect(withFallback).toHaveLength(35)
     expect(withFallback.filter((w) => w.rio)).toEqual([])
-    expect(entry('tony').fallbackExample).toBeNull()
     expect(entry('casa').fallbackExample).toBeNull()
     expect(entry('ser').fallbackExample).toBeNull() // an irregular form of itself (sos): nothing to fix
   })
@@ -585,7 +583,7 @@ describe('fallback examples (pass 3)', () => {
     const lacksKey = words.filter((w) => findFormRange(sentence(w), w.esWord, w.pos, true) === null)
     const led = words.filter((w) => headword(w).form === 'rioplatense')
     expect(led.filter((w) => !lacksKey.includes(w)).map((w) => w.esWord)).toEqual([]) // a replacement's sentence never uses the standard word
-    expect(lacksKey.filter((w) => headword(w).form !== 'rioplatense').map((w) => w.esWord).sort()).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'tony', 'ver'])
+    expect(lacksKey.filter((w) => headword(w).form !== 'rioplatense').map((w) => w.esWord).sort()).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'ver'])
     expect(entry('gilipollas').rio?.form).toBe('boludo')
     expect(entry('coño').rio?.form).toBe('concha')
   })
@@ -635,12 +633,12 @@ describe('fallback examples (pass 3)', () => {
     expect(() => parseFallbackExamples({})).toThrow(/array/)
   })
 
-  it('across all 4752 cards, the headword is in the sentence shown, except irregular verb forms (ser, ver, oír, oler, detener, distraer), the letter r and tony', () => {
+  it('across all 4749 cards, the headword is in the sentence shown, except irregular verb forms (ser, ver, oír, oler, detener, distraer), the letter r', () => {
     const missing = words
       .filter((w) => findFormRange(effectiveExample(w).sentence, headword(w).text, w.pos, true) === null)
       .map((w) => w.esWord)
       .sort()
-    expect(missing).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'tony', 'ver'])
+    expect(missing).toEqual(['detener', 'distraer', 'oler', 'oír', 'r', 'ser', 'ver'])
     expect(words.filter((w) => highlightTarget(w).range === null)).toEqual([]) // every card still highlights something
   })
 })

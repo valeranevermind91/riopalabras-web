@@ -1,16 +1,16 @@
 # Overlay v1 report
 
-133 entries (the stage-1 words). Client export: 85 entries (status accepted and rio_type not none).
+130 entries (the stage-1 words). Client export: 85 entries (status accepted and rio_type not none).
 
 ## Counts
 
 | status | entries | by rio_type |
 |---|---|---|
-| accepted | 103 | replacement 72, none 18, meaning_shift 11, regional_only 2 |
+| accepted | 100 | replacement 72, none 15, meaning_shift 11, regional_only 2 |
 | pending | 19 | replacement 8, none 7, meaning_shift 3, regional_only 1 |
 | rejected | 11 | none 11 |
 
-By rio_type overall: replacement 80, none 36, meaning_shift 14, regional_only 3.
+By rio_type overall: replacement 80, none 33, meaning_shift 14, regional_only 3.
 
 ## Base used per entry
 
@@ -30,7 +30,6 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 - bello: A (type none; register kept from A)
 - rostro: A (type none; register kept from A)
 - apartamento: A (form and register from B), manual accept
-- tony: A (type none)
 - escoger: A, manual accept
 - empleo: A (type none; register kept from A)
 - vacación: A (type none; register kept from A)
@@ -399,5 +398,4 @@ No errors.
 
 ## Flags
 
-- tony: needs_re_enrichment
 - condón: register_unverified: informal chosen for slang forro, no source gives it

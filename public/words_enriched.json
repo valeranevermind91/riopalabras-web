@@ -31836,20 +31836,6 @@
     "word_form_in_example": "clima"
   },
   {
-    "es_word": "wow",
-    "pos": "interj",
-    "frequency": 16416,
-    "rank": 2336,
-    "en_translation": "wow",
-    "ru_translation": "вау",
-    "es_rioplatense": "¡Qué bárbaro!",
-    "is_rioplatense_variant": true,
-    "example_sentence": "¡**Qué bárbaro**! No puedo creer lo que acabás de hacer.",
-    "example_translation_en": "Wow! I can't believe what you just did.",
-    "example_translation_ru": "Вау! Не могу поверить, что ты только что сделал.",
-    "word_form_in_example": "Qué bárbaro"
-  },
-  {
     "es_word": "triunfo",
     "pos": "n",
     "frequency": 16410,
@@ -40446,20 +40432,6 @@
     "word_form_in_example": "gravedad"
   },
   {
-    "es_word": "tony",
-    "pos": "n",
-    "frequency": 32872,
-    "rank": 1342,
-    "en_translation": "high-class person, snob (informal)",
-    "ru_translation": "богач, сноб (разг.)",
-    "es_rioplatense": "cheto",
-    "is_rioplatense_variant": true,
-    "example_sentence": "Ese pibe es un cheto, siempre anda con ropa de marca y se cree superior.",
-    "example_translation_en": "That kid is a high-class snob, he always wears brand-name clothes and thinks he's superior.",
-    "example_translation_ru": "Этот парень — сноб, он всегда носит брендовую одежду и считает себя выше других.",
-    "word_form_in_example": "cheto"
-  },
-  {
     "es_word": "apertura",
     "pos": "n",
     "frequency": 11720,
@@ -41108,8 +41080,8 @@
     "pos": "interj",
     "frequency": 11559,
     "rank": 3029,
-    "en_translation": "(exclamation of surprise, annoyance, or emphasis, similar to \"oh,\" \"hey,\" or \"damn\" in some contexts, often used in Spain)",
-    "ru_translation": "(междометие удивления, раздражения или акцента, похожее на \"ой\", \"эй\" или \"чёрт\" в некоторых контекстах, часто используется в Испании)",
+    "en_translation": "damn!, darn! (mild; Spain)",
+    "ru_translation": "чёрт!, блин! (мягко; Испания)",
     "es_rioplatense": "che",
     "is_rioplatense_variant": true,
     "example_sentence": "¡Che, vení para acá!",
@@ -48959,7 +48931,7 @@
   },
   {
     "es_word": "pa",
-    "pos": "n",
+    "pos": "prep",
     "frequency": 8693,
     "rank": 3628,
     "en_translation": "for, to (colloquial shortening of 'para')",
@@ -51202,8 +51174,8 @@
     "pos": "n",
     "frequency": 8116,
     "rank": 3799,
-    "en_translation": "Gil (a common surname; also slang for 'fool' in Rioplatense)",
-    "ru_translation": "Хиль (фамилия; также сленг 'дурак' в Риоплатенсе)",
+    "en_translation": "fool, sucker (informal)",
+    "ru_translation": "дурак, простофиля (разг.)",
     "es_rioplatense": "gil",
     "is_rioplatense_variant": true,
     "example_sentence": "No seas gil, no te dejes engañar por esa oferta.",
@@ -58994,20 +58966,6 @@
     "example_translation_en": "Asian food is very popular here.",
     "example_translation_ru": "Азиатская еда очень популярна здесь.",
     "word_form_in_example": "asiática"
-  },
-  {
-    "es_word": "baby",
-    "pos": "n",
-    "frequency": 6409,
-    "rank": 4420,
-    "en_translation": "baby",
-    "ru_translation": "младенец",
-    "es_rioplatense": "bebé",
-    "is_rioplatense_variant": true,
-    "example_sentence": "El bebé está durmiendo en su cuna.",
-    "example_translation_en": "The baby is sleeping in its crib.",
-    "example_translation_ru": "Младенец спит в своей кроватке.",
-    "word_form_in_example": "bebé"
   },
   {
     "es_word": "receptor",

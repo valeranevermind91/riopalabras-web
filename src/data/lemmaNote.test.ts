@@ -67,7 +67,7 @@ describe('nothing is said when it would not be true', () => {
   })
 
   it('a replacement the overlay does not know but that shares no stem with the word: cheto / tony', () => {
-    expect(noteFor(dictionary, 'tony')).toBeNull()
+    expect(lemmaOfForm(makeWord('tony', { pos: 'n' }), 'cheto')).toBeNull()
     expect(lemmaOfForm(makeWord('xyz', { pos: 'n' }), 'abcdef')).toBeNull()
   })
 

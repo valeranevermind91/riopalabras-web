@@ -43,7 +43,7 @@ describe('headword: falls back to es_word', () => {
     ['mina', 'value is "mina (slang…)" — a gloss'],
     ['vuestro', 'value is "su/sus" — alternatives'],
     ['solicitar', 'value is "pedir / postularse"'],
-    ['wow', 'value is "¡Qué bárbaro!" — punctuation'],
+    ['DANA', 'value is "fenómeno meteorológico / depresión atmosférica" — a gloss with a slash'],
     ['puto', 'value is a long explanation'],
     ['portar', 'sentence uses the standard word'],
   ])('%s (%s)', (esWord) => {
@@ -60,10 +60,10 @@ describe('headword: falls back to es_word', () => {
     }
   })
 
-  it('applies to exactly 112 of the 133 Rioplatense entries (the audit figure)', () => {
+  it('applies to exactly 110 of the 130 Rioplatense entries (the audit figure)', () => {
     const withRio = dictionary.filter((w) => w.esRioplatense !== null)
-    expect(withRio).toHaveLength(133)
-    expect(withRio.filter((w) => headword(w).form === 'rioplatense')).toHaveLength(112)
+    expect(withRio).toHaveLength(130)
+    expect(withRio.filter((w) => headword(w).form === 'rioplatense')).toHaveLength(110)
   })
 })
 
@@ -231,11 +231,11 @@ describe('highlightTarget', () => {
   it('finds a highlight for every dictionary word', () => {
     const missing = dictionary.filter((w) => highlightTarget(w).range === null).map((w) => w.esWord)
     expect(missing).toEqual([])
-  }) // walks all 4,752 words: about 2.5 s alone, and the global timeout in vitest.config.ts covers it when the whole suite runs at once
+  }) // walks all 4,749 words: about 2.5 s alone, and the global timeout in vitest.config.ts covers it when the whole suite runs at once
 
   it('never leaves ** markers in the sentence', () => {
     for (const w of dictionary) expect(highlightTarget(w).sentence).not.toContain('*')
-  }) // the same walk over all 4,752 words as the test above
+  }) // the same walk over all 4,749 words as the test above
 })
 
 describe('relationFor', () => {

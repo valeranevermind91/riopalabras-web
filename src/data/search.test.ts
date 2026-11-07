@@ -34,7 +34,7 @@ describe('searchWords', () => {
   })
 
   it('does not match words only through the legacy field or a rejected entry', () => {
-    expect(names('cheto')).toEqual([]) // tony's old legacy value; not in the overlay
+    expect(names('cheto')).toEqual([]) // the old legacy value of tony, an entry since removed; not in the overlay
     expect(names('borracha')).not.toContain('mona')
   })
 

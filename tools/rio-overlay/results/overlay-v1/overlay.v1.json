@@ -833,35 +833,6 @@
     ]
   },
   {
-    "es_word": "tony",
-    "rank": 1342,
-    "rio_type": "none",
-    "rio_form": null,
-    "alt_form": null,
-    "alt_region": null,
-    "region": null,
-    "register": "informal",
-    "notes": null,
-    "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "accepted",
-    "flags": [
-      "needs_re_enrichment"
-    ],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
-    "evidence": [
-      "manual decision: none (junk entry)",
-      "A: none (high)",
-      "B: none (low)",
-      "Claude: none (low)",
-      "legacy: cheto"
-    ]
-  },
-  {
     "es_word": "vos",
     "rank": 1357,
     "rio_type": "regional_only",
@@ -1699,29 +1670,6 @@
       "A: meaning_shift: saco (high)",
       "3-way agree",
       "pass-2 example (gemini-3.1-pro-preview), review: confirmed (Valera)"
-    ]
-  },
-  {
-    "es_word": "wow",
-    "rank": 2336,
-    "rio_type": "none",
-    "rio_form": null,
-    "alt_form": null,
-    "alt_region": null,
-    "region": null,
-    "register": "neutral",
-    "notes": null,
-    "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "accepted",
-    "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
-    "evidence": [
-      "3-way agree"
     ]
   },
   {
@@ -3461,29 +3409,6 @@
       "A and B agree: replacement linyera",
       "manual override (Valera): register pejorative and a note; reason: questionnaire free-text (Salto respondent)",
       "std_usage less_common (gemini-3.1-pro-preview): Linyera is the traditional local term for a homeless person, while vagabundo is understood and used but sounds slightly more formal or literary."
-    ]
-  },
-  {
-    "es_word": "baby",
-    "rank": 4420,
-    "rio_type": "none",
-    "rio_form": null,
-    "alt_form": null,
-    "alt_region": null,
-    "region": null,
-    "register": "neutral",
-    "notes": null,
-    "std_meaning": null,
-    "translation": null,
-    "confidence": "high",
-    "status": "accepted",
-    "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
-    "example": null,
-    "example_review": null,
-    "evidence": [
-      "3-way agree"
     ]
   },
   {
