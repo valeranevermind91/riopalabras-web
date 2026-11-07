@@ -16,7 +16,7 @@ describe('the deliberate exceptions to "the example shows the first sense of the
     const puto = entry('puto')
     expect(puto.en_translation.startsWith('faggot (derogatory)')).toBe(true) // the slur stays first, with its marking
     expect(puto.ru_translation.startsWith('педик (уничиж.)')).toBe(true)
-    expect(puto.example_sentence).toContain('puto frío') // the intensifier sense
+    expect(puto.example_sentence).toContain('puto peso') // the intensifier sense («ni un puto peso»)
     expect(puto.example_translation_en).toMatch(/damn/i)
     // the example must not voice the slur, in any of its three languages
     expect(puto.example_translation_en).not.toMatch(/faggot|\bfag\b|queer|homo/i)
@@ -109,5 +109,44 @@ describe('cerdo: the example shows the animal (the first gloss), not the meat', 
     expect(range).not.toBeNull()
     expect(sentence.slice(range!.start, range!.end)).toBe('chancho')
     expect(clozeTarget(cerdo)?.target).toBe('chancho')
+  })
+})
+
+// A teacher of Argentine Spanish found «¡Qué maldito frío hace hoy!» unnatural: maldito is a word you aim at a thing that is bothering you (the alarm clock, the
+// neighbour's dog), not a way to say "very cold". puto had the same template («¡Qué puto frío hace hoy!»). Both examples keep the sense they showed (maldito: "damned";
+// puto: the intensifier, never the slur) in a sentence an Argentine or Uruguayan would say. The gloss and the word are unchanged.
+describe('maldito and puto: natural examples instead of the "¡Qué … frío hace hoy!" template', () => {
+  const words = parseDictionary(JSON.parse(readFileSync('public/words_enriched.json', 'utf8')))
+
+  it('maldito: an annoying thing, said about it, in all three languages', () => {
+    const d = entry('maldito')
+    expect(d.en_translation).toBe('damned, cursed')
+    expect(d.ru_translation).toBe('проклятый')
+    expect(d.example_sentence).toBe('Ese maldito despertador no sonó y llegué tarde.')
+    expect(d.example_translation_en).toBe("That damn alarm clock didn't go off and I was late.")
+    expect(d.example_translation_ru).toBe('Этот проклятый будильник не сработал, и я опоздал.')
+  })
+
+  it('puto: the intensifier in «ni un puto peso», never the slur', () => {
+    const d = entry('puto')
+    expect(d.example_sentence).toBe('No tengo ni un puto peso, así que hoy no salgo.')
+    expect(d.example_translation_en).toBe("I don't have a single damn peso, so I'm not going out today.")
+    expect(d.example_translation_ru).toBe('У меня нет ни одного чертова песо, так что сегодня я никуда не иду.')
+  })
+
+  it.each(['maldito', 'puto'])('%s: neither example has the old template any more', (esWord) => {
+    const d = entry(esWord)
+    expect(d.example_sentence).not.toMatch(/frío/i)
+    expect(d.example_translation_en).not.toMatch(/cold/i)
+    expect(d.example_translation_ru).not.toMatch(/холод/i)
+  })
+
+  it.each(['maldito', 'puto'])('%s: the form is stored, the highlight finds it and Cloze can blank it', (esWord) => {
+    const w = words.find((x) => x.esWord === esWord)!
+    expect(w.wordFormInExample).toBe(esWord)
+    expect(headword(w).text).toBe(esWord)
+    const { sentence, range } = highlightTarget(w)
+    expect(sentence.slice(range!.start, range!.end)).toBe(esWord)
+    expect(clozeTarget(w)?.target).toBe(esWord)
   })
 })
