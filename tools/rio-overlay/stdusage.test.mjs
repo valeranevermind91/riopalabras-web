@@ -19,8 +19,8 @@ const client = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'rio_overlay
 const scope = selectStdUsageScope(overlay, dictionary)
 
 describe('selectStdUsageScope', () => {
-  it('takes the 73 accepted entries whose form differs from es_word, and no meaning_shift / regional_only / rejected / pending ones', () => {
-    expect(scope).toHaveLength(73)
+  it('takes the 74 accepted entries whose form differs from es_word, and no meaning_shift / regional_only / rejected / pending ones', () => {
+    expect(scope).toHaveLength(74)
     const words = scope.map((s) => s.es_word)
     expect(words).toEqual(expect.arrayContaining(['autobús', 'metro', 'apartamento', 'chico', 'aquí', 'periódico', 'pastel', 'cabello', 'carro', 'escoger', 'quizá', 'tú', 'contigo']))
     expect(words).not.toContain('fila') // rejected by hand: "hacer cola" is ordinary in Spain too
@@ -76,10 +76,10 @@ describe('validateStdUsage', () => {
 })
 
 describe('the stored answers and the client file', () => {
-  it('std-usage.v1.json answers every one of the 73 entries in scope, all valid, none failed; its one extra answer is fila, rejected by hand after the run', () => {
+  it('std-usage.v1.json answers every one of the 74 entries in scope, all valid, none failed; its one extra answer is fila, rejected by hand after the run', () => {
     // the first run (63 entries) is the file's own meta; the ten words added after the audit were run later and merged in, recorded under meta.additions
     expect(usageFile.meta).toMatchObject({ pass: 'stdusage', selected: 63, generated: 63, failed: 0 })
-    expect(usageFile.meta.additions).toHaveLength(2) // the batch of ten words, and conducir (written by hand: it was never in stage 1)
+    expect(usageFile.meta.additions).toHaveLength(3) // the batch of ten words, then conducir and pequeño (written by hand: conducir was never in stage 1, pequeño was pending)
     expect(usageFile.meta.additions[0].words.sort()).toEqual(['ayuntamiento', 'armario', 'trozo', 'gafas', 'vaquero', 'enhorabuena', 'píldora', 'baloncesto', 'crío', 'sanidad'].sort())
     expect(Object.keys(usageFile.usage).sort()).toEqual([...scope.map((s) => s.es_word), 'fila'].sort()) // the stored run keeps its answer for fila; the build skips it (the entry is rejected)
     for (const item of scope) {
@@ -100,7 +100,7 @@ describe('the stored answers and the client file', () => {
       else expect(['less_common', 'equally_used'], e.es_word).toContain(e.std_usage)
     }
     expect(client.filter((e) => e.std_usage === 'not_used').map((e) => e.es_word).sort()).toEqual(KEPT)
-    expect(client.filter((e) => e.std_usage === 'less_common')).toHaveLength(57)
+    expect(client.filter((e) => e.std_usage === 'less_common')).toHaveLength(58)
     expect(client.filter((e) => e.std_usage === 'equally_used')).toHaveLength(4)
   })
 
@@ -171,10 +171,10 @@ async function cli(args, { url, env = {} }) {
 const runArgs = (name) => ['--run', name, '--out', path.join(tmp, `${name}.out.json`), '--delay-ms', '0', '--retry-base-ms', '5', '--batch-size', '30']
 
 describe('generate-examples.mjs --pass stdusage', () => {
-  it('dry run lists the 73 entries and the cost, and calls nothing', async () => {
+  it('dry run lists the 74 entries and the cost, and calls nothing', async () => {
     const out = await cli([], { url: 'http://127.0.0.1:9', env: { GEMINI_API_KEY: undefined } })
     expect(out.code).toBe(0)
-    expect(out.out).toContain('73 entries to classify')
+    expect(out.out).toContain('74 entries to classify')
     expect(out.out).toMatch(/metro\s+subte\s+n\s+ar/)
     expect(out.out).toContain('No API call was made')
   })
@@ -194,7 +194,7 @@ describe('generate-examples.mjs --pass stdusage', () => {
     expect(g.requests[0].text).not.toMatch(/example|legacy|evidence/i)
 
     const result = JSON.parse(fs.readFileSync(args[args.indexOf('--out') + 1], 'utf8'))
-    expect(result.meta).toMatchObject({ pass: 'stdusage', selected: 73, generated: 72, failed: 1 })
+    expect(result.meta).toMatchObject({ pass: 'stdusage', selected: 74, generated: 73, failed: 1 })
     expect(result.usage.aquí).toMatchObject({ std_usage: 'less_common', rio_form: 'acá' })
     expect(result.usage.carro).toBeUndefined()
     expect(result.failed[0]).toMatchObject({ es_word: 'carro', errors: [expect.stringContaining('bad_std_usage')] })

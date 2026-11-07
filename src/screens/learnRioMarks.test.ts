@@ -95,8 +95,8 @@ describe('the Learn card shows what makes a word Rioplatense, as the other surfa
 describe('every overlay entry carries the pill, and an ordinary dictionary word carries nothing', () => {
   const overlay = words.filter((w) => w.rio)
 
-  it('all 86 overlay entries do: the local headwords (73), the meaning shifts (11) and the two regional-only words', () => {
-    expect(overlay).toHaveLength(86)
+  it('all 87 overlay entries do: the local headwords (74), the meaning shifts (11) and the two regional-only words', () => {
+    expect(overlay).toHaveLength(87)
     for (const word of overlay) expect(isRioplatenseWord(word), word.esWord).toBe(true)
     for (const word of overlay) expect(cardElsewhere(word), word.esWord).toContain('<span class="wc-rio">Rioplatense</span>')
   })

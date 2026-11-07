@@ -1,13 +1,13 @@
 # Overlay v1 report
 
-131 entries (the 130 stage-1 words, plus conducir added by hand). Client export: 86 entries (status accepted and rio_type not none).
+131 entries (the 130 stage-1 words, plus conducir added by hand). Client export: 87 entries (status accepted and rio_type not none).
 
 ## Counts
 
 | status | entries | by rio_type |
 |---|---|---|
-| accepted | 101 | replacement 73, none 15, meaning_shift 11, regional_only 2 |
-| pending | 19 | replacement 8, none 7, meaning_shift 3, regional_only 1 |
+| accepted | 102 | replacement 74, none 15, meaning_shift 11, regional_only 2 |
+| pending | 18 | replacement 7, none 7, meaning_shift 3, regional_only 1 |
 | rejected | 11 | none 11 |
 
 By rio_type overall: replacement 81, none 33, meaning_shift 14, regional_only 3.
@@ -19,6 +19,7 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 - aquí: A, manual accept
 - tú: A (form set by decision), manual accept
 - chico: Claude (A said none), confidence medium
+- pequeño: A, manual accept
 - contigo: A (form set by decision), manual accept
 - quizá: A, manual accept
 - quizás: A, manual accept
@@ -78,20 +79,13 @@ Base = run A (`stage1.merged.json`; the one entry A failed validation on, aparta
 
 ## Pending (the short list for further checks)
 
-19 entries, by dictionary rank. Each shows the reason and the competing proposals.
+18 entries, by dictionary rank. Each shows the reason and the competing proposals.
 
 - **niño** (rank 147): no questionnaire item; A, B and Claude do not agree (audit class: all differ)
   - A: replacement: nene (high)
   - B: replacement: chico (high)
   - Claude: none (medium)
   - legacy: pibe
-  - manual triage (Valera): left pending
-- **pequeño** (rank 192): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
-  - DAMER: «chico» has Ur label (rio_form, any sense)
-  - A: replacement: chico (high)
-  - B: none (high)
-  - Claude: none (high)
-  - legacy: chico
   - manual triage (Valera): left pending
 - **muchacho** (rank 405): no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)
   - A: none (high)
@@ -310,10 +304,11 @@ Question asked of `gemini-3.1-pro-preview` (run `p4-stdusage`), per entry whose 
 - aparcar → estacionar: Peninsular verb for parking (estacionar here); no other sense (kept by hand)
 - crío → gurí: Peninsular colloquial word for a child (gurí / pibe / nene here); the "young animal" sense is rare (kept by hand)
 
-### less_common (57; card shows: no hint)
+### less_common (58; card shows: no hint)
 
 - aquí → acá: 'Acá' is the standard everyday word. 'Aquí' sounds more formal or literary, though it is still occasionally used in speech.
 - tú → vos: 'Vos' is the standard in Argentina. 'Tú' is still widely used in Uruguay (often with voseo verbs), making it less common overall.
+- pequeño → chico: pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand).
 - quizá → capaz: 'Capaz' is the everyday standard. 'Quizá' sounds quite formal or bookish and is rarely used in casual conversation.
 - quizás → capaz: While 'capaz' is the most natural choice for 'maybe', 'quizás' is still used in everyday speech, just less often.
 - coche → auto: 'Auto' is the standard everyday word for a car. 'Coche' is understood and used, but noticeably less frequently.

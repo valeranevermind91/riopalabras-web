@@ -33,10 +33,10 @@ const highlighted = (w: Word) => {
 const pickLocalized = (value: Parameters<typeof pickLocalizedAll>[0], flags: TranslationFlags) => pickLocalizedAll(value, flags)[0] ?? null
 
 describe('the overlay file', () => {
-  it('has 86 accepted entries, all in the dictionary, none of type none', () => {
-    expect(rawOverlay).toHaveLength(86)
-    expect(overlay.size).toBe(86)
-    expect(words.filter((w) => w.rio)).toHaveLength(86)
+  it('has 87 accepted entries, all in the dictionary, none of type none', () => {
+    expect(rawOverlay).toHaveLength(87)
+    expect(overlay.size).toBe(87)
+    expect(words.filter((w) => w.rio)).toHaveLength(87)
     for (const e of rawOverlay) expect(['replacement', 'meaning_shift', 'regional_only', 'form']).toContain(e.rio_type)
   })
 
@@ -568,11 +568,11 @@ describe('overlay examples (pass 2)', () => {
 
 describe('fallback examples (pass 3)', () => {
   const withFallback = words.filter((w) => w.fallbackExample)
-  const SAMPLE = ['niño', 'pequeño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
+  const SAMPLE = ['niño', 'esposo', 'mona', 'tarta', 'deprisa', 'garaje', 'muchacho', 'hermoso', 'sofá']
 
-  it('the file has 35 examples (34 generated, plus fila written by hand), none for an overlay word', () => {
-    expect(rawFallback).toHaveLength(35)
-    expect(withFallback).toHaveLength(35)
+  it('the file has 34 examples (33 generated, plus fila written by hand), none for an overlay word', () => {
+    expect(rawFallback).toHaveLength(34)
+    expect(withFallback).toHaveLength(34)
     expect(withFallback.filter((w) => w.rio)).toEqual([])
     expect(entry('casa').fallbackExample).toBeNull()
     expect(entry('ser').fallbackExample).toBeNull() // an irregular form of itself (sos): nothing to fix
@@ -647,14 +647,14 @@ describe('std_usage (is the standard word used in everyday speech?)', () => {
   const replacements = words.filter((w) => w.rio?.type === 'replacement')
 
   it('every replacement carries it, and no other type does', () => {
-    expect(replacements).toHaveLength(73)
+    expect(replacements).toHaveLength(74)
     expect(replacements.filter((w) => w.rio!.stdUsage === null).map((w) => w.esWord)).toEqual([])
     expect(words.filter((w) => w.rio && w.rio.type !== 'replacement' && w.rio.stdUsage !== null)).toEqual([])
   })
 
-  it('splits after the manual decisions: 12 not_used (unambiguously Peninsular-only words), 57 less_common, 4 equally_used', () => {
+  it('splits after the manual decisions: 12 not_used (unambiguously Peninsular-only words), 58 less_common, 4 equally_used', () => {
     const count = (u: string) => replacements.filter((w) => w.rio!.stdUsage === u).length
-    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([12, 57, 4])
+    expect([count('not_used'), count('less_common'), count('equally_used')]).toEqual([12, 58, 4])
     expect(replacements.filter((w) => w.rio!.stdUsage === 'not_used').map((w) => w.esWord).sort()).toEqual(['aparcar', 'ayuntamiento', 'baloncesto', 'chaval', 'crío', 'enhorabuena', 'gilipollas', 'guay', 'ordenador', 'patata', 'vosotros', 'vuestro'])
     // words that also exist in the region in another sense, or are used there, are never "rarely used here"
     for (const w of ['pastel', 'carro', 'escoger', 'apartamento', 'coger', 'follar', 'coño', 'cojón', 'pluma', 'falda', 'cubo', 'maya', 'portero', 'balón', 'condón', 'metro', 'mando', 'carretera', 'mantequilla', 'autobús', 'piscina', 'gasolina', 'vaquero', 'píldora', 'gafas', 'sanidad']) {
@@ -709,17 +709,17 @@ describe('standard meaning shows its first gloss only', () => {
 })
 
 describe('what the overlay does to the dictionary', () => {
-  it('73 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4663 are untouched', () => {
+  it('74 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4662 are untouched', () => {
     const withOverlay = words.filter((w) => w.rio)
     const led = withOverlay.filter((w) => headword(w).form === 'rioplatense')
     const noteOnly = withOverlay.filter((w) => headword(w).form === 'standard' && relationFor(w))
-    expect(led).toHaveLength(73)
+    expect(led).toHaveLength(74)
     expect(led.every((w) => w.rio!.type === 'replacement')).toBe(true)
-    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(73)
+    expect(withOverlay.filter((w) => w.rio!.type === 'replacement')).toHaveLength(74)
     expect(noteOnly).toHaveLength(13)
     expect(noteOnly.every((w) => w.rio!.type !== 'replacement')).toBe(true)
     expect(withOverlay.filter((w) => headword(w).form === 'standard' && !relationFor(w))).toHaveLength(0)
-    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 86)
+    expect(words.filter((w) => !w.rio)).toHaveLength(words.length - 87)
     for (const w of words.filter((x) => !x.rio)) {
       expect(headword(w)).toEqual({ text: w.esWord, form: 'standard', secondary: null })
       expect(relationFor(w)).toBeNull()

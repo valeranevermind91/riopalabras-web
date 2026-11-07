@@ -199,6 +199,9 @@ const MANUAL_ACCEPT = {
   armario: { form: 'placard' },
   gafas: { form: 'lentes', region: 'uy', alt: { form: 'anteojos', region: 'ar' } },
   crío: { form: 'gurí', register: 'informal' }, // register from the blind Claude entry (informal); A calls its own nene neutral
+  // pequeño -> chico (the adjective "small"), a teacher's review. Run A typed it a replacement (high); B and Claude said none; B's reasoning lists chico for both countries. The card
+  // takes the dictionary's own example («Mi hermano es re chico»), which the pass-3 fallback sentence used to override. Thinner evidence than most entries; approved by the owner.
+  pequeño: { form: 'chico', evidence: 'approved by the owner after a teacher\'s review: chico is the everyday adjective for "small" in both countries; run A typed it a replacement, B and Claude said none' },
 }
 for (const [w, m] of Object.entries(MANUAL_ACCEPT)) {
   if (handled.has(w)) throw new Error(`${w} is already handled by an earlier rule`)
@@ -221,7 +224,7 @@ for (const w of ['hermoso', 'bello', 'rostro', 'empleo', 'vacación', 'norteamer
   make(w, none(A.get(w)), 'rejected', ['manual reject (Valera): not a dialect difference', ...proposalEvidence(w).map((e) => 'rejected proposal context, ' + e)], [], 'A (type none; register kept from A)')
   handled.add(w)
 }
-const MANUAL_PENDING = ['niño', 'pequeño', 'muchacho'] // evidence appended after the rules have run
+const MANUAL_PENDING = ['niño', 'muchacho'] // evidence appended after the rules have run
 
 // ---------------------------------------------------------------- rules 2-4
 function proposalFor(w, d) {

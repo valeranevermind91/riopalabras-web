@@ -49,6 +49,15 @@
           "conducir"
         ],
         "note": "written by hand with the approved change conducir -> manejar (not a stage-1 word)"
+      },
+      {
+        "run": "by-hand",
+        "model": "none",
+        "generatedAt": "2026-11-07",
+        "words": [
+          "pequeño"
+        ],
+        "note": "written by hand with the approved change pequeño -> chico (stage 1 had it pending)"
       }
     ]
   },
@@ -495,6 +504,12 @@
       "std_usage": "less_common",
       "reason": "conducir is understood and used in formal and legal speech (licencia de conducir), but manejar is the everyday verb (decided by hand).",
       "rio_form": "manejar",
+      "warnings": []
+    },
+    "pequeño": {
+      "std_usage": "less_common",
+      "reason": "pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand).",
+      "rio_form": "chico",
       "warnings": []
     }
   },

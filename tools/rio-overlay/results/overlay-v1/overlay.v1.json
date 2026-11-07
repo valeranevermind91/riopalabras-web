@@ -139,21 +139,22 @@
     "notes": null,
     "std_meaning": null,
     "translation": null,
-    "confidence": "high",
-    "status": "pending",
+    "confidence": "medium",
+    "status": "accepted",
     "flags": [],
-    "std_usage": null,
-    "std_usage_reason": null,
+    "std_usage": "less_common",
+    "std_usage_reason": "pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand).",
     "example": null,
     "example_review": null,
     "evidence": [
-      "no questionnaire item; A, B and Claude do not agree (audit class: Claude matches one of A/B)",
+      "manual accept (Valera)",
+      "approved by the owner after a teacher's review: chico is the everyday adjective for \"small\" in both countries; run A typed it a replacement, B and Claude said none",
       "DAMER: «chico» has Ur label (rio_form, any sense)",
       "A: replacement: chico (high)",
       "B: none (high)",
       "Claude: none (high)",
       "legacy: chico",
-      "manual triage (Valera): left pending"
+      "std_usage less_common (gemini-3.1-pro-preview): pequeño is understood and common everywhere, but chico is the everyday word for small in both countries (decided by hand)."
     ]
   },
   {

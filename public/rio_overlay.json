@@ -57,6 +57,20 @@
     }
   },
   {
+    "es_word": "pequeño",
+    "rio_type": "replacement",
+    "rio_form": "chico",
+    "alt_form": null,
+    "alt_region": null,
+    "region": null,
+    "register": "neutral",
+    "notes": null,
+    "std_meaning": null,
+    "translation": null,
+    "std_usage": "less_common",
+    "confidence": "medium"
+  },
+  {
     "es_word": "contigo",
     "rio_type": "replacement",
     "rio_form": "con vos",
