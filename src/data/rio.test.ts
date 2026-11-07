@@ -708,6 +708,86 @@ describe('standard meaning shows its first gloss only', () => {
   ])('%j → %j', (input, expected) => expect(firstGloss(input)).toBe(expected))
 })
 
+// A slash with a space on both sides separates senses, like ";" (the model sometimes writes "a / b"); a slash inside a gloss ("he/she") does not.
+describe('firstGloss: " / " (a slash with spaces around it) separates senses, a bare "/" does not', () => {
+  it.each([
+    ['mass hiring of political cronies / day of eating gnocchi', 'mass hiring of political cronies'],
+    ['массовый прием на работу фиктивных сотрудников / день поедания ньокки', 'массовый прием на работу фиктивных сотрудников'],
+    ['morning / tomorrow', 'morning'],
+    ['extension / extent / area', 'extension'],
+    ['who  /  whom', 'who'], // any run of spaces
+    ['a\t/\tb', 'a'], // any whitespace
+    ['tea / coffee, milk', 'tea'], // the first separator wins, whichever it is
+    ['tea, coffee / milk', 'tea'],
+    ['coffee; tea / milk', 'coffee'],
+    ['marker (pen / ink), scoreboard', 'marker (pen / ink)'], // inside parentheses it is not a separator, as for "," and ";"
+    ['thing (a / b) / other', 'thing (a / b)'],
+  ])('splits %j → %j', (input, expected) => expect(firstGloss(input)).toBe(expected))
+
+  it.each([
+    ['he/she', 'he/she'],
+    ['and/or', 'and/or'],
+    ['a /b', 'a /b'],
+    ['a/ b', 'a/ b'],
+    ['TCP/IP stack', 'TCP/IP stack'],
+    ['он/она', 'он/она'],
+    ['/ leading', '/ leading'],
+    ['trailing /', 'trailing /'],
+    ['a // b', 'a // b'], // not a lone slash between spaces
+  ])('does not split %j', (input, expected) => expect(firstGloss(input)).toBe(expected))
+
+  it('a gloss that starts with the separator leaves nothing before it, as for "," and ";"', () => {
+    expect(firstGloss(' / x')).toBe('')
+    expect(firstGloss(', x')).toBe('')
+  })
+})
+
+// The bundled glosses (the dictionary's, the overlay's): the change reaches exactly the ones that have " / " and no other.
+describe('firstGloss over the bundled data: only the glosses with " / " change', () => {
+  const oldFirstGloss = (text: string): string => {
+    let depth = 0
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      if (c === '(') depth++
+      else if (c === ')') depth = Math.max(0, depth - 1)
+      else if (depth === 0 && (c === ',' || c === ';')) return text.slice(0, i).trim()
+    }
+    return text.trim()
+  }
+  const glosses: string[] = []
+  for (const w of rawDictionary as { en_translation?: string; ru_translation?: string }[]) glosses.push(w.en_translation ?? '', w.ru_translation ?? '')
+  for (const e of rawOverlay as { translation?: { en?: string; ru?: string } | null; std_meaning?: { en?: string; ru?: string } | null }[]) {
+    glosses.push(e.translation?.en ?? '', e.translation?.ru ?? '', e.std_meaning?.en ?? '', e.std_meaning?.ru ?? '')
+  }
+  const slashed = glosses.filter((g) => / \/ /.test(g))
+
+  it('19 dictionary translations have " / " (9 English, 10 Russian), the overlay none, and each is a list of senses', () => {
+    expect(slashed).toHaveLength(19)
+    expect((rawDictionary as { en_translation?: string }[]).filter((w) => / \/ /.test(w.en_translation ?? ''))).toHaveLength(9)
+    expect((rawDictionary as { ru_translation?: string }[]).filter((w) => / \/ /.test(w.ru_translation ?? ''))).toHaveLength(10)
+    expect(rawOverlay.filter((e: { translation?: unknown; std_meaning?: unknown }) => / \/ /.test(JSON.stringify([e.translation, e.std_meaning])))).toEqual([])
+  })
+
+  it('every gloss without " / " gets the same first gloss as before; every one with it gets what stands before the first separator', () => {
+    for (const g of glosses) {
+      if (!/ \/ /.test(g)) expect(firstGloss(g), g).toBe(oldFirstGloss(g))
+    }
+    for (const g of slashed) {
+      const first = firstGloss(g)
+      expect(first, g).not.toBe('')
+      expect(first.length, g).toBeLessThan(g.trim().length)
+      expect(g.startsWith(first), g).toBe(true)
+    }
+  })
+
+  it('the Matching tiles of the words that change, spelled out', () => {
+    const first = (field: 'en_translation' | 'ru_translation', esWord: string) => firstGloss((rawDictionary as Record<string, string>[]).find((w) => w.es_word === esWord)![field])
+    expect([first('en_translation', 'mañana'), first('ru_translation', 'mañana')]).toEqual(['morning', 'утро'])
+    expect([first('en_translation', 'quien'), first('ru_translation', 'quien')]).toEqual(['who', 'кто'])
+    expect(first('ru_translation', 'carajo')).toBe('чёрт возьми')
+  })
+})
+
 describe('what the overlay does to the dictionary', () => {
   it('74 words lead with a Rioplatense headword (every replacement), 13 show a note only (meaning_shift, regional_only), 4662 are untouched', () => {
     const withOverlay = words.filter((w) => w.rio)

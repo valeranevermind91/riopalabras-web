@@ -84,14 +84,17 @@ export function parseFallbackExamples(raw: unknown): ReadonlyMap<string, RioExam
   return out
 }
 
-/** The first meaning of a comma- or semicolon-separated gloss list, ignoring separators inside parentheses: "focus, spotlight" → "focus". */
+/**
+ * The first meaning of a gloss list, ignoring separators inside parentheses: "focus, spotlight" → "focus". A sense separator is a comma, a semicolon, or a slash
+ * with whitespace on BOTH sides (a lookup sometimes writes "morning / tomorrow"); a slash without spaces is part of the gloss ("he/she").
+ */
 export function firstGloss(text: string): string {
   let depth = 0
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
     if (c === '(') depth++
     else if (c === ')') depth = Math.max(0, depth - 1)
-    else if (depth === 0 && (c === ',' || c === ';')) return text.slice(0, i).trim()
+    else if (depth === 0 && (c === ',' || c === ';' || (c === '/' && i > 0 && /\s/.test(text[i - 1]) && i + 1 < text.length && /\s/.test(text[i + 1])))) return text.slice(0, i).trim()
   }
   return text.trim()
 }

@@ -26,6 +26,7 @@ import {
   glossKey,
   isMatchingComplete,
   isPracticeWord,
+  matchItem,
   matchingEligibleCount,
   matchingPool,
   recordPracticeCards,
@@ -49,7 +50,7 @@ import { en, strings } from '../strings'
 import { ru } from '../strings.ru'
 import { clozeFeedback } from './clozeFeedback'
 import { verbForms } from './verbForms'
-import { RU_ONLY } from '../testing/translationFlags'
+import { EN_ONLY, RU_ONLY } from '../testing/translationFlags'
 
 const dictionary = parseDictionary(
   JSON.parse(readFileSync('public/words_enriched.json', 'utf8')),
@@ -100,6 +101,15 @@ describe('Matching: first gloss and collisions', () => {
     expect(firstMatchGloss(learned('a', { ruTranslation: 'стол, табличка' }), RU_ONLY)).toBe('стол')
     expect(firstMatchGloss(learned('a', { ruTranslation: 'быть; находиться' }), RU_ONLY)).toBe('быть')
     expect(firstMatchGloss(learned('a', { ruTranslation: '(устар.) дом' }), RU_ONLY)).toBe('(устар.) дом') // never an empty tile
+  })
+
+  it('" / " (a slash with spaces) separates senses like ";": the tile is the first sense (a lookup can return "a / b")', () => {
+    const noquiada = learned('ñoquiada', { ruTranslation: 'массовый прием на работу фиктивных сотрудников / день поедания ньокки', enTranslation: 'mass hiring of political cronies / day of eating gnocchi' })
+    expect(firstMatchGloss(noquiada, RU_ONLY)).toBe('массовый прием на работу фиктивных сотрудников')
+    expect(firstMatchGloss(noquiada, EN_ONLY)).toBe('mass hiring of political cronies')
+    expect(firstMatchGloss(learned('a', { enTranslation: 'morning / tomorrow (day)' }), EN_ONLY)).toBe('morning')
+    expect(firstMatchGloss(learned('a', { enTranslation: 'he/she' }), EN_ONLY)).toBe('he/she') // a bare slash is part of the gloss
+    expect(matchItem(noquiada, RU_ONLY).gloss).toBe('массовый прием на работу фиктивных сотрудников')
   })
 
   it('follows the card: an overlay translation replaces the dictionary one when the Rioplatense headword leads', () => {
