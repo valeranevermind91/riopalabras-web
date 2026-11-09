@@ -514,6 +514,36 @@ mark {
   align-self: flex-start;
 }
 
+/* The bottom row of the card: the learning-queue button (for a word Learn can still teach) and the link to the word's card. They wrap onto two rows when the width is short (320px, Russian). */
+.wotd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 14px;
+  margin-top: auto;
+}
+
+.wotd-actions .link-btn {
+  margin-top: 0;
+  align-self: center;
+}
+
+.wotd-queue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.wotd-queue.is-on {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 /* The action block: a row of three equal tiles, and under it a dock of fixed height. Together they are no taller than the 2x2 grid they replace (206px). */
 .home-actions {
   display: flex;

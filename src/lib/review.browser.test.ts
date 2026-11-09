@@ -445,6 +445,54 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       expect(learnWhenReview).not.toBe(reviewWhenReview) // Learn is the soft teal when Review is advised (and Review is the disabled grey when Learn is: nothing is due)
     }, 60_000)
   })
+  describe("the word of the day's learning-queue button", () => {
+    for (const language of ['en', 'ru'] as const) {
+      const [off, on] = language === 'en' ? ['Add to learning queue', 'In the learning queue ✓'] : ['Добавить в очередь изучения', 'В очереди на изучение ✓']
+      it(`${language === 'en' ? 'English' : 'Russian'}: pressing it queues the word, pressing again takes it back, and the card fits a 320×568 screen`, async () => {
+        const page = await open('due=50&real=1&star=1', language === 'ru' ? 'ru' : undefined)
+        await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const read = () =>
+          page.evaluate(() => {
+            const button = document.querySelector('.wotd-queue') as HTMLElement
+            const wotd = document.querySelector('.wotd') as HTMLElement
+            const box = button.getBoundingClientRect()
+            const card = wotd.getBoundingClientRect()
+            return {
+              text: button.textContent?.trim(),
+              pressed: button.getAttribute('aria-pressed'),
+              sent: (window as never as { __sent: { favorites: { op?: string; esWord?: string }[] } }).__sent.favorites.length,
+              inside: box.left >= card.left && box.right <= card.right && box.bottom <= card.bottom + 0.5,
+              overflows: button.scrollWidth > button.clientWidth,
+              pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+              cardOverflows: wotd.scrollHeight > wotd.clientHeight + 1,
+              right: box.right,
+              lines: Math.round((box.height - parseFloat(getComputedStyle(button).paddingTop) - parseFloat(getComputedStyle(button).paddingBottom)) / parseFloat(getComputedStyle(button).lineHeight)),
+            }
+          })
+        const before = await read()
+        expect(before).toMatchObject({ text: off, pressed: 'false', sent: 0, inside: true, overflows: false, pageScrolls: false, cardOverflows: false })
+        expect(before.right).toBeLessThanOrEqual(320)
+        expect(before.lines).toBeLessThanOrEqual(2)
+        await page.click('.wotd-queue')
+        await page.waitForFunction((label) => document.querySelector('.wotd-queue')?.textContent?.trim() === label, {}, on)
+        const queued = await read()
+        expect(queued).toMatchObject({ text: on, pressed: 'true', inside: true, overflows: false, cardOverflows: false })
+        await page.waitForFunction(() => (window as never as { __sent: { favorites: unknown[] } }).__sent.favorites.length === 1)
+        await page.click('.wotd-queue')
+        await page.waitForFunction((label) => document.querySelector('.wotd-queue')?.textContent?.trim() === label, {}, off)
+        await page.waitForFunction(() => (window as never as { __sent: { favorites: unknown[] } }).__sent.favorites.length === 2)
+        expect(await read()).toMatchObject({ text: off, pressed: 'false' })
+        await page.close()
+      }, 60_000)
+    }
+
+    it('without the write queue (the page the harness opens by default) there is no button', async () => {
+      const page = await open('due=50&real=1')
+      expect(await page.$('.wotd-queue')).toBeNull()
+      expect(await page.$('.wotd')).not.toBeNull()
+      await page.close()
+    }, 60_000)
+  })
   describe('the Home tiles: a label is never split', () => {
     const tilesOf = (page: Page) =>
       page.evaluate(() => {

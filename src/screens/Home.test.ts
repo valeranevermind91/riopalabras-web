@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from '../data/dictionary'
 import { headword, highlightTarget } from '../data/headword'
 import { lastDays } from '../data/metrics'
+import { canStar } from '../data/starred'
 import { parseFallbackExamples, parseRioOverlay } from '../data/rio'
 import { hashString, pickWordOfTheDay, wordOfTheDay, wordOfTheDayPool } from '../data/wordOfDay'
 import { createWriteQueue } from '../data/writeQueue'
@@ -464,6 +465,55 @@ describe('the word of the day card', () => {
     expect(html).toContain('<hr class="wotd-divider"/>')
     expect(html).toMatch(/<p class="wotd-translation">[^<]+<\/p>/)
     expect(html).toContain('See the card →')
+  })
+
+  describe('the learning-queue button on the card', () => {
+    const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
+    const today = pickWordOfTheDay(real, NOW)!
+    const withToday = (over: Partial<Word>) => real.map((w) => (w.esWord === today.esWord ? { ...w, ...over } : w))
+    const button = (html: string) => card(html).match(/<button type="button" class="btn btn-secondary wotd-queue[^"]*"[^>]*>.*?<\/button>/)?.[0] ?? ''
+    const text = (html: string) => html.replace(/<[^>]*>/g, '').trim()
+
+    it('today\'s word is one Learn can still teach (so the tests below mean something)', () => {
+      expect(canStar(today)).toBe(true)
+    })
+
+    it('a word Learn can still teach has the button, saying what it does; it is a secondary button, before the link to the card, in one row with it', () => {
+      const html = render({ onOpenWord: () => {}, queue }, real)
+      expect(text(button(html))).toBe('Add to learning queue')
+      expect(button(html)).toContain('aria-pressed="false"')
+      expect(button(html)).not.toContain('is-on')
+      expect(card(html)).toMatch(/<div class="wotd-actions"><button[^>]*wotd-queue.*?<\/button><button type="button" class="link-btn">See the card →<\/button><\/div>/)
+    })
+
+    it('in the queue, the button says so, with a check mark, looks active and is pressed', () => {
+      const html = render({ onOpenWord: () => {}, queue }, withToday({ isFavorite: true, starredAt: 5 }))
+      expect(text(button(html))).toBe('In the learning queue ✓')
+      expect(button(html)).toContain('aria-pressed="true"')
+      expect(button(html)).toContain('is-on')
+    })
+
+    it('a word already learned has no button (the link to its card stays): nothing is waiting to be taught', () => {
+      const html = render({ onOpenWord: () => {}, queue }, withToday({ repetitions: 3, nextReview: past }))
+      expect(card(html)).toContain('class="wotd-word"')
+      expect(card(html)).not.toContain('wotd-queue')
+      expect(card(html)).toContain('See the card →')
+    })
+
+    it('a word that is not taught (no translation) or hidden has none either, and nor has a signed-out screen, which has nowhere to write', () => {
+      expect(card(render({ onOpenWord: () => {}, queue }, withToday({ enTranslation: '', ruTranslation: '' })))).not.toContain('wotd-queue')
+      expect(card(render({ onOpenWord: () => {} }, real))).not.toContain('wotd-queue') // no queue
+    })
+
+    it('in Russian', () => {
+      setLanguage('ru')
+      try {
+        expect(text(button(render({ queue }, real)))).toBe('Добавить в очередь изучения')
+        expect(text(button(render({ queue }, withToday({ isFavorite: true, starredAt: 5 }))))).toBe('В очереди на изучение ✓')
+      } finally {
+        setLanguage('en')
+      }
+    })
   })
 
   it('the highlighted text is a word of the sentence', () => {

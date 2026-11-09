@@ -1,12 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
+import { StarIcon } from '../components/WordRow'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, batchPracticeAvailable, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { REVIEW_SESSION_SIZE } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
+import { canStar } from '../data/starred'
 import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../data/daily'
 import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
 import { WHATS_NEW, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
@@ -121,6 +123,15 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   }, [open])
   const now = nowProp ?? new Date()
 
+  // The word of the day's learning-queue button: the same star as on the word's own page (data.applyFavorite and the favourites lane of the write queue). Only offered with a queue
+  // to write to: a screen with nowhere to save would show a button that does nothing.
+  const toggleQueue = (word: Word) => {
+    if (data.status !== 'ready' || !queue) return
+    haptic('select')
+    data.data.applyFavorite([word.esWord], !word.isFavorite)
+    queue.enqueueFavorite(word.esWord, !word.isFavorite)
+  }
+
   return (
     <main className="screen home">
       <ScreenHeader brand title={strings.appTitle} actions={
@@ -163,7 +174,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
-          {wotd ? <WordOfTheDayCard wotd={wotd} onOpen={onOpenWord} /> : <div className="home-spacer" />}
+          {wotd ? <WordOfTheDayCard wotd={wotd} onOpen={onOpenWord} onToggleQueue={queue ? toggleQueue : undefined} /> : <div className="home-spacer" />}
 
           <div className="home-actions">
             <div className="home-tiles">
@@ -261,8 +272,11 @@ function StatusRow({ streak, activity, todayActive, now, today }: { streak: numb
   )
 }
 
-function WordOfTheDayCard({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word: Word) => void }) {
+function WordOfTheDayCard({ wotd, onOpen, onToggleQueue }: { wotd: WordOfTheDay; onOpen?: (word: Word) => void; onToggleQueue?: (word: Word) => void }) {
   const { sentence, range } = wotd
+  // The button is for a word Learn can still teach; a word already learned has nothing waiting, and nothing is offered for it (its card is one tap away).
+  const queueable = onToggleQueue !== undefined && canStar(wotd.word)
+  const queued = wotd.word.isFavorite
   return (
     <section className="wotd" aria-label={strings.home.wotdTitle}>
       <div className="wotd-head">
@@ -276,10 +290,19 @@ function WordOfTheDayCard({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word
       </p>
       <hr className="wotd-divider" />
       {wotd.translations.length > 0 && <p className="wotd-translation">{wotd.translations.join(' · ')}</p>}
-      {onOpen && (
-        <button type="button" className="link-btn" onClick={() => onOpen(wotd.word)}>
-          {strings.home.seeCard}
-        </button>
+      {(queueable || onOpen) && (
+        <div className="wotd-actions">
+          {queueable && (
+            <button type="button" className={queued ? 'btn btn-secondary wotd-queue is-on' : 'btn btn-secondary wotd-queue'} aria-pressed={queued} onClick={() => onToggleQueue(wotd.word)}>
+              <StarIcon filled={queued} /> {queued ? strings.words.learnSoonerOn : strings.words.learnSooner}
+            </button>
+          )}
+          {onOpen && (
+            <button type="button" className="link-btn" onClick={() => onOpen(wotd.word)}>
+              {strings.home.seeCard}
+            </button>
+          )}
+        </div>
       )}
     </section>
   )
