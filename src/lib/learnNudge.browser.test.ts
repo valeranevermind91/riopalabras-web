@@ -71,7 +71,7 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
           const lineHeight = parseFloat(getComputedStyle(hint).lineHeight)
           return { text: hint.textContent, lines: Math.round(hint.getBoundingClientRect().height / lineHeight), arrows, overflows: hint.scrollWidth > hint.clientWidth, align: getComputedStyle(hint).textAlign }
         })
-        expect(seen.text).toBe(language === 'en' ? 'Just swipe: a word counts when you reach it' : 'Просто листайте: слова засчитываются сами')
+        expect(seen.text).toBe(language === 'en' ? 'Just swipe: a word counts when you reach it' : 'Слово засчитывается, когда вы до него дошли')
         expect(seen.lines).toBeLessThanOrEqual(2)
         expect(seen.arrows).toEqual([52, 52]) // the arrows are not squeezed by the text
         expect(seen.overflows).toBe(false)

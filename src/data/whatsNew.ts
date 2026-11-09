@@ -41,12 +41,12 @@ export const WHATS_NEW: readonly NewsEntry[] = [
     id: 'clearer-buttons-and-placement-hint',
     at: '2026-11-08T22:39',
     en: {
-      title: 'Clearer buttons and hints, a longer Undo, a placement suggestion',
-      text: 'The buttons say more: “Hide: already known or not needed” in Learn, “Add to learning queue” for the star, a caption under each Home tile, and a line under the Review buttons saying what each answer does. The word of the day can be queued from Home. Undo after hiding a word now lasts longer and stays when you move to the next card. If you hide several of a batch’s first words, Learn suggests the placement test.',
+      title: 'Clearer buttons and hints',
+      text: 'Buttons are clearer: “Hide: already known or not needed” in Learn and “Add to learning queue” instead of the star. Home has captions under the tiles, and Review explains the ratings. The word of the day can be added to the learning queue right away. Undo after hiding lasts longer. If you hide many words at the start of a batch, Learn suggests the placement test.',
     },
     ru: {
-      title: 'Понятнее кнопки и подсказки, дольше отмена, совет пройти входной тест',
-      text: 'Кнопки стали понятнее: «Скрыть: уже знаю или не нужно» в Learn, «Добавить в очередь изучения» для звездочки, подписи под плитками главной и строка под кнопками повторения о значении ответов. Слово дня можно добавить в очередь изучения с главной. «Отменить» после скрытия слова доступно дольше и не пропадает на следующей карточке. Если в начале серии вы скрываете несколько слов, Learn предложит входной тест.',
+      title: 'Понятнее кнопки и подсказки',
+      text: 'Кнопки стали понятнее: «Скрыть: уже знаю или не нужно» в Learn и «Добавить в очередь изучения» вместо звездочки. На главной появились подписи под плитками, а в Review — пояснение к оценкам. Слово дня можно сразу добавить в очередь. «Отменить» после скрытия держится дольше. Если в начале подборки вы скрываете много слов, Learn предложит пройти входной тест.',
     },
   },
   {

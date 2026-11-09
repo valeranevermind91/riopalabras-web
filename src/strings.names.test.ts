@@ -74,7 +74,7 @@ describe('the Learn swipe hint', () => {
   // (src/lib/learnNudge.browser.test.ts measures the real thing), so these are the shorter versions proposed instead.
   it('says there is nothing to press: swiping is enough, and the word counts when it is reached', () => {
     expect(en.learn.swipeHint).toBe('Just swipe: a word counts when you reach it')
-    expect(ru.learn.swipeHint).toBe('Просто листайте: слова засчитываются сами')
+    expect(ru.learn.swipeHint).toBe('Слово засчитывается, когда вы до него дошли')
     expect(en.learn.swipeHint).not.toMatch(/arrows/i)
   })
 
