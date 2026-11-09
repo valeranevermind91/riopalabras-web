@@ -310,7 +310,7 @@ describe('the Words screen', () => {
   })
 
   it('an empty list says what goes there', () => {
-    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.')
+    expect(render([makeWord('uno')], view({ segment: 'hidden' }))).toContain('No hidden words yet. Words you hide in Learn, or tick in the placement test, appear here.')
     expect(render([makeWord('uno')], view({ segment: 'started' }))).toContain('Nothing started yet.')
     expect(render([makeWord('uno')], view({ query: 'zzz' }))).toContain('No words match.')
   })

@@ -250,26 +250,48 @@ describe.skipIf(!CHROME)('with the network gone', () => {
     }
     const gone = (page: Page, timeout = 3000) => page.waitForFunction(() => !document.querySelector('.learn-undo'), { timeout })
 
-    it('is offered at once, and goes the moment the user moves to another card', async () => {
+    it('is offered at once, and stays when the user moves to another card: only a newer hide replaces it', async () => {
       const { page } = await open('learn', true)
       await page.waitForSelector('.swipe-layer .wc-headword')
       expect(await bar(page)).toBeNull()
+      const first = await headword(page)
       await markKnown(page)
       expect(await text(page, '.learn-undo')).toContain('Undo')
+      expect(await text(page, '.learn-undo')).toContain(first)
       await page.click('.learn-nav .btn-icon:last-child') // next card
-      await gone(page)
+      await page.click('.learn-nav .btn-icon:last-child') // and another
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      expect(await bar(page)).not.toBeNull() // moving on does not take it away
+      expect(await text(page, '.learn-undo')).toContain(first)
+      const second = await headword(page)
+      await markKnown(page) // a newer hide replaces it: the bar now names that word
+      const named = await text(page, '.learn-undo')
+      expect(named).toContain(second)
+      expect(named).not.toContain(first)
       await page.close()
     }, 60_000)
 
-    it('goes by itself after a few seconds, and is still there just before', async () => {
+    it('Undo after moving on still brings the word back, at the place it stood', async () => {
+      const { page } = await open('learn', true)
+      await page.waitForSelector('.swipe-layer .wc-headword')
+      const before = await headword(page)
+      await markKnown(page)
+      await page.click('.learn-nav .btn-icon:last-child')
+      await page.click('.learn-nav .btn-icon:last-child')
+      await page.click('.learn-undo .link-btn')
+      await gone(page)
+      expect(await headword(page)).toBe(before) // the screen goes back to the word that was hidden
+      await page.close()
+    }, 60_000)
+
+    it('goes by itself after ten seconds, and is still there just before', async () => {
       const { page } = await open('learn', true)
       await page.waitForSelector('.swipe-layer .wc-headword')
       await markKnown(page)
       await new Promise((resolve) => setTimeout(resolve, UNDO_WINDOW_MS - 1500))
       expect(await bar(page)).not.toBeNull() // still inside the window
       await gone(page, 4000) // and gone after it
-      expect(UNDO_WINDOW_MS).toBeGreaterThanOrEqual(3000)
-      expect(UNDO_WINDOW_MS).toBeLessThanOrEqual(8000) // "a few seconds"
+      expect(UNDO_WINDOW_MS).toBe(10_000) // ten seconds
       await page.close()
     }, 60_000)
 

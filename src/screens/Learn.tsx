@@ -94,8 +94,9 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
   // How the card in front arrives after a swipe: from where the leaving card would be one strip-length away (see arrivalOf).
   const [arrival, setArrival] = useState<Arrival | null>(null)
 
-  // The "marked as known" bar with its Undo: offered for the latest mark only, until the user moves to another card or UNDO_WINDOW_MS has passed. The
-  // number says which mark it is (a second mark restarts the window); null is no offer. The marks themselves stay recorded until the batch is finished.
+  // The "hidden" bar with its Undo: offered for the latest hide only, until UNDO_WINDOW_MS has passed or the batch is finished. Moving to another card does not take it
+  // away (a person who hid a word by mistake notices a card later); a newer hide replaces it. The number says which hide it is (a second hide restarts the window); null is
+  // no offer. The hides themselves stay recorded until the batch is finished.
   const [undoOffer, setUndoOffer] = useState<number | null>(null)
   const offers = useRef(0)
   useEffect(() => {
@@ -107,7 +108,6 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
   const go = (delta: 1 | -1, plan?: ExitPlan) => {
     const next = index + delta
     if (!reading || reporting || next < 0 || next > lastIndex) return // with the form open the arrow keys belong to its text box, not to the cards behind it
-    setUndoOffer(null)
     setDirection(delta > 0 ? 'next' : 'prev')
     setArrival(plan ? arrivalOf(plan) : null)
     setIndex(next)
@@ -244,7 +244,6 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
   const openReport = () => {
     const { shown, named } = reportFor(card)
     haptic('tap')
-    setUndoOffer(null)
     setReporting({ shown, named, key: wordKey(card.esWord) })
     window.scrollTo(0, 0)
   }

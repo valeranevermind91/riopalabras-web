@@ -68,18 +68,27 @@ describe('the scan itself', () => {
 // This block USED to be "known, not hidden" and forbade the words hide, hidden and скрыт- in every string. That is the decision the comment at the top of the file says was
 // reversed: one action, "Hide this word", and a Hidden tab, because the effect was always hiding and "I already know this word" claimed a reason that may not be true.
 describe('hidden, not known', () => {
-  it('English: the action is "Hide this word", Learn\'s bar says the word is hidden, and the tab and the state say "Hidden"', () => {
-    expect(en.learn.hideWord).toBe('Hide this word')
-    expect(en.learn.wordHidden('x')).toBe('“x” hidden')
+  it('English: the action says what it does and why people use it, Learn\'s bar says where the word went (by the real names of the screen and the tab), and the tab and the state say "Hidden"', () => {
+    expect(en.learn.hideWord).toBe('Hide: already known or not needed')
+    expect(en.learn.wordHidden('x')).toBe(`“x” hidden. Find it in ${en.words.title} → ${en.words.segments.hidden}`)
+    expect(en.learn.wordHidden('x')).toBe('“x” hidden. Find it in Words → Hidden')
     expect(en.words.segments.hidden).toBe('Hidden')
     expect(en.words.kindName.hidden).toBe('Hidden')
   })
 
-  it('Russian: «Скрыть слово», «…» скрыто, and the tab and the state say «Скрытые» / «Скрытое»', () => {
-    expect(ru.learn.hideWord).toBe('Скрыть слово')
-    expect(ru.learn.wordHidden('x')).toBe('«x» скрыто')
+  it('Russian: «Скрыть: уже знаю или не нужно», «…» скрыто с адресом, and the tab and the state say «Скрытые» / «Скрытое»', () => {
+    expect(ru.learn.hideWord).toBe('Скрыть: уже знаю или не нужно')
+    expect(ru.learn.wordHidden('x')).toBe(`«x» скрыто. Найти можно в ${ru.words.title} → ${ru.words.segments.hidden}`)
+    expect(ru.learn.wordHidden('x')).toBe('«x» скрыто. Найти можно в Words → Скрытые')
     expect(ru.words.segments.hidden).toBe('Скрытые')
     expect(ru.words.kindName.hidden).toBe('Скрытое')
+  })
+
+  it('the button names both reasons (it hides a word that is known and one that is just not wanted), so it claims neither alone', () => {
+    expect(en.learn.hideWord).toMatch(/already known/i)
+    expect(en.learn.hideWord).toMatch(/not needed/i)
+    expect(ru.learn.hideWord).toMatch(/уже знаю/)
+    expect(ru.learn.hideWord).toMatch(/не нужно/)
   })
 
   it('no string outside the placement test uses the old action\'s words ("I already know this word", "marked as known", "known words"): the action, the bar, the tab, the notes and the empty list do not', () => {
@@ -93,11 +102,11 @@ describe('hidden, not known', () => {
     expect(offenders(outside([...enTexts, { path: 'x', text: 'I already know this word' }]), /I already know this word/i)).toEqual(['x: I already know this word'])
   })
 
-  it('the tab is the one the placement note and the empty list send people to, and the empty list names the button that puts a word there', () => {
+  it('the tab is the one the placement note and the toast send people to, and the empty list says where a word gets there from (the button\'s long label is not repeated in it)', () => {
     expect(en.onboarding.placement.hidesNote).toContain(`the ${en.words.segments.hidden} tab`)
     expect(ru.onboarding.placement.hidesNote).toContain(`«${ru.words.segments.hidden}»`)
-    expect(en.words.emptyHidden).toContain(en.learn.hideWord)
-    expect(ru.words.emptyHidden).toContain(ru.learn.hideWord)
+    expect(en.words.emptyHidden).toBe('No hidden words yet. Words you hide in Learn, or tick in the placement test, appear here.')
+    expect(ru.words.emptyHidden).toBe('Скрытых слов пока нет. Сюда попадают слова, которые вы скрыли в Learn или отметили во входном тесте.')
   })
 
   it('"Known well" is "Well learned" (Усвоенные): a progress state of its own, not the Hidden tab', () => {
@@ -402,12 +411,12 @@ describe('what a disabled tile and an empty state tell the person to do', () => 
     expect(ru.home.advice.allClear).toBe(ru.review.allCaughtUp)
   })
 
-  it('the Hidden tab\'s empty text does not say "hidden" twice: its second sentence names the actual buttons, Learn\'s and the placement test\'s', () => {
-    for (const [text, button, test, word] of [
-      [en.words.emptyHidden, en.learn.hideWord, 'placement test', /\bhidden\b/gi],
-      [ru.words.emptyHidden, ru.learn.hideWord, 'входном тесте', /скрытых/gi],
+  it('the Hidden tab\'s empty text does not say "hidden" twice: its second sentence names the two places a word comes from, Learn and the placement test (the hide button\'s own label is a phrase, not repeated here)', () => {
+    for (const [text, learn, test, word] of [
+      [en.words.emptyHidden, 'in Learn', 'placement test', /\bhidden\b/gi],
+      [ru.words.emptyHidden, 'в Learn', 'входном тесте', /скрытых/gi],
     ] as const) {
-      expect(text).toContain(button)
+      expect(text).toContain(learn)
       expect(text).toContain(test)
       expect(text.match(word)).toHaveLength(1) // the first sentence says it; the second uses the verb
     }

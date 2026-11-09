@@ -12,8 +12,8 @@ import type { QueueTicket, WriteQueue } from './writeQueue'
 
 export const LEARN_BATCH_SIZE = 10
 
-/** How long "Undo" is offered after "Already know it" (it also goes the moment the user moves to another card). */
-export const UNDO_WINDOW_MS = 5000
+/** How long "Undo" is offered after a hide. Moving to another card does not take it away; a newer hide replaces it, and so does finishing the batch. */
+export const UNDO_WINDOW_MS = 10_000
 
 export interface LearnBatch extends BatchPick {
   /** Words in the batch that were never learned before — fixed when the batch is built, so a retry can't recount. */

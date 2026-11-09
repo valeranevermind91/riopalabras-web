@@ -55,10 +55,10 @@ describe.skipIf(!CHROME)('Report a problem, from the Learn card', () => {
   const formOpen = (page: Page) => page.waitForSelector('main.feedback')
   const cardShowing = (page: Page) => page.waitForSelector('main.fill:not([hidden]) .learn-progress')
 
-  it('the card has the control, quiet and under "Hide this word"; without a sender there is none', async () => {
+  it('the card has the control, quiet and under the hide button; without a sender there is none', async () => {
     const page = await open('report=1')
     expect(await page.$eval('.learn-report .known-btn', (e) => e.textContent)).toBe('Report a problem with this word')
-    expect(await page.$eval('.learn-known .known-btn', (e) => e.textContent)).toBe('Hide this word')
+    expect(await page.$eval('.learn-known .known-btn', (e) => e.textContent)).toBe('Hide: already known or not needed')
     const under = await page.evaluate(() => Boolean(document.querySelector('.learn-known')!.compareDocumentPosition(document.querySelector('.learn-report')!) & Node.DOCUMENT_POSITION_FOLLOWING))
     expect(under).toBe(true)
     await page.close()

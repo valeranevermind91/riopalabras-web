@@ -230,7 +230,7 @@ export const en = {
     bringBackWord: (word: string) => `Bring back ${word}`,
     emptyStarted: 'Nothing started yet. Start with Learn on the home screen.',
     emptyAll: 'No words.',
-    emptyHidden: 'No hidden words yet. Words you hide with “Hide this word”, or tick in the placement test, appear here.',
+    emptyHidden: 'No hidden words yet. Words you hide in Learn, or tick in the placement test, appear here.',
     emptyFiltered: 'No words match. Try another search, or clear the filters.',
     clearSearchAndFilters: 'Clear search and filters',
     // under "No words match", for a search of one word in Latin letters with no filter on: opens the add form with that word typed in
@@ -535,10 +535,12 @@ export const en = {
     wordNofM: (n: number, m: number) => `Word ${n} of ${m}`,
     swipeHint: 'Swipe or use the arrows',
     // "Already know it": a secondary action, set apart from the main ones
-    // "Hide this word": the one action for a word the person does not want in Learn, Review and practice, whatever the reason (they know it, it is unpleasant, it is
-    // irrelevant). The effect was always hiding; it used to be called "I already know this word", which claimed a reason that may not be true.
-    hideWord: 'Hide this word',
-    wordHidden: (word: string) => `“${word}” hidden`,
+    // The hide button: the one action for a word the person does not want in Learn, Review and practice, whatever the reason (they know it, it is unpleasant, it is
+    // irrelevant). The effect was always hiding; it used to be called "I already know this word", which claimed a reason that may not be true. The label now says both
+    // of the reasons people use it for, so it claims neither alone. The bar after it says where the word went, by the names of the screen and the tab (words.title,
+    // words.segments.hidden: a test keeps the three in step).
+    hideWord: 'Hide: already known or not needed',
+    wordHidden: (word: string) => `“${word}” hidden. Find it in Words → Hidden`,
     undo: 'Undo',
     previous: 'Previous',
     next: 'Next',

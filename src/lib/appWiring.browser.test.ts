@@ -118,11 +118,11 @@ describe.skipIf(!CHROME)(`the real app (${mode}): what App hands its screens`, (
   }
   const reports = (fake: ReturnType<typeof createFakeServer>) => fake.rows('feedback')
 
-  it('Learn\'s card has "Report a problem with this word" under "Hide this word", and a report from it reaches the server as a word report from Learn', async () => {
+  it('Learn\'s card has "Report a problem with this word" under the hide button, and a report from it reaches the server as a word report from Learn', async () => {
     const { page, fake } = await open()
     await press(page, '[data-tile="learn"]')
     await page.waitForSelector('.learn-known')
-    expect(await page.$eval('.learn-known .known-btn', (e) => e.textContent)).toBe('Hide this word')
+    expect(await page.$eval('.learn-known .known-btn', (e) => e.textContent)).toBe('Hide: already known or not needed')
     // the control the product must show: the sender App was given is the reason it is there at all
     expect(await page.$eval('.learn-report .known-btn', (e) => e.textContent)).toBe('Report a problem with this word')
     expect(await page.evaluate(() => document.querySelector('.learn-known')!.nextElementSibling?.className)).toBe('learn-report') // and it sits right under it
