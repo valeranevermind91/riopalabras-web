@@ -1,11 +1,11 @@
 // A page for the real-browser Review session test (src/lib/review.browser.test.ts): the real Home and Review screens over a word list that
 // really changes as words are rated (Review's ratings go through applyProgress), with a write queue that only records. Query: due=50 (how many
 // words are due, the nth one n hours overdue: vieja50 is the most overdue), soon=4 (one more word, "pronta", that comes due that many seconds from now),
-// star=1 (Home gets the write queue, so the word of the day's learning-queue button shows; what it writes is in window.__sent.favorites), pool=30 (that many words not yet learned: Learn has something to offer), limit=300 (the daily new-word goal: how many Learn offers is the smaller of it and the pool), met=1 (today's new-word goal is already reached), real=1 (the real dictionary and overlay are loaded too, so the word of the day shows). The streak starts at 4, last counted yesterday.
+// notice=1 (a data-loading notice shows between the advice card and the word of the day), pool=30 (that many words not yet learned: Learn has something to offer), limit=300 (the daily new-word goal: how many Learn offers is the smaller of it and the pool), met=1 (today's new-word goal is already reached), real=1 (the real dictionary and overlay are loaded too, so the word of the day shows). The streak starts at 4, last counted yesterday.
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
-import { applyFavoriteFlag, applyProgressUpdates, applySettingsPatch } from '../data/mutations'
+import { applyProgressUpdates, applySettingsPatch } from '../data/mutations'
 import { localDateKey, localYesterdayKey } from '../data/dates'
 import { parseSettings } from '../data/settings'
 import { createWriteQueue } from '../data/writeQueue'
@@ -20,14 +20,15 @@ const params = new URLSearchParams(location.search)
 const due = Number(params.get('due') ?? 50)
 const soon = Number(params.get('soon') ?? 0)
 const met = params.get('met') === '1'
-const star = params.get('star') === '1'
+const notice = params.get('notice') === '1'
 const pool = Number(params.get('pool') ?? 0)
 const limit = Number(params.get('limit') ?? 10)
 
-const sent: { progress: string[]; settings: SettingsPatch[]; favorites: unknown[] } = { progress: [], settings: [], favorites: [] }
+const sent: { progress: string[]; settings: SettingsPatch[] } = { progress: [], settings: [] }
 ;(window as never as { __sent: typeof sent }).__sent = sent
+;(window as never as { __opened: string[] }).__opened = [] // the words the word-of-the-day row opened
 const queue = createWriteQueue(
-  { sendProgress: async (updates) => void sent.progress.push(...updates.map((u) => u.esWord)), sendSettings: async (patch) => void sent.settings.push(patch), sendHidden: async () => {}, sendFavorites: async (ops) => void sent.favorites.push(...ops) },
+  { sendProgress: async (updates) => void sent.progress.push(...updates.map((u) => u.esWord)), sendSettings: async (patch) => void sent.settings.push(patch), sendHidden: async () => {} },
   { retryDelaysMs: [1], sleep: async () => {} },
 )
 
@@ -63,22 +64,19 @@ export function Harness({ extra = [] }: { extra?: readonly Word[] }) {
     latest.current = applySettingsPatch(latest.current, patch)
     setSettings(latest.current)
   }, [])
-  const applyFavorite = useCallback((esWords: readonly string[], favorite: boolean) => {
-    latestWords.current = applyFavoriteFlag(latestWords.current, esWords, favorite)
-    setWords(latestWords.current)
-  }, [])
-  const data = useMemo(() => ({ words, settings, getSettings: () => latest.current, getWords: () => latestWords.current, applyProgress, applySettings, applyFavorite }) as never, [words, settings, applyProgress, applySettings, applyFavorite])
+  const data = useMemo(() => ({ words, settings, getSettings: () => latest.current, getWords: () => latestWords.current, applyProgress, applySettings }) as never, [words, settings, applyProgress, applySettings])
 
   if (screen === 'review') return <ReviewScreen data={data} queue={queue} metrics={null} onHome={() => setScreen('home')} onLearn={() => {}} />
   return (
     <HomeScreen
       auth={{ status: 'no-telegram' }}
-      data={{ status: 'ready', data: { ...(data as object), words, degraded: [], retryDegraded: () => {} } } as never}
+      data={{ status: 'ready', data: { ...(data as object), words, degraded: notice ? ['user_hidden_words'] : [], retryDegraded: () => {} } } as never}
       onLearn={() => {}}
       onReview={() => setScreen('review')}
+      onOpenWord={(word) => void ((window as never as { __opened: string[] }).__opened.push(word.esWord))}
       onMatching={() => {}}
       onCloze={() => {}}
-      queue={star ? queue : null}
+      queue={null}
       metrics={null}
     />
   )

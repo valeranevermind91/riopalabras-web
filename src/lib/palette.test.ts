@@ -57,7 +57,7 @@ const PAIRS: [string, string, number, string][] = [
   // teal: the learning path
   ['--teal-ink', '--teal', TEXT, 'Learn tile, Easy rating, primary buttons, progress labels'],
   ['--teal', '--page', TEXT, 'teal links on the page'],
-  ['--teal', '--surface', TEXT, 'the "See the card" link and teal links on cards'],
+  ['--teal', '--surface', TEXT, 'teal links on cards'],
   ['--teal-on-soft', '--teal-soft', TEXT, 'Review tile label, Good rating, rioplatense pill'],
   ['--teal-on-soft-2', '--teal-soft', TEXT, 'Review tile Spanish word, pill text'],
   // lavender: practice

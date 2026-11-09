@@ -34,7 +34,7 @@ describe('fonts', () => {
 describe('the type scale', () => {
   it.each([
     ['.wc-headword', ['font-size: 42px', 'font-weight: 600']],
-    ['.wotd-word', ['font-size: 34px', 'font-weight: 600']],
+    ['.wotd-word', ['font-size: 20px', 'font-weight: 600']],
     ['h1', ['font-size: 23px', 'font-weight: 600']],
     ['.tile-label', ['font-size: 16px', 'font-weight: 700']],
     ['.tile-sub', ['font-size: 12.5px', 'font-style: italic']],
@@ -42,8 +42,7 @@ describe('the type scale', () => {
     ['.mode-label', ['font-size: 15px', 'font-weight: 700']],
     ['.mode-sub', ['font-size: 12.5px', 'font-style: italic']],
     ['.home-progress', ['font-size: 13px', 'font-weight: 600']],
-    ['.pill', ['font-size: 10px', 'font-weight: 700', 'letter-spacing: 0.9px', 'text-transform: uppercase']],
-    ['.wotd-sentence', ['font-size: 16px', 'line-height: 1.55']],
+    ['.wotd-label', ['font-size: 11px', 'font-weight: 700']],
     ['.wotd-translation', ['font-size: 14px']],
     ['.wc-sentence', ['font-size: 17px']],
     ['.wc-relation', ['font-size: 13.5px']],
@@ -71,7 +70,6 @@ describe('shapes', () => {
     ['.btn', 'var(--radius-button)'],
     ['.rate-btn', 'var(--radius-button)'],
     ['.wc-note', 'var(--radius-small)'],
-    ['.pill', 'var(--radius-pill)'],
   ])('%s uses %s', (selector, radius) => {
     expect(rule(selector)).toContain(`border-radius: ${radius}`)
   })

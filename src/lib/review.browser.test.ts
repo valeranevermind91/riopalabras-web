@@ -389,41 +389,39 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     }
 
     for (const language of ['en', 'ru'] as const) {
-      it(`${language === 'en' ? 'English' : 'Russian'}: the advice card has the word-of-the-day card's background, border and radius, and is the smaller and quieter of the two, at 320px`, async () => {
+      it(`${language === 'en' ? 'English' : 'Russian'}: the advice card and the word-of-the-day row, stacked, are told apart at 320px: the row is taller, has the lavender icon, and sits a little further away than the other blocks do`, async () => {
         const page = await open('due=50&real=1', language === 'ru' ? 'ru' : undefined)
         await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
         const seen = await page.evaluate(() => {
           const advice = document.querySelector('.home-advice') as HTMLElement
-          const wotd = document.querySelector('.wotd') as HTMLElement
+          const row = document.querySelector('.wotd') as HTMLElement
+          const status = document.querySelector('.home-status') as HTMLElement
           const style = (el: Element) => getComputedStyle(el)
-          const sum = (color: string) => color.match(/\d+/g)!.slice(0, 3).map(Number).reduce((a, b) => a + b, 0)
+          const box = (el: Element) => el.getBoundingClientRect()
           return {
-            hasBoth: !!advice && !!wotd,
-            background: [style(advice).backgroundColor, style(wotd).backgroundColor],
-            border: [style(advice).borderTopColor + style(advice).borderTopWidth + style(advice).borderTopStyle, style(wotd).borderTopColor + style(wotd).borderTopWidth + style(wotd).borderTopStyle],
-            radius: [style(advice).borderTopLeftRadius, style(wotd).borderTopLeftRadius],
-            padding: [parseFloat(style(advice).paddingTop), parseFloat(style(wotd).paddingTop)],
-            height: [advice.getBoundingClientRect().height, wotd.getBoundingClientRect().height],
-            lighterText: sum(style(advice).color) > sum(style(wotd.querySelector('.wotd-sentence')!).color), // lighter text on white: quieter
-            fontSize: [parseFloat(style(advice).fontSize), parseFloat(style(wotd.querySelector('.wotd-sentence')!).fontSize)],
-            children: [...advice.children].map((c) => `${c.tagName}:${c.textContent}`), // text only: no icon, heading or button inside; the Review line is itself the button, and its arrow is a span of its own
-            order: !!(advice.compareDocumentPosition(wotd) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(document.querySelector('.home-status')!.compareDocumentPosition(advice) & Node.DOCUMENT_POSITION_FOLLOWING),
+            hasBoth: !!advice && !!row,
+            height: [box(advice).height, box(row).height],
+            gaps: [box(advice).top - box(status).bottom, box(row).top - box(advice).bottom],
+            iconBackground: style(row.querySelector('.wotd-icon')!).backgroundColor,
+            surface: style(advice).backgroundColor,
+            adviceHasIcon: !!advice.querySelector('svg'),
+            order: !!(advice.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(status.compareDocumentPosition(advice) & Node.DOCUMENT_POSITION_FOLLOWING),
+            tag: row.tagName,
             pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
-            overflows: advice.scrollWidth > advice.clientWidth,
+            overflows: [advice.scrollWidth > advice.clientWidth, row.scrollWidth > row.clientWidth],
           }
         })
         expect(seen.hasBoth).toBe(true)
-        expect(seen.background[0]).toBe(seen.background[1])
-        expect(seen.border[0]).toBe(seen.border[1])
-        expect(seen.radius[0]).toBe(seen.radius[1])
-        expect(seen.padding[0]).toBeLessThan(seen.padding[1])
-        expect(seen.height[0]).toBeLessThan(seen.height[1])
-        expect(seen.lighterText).toBe(true)
-        expect(seen.fontSize[0]).toBeLessThan(seen.fontSize[1])
-        expect(seen.children).toEqual(['SPAN: →']) // this page is in the reviewFirst state: the arrow, and nothing else
+        expect(seen.height[1]).toBeGreaterThanOrEqual(60)
+        expect(seen.height[1]).toBeGreaterThan(seen.height[0] - 20) // not a squeezed line
+        expect(seen.iconBackground).not.toBe(seen.surface) // the lavender circle, which the advice card has nothing like
+        expect(seen.adviceHasIcon).toBe(false)
+        expect(seen.gaps[1]).toBeGreaterThan(seen.gaps[0]) // a little further from the advice card than the advice card is from the status row
+        expect(seen.gaps[1] - seen.gaps[0]).toBeLessThanOrEqual(6) // only a little: still the same page
         expect(seen.order).toBe(true)
+        expect(seen.tag).toBe('BUTTON') // this page opens words
         expect(seen.pageScrolls).toBe(false)
-        expect(seen.overflows).toBe(false)
+        expect(seen.overflows).toEqual([false, false])
         await page.close()
       }, 60_000)
     }
@@ -445,51 +443,93 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       expect(learnWhenReview).not.toBe(reviewWhenReview) // Learn is the soft teal when Review is advised (and Review is the disabled grey when Learn is: nothing is due)
     }, 60_000)
   })
-  describe("the word of the day's learning-queue button", () => {
+  describe('the word of the day row', () => {
     for (const language of ['en', 'ru'] as const) {
-      const [off, on] = language === 'en' ? ['Add to learning queue', 'In the learning queue ✓'] : ['Добавить в очередь изучения', 'В очереди на изучение ✓']
-      it(`${language === 'en' ? 'English' : 'Russian'}: pressing it queues the word, pressing again takes it back, and the card fits a 320×568 screen`, async () => {
-        const page = await open('due=50&real=1&star=1', language === 'ru' ? 'ru' : undefined)
+      const label = language === 'en' ? 'Word of the day' : 'Слово дня'
+      const name = language === 'en' ? 'English' : 'Russian'
+
+      it(`${name}: one button that opens the word, with its label, a chevron and a 44px-plus target, inside a 320×568 screen, the tiles still at the bottom`, async () => {
+        const page = await open('due=50&real=1', language === 'ru' ? 'ru' : undefined)
         await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
-        const read = () =>
-          page.evaluate(() => {
-            const button = document.querySelector('.wotd-queue') as HTMLElement
-            const wotd = document.querySelector('.wotd') as HTMLElement
-            const box = button.getBoundingClientRect()
-            const card = wotd.getBoundingClientRect()
-            return {
-              text: button.textContent?.trim(),
-              pressed: button.getAttribute('aria-pressed'),
-              sent: (window as never as { __sent: { favorites: { op?: string; esWord?: string }[] } }).__sent.favorites.length,
-              inside: box.left >= card.left && box.right <= card.right && box.bottom <= card.bottom + 0.5,
-              overflows: button.scrollWidth > button.clientWidth,
-              pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
-              cardOverflows: wotd.scrollHeight > wotd.clientHeight + 1,
-              right: box.right,
-              lines: Math.round((box.height - parseFloat(getComputedStyle(button).paddingTop) - parseFloat(getComputedStyle(button).paddingBottom)) / parseFloat(getComputedStyle(button).lineHeight)),
-            }
-          })
-        const before = await read()
-        expect(before).toMatchObject({ text: off, pressed: 'false', sent: 0, inside: true, overflows: false, pageScrolls: false, cardOverflows: false })
-        expect(before.right).toBeLessThanOrEqual(320)
-        expect(before.lines).toBeLessThanOrEqual(2)
-        await page.click('.wotd-queue')
-        await page.waitForFunction((label) => document.querySelector('.wotd-queue')?.textContent?.trim() === label, {}, on)
-        const queued = await read()
-        expect(queued).toMatchObject({ text: on, pressed: 'true', inside: true, overflows: false, cardOverflows: false })
-        await page.waitForFunction(() => (window as never as { __sent: { favorites: unknown[] } }).__sent.favorites.length === 1)
-        await page.click('.wotd-queue')
-        await page.waitForFunction((label) => document.querySelector('.wotd-queue')?.textContent?.trim() === label, {}, off)
-        await page.waitForFunction(() => (window as never as { __sent: { favorites: unknown[] } }).__sent.favorites.length === 2)
-        expect(await read()).toMatchObject({ text: off, pressed: 'false' })
+        const seen = await page.evaluate(() => {
+          const row = document.querySelector('.wotd') as HTMLElement
+          const box = row.getBoundingClientRect()
+          const inside = (el: Element) => el.getBoundingClientRect().left >= box.left && el.getBoundingClientRect().right <= box.right + 0.5
+          const dock = document.querySelector('.home-dock')!.getBoundingClientRect()
+          return {
+            tag: row.tagName,
+            label: row.querySelector('.wotd-label')?.textContent,
+            aria: row.getAttribute('aria-label'),
+            word: row.querySelector('.wotd-word')?.textContent,
+            translation: row.querySelector('.wotd-translation')?.textContent,
+            height: box.height,
+            left: box.left,
+            right: box.right,
+            chevronInside: inside(row.querySelector('.wotd-chevron')!),
+            textInside: inside(row.querySelector('.wotd-body')!),
+            overflows: row.scrollWidth > row.clientWidth,
+            pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+            noOthers: ['.wotd-queue', '.wotd-sentence', '.pill', '.link-btn'].filter((selector) => row.querySelector(selector)),
+            dockBottom: dock.bottom,
+            innerHeight: window.innerHeight,
+          }
+        })
+        expect(seen.tag).toBe('BUTTON')
+        expect(seen.label).toBe(label)
+        expect(seen.aria).toBe(`${label}: ${seen.word}, ${seen.translation}`)
+        expect(seen.height).toBeGreaterThanOrEqual(60)
+        expect(seen.left).toBeGreaterThanOrEqual(0)
+        expect(seen.right).toBeLessThanOrEqual(320)
+        expect(seen.chevronInside && seen.textInside).toBe(true)
+        expect(seen.overflows).toBe(false)
+        expect(seen.pageScrolls).toBe(false)
+        expect(seen.noOthers).toEqual([])
+        expect(seen.dockBottom).toBeLessThanOrEqual(seen.innerHeight) // the tiles and the dock under them stay where they were: at the bottom
+        await page.close()
+      }, 60_000)
+
+      it(`${name}: pressing it opens the word (once), and it can be reached and shown focus by keyboard`, async () => {
+        const page = await open('due=50&real=1', language === 'ru' ? 'ru' : undefined)
+        const opened = () => page.evaluate(() => (window as never as { __opened: string[] }).__opened)
+        expect(await opened()).toEqual([])
+        for (let i = 0; i < 10 && !(await page.evaluate(() => document.activeElement?.classList.contains('wotd'))); i++) await page.keyboard.press('Tab')
+        expect(await page.evaluate(() => document.activeElement?.classList.contains('wotd'))).toBe(true)
+        expect(await page.evaluate(() => ({ style: getComputedStyle(document.activeElement!).outlineStyle, width: getComputedStyle(document.activeElement!).outlineWidth }))).toEqual({ style: 'solid', width: '2px' })
+        await page.keyboard.press('Enter')
+        expect(await opened()).toHaveLength(1)
+        expect((await opened())[0]).toMatch(/\S/)
+        await page.click('.wotd')
+        expect(await opened()).toHaveLength(2)
+        await page.close()
+      }, 60_000)
+
+      it(`${name}: with a notice above it at 320×568 nothing collides: the notice, the row and the tiles keep their gaps (the page then scrolls, as it did with the card)`, async () => {
+        const page = await open('due=50&real=1&notice=1', language === 'ru' ? 'ru' : undefined)
+        await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+        const seen = await page.evaluate(() => {
+          const box = (selector: string) => {
+            const { top, bottom } = document.querySelector(selector)!.getBoundingClientRect()
+            return { top, bottom }
+          }
+          return { advice: box('.home-advice'), notice: box('.notice'), row: box('.wotd'), tiles: box('.home-tiles'), pageScrollsX: document.documentElement.scrollWidth > window.innerWidth }
+        })
+        expect(seen.notice.top).toBeGreaterThanOrEqual(seen.advice.bottom + 14)
+        expect(seen.row.top).toBeGreaterThanOrEqual(seen.notice.bottom + 14)
+        expect(seen.tiles.top).toBeGreaterThanOrEqual(seen.row.bottom + 14)
+        expect(seen.pageScrollsX).toBe(false)
         await page.close()
       }, 60_000)
     }
 
-    it('without the write queue (the page the harness opens by default) there is no button', async () => {
+    it('on a tall screen the row is right under the advice card, not centred in the space, and the tiles are at the bottom', async () => {
       const page = await open('due=50&real=1')
-      expect(await page.$('.wotd-queue')).toBeNull()
-      expect(await page.$('.wotd')).not.toBeNull()
+      await page.setViewport({ width: 360, height: 740, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      const seen = await page.evaluate(() => {
+        const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect()
+        return { gap: box('.wotd').top - box('.home-advice').bottom, below: box('.home-tiles').top - box('.wotd').bottom }
+      })
+      expect(seen.gap).toBeLessThanOrEqual(24)
+      expect(seen.below).toBeGreaterThan(150) // the free space is below the row
       await page.close()
     }, 60_000)
   })

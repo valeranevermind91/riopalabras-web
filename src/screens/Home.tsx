@@ -1,14 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
-import { StarIcon } from '../components/WordRow'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, batchPracticeAvailable, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
 import { REVIEW_SESSION_SIZE } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
-import { canStar } from '../data/starred'
 import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../data/daily'
 import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
 import { WHATS_NEW, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
@@ -33,7 +31,7 @@ interface HomeScreenProps {
   /** At the end of the day, Matching and Cloze on the words learned today (App builds the rounds / the scope). Without them the tiles open the usual practice. */
   onMatchingToday?: () => void
   onClozeToday?: () => void
-  /** Opens a word's full card (the word of the day's "See the card"). */
+  /** Opens a word's full card (the word of the day row). */
   onOpenWord?: (word: Word) => void
   /** Opens the Words screen. */
   onWords?: () => void
@@ -123,15 +121,6 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
   }, [open])
   const now = nowProp ?? new Date()
 
-  // The word of the day's learning-queue button: the same star as on the word's own page (data.applyFavorite and the favourites lane of the write queue). Only offered with a queue
-  // to write to: a screen with nowhere to save would show a button that does nothing.
-  const toggleQueue = (word: Word) => {
-    if (data.status !== 'ready' || !queue) return
-    haptic('select')
-    data.data.applyFavorite([word.esWord], !word.isFavorite)
-    queue.enqueueFavorite(word.esWord, !word.isFavorite)
-  }
-
   return (
     <main className="screen home">
       <ScreenHeader brand title={strings.appTitle} actions={
@@ -174,7 +163,8 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
 
-          {wotd ? <WordOfTheDayCard wotd={wotd} onOpen={onOpenWord} onToggleQueue={queue ? toggleQueue : undefined} /> : <div className="home-spacer" />}
+          {wotd && <WordOfTheDayRow wotd={wotd} onOpen={onOpenWord} />}
+          <div className="home-spacer" />
 
           <div className="home-actions">
             <div className="home-tiles">
@@ -272,39 +262,44 @@ function StatusRow({ streak, activity, todayActive, now, today }: { streak: numb
   )
 }
 
-function WordOfTheDayCard({ wotd, onOpen, onToggleQueue }: { wotd: WordOfTheDay; onOpen?: (word: Word) => void; onToggleQueue?: (word: Word) => void }) {
-  const { sentence, range } = wotd
-  // The button is for a word Learn can still teach; a word already learned has nothing waiting, and nothing is offered for it (its card is one tap away).
-  const queueable = onToggleQueue !== undefined && canStar(wotd.word)
-  const queued = wotd.word.isFavorite
-  return (
-    <section className="wotd" aria-label={strings.home.wotdTitle}>
-      <div className="wotd-head">
-        <h2 className="wotd-word">{wotd.headword}</h2>
-        <span className="pill">{strings.home.wotdPill}</span>
-      </div>
-      <p className="wotd-sentence">
-        {sentence.slice(0, range.start)}
-        <mark>{sentence.slice(range.start, range.end)}</mark>
-        {sentence.slice(range.end)}
-      </p>
-      <hr className="wotd-divider" />
-      {wotd.translations.length > 0 && <p className="wotd-translation">{wotd.translations.join(' · ')}</p>}
-      {(queueable || onOpen) && (
-        <div className="wotd-actions">
-          {queueable && (
-            <button type="button" className={queued ? 'btn btn-secondary wotd-queue is-on' : 'btn btn-secondary wotd-queue'} aria-pressed={queued} onClick={() => onToggleQueue(wotd.word)}>
-              <StarIcon filled={queued} /> {queued ? strings.words.learnSoonerOn : strings.words.learnSooner}
-            </button>
-          )}
-          {onOpen && (
-            <button type="button" className="link-btn" onClick={() => onOpen(wotd.word)}>
-              {strings.home.seeCard}
-            </button>
-          )}
-        </div>
+/**
+ * The word of the day: one white row under the advice card (a sun icon, the label, the word and its translation, a chevron). The whole row is the button that opens the word's page;
+ * where there is nothing to open it with (no handler) it is the same row without the button and the chevron. It is not a lesson and has no action of its own: adding the word to the learning
+ * queue is the word page's.
+ */
+function WordOfTheDayRow({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word: Word) => void }) {
+  const translation = wotd.translations.join(' · ')
+  const aria = strings.home.wotdAria(wotd.headword, translation)
+  const content = (
+    <>
+      <span className="wotd-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />
+        </svg>
+      </span>
+      <span className="wotd-body">
+        <span className="wotd-label">{strings.home.wotdTitle}</span>
+        <span className="wotd-line">
+          <span className="wotd-word">{wotd.headword}</span>
+          {translation && <span className="wotd-translation">{translation}</span>}
+        </span>
+      </span>
+      {onOpen && (
+        <svg className="wotd-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
       )}
-    </section>
+    </>
+  )
+  return onOpen ? (
+    <button type="button" className="wotd" aria-label={aria} onClick={() => onOpen(wotd.word)}>
+      {content}
+    </button>
+  ) : (
+    <div className="wotd" aria-label={aria}>
+      {content}
+    </div>
   )
 }
 

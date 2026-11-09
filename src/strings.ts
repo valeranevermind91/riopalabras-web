@@ -69,9 +69,9 @@ export const en = {
     // the letters under the week of dots, Monday first
     weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as readonly string[],
     streakDots: (active: number) => `Active on ${active} of the last 7 days`,
-    wotdPill: 'palabra del día',
     wotdTitle: 'Word of the day',
-    seeCard: 'See the card →',
+    // what a screen reader says for the whole row (it is one button): the label, the word, its translation
+    wotdAria: (word: string, translation: string) => `Word of the day: ${word}${translation ? `, ${translation}` : ''}`,
     // the dock under the tiles: new words learned today against the daily goal (the status row above counts cards of every kind, so this says "new words")
     progress: (done: number, goal: number) => `New words today: ${done} of ${goal}`,
     progressReached: (done: number, goal: number) => `Daily goal reached: ${done} of ${goal}`,

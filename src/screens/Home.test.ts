@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { parseDictionary } from '../data/dictionary'
 import { headword, highlightTarget } from '../data/headword'
 import { lastDays } from '../data/metrics'
-import { canStar } from '../data/starred'
 import { parseFallbackExamples, parseRioOverlay } from '../data/rio'
 import { hashString, pickWordOfTheDay, wordOfTheDay, wordOfTheDayPool } from '../data/wordOfDay'
 import { createWriteQueue } from '../data/writeQueue'
@@ -72,9 +71,9 @@ const tile = (html: string, id: string) => html.match(new RegExp(`<button[^>]*da
 const part = (html: string, id: string, cls: string) => tile(html, id).match(new RegExp(`${cls}">(.*?)</span>`))?.[1]
 
 describe('Home structure', () => {
-  it('header, status row, word of the day, then the action block (the three tiles and the dock)', () => {
+  it('header, status row, advice, the word-of-the-day row, the spacer that holds the tiles at the bottom, then the action block (the three tiles and the dock)', () => {
     const html = render({ onOpenWord: () => {}, activity: new Set<string>() }, real)
-    const order = ['screen-header', 'home-status', 'class="wotd"', 'class="home-actions"'].map((c) => html.indexOf(c))
+    const order = ['screen-header', 'home-status', 'home-advice', 'class="wotd"', 'class="home-spacer"', 'class="home-actions"'].map((c) => html.indexOf(c))
     expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
@@ -343,7 +342,7 @@ describe('notices', () => {
     return queue
   }
 
-  it('the known-words notice sits between the status row and the word card, and nothing is lost', () => {
+  it('the known-words notice sits between the status row and the word-of-the-day row, and nothing is lost', () => {
     const html = render({}, real, {}, ['user_hidden_words'])
     expect(html).toContain('class="notice"')
     expect(html).toContain('hidden words')
@@ -362,7 +361,7 @@ describe('notices', () => {
     expect(html.indexOf('class="notice"')).toBeLessThan(html.indexOf('class="wotd"'))
   })
 
-  it('both notices together keep the word card and all three tiles', async () => {
+  it('both notices together keep the word-of-the-day row and all three tiles', async () => {
     const html = render({ queue: await stuckQueue() }, real, {}, ['user_favorites', 'user_hidden_words'])
     expect(html.match(/class="notice"/g)).toHaveLength(2)
     expect(html).toContain('class="wotd"')
@@ -454,73 +453,56 @@ describe('the header: the app name, then Words and the gear', () => {
   })
 })
 
-describe('the word of the day card', () => {
-  const card = (html: string) => html.match(/<section class="wotd".*?<\/section>/)?.[0] ?? ''
+describe('the word of the day row', () => {
+  // One white row under the advice card: a sun icon, «Word of the day», the word and its translation, and a chevron. The whole row is the button that opens the word's page.
+  const card = (html: string) => html.match(/<(button|div)[^>]*class="wotd"[^>]*>.*?<\/\1>/)?.[0] ?? ''
   const headwordOf = (html: string) => card(html).match(/class="wotd-word">(.*?)</)?.[1]
+  const text = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
-  it('has the headword, the pill, the sentence with the target highlighted, a divider, the translation and a link to the card', () => {
+  it('is one button holding the icon, the label, the word, its translation and a chevron, and nothing else: no pill, sentence, divider, queue button or "See the card" link', () => {
     const html = card(render({ onOpenWord: () => {} }, real))
-    expect(html).toMatch(/<h2 class="wotd-word">[^<]+<\/h2><span class="pill">palabra del día<\/span>/)
-    expect(html).toMatch(/<p class="wotd-sentence">[^<]*<mark>[^<]+<\/mark>/)
-    expect(html).toContain('<hr class="wotd-divider"/>')
-    expect(html).toMatch(/<p class="wotd-translation">[^<]+<\/p>/)
-    expect(html).toContain('See the card →')
+    expect(html).toMatch(/^<button type="button" class="wotd" aria-label="Word of the day: [^"]+">/)
+    expect(html.match(/<button/g)).toHaveLength(1)
+    expect(html).toMatch(/<span class="wotd-icon" aria-hidden="true"><svg/)
+    expect(html).toContain('<span class="wotd-label">Word of the day</span>')
+    expect(html).toMatch(/<span class="wotd-line"><span class="wotd-word">[^<]+<\/span><span class="wotd-translation">[^<]+<\/span><\/span>/)
+    expect(html).toMatch(/<svg class="wotd-chevron" [^>]*aria-hidden="true"/)
+    for (const gone of ['pill', 'palabra del día', 'wotd-sentence', '<mark', '<hr', 'wotd-queue', 'wotd-actions', 'link-btn', 'See the card', 'aria-pressed', '<h2']) expect(html, gone).not.toContain(gone)
   })
 
-  describe('the learning-queue button on the card', () => {
-    const queue = createWriteQueue({ sendProgress: async () => {}, sendSettings: async () => {} })
-    const today = pickWordOfTheDay(real, NOW)!
-    const withToday = (over: Partial<Word>) => real.map((w) => (w.esWord === today.esWord ? { ...w, ...over } : w))
-    const button = (html: string) => card(html).match(/<button type="button" class="btn btn-secondary wotd-queue[^"]*"[^>]*>.*?<\/button>/)?.[0] ?? ''
-    const text = (html: string) => html.replace(/<[^>]*>/g, '').trim()
-
-    it('today\'s word is one Learn can still teach (so the tests below mean something)', () => {
-      expect(canStar(today)).toBe(true)
-    })
-
-    it('a word Learn can still teach has the button, saying what it does; it is a secondary button, before the link to the card, in one row with it', () => {
-      const html = render({ onOpenWord: () => {}, queue }, real)
-      expect(text(button(html))).toBe('Add to learning queue')
-      expect(button(html)).toContain('aria-pressed="false"')
-      expect(button(html)).not.toContain('is-on')
-      expect(card(html)).toMatch(/<div class="wotd-actions"><button[^>]*wotd-queue.*?<\/button><button type="button" class="link-btn">See the card →<\/button><\/div>/)
-    })
-
-    it('in the queue, the button says so, with a check mark, looks active and is pressed', () => {
-      const html = render({ onOpenWord: () => {}, queue }, withToday({ isFavorite: true, starredAt: 5 }))
-      expect(text(button(html))).toBe('In the learning queue ✓')
-      expect(button(html)).toContain('aria-pressed="true"')
-      expect(button(html)).toContain('is-on')
-    })
-
-    it('a word already learned has no button (the link to its card stays): nothing is waiting to be taught', () => {
-      const html = render({ onOpenWord: () => {}, queue }, withToday({ repetitions: 3, nextReview: past }))
-      expect(card(html)).toContain('class="wotd-word"')
-      expect(card(html)).not.toContain('wotd-queue')
-      expect(card(html)).toContain('See the card →')
-    })
-
-    it('a word that is not taught (no translation) or hidden has none either, and nor has a signed-out screen, which has nowhere to write', () => {
-      expect(card(render({ onOpenWord: () => {}, queue }, withToday({ enTranslation: '', ruTranslation: '' })))).not.toContain('wotd-queue')
-      expect(card(render({ onOpenWord: () => {} }, real))).not.toContain('wotd-queue') // no queue
-    })
-
-    it('in Russian', () => {
-      setLanguage('ru')
-      try {
-        expect(text(button(render({ queue }, real)))).toBe('Добавить в очередь изучения')
-        expect(text(button(render({ queue }, withToday({ isFavorite: true, starredAt: 5 }))))).toBe('В очереди на изучение ✓')
-      } finally {
-        setLanguage('en')
-      }
-    })
+  it('says what it is to a screen reader: the label, the word and its translation, in one phrase', () => {
+    const html = card(render({ onOpenWord: () => {} }, real))
+    const shown = html.match(/class="wotd-word">(.*?)</)![1]
+    const translation = html.match(/class="wotd-translation">(.*?)</)![1]
+    expect(html).toContain(`aria-label="Word of the day: ${shown}, ${translation}"`)
   })
 
-  it('the highlighted text is a word of the sentence', () => {
+  it('without a way to open the word it is the same row but not a button (nothing to press, no chevron)', () => {
     const html = card(render({}, real))
-    const sentence = html.match(/<p class="wotd-sentence">(.*?)<\/p>/)![1].replace(/<\/?mark>/g, '')
-    const marked = html.match(/<mark>(.*?)<\/mark>/)![1]
-    expect(sentence.toLowerCase()).toContain(marked.toLowerCase())
+    expect(html).toMatch(/^<div class="wotd" aria-label="Word of the day: /)
+    expect(html).toContain('class="wotd-word"')
+    expect(html).not.toContain('<button')
+    expect(html).not.toContain('wotd-chevron')
+  })
+
+  it('in Russian: «Слово дня», and the phrase for a screen reader', () => {
+    setLanguage('ru')
+    try {
+      const html = card(render({ onOpenWord: () => {} }, real))
+      expect(html).toContain('<span class="wotd-label">Слово дня</span>')
+      expect(html).toMatch(/aria-label="Слово дня: [^"]+, [^"]+"/)
+      expect(text(html)).not.toMatch(/palabra del día|Открыть карточку/)
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('no longer has a queue to write to: the screen takes the queue only for the unsaved-progress notice, and adding to the learning queue is the word page\'s', () => {
+    const enqueueFavorite = vi.fn()
+    const queue = { getStatus: () => ({ stuck: false }), subscribe: () => () => {}, enqueueFavorite } as never
+    expect(card(render({ onOpenWord: () => {}, queue }, real))).not.toContain('wotd-queue')
+    expect(enqueueFavorite).not.toHaveBeenCalled()
+    expect(readFileSync('src/screens/Home.tsx', 'utf8')).not.toMatch(/enqueueFavorite|applyFavorite|toggleQueue|canStar/)
   })
 
   it('the same date gives the same word however often (and however it is rendered)', () => {
@@ -593,14 +575,14 @@ describe('the word of the day card', () => {
       }
     })
 
-    it('with every candidate known there is no word of the day (the card is simply not shown)', () => {
+    it('with every candidate known there is no word of the day (the row is simply not shown)', () => {
       const everyone = real.map((w) => (w.rio ? { ...w, isHidden: true } : w))
       expect(pickWordOfTheDay(everyone, NOW)).toBeNull()
       expect(wordOfTheDay(everyone, parseSettings({}), NOW)).toBeNull()
       expect(render({}, everyone)).not.toContain('class="wotd"')
     })
 
-    it('the card on Home shows the fallback when the pick is known, never the known word', () => {
+    it('the row on Home shows the fallback when the pick is known, never the known word', () => {
       const html = render({}, hide(todays.esWord))
       const shown = html.match(/class="wotd-word">(.*?)</)![1]
       expect(shown).not.toBe(headword(todays).text)
@@ -638,14 +620,11 @@ describe('the word of the day card', () => {
     expect(en).not.toMatch(/[А-Яа-яЁё]/)
   })
 
-  it('"See the card" is only offered when it can open something', () => {
-    expect(card(render({}, real))).not.toContain('link-btn')
-  })
-
-  it('without an overlay word that has an example the card is simply not there, and the tiles still sit at the bottom', () => {
+  it('without an overlay word that has an example the row is simply not there, and the tiles still sit at the bottom', () => {
     const html = render({}, [...learnedWords(8, 3), ...unlearned(20)])
     expect(html).not.toContain('class="wotd"')
     expect(html).toContain('class="home-spacer"')
+    expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('class="home-spacer"'))
     expect(html.match(/class="tile /g)).toHaveLength(3)
   })
 
@@ -672,11 +651,22 @@ describe('Home layout rules in the stylesheet', () => {
     expect(block('.screen')).toMatch(/padding: 18px var\(--page-pad\) 40px/)
   })
 
-  it('the word card absorbs all leftover height', () => {
-    expect(block('.wotd')).toMatch(/flex: 1 1 auto/)
+  it('the spacer absorbs all leftover height (so the tiles stay at the bottom), and the word-of-the-day row is a row of its own height under the advice card', () => {
+    expect(block('.home-spacer')).toMatch(/flex: 1 1 auto/)
+    expect(block('.wotd')).toMatch(/display: flex/)
+    expect(block('.wotd')).toMatch(/align-items: center/)
+    expect(block('.wotd')).toMatch(/min-height: 60px/)
+    expect(block('.wotd')).toMatch(/margin-top: 4px/) // 16px of page gap and 4px more: 20px under the advice card
     expect(block('.wotd')).toMatch(/border-radius: var\(--radius-card\)/)
-    expect(block('.wotd')).toMatch(/padding: 22px 20px/)
-    expect(block('.wotd')).toMatch(/gap: 14px/)
+    expect(block('.wotd')).not.toMatch(/flex: 1 1 auto|flex-grow/)
+  })
+
+  it('the row looks pressable and focusable: a pressed state, a focus ring, and the chevron says it opens something (a non-button row has none of that)', () => {
+    expect(block('button.wotd:active')).toMatch(/opacity|transform/)
+    expect(css).toMatch(/button\.wotd:focus-visible/)
+    expect(block('.wotd-chevron')).toMatch(/flex: none/)
+    expect(block('button.wotd')).toMatch(/cursor: pointer/)
+    expect(block('.wotd')).toMatch(/width: 100%/) // the whole row is the target
   })
 
   // The 2x2 grid of tiles (96px each, two columns, 14px gaps: 206px) became a row of three tiles and a dock under it. The pins below are the same rules for the new shape:
@@ -1016,33 +1006,26 @@ describe('the line of advice under the streak, and the tile it points at', () =>
   })
 })
 
-describe('the advice card and the word-of-the-day card are one family', () => {
+describe('the advice card and the word-of-the-day row are told apart', () => {
+  // Both are white cards with a hairline border. The advice card is a sentence, the row has an icon and a chevron; and the row sits a little further from the advice card than blocks usually are
+  // (a gap of 20px where the others have 16px), so the two do not read as one two-part card. (review.browser.test.ts measures it.)
   const css = readFileSync('src/index.css', 'utf8')
   const block = (selector: string) => {
     const start = css.indexOf(`\n${selector} {`)
     if (start === -1) throw new Error(`no ${selector} rule`)
     return css.slice(css.indexOf('{', start), css.indexOf('}', start))
   }
-  const px = (value: string) => value.split(/\s+/).map((v) => parseFloat(v))
 
-  it('the same background, border and radius, and a smaller padding', () => {
-    const advice = block('.home-advice')
-    const wotd = block('.wotd')
-    for (const rule of [/border: 1px solid var\(--border\)/, /border-radius: var\(--radius-card\)/, /background: var\(--surface\)/]) {
-      expect(advice).toMatch(rule)
-      expect(wotd).toMatch(rule)
-    }
-    const [adviceY, adviceX] = px(advice.match(/padding: ([^;]+);/)![1])
-    const [wotdY, wotdX] = px(wotd.match(/padding: ([^;]+);/)![1])
-    expect(adviceY).toBeLessThan(wotdY)
-    expect(adviceX).toBeLessThan(wotdX)
-  })
-
-  it('and it is the quieter of the two: muted text, at the size of the streak row, not louder than the card below', () => {
+  it('the advice card is the quieter of the two: muted text at the size of the streak row, no colour of its own', () => {
     const advice = block('.home-advice')
     expect(advice).toMatch(/color: var\(--muted\)/)
     expect(parseFloat(advice.match(/font-size: ([\d.]+)px/)![1])).toBeLessThanOrEqual(13)
     expect(advice).not.toMatch(/font-family|text-transform|letter-spacing|box-shadow|background: var\(--(teal|lav|hl)/)
+  })
+
+  it('the row carries the lavender of the word of the day in its icon, which the advice card has none of', () => {
+    expect(block('.wotd-icon')).toMatch(/background: var\(--lav-soft\)/)
+    expect(block('.wotd-icon')).toMatch(/color: var\(--lav-on-soft-2\)/)
   })
 })
 

@@ -42,11 +42,11 @@ export const WHATS_NEW: readonly NewsEntry[] = [
     at: '2026-11-08T22:39',
     en: {
       title: 'Clearer buttons and hints',
-      text: 'Buttons are clearer: “Hide: already known or not needed” in Learn and “Add to learning queue” instead of the star. Home has captions under the tiles, and Review explains the ratings. The word of the day can be added to the learning queue right away. Undo after hiding lasts longer. If you hide many words at the start of a batch, Learn suggests the placement test.',
+      text: 'Buttons are clearer: “Hide: already known or not needed” in Learn and “Add to learning queue” instead of the star. Home has captions under the tiles, and Review explains the ratings. Undo after hiding lasts longer. If you hide many words at the start of a batch, Learn suggests the placement test.',
     },
     ru: {
       title: 'Понятнее кнопки и подсказки',
-      text: 'Кнопки стали понятнее: «Скрыть: уже знаю или не нужно» в Learn и «Добавить в очередь изучения» вместо звездочки. На главной появились подписи под плитками, а в Review — пояснение к оценкам. Слово дня можно сразу добавить в очередь. «Отменить» после скрытия держится дольше. Если в начале подборки вы скрываете много слов, Learn предложит пройти входной тест.',
+      text: 'Кнопки стали понятнее: «Скрыть: уже знаю или не нужно» в Learn и «Добавить в очередь изучения» вместо звездочки. На главной появились подписи под плитками, а в Review — пояснение к оценкам. «Отменить» после скрытия держится дольше. Если в начале подборки вы скрываете много слов, Learn предложит пройти входной тест.',
     },
   },
   {

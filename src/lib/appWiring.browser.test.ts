@@ -138,7 +138,7 @@ describe.skipIf(!CHROME)(`the real app (${mode}): what App hands its screens`, (
 
   it('the word detail screen has "Report a problem with this word" too, and a report from it reaches the server as a word report from the detail screen', async () => {
     const { page, fake } = await open()
-    await press(page, '.wotd .link-btn') // the word of the day's "See the card"
+    await press(page, 'button.wotd') // the word of the day row, which is itself the button that opens the word
     await page.waitForSelector('.link-btn')
     await page.waitForFunction(() => Array.from(document.querySelectorAll('.link-btn')).some((b) => b.textContent === 'Report a problem with this word'))
     await page.evaluate(() => (Array.from(document.querySelectorAll('.link-btn')).find((b) => b.textContent === 'Report a problem with this word') as HTMLElement).click())
