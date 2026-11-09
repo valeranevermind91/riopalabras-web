@@ -143,7 +143,7 @@ describe('the Words screen', () => {
   })
 
   describe('the line above the list about the star: only until a word has one', () => {
-    const LINE = '<p class="words-note words-star-hint">Tap the star on a word: it goes into Learn ahead of the others.</p>'
+    const LINE = '<p class="words-note words-star-hint">Tap the star on a word to add it to the learning queue: it goes into Learn ahead of the others.</p>'
     const plain = [makeWord('uno', { rank: 1 }), makeWord('tres', { rank: 3 })]
 
     it('nothing starred yet and a star to point at: the line is there, above the list', () => {
@@ -173,14 +173,14 @@ describe('the Words screen', () => {
     it('in Russian', () => {
       setLanguage('ru')
       try {
-        expect(render(plain, view({ segment: 'all' }))).toContain('<p class="words-note words-star-hint">Нажмите звездочку у слова — оно попадет в Learn раньше остальных.</p>')
+        expect(render(plain, view({ segment: 'all' }))).toContain('<p class="words-note words-star-hint">Нажмите звездочку у слова, чтобы добавить его в очередь изучения: оно попадет в Learn раньше остальных.</p>')
       } finally {
         setLanguage('en')
       }
     })
   })
 
-  describe('the star on the row: "Learn sooner"', () => {
+  describe('the star on the row: the learning queue', () => {
     const fresh = [makeWord('uno', { rank: 1 }), makeWord('dos', { rank: 2, isFavorite: true, starredAt: 5 }), makeWord('tres', { rank: 3 })]
     const learnedWord = makeWord('cuatro', { rank: 4, repetitions: 3, nextReview: new Date(Date.now() + 5 * day) })
     const reference = makeWord('de', { rank: 5, pos: 'prep' }) // a word that is never taught
@@ -205,10 +205,10 @@ describe('the Words screen', () => {
 
     it('a starred word shows a filled, pressed star; the others an empty one; the name is the same either way, and there is no second control', () => {
       const html = render(all, view({ segment: 'all' }))
-      expect(rowOf(html, 'dos')).toContain('class="word-row-star is-on" aria-pressed="true" aria-label="Learn dos sooner"')
-      for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain(`class="word-row-star" aria-pressed="false" aria-label="Learn ${name} sooner"`)
+      expect(rowOf(html, 'dos')).toContain('class="word-row-star is-on" aria-pressed="true" aria-label="Add dos to the learning queue"')
+      for (const name of ['uno', 'tres']) expect(rowOf(html, name)).toContain(`class="word-row-star" aria-pressed="false" aria-label="Add ${name} to the learning queue"`)
       expect(html).not.toContain('word-row-queue')
-      expect(html).not.toMatch(/Queue|Queued|Saved|Save /)
+      expect(html).not.toMatch(/Queued|Saved|Save /)
     })
 
     it('every star points at one description of what it does, in the screen: hidden, so only a screen reader reads it', () => {
@@ -218,10 +218,10 @@ describe('the Words screen', () => {
       expect(html).toContain('<span id="learn-sooner-hint-list" hidden="">The word goes into Learn ahead of the others.</span>')
     })
 
-    it('the row and the "Learn sooner" filter agree: the filter lists exactly the rows with a pressed star', () => {
+    it('the row and the "Queued" filter agree: the filter lists exactly the rows with a pressed star', () => {
       const everything = render(all, view({ segment: 'all' }))
       const filtered = render(all, view({ segment: 'all', filters: { ...NO_FILTERS, favourites: true } }))
-      const pressedInAll = [...everything.matchAll(/aria-pressed="true" aria-label="Learn ([^ ]+) sooner"/g)].map((m) => m[1]).sort()
+      const pressedInAll = [...everything.matchAll(/aria-pressed="true" aria-label="Add ([^ ]+) to the learning queue"/g)].map((m) => m[1]).sort()
       const listedByFilter = [...filtered.matchAll(/aria-label="Open ([^"]+)"/g)].map((m) => m[1]).sort()
       expect(pressedInAll).toEqual(['dos'])
       expect(listedByFilter).toEqual(pressedInAll)
@@ -379,11 +379,11 @@ describe('the filters sheet', () => {
     expect(headings).toEqual(['Progress', 'Show only', 'Part of speech'])
   })
 
-  it('Progress: Any · New · Learning · Well learned · Reference only; Show only: Due now · Learn sooner · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
+  it('Progress: Any · New · Learning · Well learned · Reference only; Show only: Due now · Queued · Custom; Part of speech: Verbs · Nouns · Adjectives · Adverbs', () => {
     const html = sheet()
     const group = (id: string) => [...html.match(new RegExp(`aria-labelledby="${id}">.*?</section>`))![0].matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((m) => m[1])
     expect(group('sheet-progress')).toEqual(['Any', 'New', 'Learning', 'Well learned', 'Reference only'])
-    expect(group('sheet-show-only')).toEqual(['Due now', 'Learn sooner', 'Custom'])
+    expect(group('sheet-show-only')).toEqual(['Due now', 'Queued', 'Custom'])
     expect(group('sheet-pos')).toEqual(['Verbs', 'Nouns', 'Adjectives', 'Adverbs'])
   })
 
@@ -393,7 +393,7 @@ describe('the filters sheet', () => {
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Well learned/)
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Due now/) // Due is a switch of its own: on together with a stage
     expect(on).toMatch(/class="chip" aria-pressed="false">Any/)
-    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Learn sooner/)
+    expect(on).toMatch(/class="chip is-active" aria-pressed="true">Queued/)
     expect(on).toMatch(/class="chip is-active" aria-pressed="true">Adjectives/)
   })
 
@@ -437,7 +437,7 @@ describe('the word detail', () => {
     const html = detail(base)
     expect(html.indexOf('wc-headword')).toBeLessThan(html.indexOf('state-block'))
     expect(html.indexOf('state-block')).toBeLessThan(html.indexOf('detail-actions'))
-    expect(html).toContain('Learn sooner')
+    expect(html).toContain('Add to learning queue')
     expect(html).not.toContain('Bring back')
   })
 
@@ -528,25 +528,25 @@ describe('the word detail', () => {
     expect(html).toContain('<dd>Hidden</dd>')
     expect(html).toContain('Its progress is kept')
     expect(html).toContain('aria-label="Bring back casa"')
-    expect(html).not.toContain('Learn sooner')
+    expect(html).not.toContain('learning queue')
     expect(html).not.toContain('aria-pressed')
   })
 
-  describe('the "Learn sooner" button', () => {
+  describe('the learning-queue button', () => {
     const button = (html: string) => html.match(/<button[^>]*aria-pressed[^>]*>.*?<\/button>/)?.[0] ?? ''
 
-    it('a word that can still be taught has it, with the words on the button, not pressed', () => {
+    it('a word that can still be taught has it, saying what it does, not pressed', () => {
       const html = button(detail(base))
       expect(html).toContain('aria-pressed="false"')
-      expect(html.replace(/<[^>]*>/g, '').trim()).toBe('Learn sooner')
+      expect(html.replace(/<[^>]*>/g, '').trim()).toBe('Add to learning queue')
       expect(html).not.toContain('is-on')
     })
 
-    it('starred, the button only looks active: same words, pressed', () => {
+    it('in the queue, the button says so, with a check mark, looks active and is pressed', () => {
       const html = button(detail({ ...base, isFavorite: true, starredAt: 3 }))
       expect(html).toContain('aria-pressed="true"')
       expect(html).toContain('is-on')
-      expect(html.replace(/<[^>]*>/g, '').trim()).toBe('Learn sooner')
+      expect(html.replace(/<[^>]*>/g, '').trim()).toBe('In the learning queue ✓')
     })
 
     it('a word in progress, learned, reference-only or untranslated has no button at all', () => {
@@ -558,7 +558,7 @@ describe('the word detail', () => {
       ]
       for (const word of none) {
         const html = detail(word)
-        expect(html).not.toContain('Learn sooner')
+        expect(html).not.toContain('learning queue')
         expect(html).not.toContain('aria-pressed')
       }
     })
@@ -586,7 +586,7 @@ describe('the word detail', () => {
     })
 
     it('there is no queue on the detail any more: no place in line, no "beyond today\'s batch"', () => {
-      expect(detail({ ...base, isFavorite: true, starredAt: 3 })).not.toMatch(/queue|in line|Beyond/i)
+      expect(detail({ ...base, isFavorite: true, starredAt: 3 })).not.toMatch(/in line|place in|Beyond|queue(?<!learning queue)/i) // the name of the thing is there; a place in a line is not
     })
   })
 

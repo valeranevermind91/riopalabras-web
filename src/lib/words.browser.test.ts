@@ -166,11 +166,11 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('the star ("Learn sooner") toggles without opening the word and goes through the queue; its name is the same pressed or not; the latest state wins', async () => {
+  it('the star (the learning queue) toggles without opening the word and goes through the queue; its name is the same pressed or not; the latest state wins', async () => {
     const page = await open('?stars=0')
     const fx = await fixture(page)
     await search(page, fx.fresh[0])
-    const label = `Learn ${fx.fresh[0]} sooner`
+    const label = `Add ${fx.fresh[0]} to the learning queue`
     const star = async () => page.$eval('.word-row-star', (e) => ({ pressed: e.getAttribute('aria-pressed'), label: e.getAttribute('aria-label'), text: e.textContent?.trim() }))
     expect(await star()).toEqual({ pressed: 'false', label, text: '' })
     await page.evaluate(() => (document.querySelector('.word-row-star') as HTMLElement).click())
@@ -186,9 +186,9 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.close()
   }, 60_000)
 
-  it('the "Learn sooner" filter lists the starred words that are waiting', async () => {
+  it('the "Queued" filter lists the starred words that are waiting', async () => {
     const page = await open()
-    await chooseFilter(page, 'Filters', 'Learn sooner')
+    await chooseFilter(page, 'Filters', 'Queued')
     await page.waitForSelector('.vlist')
     const fx = await fixture(page)
     expect(await page.$$eval('.word-row-star.is-on', (els) => els.length)).toBe(1)
@@ -295,7 +295,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     const page = await open('?stars=0')
     await control(page, 'Filters')
     await page.waitForSelector('.sheet')
-    await press(page, '.sheet .chip', 'Learn sooner') // nothing is starred in this fixture
+    await press(page, '.sheet .chip', 'Queued') // nothing is starred in this fixture
     await closeSheet(page)
     await page.waitForSelector('.words-empty .btn')
     await page.click('.words-empty .btn')
@@ -548,7 +548,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         await back(page)
         expect(await rows(page)).toEqual(order) // a word opened and closed
 
-        await chooseFilter(page, 'Filters', 'Learn sooner')
+        await chooseFilter(page, 'Filters', 'Queued')
         await page.waitForSelector('.vlist')
         await control(page, 'Filters')
         await page.waitForSelector('.sheet')
@@ -575,7 +575,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         // star five words that are new, then look at them in a random order, starred only
         for (const i of [0, 1, 2, 3, 4]) await page.evaluate((n) => (document.querySelectorAll('.word-row-star')[n] as HTMLElement).click(), i)
         await chooseSort(page, 'Random')
-        await chooseFilter(page, 'Filters', 'Learn sooner')
+        await chooseFilter(page, 'Filters', 'Queued')
         await page.waitForFunction(() => document.querySelectorAll('.word-row-star.is-on').length === 5)
         const before = await rows(page)
         expect(before.length).toBeGreaterThanOrEqual(5)
@@ -661,7 +661,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await control(page, 'Sort')
       await press(page, '.sheet-row', 'Recently studied')
       await page.waitForFunction(() => document.querySelector('.sheet') === null)
-      await chooseFilter(page, 'Filters', 'Learn sooner')
+      await chooseFilter(page, 'Filters', 'Queued')
       await page.waitForSelector('.vlist')
       await openRow(page, 0)
       await back(page)
@@ -670,7 +670,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }, 60_000)
   })
 
-  describe('Learn sooner', () => {
+  describe('the learning queue', () => {
     const buttons = (page: Page) => page.$$eval('.detail-actions .btn', (els) => els.map((e) => `${e.textContent?.trim()}|${e.getAttribute('aria-pressed')}`))
     const openWord = async (page: Page, esWord: string) => {
       await search(page, esWord)
@@ -696,10 +696,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       const page = await open('?stars=0')
       const fx = await fixture(page)
       await openWord(page, fx.fresh[0])
-      expect(await buttons(page)).toEqual(['Learn sooner|false'])
+      expect(await buttons(page)).toEqual(['Add to learning queue|false'])
       await tapDetail(page)
       await page.waitForFunction(() => document.querySelector('.detail-actions .btn[aria-pressed="true"]') !== null)
-      expect(await buttons(page)).toEqual(['Learn sooner|true']) // pressed; not "Learning sooner", not "Queued"
+      expect(await buttons(page)).toEqual(['In the learning queue ✓|true']) // pressed, and the words say what is so
       expect(await page.$('.detail-actions .btn.is-on')).not.toBeNull()
       await page.waitForFunction(() => (window as never as { __sent: { favorites: unknown[] } }).__sent.favorites.length > 0)
       expect((await sent(page)).favorites.at(-1)).toEqual({ esWord: fx.fresh[0], favorite: true })
@@ -707,30 +707,30 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
       await tapDetail(page)
       await page.waitForFunction(() => (window as never as { __sent: { favorites: { favorite: boolean }[] } }).__sent.favorites.at(-1)?.favorite === false)
-      expect(await buttons(page)).toEqual(['Learn sooner|false'])
+      expect(await buttons(page)).toEqual(['Add to learning queue|false'])
       expect(await page.$('.detail-actions .queue-note, .detail-actions .detail-note')).toBeNull() // and nothing about a place in line
       await page.close()
     }, 60_000)
 
-    it('the row, the "Learn sooner" filter and the detail agree about which words are starred', async () => {
+    it('the row, the "Queued" filter and the detail agree about which words are starred', async () => {
       const page = await open('?stars=0')
       const fx = await fixture(page)
       const word = fx.fresh[0]
       await search(page, word)
-      expect(await rowButtons(page, word)).toEqual({ star: { text: '', pressed: 'false', label: `Learn ${word} sooner` }, queue: false, buttons: 2 }) // the row, and the star: nothing else
+      expect(await rowButtons(page, word)).toEqual({ star: { text: '', pressed: 'false', label: `Add ${word} to the learning queue` }, queue: false, buttons: 2 }) // the row, and the star: nothing else
       await tapRowStar(page, word)
       await page.waitForSelector('.word-row-star.is-on')
       expect(await page.$('.word-detail')).toBeNull() // the tap acted on the star and did not open the word
-      expect(await rowButtons(page, word)).toMatchObject({ star: { pressed: 'true', label: `Learn ${word} sooner` } })
+      expect(await rowButtons(page, word)).toMatchObject({ star: { pressed: 'true', label: `Add ${word} to the learning queue` } })
 
       await page.$eval('.words-search', (el) => void ((el as HTMLInputElement).value = ''))
       await page.click('.words-search')
       await page.keyboard.press('Backspace')
-      await chooseFilter(page, 'Filters', 'Learn sooner')
+      await chooseFilter(page, 'Filters', 'Queued')
       await page.waitForSelector('.vlist')
       expect(await rows(page)).toEqual([word])
       await openRow(page, 0)
-      expect(await buttons(page)).toEqual(['Learn sooner|true'])
+      expect(await buttons(page)).toEqual(['In the learning queue ✓|true'])
       await page.close()
     }, 90_000)
 
@@ -759,15 +759,15 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
     it('there is no cap: 60 starred words are all starred, and the filter lists all of them', async () => {
       const page = await open('?stars=60')
-      await chooseFilter(page, 'Filters', 'Learn sooner')
+      await chooseFilter(page, 'Filters', 'Queued')
       await page.waitForSelector('.vlist')
       expect(await page.$eval('.vlist-space', (e) => (e as HTMLElement).offsetHeight)).toBe(60 * 72)
       await page.close()
     }, 60_000)
 
     for (const [language, query, hint, description] of [
-      ['English', '?lang=en&stars=0', 'Tap the star on a word: it goes into Learn ahead of the others.', 'The word goes into Learn ahead of the others.'],
-      ['Russian', '?lang=ru&stars=0', 'Нажмите звездочку у слова — оно попадет в Learn раньше остальных.', 'Слово попадет в Learn раньше остальных.'],
+      ['English', '?lang=en&stars=0', 'Tap the star on a word to add it to the learning queue: it goes into Learn ahead of the others.', 'The word goes into Learn ahead of the others.'],
+      ['Russian', '?lang=ru&stars=0', 'Нажмите звездочку у слова, чтобы добавить его в очередь изучения: оно попадет в Learn раньше остальных.', 'Слово попадет в Learn раньше остальных.'],
     ] as const) {
       it(`${language}, 320px: with nothing starred a line above the list says what the star does, fits the screen and ends on more than one word; the first star takes it away`, async () => {
         const page = await open(query)
@@ -802,7 +802,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         await client.send('Accessibility.enable')
         const { nodes } = (await client.send('Accessibility.getFullAXTree')) as { nodes: { ignored?: boolean; role?: { value: string }; name?: { value: string }; description?: { value: string } }[] }
         await client.detach()
-        const stars = nodes.filter((n) => !n.ignored && n.role?.value === 'button' && /sooner|раньше/.test(n.name?.value ?? ''))
+        const stars = nodes.filter((n) => !n.ignored && n.role?.value === 'button' && /learning queue|очередь изучения/.test(n.name?.value ?? ''))
         expect(stars.length).toBeGreaterThan(0)
         for (const star of stars) expect(star.description?.value, star.name?.value).toBe(description)
 
@@ -817,8 +817,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     }
 
     for (const [language, query, label] of [
-      ['English', '?lang=en', (w: string) => `Learn ${w} sooner`],
-      ['Russian', '?lang=ru', (w: string) => `Учить «${w}» раньше`],
+      ['English', '?lang=en', (w: string) => `Add ${w} to the learning queue`],
+      ['Russian', '?lang=ru', (w: string) => `Добавить «${w}» в очередь изучения`],
     ] as const) {
       it(`${language}, 320px: one icon-only control on the row, a real tap target, grey until it is on and then teal, and the translation keeps its room`, async () => {
         const page = await open(query)
@@ -891,7 +891,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
           const r = e.getBoundingClientRect()
           return { text: e.textContent?.trim(), left: r.left, right: r.right, height: r.height, clipped: e.scrollWidth > e.clientWidth, pressed: e.getAttribute('aria-pressed'), page: document.documentElement.scrollWidth <= window.innerWidth }
         })
-        expect(button.text).toBe(language === 'English' ? 'Learn sooner' : 'Учить раньше')
+        expect(button.text).toBe(language === 'English' ? 'In the learning queue ✓' : 'В очереди на изучение ✓')
         expect(button.pressed).toBe('true')
         expect(button.clipped).toBe(false)
         expect(button.left).toBeGreaterThanOrEqual(0)
@@ -1043,7 +1043,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await openRow(page, Math.max(0, (await rows(page)).findIndex((r) => r.startsWith(esWord))))
     }
 
-    it('"+" in the header adds a word: type it, pick a part of speech, the translation is filled in, change anything, save; it is written and set to learn sooner', async () => {
+    it('"+" in the header adds a word: type it, pick a part of speech, the translation is filled in, change anything, save; it is written and put in the learning queue', async () => {
       const page = await open()
       expect(await page.$$eval('.screen-header-actions button', (els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Add a word'])
       await startAdding(page, 'Zapallito', 'Noun')
@@ -1057,7 +1057,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await typeIn(page, f.en, 'baby squash') // every field can be changed before saving
       await clickText(page, 'button', f.save)
       await page.waitForSelector('.words-search')
-      expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('Added, and set to learn sooner.')
+      expect(await page.$eval('.words-note', (e) => e.textContent)).toBe('Added, and put in the learning queue.')
       // the note is a confirmation: still there after a few seconds, gone by itself soon after (not left over the list until it is changed)
       await new Promise((r) => setTimeout(r, Math.min(3000, NOTICE_MS - 1500)))
       expect(await page.$('.words-note')).not.toBeNull()
@@ -1075,7 +1075,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
       await openByName(page, 'Zapallito')
       expect(await page.$eval('.custom-mark', (e) => e.textContent)).toBe('Added by you')
-      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toEqual(['Learn sooner', 'Edit', 'Delete'])
+      expect(await page.$$eval('.detail-actions .btn', (els) => els.map((e) => e.textContent?.trim()))).toEqual(['In the learning queue ✓', 'Edit', 'Delete'])
       await page.close()
     }, 90_000)
 
@@ -1885,7 +1885,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       await addWord(page)
       await control(page, 'Filters')
       await page.waitForSelector('.sheet')
-      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Due now', 'Learn sooner', 'Custom'])
+      expect(await page.$$eval('#sheet-show-only + .sheet-options .chip', (els) => els.map((e) => e.textContent))).toEqual(['Due now', 'Queued', 'Custom'])
       await press(page, '.sheet .chip', 'Custom')
       await closeSheet(page)
       await page.waitForSelector('.vlist')

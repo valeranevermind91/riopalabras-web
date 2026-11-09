@@ -145,7 +145,7 @@ describe('Russian interface, English-only translations', () => {
     const detail = renderToStaticMarkup(createElement(WordDetail, { word: unlearned(1)[0], data: dataFor(unlearned(1), raw), queue } as never))
     expect(detail).toContain('new0')
     expect(detail).not.toContain('новое0')
-    expect(detail).toContain('Учить раньше') // chrome: Russian
+    expect(detail).toContain('Добавить в очередь изучения') // chrome: Russian
     expect(detail).toContain('EN:') // the label of a translation row is word content: it follows the flags
     expect(detail).not.toContain('RU:')
   })
@@ -155,7 +155,7 @@ describe('Russian interface, English-only translations', () => {
     const raw = { show_ru_translation: true, show_en_translation: false, onboarding_done: true }
     const detail = renderToStaticMarkup(createElement(WordDetail, { word: unlearned(1)[0], data: dataFor(unlearned(1), raw), queue } as never))
     expect(detail).toContain('новое0')
-    expect(detail).toContain('Learn sooner')
-    expect(strings.words.learnSooner).toBe('Learn sooner')
+    expect(detail).toContain('Add to learning queue')
+    expect(strings.words.learnSooner).toBe('Add to learning queue')
   })
 })

@@ -15,21 +15,21 @@ const starButton = (html: string) => html.match(/<button[^>]*word-row-star[^>]*>
 
 afterEach(() => setLanguage('en'))
 
-describe('a list row: one action, "Learn sooner"', () => {
+describe('a list row: one action, the learning queue', () => {
   it('a word Learn can still teach has the star, named for what it does, and nothing else beside it', () => {
     const html = render(casa)
-    expect(html).toContain('class="word-row-star" aria-pressed="false" aria-label="Learn casa sooner"')
+    expect(html).toContain('class="word-row-star" aria-pressed="false" aria-label="Add casa to the learning queue"')
     expect(html).not.toContain('word-row-queue')
     expect(html.match(/<button/g)).toHaveLength(2) // the row itself, and the star
   })
 
   it('pressed, the star is filled and looks active, and says the same words: it never claims anything has happened', () => {
     const on = render({ ...casa, isFavorite: true, starredAt: 1 })
-    expect(on).toContain('class="word-row-star is-on" aria-pressed="true" aria-label="Learn casa sooner"')
+    expect(on).toContain('class="word-row-star is-on" aria-pressed="true" aria-label="Add casa to the learning queue"')
     expect(starButton(on)).toContain('fill="currentColor"')
     expect(starButton(render(casa))).toContain('fill="none"')
     // the name is the same pressed or not: the state is carried by aria-pressed
-    expect(on.match(/aria-label="Learn casa sooner"/)).not.toBeNull()
+    expect(on.match(/aria-label="Add casa to the learning queue"/)).not.toBeNull()
     expect(on).not.toMatch(/Saved|Queued|Remove casa/)
   })
 
@@ -48,7 +48,7 @@ describe('a list row: one action, "Learn sooner"', () => {
       const html = render(word)
       expect(html, label).not.toContain('word-row-star')
       expect(html, label).not.toContain('disabled')
-      expect(html, label).not.toContain('Learn casa sooner')
+      expect(html, label).not.toContain('Add casa to the learning queue')
     }
     // even a word that still carries a star from before shows no control
     expect(render({ ...cannot[0][1], isFavorite: true, starredAt: 1 })).not.toContain('word-row-star')
@@ -61,12 +61,12 @@ describe('a list row: one action, "Learn sooner"', () => {
   })
 
   it('a word you typed in, not started, has the star like any other', () => {
-    expect(render(makeWord('zapallito', { rank: null, isCustom: true }))).toContain('aria-label="Learn zapallito sooner"')
+    expect(render(makeWord('zapallito', { rank: null, isCustom: true }))).toContain('aria-label="Add zapallito to the learning queue"')
   })
 
-  it('in Russian: «Учить «casa» раньше»', () => {
+  it('in Russian: «Добавить «casa» в очередь изучения»', () => {
     setLanguage('ru')
-    expect(render(casa)).toContain('aria-label="Учить «casa» раньше"')
-    expect(render({ ...casa, isFavorite: true, starredAt: 1 })).toContain('aria-label="Учить «casa» раньше"')
+    expect(render(casa)).toContain('aria-label="Добавить «casa» в очередь изучения"')
+    expect(render({ ...casa, isFavorite: true, starredAt: 1 })).toContain('aria-label="Добавить «casa» в очередь изучения"')
   })
 })

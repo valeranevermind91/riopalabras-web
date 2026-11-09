@@ -48,7 +48,7 @@ interface WordDetailProps {
 
 /**
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
- * scheduling numbers in a collapsed footnote, then what can be done with it: set it to learn sooner (a word Learn can still teach), or bring it back if it was marked as known.
+ * scheduling numbers in a collapsed footnote, then what can be done with it: add it to the learning queue (a word Learn can still teach), or bring it back if it was marked as known.
  */
 export function WordDetail({ word, data, queue, registerBack, onDeleted, onReport, reportSent = false, onBack }: WordDetailProps) {
   const now = new Date()
@@ -58,7 +58,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
 
   // What the last action said (the confirmation after an edit).
   const [said, setSaid] = useState<{ esWord: string; text: string } | null>(null)
-  // "Learn sooner": only a word Learn can still teach can carry the star, and the control is not there for any other.
+  // The learning queue (the star): only a word Learn can still teach can carry it, and the control is not there for any other.
   const starrable = canStar(word)
 
   // The user's own words can be edited and deleted from here.
@@ -166,7 +166,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
               aria-describedby="learn-sooner-hint"
               onClick={toggleFavourite}
             >
-              <StarIcon filled={word.isFavorite} /> {t.learnSooner}
+              <StarIcon filled={word.isFavorite} /> {word.isFavorite ? t.learnSoonerOn : t.learnSooner}
             </button>
             <p id="learn-sooner-hint" className="detail-hint">
               {t.learnSoonerHint}

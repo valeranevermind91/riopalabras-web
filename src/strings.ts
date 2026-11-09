@@ -40,7 +40,7 @@ export const en = {
     learnPoolEmpty: 'No new words available',
     reviewWithCount: (n: number) => `Review due words (${n})`,
     reviewNothingDue: 'Nothing to review',
-    degradedTables: { user_favorites: 'words set to learn sooner', user_hidden_words: 'hidden words' } as Record<string, string>,
+    degradedTables: { user_favorites: 'learning queue', user_hidden_words: 'hidden words' } as Record<string, string>,
     degraded: (tables: string[]) => `Couldn't load your ${tables.join(' and ')} yet. Retrying in the background.`,
     degradedHiddenWarning: 'Words you hid may still show up until it loads.',
     retryNow: 'Retry now',
@@ -117,9 +117,10 @@ export const en = {
     },
     // what the stages are called to the user (the Progress filter; the code keeps new / learning / wellLearned / reference, see wordStatus). "Due now" is not a stage: it is its own switch.
     stages: { new: 'New', learning: 'Learning', wellLearned: 'Well learned', reference: 'Reference only' },
-    // One action, one name everywhere (the row's star, the detail button, the filter): "Learn sooner". The star puts a word ahead in Learn and
-    // clears itself when Learn has taught the word. It is not a bookmark and not a queue.
-    favourites: 'Learn sooner',
+    // One action, one name everywhere (the row's star, the detail button, the word of the day, the filter): the learning queue. The star puts a word ahead in Learn and
+    // clears itself when Learn has taught the word, so "In the learning queue" is only ever true of a word that is waiting. It is not a bookmark, and it is not an order:
+    // Learn still teaches every other word in the end (the hint beside the button says "ahead of the others"). The filter chip is the short form.
+    favourites: 'Queued',
     pos: { verb: 'Verbs', noun: 'Nouns', adj: 'Adjectives', adv: 'Adverbs' },
     sorts: { frequency: 'Frequency', az: 'A to Z', due: 'Due soonest', recent: 'Recently studied', random: 'Random' },
     bestMatch: 'Best match',
@@ -130,10 +131,12 @@ export const en = {
     kindName: { hidden: 'Hidden', reference: 'Reference only', new: 'New', learning: 'Learning', wellLearned: 'Well learned' } as Record<string, string>,
     // The star on a list row has no visible text (the translation needs the room); this is its accessible name, the same whether it is pressed or not.
     // Above the list, while no word is starred yet: the same idea with the star it is about (the list's rows have no room for words).
-    learnSoonerListHint: 'Tap the star on a word: it goes into Learn ahead of the others.',
-    learnSoonerRow: (word: string) => `Learn ${word} sooner`,
-    // The same words on the detail screen's button, pressed or not: the button only looks active, it never claims something happened.
-    learnSooner: 'Learn sooner',
+    learnSoonerListHint: 'Tap the star on a word to add it to the learning queue: it goes into Learn ahead of the others.',
+    learnSoonerRow: (word: string) => `Add ${word} to the learning queue`,
+    // The detail screen's button (and the word of the day's): what it does, and, once it is on, what is so. Only a word that is waiting carries the star (starred.ts), so the
+    // second is never a claim about a word Learn has taught or will not teach. Tapping the second one takes the word out again.
+    learnSooner: 'Add to learning queue',
+    learnSoonerOn: 'In the learning queue ✓',
     // The line next to that button, and the description the list's stars point at: what it does (the name alone does not say Learn has an order). Said no more exactly than it holds whatever the queue does: starred words lead a batch, up to a share of it, oldest first (starred.ts).
     learnSoonerHint: 'The word goes into Learn ahead of the others.',
     // the user's own words: add (the "+" in the header), edit and delete from the detail
@@ -144,7 +147,7 @@ export const en = {
     customMark: 'Added by you',
     editWord: 'Edit',
     deleteWord: 'Delete',
-    added: 'Added, and set to learn sooner.',
+    added: 'Added, and put in the learning queue.',
     saved: 'Saved.',
     deleteTitle: (word: string) => `Delete “${word}”?`,
     deleteBody: 'The word is removed from your list. If you add the same word again later, the progress you made with it comes back.',
@@ -356,7 +359,7 @@ export const en = {
         heading: 'What it keeps',
         paragraphs: [
           'Your account comes from your Telegram ID, with your first name and username (if any) and a made-up email-style address like {email}; it is not a real mailbox and nothing is sent to it.',
-          "Under it: your progress on each word, your settings, the words you add yourself, and the words you set to Learn sooner or hide. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. In Cloze, what kind of answer it was is logged too: exact, an accent slip, the dictionary form, or another form of the word. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
+          "Under it: your progress on each word, your settings, the words you add yourself, and the words you add to the learning queue or hide. Every answer you give is logged (the word, the time, your rating, how long you took), with a summary for each day. In Cloze, what kind of answer it was is logged too: exact, an accent slip, the dictionary form, or another form of the word. Also: today's count of automatic translations, your device's time zone if you switch on the reminder, and what you write to us, with the word, app version, language, screen and Telegram platform.",
           "Not kept: your phone number, contacts, location or passwords. No cookies; unsent changes and your sign-in stay in Telegram's browser storage.",
         ],
       },
@@ -436,7 +439,7 @@ export const en = {
         { id: 'learn', name: 'Learn', text: 'new words, each shown in a real sentence rather than a bare list.', tone: 'learn' },
         { id: 'review', name: 'Review', text: 'self-check cards: you say whether you remembered, and the app decides when the word comes back.', tone: 'learn' },
         { id: 'practice', name: 'Matching and Cloze', text: 'two other ways to go over what you know: pair words with their translations, or fill the missing word into a sentence.', tone: 'practice' },
-        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, words set to learn sooner, and words you add yourself.', tone: 'learn' },
+        { id: 'words', name: 'Words', text: 'the whole dictionary, with search, filters, your learning queue, and words you add yourself.', tone: 'learn' },
       ] as const,
     },
     translation: {
@@ -500,7 +503,7 @@ export const en = {
       {
         id: 'learn',
         heading: 'Learn',
-        text: 'Learn brings new words, a few at a time, up to your daily goal. To learn a word sooner, star it in Words, either on its row in the list or with Learn sooner on the word\'s own page. Learn takes starred words before the others: they make up most of the new words each day, for as long as there are enough of them.\n\nEach card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. Any word can be hidden, whether you already know it or would rather not see it: it then stays out of Learn, Review and the practice exercises.',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. To learn a word sooner, add it to the learning queue in Words, with the star on its row in the list or the Add to learning queue button on the word\'s own page. Learn takes queued words before the others: they make up most of the new words each day, for as long as there are enough of them.\n\nEach card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. Any word can be hidden, whether you already know it or would rather not see it: it then stays out of Learn, Review and the practice exercises.',
       },
       {
         id: 'review',

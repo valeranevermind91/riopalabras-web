@@ -217,7 +217,7 @@ describe('ownWordFromQuery', () => {
 })
 
 describe('adding a word', () => {
-  it('saves the row, clears a matching tombstone in one settings patch, and stars the word ("learn sooner")', () => {
+  it('saves the row, clears a matching tombstone in one settings patch, and stars the word (the learning queue)', () => {
     const s = spies(dictionary, { pending_word_deletes: ['otra', 'zapallito'] })
     const result = addCustomWord(filled(), s.deps)
     expect(result).toEqual({ status: 'added' })

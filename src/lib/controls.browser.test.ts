@@ -122,7 +122,7 @@ describe.skipIf(!CHROME)('the Filters and Sort buttons at 320px', () => {
 
         await page.evaluate(() => (document.querySelector('.words-controls .control-btn') as HTMLElement).click())
         await page.waitForSelector('.sheet')
-        // Due now, Learn sooner, Custom and a part of speech: four filters at once
+        // Due now, Queued, Custom and a part of speech: four filters at once
         await page.evaluate(() => {
           const chips = Array.from(document.querySelectorAll('.sheet .chip')) as HTMLElement[]
           for (const i of [4, 5, 6, 7]) chips[i].click()

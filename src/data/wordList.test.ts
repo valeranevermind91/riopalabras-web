@@ -212,7 +212,7 @@ describe('filters', () => {
     expect(names(dueMature, { segment: 'all', filters: { ...NO_FILTERS, stage: 'wellLearned' } })).toEqual(['maduro']) // and it is still under well learned without Due
   })
 
-  it('"Learn sooner" lists the words waiting to be taught, and only those: a star on a word Learn can no longer teach is not listed', () => {
+  it('"Queued" lists the words waiting to be taught, and only those: a star on a word Learn can no longer teach is not listed', () => {
     expect(learnedWith({ favourites: true }, 'all')).toEqual(['nueve']) // diez is learned and still carries a star: nothing is waiting
     expect(learnedWith({ favourites: true })).toEqual([]) // the Learned list holds no waiting word
     const hiddenStar = [w('oculta', { rank: 1, isFavorite: true, isHidden: true }), w('de', { rank: 2, pos: 'prep', isFavorite: true })]

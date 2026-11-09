@@ -21,7 +21,10 @@ import { ru } from './strings.ru'
  *   well learned the progress state that used to be called "Known well" (a progress state, nothing to do with the Hidden tab)
  *   session     one run of Review, Matching or Cloze: "Session complete" / "New session" (never "group", never "done for now")
  *   batch       one go at Learn: "Finish batch" (Russian: подборка, never порция)
- *   learn sooner the star on a word: "Learn sooner" (Russian: «Учить раньше»), on the row, the detail, the filter and every notice; never saved, favourite or queued
+ *   learning queue the star on a word: "Add to learning queue" / "In the learning queue ✓" / the filter "Queued" (Russian: «Добавить в очередь изучения» / «В очереди на изучение ✓» /
+ *               «В очереди»), on the row, the detail, the word of the day, the filter and every notice; never saved, favourite or bookmarked.
+ *               THIS REVERSES AN EARLIER DECISION ("Learn sooner" / «Учить раньше», which also forbade "queue"): people did not read "Learn sooner" as "add this word to what I study".
+ *               The star still only puts a word ahead in Learn; Learn teaches every word in the end, queued or not, and the hint beside the button says so.
  */
 
 /** Every string in a map, with the function ones called on a few sample arguments (the debug screen is a developer tool and is left out). */
@@ -150,26 +153,34 @@ describe('one name for the end of a run of Matching, Cloze and Review', () => {
 })
 
 describe('spelling and address', () => {
-  it('the star is "Learn sooner" / «Учить раньше» in every place it appears: the filter, the detail button, the row, the notice after adding a word, the load notice', () => {
-    expect([en.words.favourites, en.words.learnSooner]).toEqual(['Learn sooner', 'Learn sooner']) // the filter chip and the detail button: the same words
-    expect([ru.words.favourites, ru.words.learnSooner]).toEqual(['Учить раньше', 'Учить раньше'])
-    expect(en.words.learnSoonerRow('x')).toBe('Learn x sooner') // the row's icon has this as its name, pressed or not
-    expect(ru.words.learnSoonerRow('x')).toBe('Учить «x» раньше')
-    expect(en.words.added).toBe('Added, and set to learn sooner.')
-    expect(ru.words.added).toBe('Слово добавлено и отмечено «Учить раньше».')
-    expect(en.home.degradedTables.user_favorites).toBe('words set to learn sooner')
-    expect(ru.home.degradedTables.user_favorites).toBe('слова «Учить раньше»')
+  it('the star is the learning queue in every place it appears: the filter, the detail button (off and on), the row, the notice after adding a word, the load notice', () => {
+    expect([en.words.favourites, en.words.learnSooner, en.words.learnSoonerOn]).toEqual(['Queued', 'Add to learning queue', 'In the learning queue ✓'])
+    expect([ru.words.favourites, ru.words.learnSooner, ru.words.learnSoonerOn]).toEqual(['В очереди', 'Добавить в очередь изучения', 'В очереди на изучение ✓'])
+    expect(en.words.learnSoonerRow('x')).toBe('Add x to the learning queue') // the row's icon has this as its name, pressed or not
+    expect(ru.words.learnSoonerRow('x')).toBe('Добавить «x» в очередь изучения')
+    expect(en.words.added).toBe('Added, and put in the learning queue.')
+    expect(ru.words.added).toBe('Слово добавлено и поставлено в очередь изучения.')
+    expect(en.home.degradedTables.user_favorites).toBe('learning queue')
+    expect(ru.home.degradedTables.user_favorites).toBe('очередь изучения')
+    // and the sentence that carries the load notice reads as one
+    expect(en.home.degraded([en.home.degradedTables.user_favorites, en.home.degradedTables.user_hidden_words])).toBe("Couldn't load your learning queue and hidden words yet. Retrying in the background.")
+    expect(ru.home.degraded([ru.home.degradedTables.user_favorites, ru.home.degradedTables.user_hidden_words])).toBe('Пока не удалось загрузить: очередь изучения и скрытые слова. Пробуем снова в фоне.')
   })
 
-  it('one idea, one word: the star never reads as a bookmark, a favourite, a save or a queue, in either language', () => {
-    expect(offenders(enTexts, /favou?rite|bookmark|queue|saved word|save word|\bsaved\b$/i)).toEqual([])
-    expect(offenders(ruTexts, /избранн|закладк|очеред|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)).toEqual([])
+  it('one idea, one word: the star is a "learning queue" (Russian: очередь изучения) and never a bookmark, a favourite or a save; "queue" appears only in that name', () => {
+    expect(offenders(enTexts, /favou?rite|bookmark|saved word|save word|\bsaved\b$/i)).toEqual([])
+    expect(offenders(ruTexts, /избранн|закладк|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)).toEqual([])
+    // every "queue" is the learning queue (or "queued", the filter chip and the how-it-works sentence), and every «очеред-» is the queue of study or the chip «В очереди» (the offline-writes notices say "saved", "sent", "unsaved", never "queue")
+    expect(offenders(enTexts, /queue(?<!learning queue)(?!d\b)/i)).toEqual([])
+    expect(offenders(ruTexts, /очеред(?!ь изучения|и изучения|и на изучение|и$)/i)).toEqual([])
     for (const map of [en, ru]) for (const gone of ['queued', 'queueForLearn', 'queueRow', 'unqueueRow', 'removeFromQueue', 'queuedAt', 'queueFull', 'beyondToday', 'addedNotQueued', 'favourite', 'unfavourite', 'addFavourite', 'removeFavourite', 'queueShort']) expect(gone in map.words, gone).toBe(false)
   })
 
-  it('the pressed star promises nothing that has not happened: no "Learning sooner", no «Учу раньше», no "queued", no "added"', () => {
-    for (const text of [en.words.learnSooner, en.words.learnSoonerRow('x'), en.words.favourites]) expect(text).not.toMatch(/learning|queued|added|scheduled|will/i)
-    for (const text of [ru.words.learnSooner, ru.words.learnSoonerRow('x'), ru.words.favourites]) expect(text).not.toMatch(/учу |добавлен|запланирован|будет/i)
+  it('the queue is not an order or a promise: neither the buttons nor the row say "scheduled" or "will", and the hint beside the button says Learn still teaches the other words', () => {
+    for (const text of [en.words.learnSooner, en.words.learnSoonerOn, en.words.learnSoonerRow('x'), en.words.favourites]) expect(text).not.toMatch(/scheduled|will|soon/i)
+    for (const text of [ru.words.learnSooner, ru.words.learnSoonerOn, ru.words.learnSoonerRow('x'), ru.words.favourites]) expect(text).not.toMatch(/запланирован|будет|скоро/i)
+    expect(en.words.learnSoonerHint).toBe('The word goes into Learn ahead of the others.')
+    expect(ru.words.learnSoonerHint).toBe('Слово попадет в Learn раньше остальных.')
   })
 
   it('the short labels on a card carry no full stop, and the meaning-shift line is one of them: pill, standard meaning, usage hints, note label', () => {
@@ -322,8 +333,8 @@ describe('what the text says about the scheduler is what the scheduler does', ()
 
   it('"How it works", Learn: starring takes a word before the others and fills most of a day\'s new words, said in words (no figure to go stale); the button is called what it is called, and the text says WHERE the star is (in Words, not in Learn)', () => {
     const learn = [section(en, 'learn'), section(ru, 'learn')]
-    expect(section(en, 'learn')).toContain(`To learn a word sooner, star it in Words, either on its row in the list or with ${en.words.learnSooner} on the word's own page. Learn takes starred words before the others: they make up most of the new words each day, for as long as there are enough of them.`)
-    expect(section(ru, 'learn')).toContain(`Чтобы выучить слово раньше, отметьте его звездочкой в разделе Words, в списке или кнопкой «${ru.words.learnSooner}» на странице слова. Learn предлагает отмеченные слова первыми: из них набирается большая часть новых слов дня, пока они есть.`)
+    expect(section(en, 'learn')).toContain(`To learn a word sooner, add it to the learning queue in Words, with the star on its row in the list or the ${en.words.learnSooner} button on the word's own page. Learn takes queued words before the others: they make up most of the new words each day, for as long as there are enough of them.`)
+    expect(section(ru, 'learn')).toContain(`Чтобы выучить слово раньше, добавьте его в очередь изучения в разделе Words — звездочкой в списке или кнопкой «${ru.words.learnSooner}» на странице слова. Learn предлагает слова из очереди изучения первыми: из них набирается большая часть новых слов дня, пока они есть.`)
     // the star is where the text says: on each row of the Words list, and as a button on the word's own page; Learn's own card has none
     expect(en.words.title).toBe('Words')
     expect(ru.words.title).toBe('Words') // the Russian text names the section by the name it has on screen

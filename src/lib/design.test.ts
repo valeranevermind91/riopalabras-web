@@ -112,7 +112,7 @@ describe('wrapping and focus (the polish pass)', () => {
     expect(rule('.segment')).toMatch(/flex-direction: column/)
   })
 
-  it('the "Learn sooner" star on a list row is the only control beside the text: a 44 x 44 tap target that never shrinks, grey until it is on and then teal, with a visible focus ring; the queue control is gone', () => {
+  it('the learning-queue star on a list row is the only control beside the text: a 44 x 44 tap target that never shrinks, grey until it is on and then teal, with a visible focus ring; the queue control is gone', () => {
     const star = rule('.word-row-star')
     expect(star).toMatch(/flex: none/)
     expect(star).toMatch(/width: 44px/)

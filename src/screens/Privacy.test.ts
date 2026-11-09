@@ -127,8 +127,8 @@ describe('what is stored: the page names every table the app touches', () => {
   // table → the plain phrase, in each language, that says what it holds
   const PHRASE_OF_TABLE: Record<string, { en: string[]; ru: string[] }> = {
     user_progress: { en: ['your progress on each word'], ru: ['прогресс по каждому слову'] },
-    user_favorites: { en: ['set to Learn sooner'], ru: ['«Учить раньше»'] },
-    user_hidden_words: { en: ['Learn sooner or hide'], ru: ['скрытые вами слова'] },
+    user_favorites: { en: ['add to the learning queue'], ru: ['добавленные в очередь изучения'] },
+    user_hidden_words: { en: ['learning queue or hide'], ru: ['скрытые вами слова'] },
     user_words: { en: ['the words you add yourself'], ru: ['добавленные вами слова'] },
     user_settings: { en: ['your settings'], ru: ['настройки'] },
     user_daily_metrics: { en: ['a summary for each day'], ru: ['сводка за день'] },
@@ -265,12 +265,14 @@ describe('what is stored on the device, and what is not used', () => {
 })
 
 describe('the page and the delete instruction use the app\'s own names', () => {
-  it('"Settings → About → Write to us" is what the app calls them, in each language (and Learn sooner is what the lists item calls the star)', () => {
+  it('"Settings → About → Write to us" is what the app calls them, in each language (and the learning queue is what the lists item calls the star)', () => {
     const deletes = (map: Strings) => map.privacy.sections.find((s) => s.id === 'delete')!.paragraphs[0]
     expect(deletes(en)).toContain(`${en.settings.title} → ${en.settings.about} → ${en.feedback.open}`)
     expect(deletes(ru)).toContain(`${ru.settings.title} → ${ru.settings.about} → ${ru.feedback.open}`)
-    expect(pageText(en)).toContain(`set to ${en.words.learnSooner}`)
-    expect(pageText(ru)).toContain(`«${ru.words.learnSooner}»`)
+    expect(pageText(en)).toContain('learning queue')
+    expect(en.words.learnSooner).toContain('learning queue') // the button is named for the same thing the page says
+    expect(pageText(ru)).toContain('очередь изучения')
+    expect(ru.words.learnSooner).toContain('очередь изучения')
   })
 
   it('the deletion paragraph names the author\'s handle (it is also the contact), and nothing in the page offers a way to delete in the app', () => {
@@ -306,7 +308,9 @@ describe('the policy text and its date move together', () => {
   // When this fails the policy changed in substance: set PRIVACY_UPDATED in src/lib/privacy.ts to the day of the change, then put the new value here.
   // A change of spelling (е for ё) or of spacing is not a change of the policy, so the text is compared normalised: е and ё are one letter and
   // whitespace is one space. The fingerprint is still of the real text, just read that way; it never skips a word.
-  const FINGERPRINT = '2ee6964f9b56f1ae'
+  // 2026-11-08: the star was renamed ("Learn sooner" → "the learning queue") and the page says so; the same data is stored under a new name, so the text changed and the policy did not:
+  // the fingerprint moved and PRIVACY_UPDATED did not (the owner is told, in the commit and the report, and can move the date).
+  const FINGERPRINT = 'cc8f76195050b507'
   const normalise = (text: string) => text.replace(/ё/g, 'е').replace(/Ё/g, 'Е').replace(/\s+/g, ' ').trim()
   const fingerprintOf = (privacy: { en: unknown; ru: unknown }) =>
     createHash('sha256')
