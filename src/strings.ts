@@ -577,6 +577,8 @@ export const en = {
     cardNofM: (n: number, m: number) => `Card ${n} of ${m}`,
     tapToReveal: 'Tap to reveal',
     howWell: 'How well did you know it?',
+    // under the four buttons: what each answer does to the schedule, in the buttons' own words and order (no figure: the exact gap is the small label on each button)
+    ratingGuide: 'Again: today · Hard: a bit later · Good: on schedule · Easy: much later',
     again: 'Again',
     hard: 'Hard',
     good: 'Good',

@@ -122,6 +122,18 @@ describe('hidden, not known', () => {
   })
 })
 
+describe('the Review legend uses the buttons\' own names', () => {
+  it('it lists Again, Hard, Good, Easy by the labels on the buttons, in their order, each followed by what it does, and says nothing the buttons do not (no figure that could go stale)', () => {
+    for (const map of [en, ru]) {
+      const labels = [map.review.again, map.review.hard, map.review.good, map.review.easy]
+      const parts = map.review.ratingGuide.split(' · ')
+      expect(parts).toHaveLength(4)
+      parts.forEach((part, i) => expect(part.startsWith(labels[i]), part).toBe(true))
+      expect(map.review.ratingGuide).not.toMatch(/\d/)
+    }
+  })
+})
+
 describe('one name for the end of a run of Matching, Cloze and Review', () => {
   it('"Session complete" in all three, and "New session" to go again, in both languages', () => {
     for (const [map, complete, again] of [[en, 'Session complete', 'New session'], [ru, 'Сессия завершена', 'Новая сессия']] as const) {

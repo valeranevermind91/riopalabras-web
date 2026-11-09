@@ -24,6 +24,7 @@ export function RatingButtons({ word, onRate, hidden = false }: { word: Word; on
           </button>
         ))}
       </div>
+      <p className="rating-guide">{strings.review.ratingGuide}</p>
     </div>
   )
 }

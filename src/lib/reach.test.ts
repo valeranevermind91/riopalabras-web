@@ -9,6 +9,7 @@ import type { Word } from '../data/types'
 import { LearnScreen } from '../screens/Learn'
 import { ReviewScreen } from '../screens/Review'
 import { makeWord } from '../testing/makeWord'
+import { setLanguage } from './language'
 
 const css = readFileSync('src/index.css', 'utf8')
 
@@ -77,6 +78,24 @@ describe('reach: the markup', () => {
     expect(rule('.rating.is-hidden')).toMatch(/visibility: hidden/)
     const review = renderToStaticMarkup(createElement(ReviewScreen, { data: data(due), queue, metrics: null, onHome: () => {}, onLearn: () => {} }))
     expect(review).toContain('rating is-hidden') // nothing is revealed yet
+  })
+
+  it('Review: under the four buttons a legend line says what each answer does to the schedule, in the buttons\' own words, and it is hidden with them until the answer is shown', () => {
+    const w = makeWord('x', { repetitions: 1 })
+    const shown = renderToStaticMarkup(createElement(RatingButtons, { word: w, onRate: () => {} }))
+    expect(shown).toContain('<p class="rating-guide">Again: today · Hard: a bit later · Good: on schedule · Easy: much later</p>')
+    expect(shown.indexOf('rate-row')).toBeLessThan(shown.indexOf('rating-guide')) // under the buttons, not above them
+    expect(shown.endsWith('</p></div>')).toBe(true) // and the last thing in the rating block, which is the last thing on the page
+    const hidden = renderToStaticMarkup(createElement(RatingButtons, { word: w, onRate: () => {}, hidden: true }))
+    expect(hidden.indexOf('rating-guide')).toBeGreaterThan(hidden.indexOf('aria-hidden="true"')) // inside the hidden, inert block
+    setLanguage('ru')
+    try {
+      expect(renderToStaticMarkup(createElement(RatingButtons, { word: w, onRate: () => {} }))).toContain('<p class="rating-guide">Снова — сегодня · Трудно — чуть позже · Хорошо — по плану · Легко — намного позже</p>')
+    } finally {
+      setLanguage('en')
+    }
+    expect(rule('.rating-guide')).toMatch(/color: var\(--muted\)/)
+    expect(rule('.rating-guide')).toMatch(/text-align: center/)
   })
 
   it('Learn: a full-height page whose card sits in a stage with room for the leaving card, controls below', () => {

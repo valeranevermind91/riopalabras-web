@@ -303,6 +303,39 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       await page.close()
     }, 180_000)
   })
+  // The legend under the four rating buttons costs the card some height. At the smallest phone (320 x 568) it must still fit the screen: no scrolling, the card still tall enough to read.
+  it.each(['en', 'ru'] as const)('%s, 320 x 568: the legend under the rating buttons fits in the screen, in two lines at most, and the card keeps its room', async (language) => {
+    const page = await open('due=5', language === 'ru' ? 'ru' : undefined)
+    await page.setViewport({ width: 320, height: 568, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+    await page.click('[data-tile="review"]')
+    await page.waitForSelector('.flip')
+    await page.click('.flip')
+    await page.waitForSelector('.rating:not(.is-hidden) .rate-good')
+    const seen = await page.evaluate(() => {
+      const guide = document.querySelector('.rating-guide') as HTMLElement
+      const range = document.createRange()
+      range.selectNodeContents(guide)
+      const box = guide.getBoundingClientRect()
+      const row = document.querySelector('.rate-row')!.getBoundingClientRect()
+      const card = () => (document.querySelector('.flip') as HTMLElement).getBoundingClientRect().height
+      const withGuide = card()
+      guide.style.display = 'none'
+      const without = card()
+      guide.style.display = ''
+      return { text: guide.textContent, lines: new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size, left: box.left, right: box.right, bottom: box.bottom, rowBottom: row.bottom, gap: box.top - row.bottom, withGuide, without, scrolls: document.documentElement.scrollHeight > window.innerHeight || document.documentElement.scrollWidth > window.innerWidth, cut: guide.scrollWidth > guide.clientWidth }
+    })
+    expect(seen.text).toBe(language === 'en' ? en.review.ratingGuide : ru.review.ratingGuide)
+    expect(seen.lines).toBeLessThanOrEqual(2)
+    expect(seen.left).toBeGreaterThanOrEqual(0)
+    expect(seen.right).toBeLessThanOrEqual(320)
+    expect(seen.cut).toBe(false)
+    expect(seen.gap).toBeGreaterThanOrEqual(0) // under the buttons
+    expect(seen.withGuide).toBeGreaterThanOrEqual(300) // measured 351px of card, against 392px without the legend
+    expect(seen.without - seen.withGuide).toBeLessThanOrEqual(48) // two lines and a gap
+    expect(seen.scrolls).toBe(false)
+    await page.close()
+  }, 60_000)
+
   describe('the line of advice on Home, at 320px, in both languages', () => {
     const states = [
       { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting (20 per session) →', ru: 'Сначала повторение — ждут 50 слов, за раз — 20 →' },
