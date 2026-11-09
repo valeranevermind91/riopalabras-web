@@ -247,6 +247,6 @@ describe('where Back goes from About', () => {
     expect(app).toMatch(/setFeedbackFrom\('about'\)/)
     expect(app).toMatch(/setFeedbackFrom\('settings'\)/)
     expect(app).toMatch(/feedbackSent=\{feedbackSent\?\.screen === 'about'\}/)
-    expect(app).toMatch(/backTargetFor\(screen, screen === 'word' \? \(open\?\.from \?\? null\) : null, feedback\.esWord !== null, feedbackFrom\)/)
+    expect(app).toMatch(/backTargetFor\(screen, screen === 'word' \? \(open\?\.from \?\? null\) : null, feedback\.esWord !== null, feedbackFrom, placementFrom\)/)
   })
 })

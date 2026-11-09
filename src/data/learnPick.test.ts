@@ -6,7 +6,7 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { headword } from './headword'
-import { learnSettingsPatch, markKnown, selectLearnBatch, undoKnown, createBatchFinisher } from './learn'
+import { NUDGE_CARDS, NUDGE_HIDES, learnSettingsPatch, markKnown, selectLearnBatch, suggestsPlacement, undoKnown, createBatchFinisher } from './learn'
 import { WINDOW_SIZE, pickBatch, replaceKnown, restoreKnown, strataBounds, stratumOf } from './learnPick'
 import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { clozePool, isPracticeWord, matchingPool } from './practice'
@@ -240,6 +240,39 @@ describe('"already know it": replacement keeps the batch size', () => {
     expect(next.words).toHaveLength(10)
     batch = replaceKnown(batch, batch.words.findIndex(isRio))
     expect(batch.words.some(isRio)).toBe(true)
+  })
+})
+
+describe('the placement suggestion: three hides among the first five cards of a batch', () => {
+  const base = () => pickBatch(pool(300), 10, DAY)
+  const hide = (batch: ReturnType<typeof base>, ...indexes: number[]) => indexes.reduce((b, i) => replaceKnown(b, i), batch)
+
+  it('is three hides within the first five cards', () => {
+    expect([NUDGE_HIDES, NUDGE_CARDS]).toEqual([3, 5])
+  })
+
+  it('is not there for none, one or two hides', () => {
+    expect(suggestsPlacement(base())).toBe(false)
+    expect(suggestsPlacement(hide(base(), 0))).toBe(false)
+    expect(suggestsPlacement(hide(base(), 0, 1))).toBe(false)
+  })
+
+  it('is there at the third hide among the first five cards, however they are spread over them', () => {
+    expect(suggestsPlacement(hide(base(), 0, 0, 0))).toBe(true) // hiding the card in front each time: a new word takes its place at 0
+    expect(suggestsPlacement(hide(base(), 0, 2, 4))).toBe(true)
+    expect(suggestsPlacement(hide(base(), 1, 1, 3, 3))).toBe(true)
+  })
+
+  it('does not count hides of cards past the fifth: they are not "too easy at the start"', () => {
+    expect(suggestsPlacement(hide(base(), 5, 6, 7))).toBe(false)
+    expect(suggestsPlacement(hide(base(), 0, 1, 5, 6, 7, 8))).toBe(false) // two early ones and four late ones
+    expect(suggestsPlacement(hide(base(), 0, 1, 4))).toBe(true) // the fifth card (index 4) counts
+  })
+
+  it('goes away when an Undo takes the batch back under three', () => {
+    const three = hide(base(), 0, 1, 2)
+    expect(suggestsPlacement(three)).toBe(true)
+    expect(suggestsPlacement(restoreKnown(three))).toBe(false)
   })
 })
 

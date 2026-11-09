@@ -465,6 +465,7 @@ export const ru: Strings = {
     title: 'Learn',
     wordNofM: (n, m) => `Слово ${n} из ${m}`,
     swipeHint: 'Просто листайте: слова засчитываются сами',
+    placementNudge: 'Слишком просто? Пройдите входной тест',
     hideWord: 'Скрыть: уже знаю или не нужно',
     wordHidden: (word) => `«${word}» скрыто. Найти можно в Words → Скрытые`,
     undo: 'Отменить',

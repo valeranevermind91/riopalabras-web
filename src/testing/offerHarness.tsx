@@ -3,7 +3,8 @@
 // Telegram prompt (src/testing/fakeReminders.ts, which also documents that part of the query). Query: limit=N (the daily new-word goal, default 20: with 10 it is
 // reached by the first batch), pool=N (how many new words there are to learn,
 // default 12; the first batch is 10), offered=1 (the offer was answered: `true` is in the blob), shows=N (it has been shown N times without an answer), lang=ru, nolearn=1 (the page passes no reminders
-// control at all, as a screen that has none).
+// control at all, as a screen that has none), placement=1 (Learn gets onPlacement: pressing the "too easy" suggestion counts in window.__placement; the hint and
+// the suggestion are measured with it by src/lib/learnNudge.browser.test.ts), rank=N (the placement test was taken: the start rank is N).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -21,6 +22,8 @@ import { makeWord } from './makeWord'
 const params = new URLSearchParams(location.search)
 const sent: { settings: SettingsPatch[]; progress: number } = { settings: [], progress: 0 }
 ;(window as never as { __sent: typeof sent }).__sent = sent
+const placement = { opened: 0 }
+;(window as never as { __placement: typeof placement }).__placement = placement
 const queue = createWriteQueue(
   { sendProgress: async (updates) => void (sent.progress += updates.length), sendSettings: async (patch) => void sent.settings.push(patch), sendHidden: async () => {} },
   { retryDelaysMs: [1], sleep: async () => {} },
@@ -33,7 +36,7 @@ const WORDS: readonly Word[] = Array.from({ length: POOL }, (_, i) => makeWord(`
 export function Harness() {
   useLanguage()
   const [words, setWords] = useState<readonly Word[]>(WORDS)
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: Number(params.get('limit') ?? 20), onboarding_done: true, ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.has('shows') ? { reminder_offer_shown: Number(params.get('shows')) } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: Number(params.get('limit') ?? 20), onboarding_done: true, ...(params.has('rank') ? { start_rank: Number(params.get('rank')) } : {}), ...(params.get('offered') === '1' ? { reminder_offer_shown: true } : {}), ...(params.has('shows') ? { reminder_offer_shown: Number(params.get('shows')) } : {}), ...(params.get('lang') ? { ui_language: params.get('lang') } : {}) }))
   const latest = useRef(settings)
   const latestWords = useRef(words)
   const applySettings = useCallback((patch: SettingsPatch) => {
@@ -55,7 +58,7 @@ export function Harness() {
   // The screen is drawn once the reminder row has been read (or could not be), as in the app, where it is read when the app opens, long before Learn.
   // Without this an end screen reached at once (nothing to learn) would mount while the row is still loading, and be refused for that reason.
   if (reminders.status === 'loading') return null
-  return <LearnScreen data={data} queue={queue} metrics={null} reminders={params.get('nolearn') === '1' ? undefined : reminders} onHome={() => {}} onReview={() => {}} />
+  return <LearnScreen data={data} queue={queue} metrics={null} reminders={params.get('nolearn') === '1' ? undefined : reminders} onHome={() => {}} onReview={() => {}} onPlacement={params.get('placement') === '1' ? () => void (placement.opened += 1) : undefined} />
 }
 
 createRoot(document.getElementById('root')!).render(<Harness />)

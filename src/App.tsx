@@ -17,7 +17,7 @@ import { createSupabaseWriteQueue } from './data/writeQueue'
 import { ensureSession, watchSessionLost, type AuthState } from './lib/auth'
 import { effectiveLanguage, setLanguage, useLanguage } from './lib/language'
 import { getSupabase } from './lib/supabase'
-import { backTarget as backTargetFor, type FeedbackOrigin, type Screen } from './lib/nav'
+import { backTarget as backTargetFor, type FeedbackOrigin, type PlacementOrigin, type Screen } from './lib/nav'
 import { getWebApp, nativeBackButton } from './lib/telegram'
 import { themePatch, type ThemeChoice } from './lib/theme'
 import { useRecentActivity } from './lib/useRecentActivity'
@@ -148,6 +148,8 @@ function App() {
   const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'about' | 'word'; key: string | null } | null>(null)
   // A general note is started from Settings' own row or from About (the way to ask for data to be deleted); Back, and the line that says it went, return there.
   const [feedbackFrom, setFeedbackFrom] = useState<FeedbackOrigin>('settings')
+  // The placement test is opened from Settings' own row or from Learn's "too easy" suggestion; Back, and finishing or skipping it, return there.
+  const [placementFrom, setPlacementFrom] = useState<PlacementOrigin>('settings')
   const setScreen = useCallback((to: Screen) => {
     setScreenNow(to)
     if (to !== 'settings' && to !== 'about' && to !== 'word' && to !== 'feedback') setFeedbackSent(null)
@@ -161,7 +163,7 @@ function App() {
   // Only a signed-in user can send one (the table takes their own rows); without a session the entry points are not there.
   const sendReport = useMemo(() => (client && userId ? (report: FeedbackReport) => sendFeedback(report, { client, userId, recoverSession: async () => (await recoverSession()) === true }) : null), [client, userId, recoverSession])
   /** Where Back leads from the current screen. */
-  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null, feedback.esWord !== null, feedbackFrom)
+  const backTarget: Screen = backTargetFor(screen, screen === 'word' ? (open?.from ?? null) : null, feedback.esWord !== null, feedbackFrom, placementFrom)
   // A screen opens at the top of the page (the one Back leads to gets its place back), not wherever the last one was scrolled to.
   useScreenScroll(screen, open?.from ?? null)
   // A screen with something open on top of it (a bottom sheet) can take the back press first: it closes that and says so.
@@ -284,7 +286,10 @@ function App() {
         theme={{ choice: theme.choice, set: theme.set }}
         onOpenDebug={() => setScreen('debug')}
         reminders={reminders}
-        onTakePlacement={() => setScreen('placement')}
+        onTakePlacement={() => {
+          setPlacementFrom('settings')
+          setScreen('placement')
+        }}
         onOpenAbout={() => setScreen('about')}
         onOpenHow={() => setScreen('how')}
         onOpenWhatsNew={() => setScreen('whatsnew')}
@@ -353,9 +358,9 @@ function App() {
   // "What's new": opened from Settings; opening it is what clears the dot.
   if (screen === 'whatsnew' && readyData && queue) return <WhatsNewScreen data={readyData} queue={queue} onBack={inPageBack} />
 
-  // The placement test on its own, from Settings; finishing or skipping it goes back to Settings.
+  // The placement test on its own, from Settings or from Learn's suggestion; finishing or skipping it goes back to where it was opened from (as Back does).
   if (screen === 'placement' && readyData && queue) {
-    return <PlacementScreen data={readyData} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={inPageBack} />
+    return <PlacementScreen data={readyData} queue={queue} onExit={() => go(backTarget)} registerBack={registerBack} onBack={inPageBack} />
   }
 
   // "Run the intro again": from step 1, with the current values; finishing or leaving it goes back to Settings.
@@ -390,6 +395,10 @@ function App() {
         sendReport={sendReport}
         onHome={() => void go('home')}
         onReview={() => void go('review')}
+        onPlacement={() => {
+          setPlacementFrom('learn')
+          setScreen('placement')
+        }}
         onBack={inPageBack}
         registerBack={registerBack}
       />

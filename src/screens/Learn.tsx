@@ -9,7 +9,7 @@ import { learnedToday } from '../data/daily'
 import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
 import { offerOutcome, reminderOfferAnsweredPatch, reminderOfferShownPatch, shouldOfferReminder } from '../data/reminderOffer'
 import { saveSetting } from '../data/settingsActions'
-import { UNDO_WINDOW_MS, createBatchKeeper, learnPhase, markKnown, selectLearnBatch, undoKnown, type BatchKeeper } from '../data/learn'
+import { UNDO_WINDOW_MS, createBatchKeeper, learnPhase, markKnown, selectLearnBatch, suggestsPlacement, undoKnown, type BatchKeeper } from '../data/learn'
 import type { MetricsRecorder } from '../data/metrics'
 import type { UserData } from '../data/useUserData'
 import { wordKey } from '../data/words'
@@ -36,13 +36,15 @@ interface LearnScreenProps {
   sendReport?: ((report: FeedbackReport) => Promise<SendResult>) | null
   onHome: () => void
   onReview: () => void
+  /** Opens the placement test. When it is passed (and the test has not been taken), a person who hides three of the first five cards is offered it. Without it Learn offers nothing of the kind. */
+  onPlacement?: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
   /** Lets the screen take the back press first (Telegram's BackButton) while the batch is being practised: Back then returns to the end screen. */
   registerBack?: (handler: (() => boolean) | null) => void
 }
 
-export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendReport, onHome, onReview, onBack, registerBack }: LearnScreenProps) {
+export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendReport, onHome, onReview, onPlacement, onBack, registerBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
   // The keeper counts the batch as it is read: a word is learned the moment its card is reached (see createBatchKeeper), not when "Finish batch" is pressed. One per batch.
@@ -302,6 +304,12 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
               {strings.learn.undo}
             </button>
           </div>
+        )}
+
+        {reading && onPlacement && data.settings.startRank === null && suggestsPlacement(batch) && (
+          <button type="button" className="learn-nudge" onClick={onPlacement}>
+            {strings.learn.placementNudge}
+          </button>
         )}
 
         {reading && (

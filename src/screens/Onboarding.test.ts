@@ -175,6 +175,20 @@ describe('Back on the first step', () => {
     expect(backTarget('onboarding', null)).toBe('settings')
     expect(backTarget('how', null)).toBe('settings')
   })
+
+  it('the placement test goes back to where it was opened from: Settings (its own row), or Learn (the "too easy" suggestion)', () => {
+    expect(backTarget('placement', null)).toBe('settings')
+    expect(backTarget('placement', null, false, 'settings', 'settings')).toBe('settings')
+    expect(backTarget('placement', null, false, 'settings', 'learn')).toBe('learn')
+    expect(backTarget('learn', null, false, 'settings', 'learn')).toBe('home') // only the placement test itself reads it
+  })
+
+  it('the app wires both ways in, and finishing it returns to the same place as Back', () => {
+    const app = readFileSync('src/App.tsx', 'utf8')
+    expect(app).toMatch(/onTakePlacement=\{\(\) => \{\s*setPlacementFrom\('settings'\)\s*setScreen\('placement'\)\s*\}\}/)
+    expect(app).toMatch(/onPlacement=\{\(\) => \{\s*setPlacementFrom\('learn'\)\s*setScreen\('placement'\)\s*\}\}/)
+    expect(app).toMatch(/<PlacementScreen [^\n]*onExit=\{\(\) => go\(backTarget\)\}/)
+  })
 })
 
 describe('the tone: these screens inform, they do not instruct', () => {
