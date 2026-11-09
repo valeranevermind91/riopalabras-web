@@ -219,12 +219,12 @@ describe('the status row: the week of dots, and the stored streak', () => {
 })
 
 describe('the action tiles', () => {
-  it('Learn, Review, Practice, each with its label, its Spanish word and the right class; Matching and Cloze are in the panel after them', () => {
+  it('Learn, Review, Practice, each with its label, a short line on what it is for and the right class; Matching and Cloze are in the panel after them', () => {
     const html = render()
     expect([...html.matchAll(/data-tile="(\w+)"/g)].map((m) => m[1])).toEqual(['learn', 'review', 'practice', 'matching', 'cloze'])
     expect(html.match(/class="tile /g)).toHaveLength(3) // three tiles: the row above the dock
     expect([part(html, 'learn', 'tile-label'), part(html, 'review', 'tile-label'), part(html, 'practice', 'tile-label')]).toEqual(['Learn', 'Review', 'Practice'])
-    expect([part(html, 'learn', 'tile-sub'), part(html, 'review', 'tile-sub'), part(html, 'practice', 'tile-sub')]).toEqual(['aprender', 'repasar', 'practicar'])
+    expect([part(html, 'learn', 'tile-sub'), part(html, 'review', 'tile-sub'), part(html, 'practice', 'tile-sub')]).toEqual(['new words', 'recall what you learned', 'exercises'])
     expect([part(html, 'matching', 'mode-label'), part(html, 'cloze', 'mode-label')]).toEqual(['Matching', 'Cloze'])
     expect([part(html, 'matching', 'mode-sub'), part(html, 'cloze', 'mode-sub')]).toEqual(['parejas', 'completar'])
     for (const id of ['learn', 'review', 'practice']) expect(tile(html, id)).toMatch(new RegExp(`class="tile tile-${id}( is-primary)?"`))
@@ -261,21 +261,21 @@ describe('the action tiles', () => {
       expect(readFileSync('src/screens/Home.tsx', 'utf8')).toMatch(/tile\.id === 'practice' && open \? ' is-open'/)
     })
 
-    it('is available while either exercise can run, and says so in no state of its own: it is enabled, with its Spanish word', () => {
+    it('is available while either exercise can run, and says so in no state of its own: it is enabled, with its line', () => {
       const html = render() // both can run
       expect(tile(html, 'practice')).not.toContain('disabled')
-      expect(part(html, 'practice', 'tile-sub')).toBe('practicar')
+      expect(part(html, 'practice', 'tile-sub')).toBe('exercises')
       const sameGloss = learnedWords(6).map((w) => ({ ...w, ruTranslation: 'одно и то же' })) // Matching cannot, Cloze can
       expect(tile(render({}, sameGloss), 'practice')).not.toContain('disabled')
       const noBlank = learnedWords(6).map((w) => ({ ...w, exampleSentence: 'Una frase sin la palabra buscada.' })) // Cloze cannot, Matching can
       expect(tile(render({}, noBlank), 'practice')).not.toContain('disabled')
     })
 
-    it('is disabled only when neither can run, and then says why in place of its Spanish word, like the other tiles; the buttons in the panel say the same', () => {
+    it('is disabled only when neither can run, and then says why in place of its line, like the other tiles; the buttons in the panel say the same', () => {
       const html = render({}, [...learnedWords(4, 4), ...unlearned(5)])
       expect(tile(html, 'practice')).toContain('disabled=""')
       expect(part(html, 'practice', 'tile-sub')).toBe('At least 5 words')
-      expect(tile(html, 'practice')).not.toContain('practicar')
+      expect(part(html, 'practice', 'tile-sub')).not.toBe('exercises')
       for (const id of ['matching', 'cloze']) {
         expect(tile(html, id)).toContain('disabled=""')
         expect(part(html, id, 'mode-sub')).toBe('At least 5 words')
@@ -291,7 +291,7 @@ describe('the action tiles', () => {
     })
   })
 
-  describe('disabled tiles say why, in place of the Spanish word, with no count', () => {
+  describe('disabled tiles say why, in place of their line, with no count', () => {
     it('More tomorrow (the daily limit reached), and a goal of 0 says so instead', () => {
       const html = render({}, [...learnedWords(8, 3), ...unlearned(20)], { daily_new_word_limit: 5, new_words_learned_today_count: 5, new_words_learned_today_date: TODAY })
       expect(tile(html, 'learn')).toContain('disabled=""')
@@ -300,7 +300,7 @@ describe('the action tiles', () => {
       expect(part(off, 'learn', 'tile-sub')).toBe('Daily goal is 0')
       expect(tile(off, 'learn')).toContain('disabled=""')
       expect(tile(html, 'learn')).not.toContain('tile-count')
-      expect(tile(html, 'learn')).not.toContain('aprender')
+      expect(part(html, 'learn', 'tile-sub')).not.toBe('new words')
     })
 
     it('No new words available', () => {
@@ -827,7 +827,9 @@ describe('the dock: today\'s new words against the daily goal, in one quiet line
 
 describe('the line of advice under the streak, and the tile it points at', () => {
   const spent = { new_words_learned_today_count: 10, new_words_learned_today_date: TODAY }
-  const adviceOf = (html: string) => html.match(/<p class="home-advice">([^<]*)<\/p>/)?.[1]?.replaceAll('&#x27;', "'") ?? null
+  // the line is a paragraph, except while words are waiting for review: then it is a button to Review (see the test below)
+  // (the arrow on the button is a span of its own, hidden from a screen reader: it is part of the text a person sees and not of the one a reader reads)
+  const adviceOf = (html: string) => html.match(/<(?:p|button type="button") class="home-advice[^"]*">(.*?)<\/(?:p|button)>/)?.[1]?.replace(/<[^>]*>/g, '').replaceAll('&#x27;', "'") ?? null
   // only the tiles can be filled; the buttons in the panel never are
   const primaries = (html: string) => ['learn', 'review', 'practice'].filter((id) => tile(html, id).includes('is-primary'))
   const states = {
@@ -842,7 +844,7 @@ describe('the line of advice under the streak, and the tile it points at', () =>
   }
 
   it('each of the five states says its line, from hand-made numbers', () => {
-    expect(adviceOf(states.reviewFirst())).toBe('Review first — 3 words are waiting')
+    expect(adviceOf(states.reviewFirst())).toBe('Review first — 3 words are waiting →')
     expect(adviceOf(states.learnNew())).toBe('Nothing to review — 10 new words ready') // the 10 a batch would offer, not the 20 in the pool
     expect(adviceOf(states.allDoneToday())).toBe('Today: 10 new words. Tomorrow: 10 new words.') // no reviews tomorrow: that part is left out
     expect(adviceOf(states.poolEmpty())).toBe('No new words left — add your own, or practise')
@@ -850,19 +852,19 @@ describe('the line of advice under the streak, and the tile it points at', () =>
   })
 
   it('the number due in review first is the real total, not one session\'s worth, and past one session the line says how many a session holds', () => {
-    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting (20 per session)')
+    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting (20 per session) →')
   })
 
   it('the boundary: 20 due is the line as it was, 21 due says both numbers — on Home, in both languages', () => {
     const at = (due: number) => adviceOf(render({}, [...learnedWords(due + 5, due), ...unlearned(5)]))
-    expect(at(19)).toBe('Review first — 19 words are waiting')
-    expect(at(20)).toBe('Review first — 20 words are waiting')
-    expect(at(21)).toBe('Review first — 21 words are waiting (20 per session)')
+    expect(at(19)).toBe('Review first — 19 words are waiting →')
+    expect(at(20)).toBe('Review first — 20 words are waiting →')
+    expect(at(21)).toBe('Review first — 21 words are waiting (20 per session) →')
     setLanguage('ru')
     try {
-      expect(at(20)).toBe('Сначала повторение — ждут 20 слов')
-      expect(at(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20')
-      expect(at(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
+      expect(at(20)).toBe('Сначала повторение — ждут 20 слов →')
+      expect(at(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20 →')
+      expect(at(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20 →')
     } finally {
       setLanguage('en')
     }
@@ -926,18 +928,29 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     })
   })
 
-  it('is one line of text in a card, under the streak row and above the tiles: no icon, heading, button or bar inside it', () => {
-    const html = states.reviewFirst()
-    expect(html.match(/class="home-advice"/g)).toHaveLength(1)
-    expect(html.indexOf('home-status')).toBeLessThan(html.indexOf('home-advice'))
-    expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-actions'))
-    expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg|<h[1-6]|<img|<a /)
+  it('is one line of text in a card, under the streak row and above the tiles: no icon, heading or bar inside it, and a paragraph unless it is the Review line', () => {
+    for (const html of [states.learnNew(), states.allDoneToday(), states.poolEmpty(), states.allClear()]) {
+      expect(html.match(/class="home-advice/g)).toHaveLength(1)
+      expect(html.indexOf('home-status')).toBeLessThan(html.indexOf('home-advice'))
+      expect(html.indexOf('home-advice')).toBeLessThan(html.indexOf('home-actions'))
+      expect(html.match(/<p class="home-advice">.*?<\/p>/)![0]).not.toMatch(/<button|role="progressbar"|<svg|<h[1-6]|<img|<a /)
+    }
+  })
+
+  it('while words are waiting for review the line is a button to Review, ending in an arrow; in every other state it is a paragraph that does nothing', () => {
+    const waiting = states.reviewFirst()
+    expect(waiting.match(/class="home-advice/g)).toHaveLength(1)
+    expect(waiting).toContain('<button type="button" class="home-advice home-advice-link">Review first — 3 words are waiting<span aria-hidden="true"> →</span></button>')
+    expect(waiting.indexOf('home-status')).toBeLessThan(waiting.indexOf('home-advice'))
+    expect(waiting.indexOf('home-advice')).toBeLessThan(waiting.indexOf('home-actions'))
+    expect(waiting.match(/<button type="button" class="home-advice[^"]*">.*?<\/button>/)![0]).not.toMatch(/role="progressbar"|<svg|<h[1-6]|<img|<a /)
+    for (const html of [states.learnNew(), states.allDoneToday(), states.poolEmpty(), states.allClear()]) expect(html).not.toContain('home-advice-link')
   })
 
   it('in Russian', () => {
     setLanguage('ru')
     try {
-      expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова')
+      expect(adviceOf(states.reviewFirst())).toBe('Сначала повторение — ждут 3 слова →')
       expect(adviceOf(states.learnNew())).toBe('Повторять нечего — можно изучить 10 новых слов')
       expect(adviceOf(states.allDoneToday())).toBe('Сегодня: 10 новых слов. Завтра: 10 новых слов.')
       expect(adviceOf(states.poolEmpty())).toBe('Новые слова закончились — добавьте свои или потренируйтесь')

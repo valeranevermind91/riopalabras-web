@@ -269,6 +269,7 @@ dd {
 .icon-btn:focus-visible,
 .add-btn:focus-visible,
 .tile:focus-visible,
+.home-advice-link:focus-visible,
 .rate-btn:focus-visible,
 .match-tile:focus-visible,
 .back-link:focus-visible,
@@ -710,6 +711,19 @@ mark {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
+}
+
+/* While words are waiting for review the line is a button to Review: the same card, as wide as it, left-aligned like the paragraph it replaces, and a 44px tap target. */
+.home-advice-link {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-advice-link:active {
+  background: var(--surface-2);
 }
 
 .tile-practice {

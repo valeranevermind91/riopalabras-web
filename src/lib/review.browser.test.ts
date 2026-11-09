@@ -305,7 +305,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
   })
   describe('the line of advice on Home, at 320px, in both languages', () => {
     const states = [
-      { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting (20 per session)', ru: 'Сначала повторение — ждут 50 слов, за раз — 20' },
+      { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting (20 per session) →', ru: 'Сначала повторение — ждут 50 слов, за раз — 20 →' },
       { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — можно изучить 10 новых слов' },
       { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Today: 10 new words. Tomorrow: 10 new words.', ru: 'Сегодня: 10 новых слов. Завтра: 10 новых слов.' },
       { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова закончились — добавьте свои или потренируйтесь' },
@@ -373,7 +373,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
             height: [advice.getBoundingClientRect().height, wotd.getBoundingClientRect().height],
             lighterText: sum(style(advice).color) > sum(style(wotd.querySelector('.wotd-sentence')!).color), // lighter text on white: quieter
             fontSize: [parseFloat(style(advice).fontSize), parseFloat(style(wotd.querySelector('.wotd-sentence')!).fontSize)],
-            children: advice.children.length, // text only: no icon, heading or button inside
+            children: [...advice.children].map((c) => `${c.tagName}:${c.textContent}`), // text only: no icon, heading or button inside; the Review line is itself the button, and its arrow is a span of its own
             order: !!(advice.compareDocumentPosition(wotd) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(document.querySelector('.home-status')!.compareDocumentPosition(advice) & Node.DOCUMENT_POSITION_FOLLOWING),
             pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
             overflows: advice.scrollWidth > advice.clientWidth,
@@ -387,7 +387,7 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
         expect(seen.height[0]).toBeLessThan(seen.height[1])
         expect(seen.lighterText).toBe(true)
         expect(seen.fontSize[0]).toBeLessThan(seen.fontSize[1])
-        expect(seen.children).toBe(0)
+        expect(seen.children).toEqual(['SPAN: →']) // this page is in the reviewFirst state: the arrow, and nothing else
         expect(seen.order).toBe(true)
         expect(seen.pageScrolls).toBe(false)
         expect(seen.overflows).toBe(false)

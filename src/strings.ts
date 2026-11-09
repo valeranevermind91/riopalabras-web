@@ -77,11 +77,12 @@ export const en = {
     progressReached: (done: number, goal: number) => `Daily goal reached: ${done} of ${goal}`,
     // the panel that opens over the dock from the Practice tile, holding Matching and Cloze
     practicePanel: 'Practice exercises',
-    // action tiles: the English label, the Spanish word under it, and why a tile is disabled
+    // action tiles: the label, one line under it that says what the tile is for (the three modes are named in Latin letters in both languages, and the name alone did not
+    // say it), and, in its place, why a tile is disabled. Matching and Cloze keep the Spanish word under them.
     tiles: {
-      learn: { label: 'Learn', es: 'aprender' },
-      review: { label: 'Review', es: 'repasar' },
-      practice: { label: 'Practice', es: 'practicar' },
+      learn: { label: 'Learn', sub: 'new words' },
+      review: { label: 'Review', sub: 'recall what you learned' },
+      practice: { label: 'Practice', sub: 'exercises' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
     },

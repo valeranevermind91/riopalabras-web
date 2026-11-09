@@ -143,7 +143,22 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
             today={streakCountedToday(data.data.settings, now) ? null : { done: cardsToday(data.data.settings, now), needed: streakCards(data.data.settings.dailyNewWordLimit) }}
           />
 
-          {advice && <p className="home-advice">{adviceText(advice, stats, day)}</p>}
+          {advice === 'reviewFirst' ? (
+            // the words are waiting in Review, so the line is the way there (the Review tile below is the filled one, but a line that says "waiting" is the first thing tapped)
+            <button
+              type="button"
+              className="home-advice home-advice-link"
+              onClick={() => {
+                haptic('tap')
+                onReview()
+              }}
+            >
+              {adviceText(advice, stats, day)}
+              <span aria-hidden="true"> →</span>
+            </button>
+          ) : (
+            advice && <p className="home-advice">{adviceText(advice, stats, day)}</p>
+          )}
 
           {queue && <UnsavedNotice queue={queue} />}
           {data.data.degraded.length > 0 && <DegradedNotice data={data.data} />}
@@ -174,7 +189,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
                   </span>
                   <span className="tile-text">
                     <span className="tile-label">{tile.label}</span>
-                    <span className="tile-sub">{tile.disabled ? tile.reason : tile.es}</span>
+                    <span className="tile-sub">{tile.disabled ? tile.reason : tile.sub}</span>
                   </span>
                 </button>
               ))}
@@ -305,8 +320,8 @@ interface Mode {
 interface Tile {
   id: TileId
   label: string
-  /** The Spanish word under the label. */
-  es: string
+  /** The line under the label: what the tile is for. */
+  sub: string
   /** Learn and Review show a count; Practice does not. */
   count: number | null
   disabled: boolean
@@ -362,15 +377,15 @@ function buildTiles(
     {
       id: 'learn',
       label: t.learn.label,
-      es: t.learn.es,
+      sub: t.learn.sub,
       count: stats.newToLearn,
       disabled: stats.newToLearn === 0,
       reason: stats.learnPool === 0 ? strings.home.learnPoolEmpty : stats.dailyLimit === 0 ? strings.home.learnGoalOff : strings.home.learnCapReached,
       primary: primary === 'learn',
       onPress: on.onLearn,
     },
-    { id: 'review', label: t.review.label, es: t.review.es, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
-    { id: 'practice', label: t.practice.label, es: t.practice.es, count: null, disabled: modes.every((m) => m.disabled), reason: strings.practice.needWords, primary: primary === 'practice', onPress: on.onPractice },
+    { id: 'review', label: t.review.label, sub: t.review.sub, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
+    { id: 'practice', label: t.practice.label, sub: t.practice.sub, count: null, disabled: modes.every((m) => m.disabled), reason: strings.practice.needWords, primary: primary === 'practice', onPress: on.onPractice },
   ]
 }
 

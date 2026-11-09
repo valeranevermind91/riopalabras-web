@@ -60,9 +60,9 @@ export const ru: Strings = {
     progressReached: (done, goal) => `Дневная цель выполнена: ${done} из ${goal}`,
     practicePanel: 'Упражнения для практики',
     tiles: {
-      learn: { label: 'Learn', es: 'aprender' },
-      review: { label: 'Review', es: 'repasar' },
-      practice: { label: 'Practice', es: 'practicar' },
+      learn: { label: 'Learn', sub: 'новые слова' },
+      review: { label: 'Review', sub: 'вспомнить выученное' },
+      practice: { label: 'Practice', sub: 'упражнения' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
     },

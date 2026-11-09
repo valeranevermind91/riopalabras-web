@@ -250,4 +250,55 @@ describe.skipIf(!CHROME)('the Practice panel on Home, in a browser', () => {
       await page.close()
     }, 60_000)
   })
+
+  // The line under each tile says what the tile is for (it used to be a Spanish word): one to two lines in the tile at 320px, never cut off or wider than the tile.
+  it.each(['en', 'ru'])('%s, 320px: the line under Learn, Review and Practice fits its tile in two lines at most', async (lang) => {
+    const page = await open(`lang=${lang}&goal=5`, { width: 320, height: 640 })
+    const seen = await page.$$eval('.tile', (tiles) =>
+      tiles.map((tile) => {
+        const sub = tile.querySelector('.tile-sub')!
+        const range = document.createRange()
+        range.selectNodeContents(sub)
+        return { id: (tile as HTMLElement).dataset.tile, text: sub.textContent, disabled: (tile as HTMLButtonElement).disabled, lines: new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size, cut: tile.scrollHeight > tile.clientHeight + 1 || tile.scrollWidth > tile.clientWidth + 1, height: tile.getBoundingClientRect().height }
+      }),
+    )
+    const names = lang === 'en' ? ['new words', 'recall what you learned', 'exercises'] : ['новые слова', 'вспомнить выученное', 'упражнения']
+    expect(seen.map((t) => t.text)).toEqual(names)
+    for (const t of seen) {
+      expect(t.disabled, t.id).toBe(false)
+      expect(t.lines, `${t.id}: ${t.text}`).toBeLessThanOrEqual(2)
+      expect(t.cut, t.id).toBe(false)
+      expect(t.height, t.id).toBe(104)
+    }
+    await page.close()
+  }, 60_000)
+
+  // While words are waiting the line of advice is a button to Review. Its longest text (past a session, so with both numbers) must still take two lines at 320px, as the paragraph did.
+  it.each(['en', 'ru'])('%s, 320px: the line of advice is a button that opens Review, a 44px target whose longest text takes two lines', async (lang) => {
+    setLanguage(lang as 'en' | 'ru')
+    const longest = strings.home.advice.reviewFirst(57, 20)
+    setLanguage('en')
+    const page = await open(`lang=${lang}&goal=5`, { width: 320, height: 640 })
+    expect(await page.$eval('.home-advice', (e) => e.tagName)).toBe('BUTTON')
+    const seen = await page.$eval(
+      '.home-advice',
+      (button, text) => {
+        button.textContent = text
+        const range = document.createRange()
+        range.selectNodeContents(button)
+        const box = button.getBoundingClientRect()
+        return { lines: new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size, height: box.height, left: box.left, right: box.right, cut: button.scrollWidth > button.clientWidth + 1, page: document.documentElement.scrollWidth <= window.innerWidth }
+      },
+      longest,
+    )
+    expect(seen.lines, longest).toBeLessThanOrEqual(2)
+    expect(seen.height).toBeGreaterThanOrEqual(44)
+    expect(seen.left).toBeGreaterThanOrEqual(0)
+    expect(seen.right).toBeLessThanOrEqual(320)
+    expect(seen.cut).toBe(false)
+    expect(seen.page).toBe(true)
+    await page.click('.home-advice')
+    expect(await taps(page)).toEqual(['review'])
+    await page.close()
+  }, 60_000)
 })
