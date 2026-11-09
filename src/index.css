@@ -532,11 +532,12 @@ mark {
 .wotd-queue {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: auto;
   min-height: 44px;
-  padding: 8px 14px;
-  font-size: 14px;
+  padding: 4px 12px;
+  font-size: 13px;
+  line-height: 1.25;
 }
 
 .wotd-queue.is-on {
