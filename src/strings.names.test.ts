@@ -68,6 +68,22 @@ describe('the scan itself', () => {
   })
 })
 
+describe('the Learn swipe hint', () => {
+  // It sits between the two arrows (52px each) at 320px, so it has about 150px: two lines of ~24 characters. The first wording the owner gave
+  // ("Just swipe: a word counts once you reach its card" / «Просто листайте: слово засчитывается, когда вы дошли до его карточки») wraps to three and four lines there
+  // (src/lib/learnNudge.browser.test.ts measures the real thing), so these are the shorter versions proposed instead.
+  it('says there is nothing to press: swiping is enough, and the word counts when it is reached', () => {
+    expect(en.learn.swipeHint).toBe('Just swipe: a word counts when you reach it')
+    expect(ru.learn.swipeHint).toBe('Просто листайте: слова засчитываются сами')
+    expect(en.learn.swipeHint).not.toMatch(/arrows/i)
+  })
+
+  it('is short enough for two lines between the arrows', () => {
+    expect(en.learn.swipeHint.length).toBeLessThanOrEqual(46)
+    expect(ru.learn.swipeHint.length).toBeLessThanOrEqual(46)
+  })
+})
+
 // This block USED to be "known, not hidden" and forbade the words hide, hidden and скрыт- in every string. That is the decision the comment at the top of the file says was
 // reversed: one action, "Hide this word", and a Hidden tab, because the effect was always hiding and "I already know this word" claimed a reason that may not be true.
 describe('hidden, not known', () => {

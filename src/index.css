@@ -937,6 +937,16 @@ mark {
   gap: 12px;
 }
 
+.learn-nav .btn-icon {
+  flex: none; /* the arrows keep their 52px however long the hint is */
+}
+
+.learn-nav .hint {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
 .hint {
   font-size: 13px;
   color: var(--muted);

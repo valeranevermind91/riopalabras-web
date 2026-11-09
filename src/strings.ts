@@ -537,7 +537,7 @@ export const en = {
   learn: {
     title: 'Learn',
     wordNofM: (n: number, m: number) => `Word ${n} of ${m}`,
-    swipeHint: 'Swipe or use the arrows',
+    swipeHint: 'Just swipe: a word counts when you reach it',
     // "Already know it": a secondary action, set apart from the main ones
     // The hide button: the one action for a word the person does not want in Learn, Review and practice, whatever the reason (they know it, it is unpleasant, it is
     // irrelevant). The effect was always hiding; it used to be called "I already know this word", which claimed a reason that may not be true. The label now says both
