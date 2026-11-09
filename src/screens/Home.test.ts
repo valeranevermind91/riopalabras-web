@@ -563,7 +563,7 @@ describe('the word of the day row', () => {
       expect(pickWordOfTheDay(real, NOW)?.esWord).toBe(todays.esWord)
     })
 
-    it('with one word known, every other word still has its own day, and only the known word\'s day shows another one (81 different words in 82 days)', () => {
+    it('with one word known, every other word still has its own day, and only the known word\'s day shows another one (77 different words in 78 days)', () => {
       const dayAt = (start: Date, k: number) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + k, 12)
       for (const start of [new Date(2026, 9, 1, 12), new Date(2026, 11, 20, 12), new Date(2027, 1, 20, 12)]) {
         const before = Array.from({ length: pool.length }, (_, k) => pickWordOfTheDay(real, dayAt(start, k))!.esWord)
@@ -598,7 +598,7 @@ describe('the word of the day row', () => {
 
   it('the pick comes only from overlay words whose card can highlight its example (the overlay\'s or the dictionary\'s), and never a vulgar, offensive or pejorative one', () => {
     const pool = wordOfTheDayPool(real)
-    expect(pool.length).toBe(82)
+    expect(pool.length).toBe(78)
     for (const w of pool) {
       expect(w.rio).toBeTruthy()
       expect(['vulgar', 'offensive', 'pejorative']).not.toContain(w.rio!.register)

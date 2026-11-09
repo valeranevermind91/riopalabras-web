@@ -2,7 +2,7 @@ import { headword, highlightTarget, type HighlightRange } from './headword'
 import { clozeCueLines } from './practice'
 import type { UserSettings, Word } from './types'
 
-// The word of the day: one word per local date, chosen from the Rioplatense overlay entries whose card has an example it can highlight (the
+// The word of the day: one word per local date, chosen from the Rioplatense overlay entries (never a function word) whose card has an example it can highlight (the
 // overlay's own, or else the dictionary's, exactly as the card shows it). No network, no new data file, and nothing about the user's progress:
 // the same date gives the same word for everyone, whatever they have learned.
 
@@ -23,12 +23,20 @@ export function hashString(text: string): number {
 export const KEPT_OFF_HOME = ['vulgar', 'offensive', 'pejorative']
 
 /**
+ * The parts of speech (the dictionary's own codes) that are function words: articles, determiners, pronouns, prepositions, conjunctions, interjections, and the two
+ * contractions (al, del: a preposition and an article in one). A function word says nothing on its own from a card on the home screen, and the overlay can lead one with
+ * another («vuestro», a determiner, is «su» in Rioplatense: the card read «su»), so the part of speech keeps them out, whatever the overlay holds. They are still in Learn,
+ * Review and Words. The codes that stay are n, v, adj, adv, num and letter; wordOfDay.test.ts fails on a code in the data that is in neither list.
+ */
+export const FUNCTION_WORD_POS: readonly string[] = ['art', 'conj', 'contraction', 'determiner', 'interj', 'prep', 'pron']
+
+/**
  * Every overlay entry whose card can highlight its example (the overlay's own example, or the dictionary's when there is none: the same one the
- * card shows), except the ones kept off the home screen. In a fixed order independent of the dictionary's.
+ * card shows), except the ones kept off the home screen and the function words. In a fixed order independent of the dictionary's.
  */
 export function wordOfTheDayPool(words: readonly Word[]): Word[] {
   return words
-    .filter((w) => w.rio && !KEPT_OFF_HOME.includes(w.rio.register) && highlightTarget(w).range !== null)
+    .filter((w) => w.rio && !KEPT_OFF_HOME.includes(w.rio.register) && !FUNCTION_WORD_POS.includes(w.pos) && highlightTarget(w).range !== null)
     .sort((a, b) => (a.esWord.toLowerCase() < b.esWord.toLowerCase() ? -1 : a.esWord.toLowerCase() > b.esWord.toLowerCase() ? 1 : 0))
 }
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseDictionary } from './dictionary'
-import { dayNumber, pickIndex, pickWordOfTheDay, wordOfTheDay, wordOfTheDayOrder, wordOfTheDayPool } from './wordOfDay'
+import { FUNCTION_WORD_POS, dayNumber, pickIndex, pickWordOfTheDay, wordOfTheDay, wordOfTheDayOrder, wordOfTheDayPool } from './wordOfDay'
 import { seededRandom } from '../lib/random'
 import { parseFallbackExamples, parseRioOverlay } from './rio'
 import { parseSettings } from './settings'
@@ -23,17 +23,66 @@ const picks = (days: number, from?: Date, words: readonly Word[] = real) => Arra
 const hide = (...names: string[]) => real.map((w) => (names.includes(w.esWord) ? { ...w, isHidden: true } : w))
 const only = (names: string[]) => real.filter((w) => !w.rio || names.includes(w.esWord))
 
+describe('function words are never the word of the day', () => {
+  // The pool is the overlay entries, and an overlay entry can be a function word: «vuestro» (a determiner) is replaced by «su» in Rioplatense, so on 9 November 2026 the card read
+  // «su», a word nobody learns from a Home card; «tú», «vos» and «vosotros» are in it as pronouns. The part of speech decides, whatever the overlay says.
+  const rawPos = new Set((JSON.parse(readFileSync('public/words_enriched.json', 'utf8')) as { pos: string }[]).map((w) => w.pos))
+  const CONTENT_POS = ['n', 'v', 'adj', 'adv', 'num', 'letter']
+
+  it('names the function-word codes the dictionary uses: articles, determiners, pronouns, prepositions, conjunctions, interjections, and the contractions (al, del: preposition and article)', () => {
+    expect([...FUNCTION_WORD_POS].sort()).toEqual(['art', 'conj', 'contraction', 'determiner', 'interj', 'prep', 'pron'])
+  })
+
+  it('every part of speech in the dictionary is decided one way or the other, so a new code cannot slip into the pool unnoticed', () => {
+    const decided = new Set([...CONTENT_POS, ...FUNCTION_WORD_POS])
+    expect([...rawPos].filter((pos) => !decided.has(pos))).toEqual([])
+    for (const pos of FUNCTION_WORD_POS) expect(rawPos.has(pos), `${pos} is in the data`).toBe(true)
+  })
+
+  it('no day of a full cycle, and of the next one, shows one: not a word of any function-word part of speech', () => {
+    for (let i = 0; i < 2 * N; i++) {
+      const word = pickWordOfTheDay(real, day(i))!
+      expect(FUNCTION_WORD_POS, `${word.esWord} (${word.pos}) on day ${i}`).not.toContain(word.pos)
+    }
+    expect(pool.filter((w) => FUNCTION_WORD_POS.includes(w.pos))).toEqual([])
+  })
+
+  it('and not when other words are known either: with any of the pool hidden, every day is still a content word', () => {
+    const hidden = real.map((w) => (pool.slice(0, 20).some((p) => p.esWord === w.esWord) ? { ...w, isHidden: true } : w))
+    for (let i = 0; i < N; i++) expect(FUNCTION_WORD_POS).not.toContain(pickWordOfTheDay(hidden, day(i))!.pos)
+  })
+
+  it.each(FUNCTION_WORD_POS)('an overlay word of part of speech %s is left out, though it could be shown', (pos) => {
+    const target = pool[0]
+    const changed = real.map((w) => (w.esWord === target.esWord ? { ...w, pos } : w))
+    expect(wordOfTheDayPool(changed).map((w) => w.esWord)).not.toContain(target.esWord)
+    expect(wordOfTheDayPool(changed)).toHaveLength(N - 1)
+    expect(wordOfTheDayPool(real.map((w) => (w.esWord === target.esWord ? { ...w, pos: 'n' } : w)))).toHaveLength(N) // the same word as a noun stays in
+  })
+
+  it('what the pool lost: «vuestro» (headed «su»), «tú», «vos» and «vosotros»: three pronouns and a determiner, 82 to 78', () => {
+    const lost = real.filter((w) => w.rio && !['vulgar', 'offensive', 'pejorative'].includes(w.rio.register) && FUNCTION_WORD_POS.includes(w.pos))
+    expect(lost.map((w) => `${w.esWord}:${w.pos}`).sort()).toEqual(['tú:pron', 'vos:pron', 'vosotros:pron', 'vuestro:determiner'])
+    expect(N + lost.length).toBe(82)
+  })
+
+  it('«vuestro», the card that read «su», is no longer anyone\'s word of the day', () => {
+    expect(pool.map((w) => w.esWord)).not.toContain('vuestro')
+    for (let i = 0; i < 3 * N; i++) expect(pickWordOfTheDay(real, day(i))!.esWord).not.toBe('vuestro')
+  })
+})
+
 describe('the pool today', () => {
   const names = new Set(pool.map((w) => w.esWord))
 
-  it('is 82 words, so the cycle is 82 days (almost three months)', () => {
-    expect(N).toBe(82)
+  it('is 78 words, so the cycle is 78 days (about two and a half months)', () => {
+    expect(N).toBe(78)
     expect(real.filter((w) => w.rio).length).toBe(87)
   })
 
-  it('is the overlay entries whose card can highlight an example, the dictionary\'s when there is no overlay one, minus the five kept off the home screen', () => {
+  it('is the overlay entries whose card can highlight an example, the dictionary\'s when there is no overlay one, minus the five kept off the home screen and the four function words', () => {
     const candidates = real.filter((w) => w.rio)
-    expect(candidates.filter((w) => !names.has(w.esWord)).map((w) => w.esWord).sort()).toEqual(['cojón', 'coño', 'follar', 'gilipollas', 'vagabundo'])
+    expect(candidates.filter((w) => !names.has(w.esWord)).map((w) => w.esWord).sort()).toEqual(['cojón', 'coño', 'follar', 'gilipollas', 'tú', 'vagabundo', 'vos', 'vosotros', 'vuestro'])
     for (const out of ['coño', 'follar', 'cojón', 'gilipollas']) expect(real.find((w) => w.esWord === out)!.rio!.register).toBe('vulgar')
     expect(real.find((w) => w.esWord === 'vagabundo')!.rio!.register).toBe('pejorative')
     // entries with no overlay example of their own are in, on the dictionary's example
@@ -302,9 +351,9 @@ describe('no two days in a row show the same word, whatever is hidden', () => {
   })
 })
 
-describe('with nothing hidden, 82 days show 82 different words', () => {
+describe('with nothing hidden, 78 days show 78 different words', () => {
   it('from any start: no repeat inside a cycle, and the same word again exactly one cycle later', () => {
-    expect(N).toBe(82)
+    expect(N).toBe(78)
     for (let start = 0; start < 400; start += 37) {
       const shown = picks(N, day(start))
       expect(new Set(shown).size, `from day ${start}`).toBe(N)
