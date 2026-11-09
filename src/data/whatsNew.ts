@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'clearer-buttons-and-placement-hint',
+    at: '2026-11-08T22:39',
+    en: {
+      title: 'Clearer buttons and hints, a longer Undo, a placement suggestion',
+      text: 'The buttons say more: “Hide: already known or not needed” in Learn, “Add to learning queue” for the star, a caption under each Home tile, and a line under the Review buttons saying what each answer does. The word of the day can be queued from Home. Undo after hiding a word now lasts longer and stays when you move to the next card. If you hide several of a batch’s first words, Learn suggests the placement test.',
+    },
+    ru: {
+      title: 'Понятнее кнопки и подсказки, дольше отмена, совет пройти входной тест',
+      text: 'Кнопки стали понятнее: «Скрыть: уже знаю или не нужно» в Learn, «Добавить в очередь изучения» для звездочки, подписи под плитками главной и строка под кнопками повторения о значении ответов. Слово дня можно добавить в очередь изучения с главной. «Отменить» после скрытия слова доступно дольше и не пропадает на следующей карточке. Если в начале серии вы скрываете несколько слов, Learn предложит входной тест.',
+    },
+  },
+  {
     id: 'own-words-and-dictionary',
     at: '2026-11-07T17:22',
     en: {

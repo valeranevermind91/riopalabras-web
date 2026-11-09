@@ -67,11 +67,12 @@ describe('the entries file', () => {
     const en = WHATS_NEW.flatMap((e) => [e.en.title, e.en.text])
     const ru = WHATS_NEW.flatMap((e) => [e.ru.title, e.ru.text])
     for (const text of en) {
-      expect(text).not.toMatch(/favou?rite|bookmark|queue|saved word|save word/i)
+      // "learning queue" is the star's name now (see strings.names.test.ts); a bare "queue" (or "queued" elsewhere than as the chip) is still not
+      expect(text).not.toMatch(/favou?rite|bookmark|queue(?<!learning queue)(?!d\b)|saved word|save word/i)
       expect(text).not.toMatch(/known well|\bgroup\b|done for now/i)
     }
     for (const text of ru) {
-      expect(text).not.toMatch(/избранн|закладк|очеред|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)
+      expect(text).not.toMatch(/избранн|закладк|очеред(?!ь изучения|и изучения|и на изучение|и$)|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)
       expect(text).not.toMatch(/порци|групп|знаю хорошо/i)
       expect(text).not.toMatch(/(^|[^а-яё])(ты|тебе|тебя|тобой|твой|твоя|тво[её]|твои|твоих)(?![а-яё])/i)
       expect(text).not.toMatch(/(^|[^а-яё])[а-яё]{3,}(ешь|ёшь|ишь)(?![а-яё])/i)
