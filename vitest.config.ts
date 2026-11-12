@@ -16,5 +16,9 @@ export default defineConfig({
     // slow machine, not a budget: a test that never finishes still fails when it is reached.
     testTimeout: 60_000,
     hookTimeout: 60_000,
+    // A file still running after ten minutes is ended and named (src/testing/watchdog.ts); and if the run's own process does not exit after the
+    // tests, hanging-process lists what is holding it (a Chrome, a server, a timer).
+    setupFiles: ['src/testing/watchdog.ts'],
+    reporters: ['default', 'hanging-process'],
   },
 })

@@ -173,7 +173,7 @@ async function cli(dir, base, extra = []) {
   const runB = path.join(dir, 'B.json')
   fs.writeFileSync(runA, JSON.stringify([{ es_word: 'periódico', rio_form: 'diario', alt_form: null }, { es_word: 'autobús', rio_form: 'ómnibus', alt_form: 'colectivo' }]))
   fs.writeFileSync(runB, JSON.stringify([{ es_word: 'periódico', rio_form: 'diario', alt_form: null }]))
-  const child = spawn(process.execPath, [SCRIPT, '--a', runA, '--b', runB, ...extra], { env: { ...process.env, DAMER_BASE_URL: base, DAMER_TEST_DIR: dir, RIO_TEST_NO_DELAY: '1' } })
+  const child = spawn(process.execPath, [SCRIPT, '--a', runA, '--b', runB, ...extra], { env: { ...process.env, DAMER_BASE_URL: base, DAMER_TEST_DIR: dir, RIO_TEST_NO_DELAY: '1' }, timeout: 50_000, killSignal: 'SIGKILL' })
   let out = ''
   child.stdout.on('data', (c) => (out += c))
   child.stderr.on('data', (c) => (out += c))

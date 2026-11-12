@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core'
+import type { Browser, HTTPRequest, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 import { UNDO_WINDOW_MS } from '../data/learn'
 
 /**
@@ -26,12 +27,12 @@ describe.skipIf(!CHROME)('with the network gone', () => {
     server = await createServer({ configFile: 'vite.config.ts', logLevel: 'error', server: { host: '127.0.0.1', port: 5189, strictPort: false } })
     await server.listen()
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 60_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await server?.close()
+    await closeBrowser(browser)
+    await closeServer(server)
   })
 
   /** `net.up` is the network: while it is true the fake server accepts every write, once it is false nothing gets through. */

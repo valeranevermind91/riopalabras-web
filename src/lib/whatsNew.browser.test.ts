@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import puppeteer, { type Browser, type Page } from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 
 /**
  * "What's new" in a real browser (src/testing/settingsHarness.tsx, ready=1 so that Home has its data and the dot is decided, with news=1 for two entries dated today and yesterday and seen=old|all for how much of them
@@ -19,12 +20,12 @@ describe.skipIf(!CHROME)("What's new in a browser", () => {
     server = await createServer({ configFile: 'vite.config.ts', logLevel: 'error', server: { host: '127.0.0.1', port: 5211, strictPort: false } })
     await server.listen()
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 60_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await server?.close()
+    await closeBrowser(browser)
+    await closeServer(server)
   })
 
   async function open(query = '', width = 390) {

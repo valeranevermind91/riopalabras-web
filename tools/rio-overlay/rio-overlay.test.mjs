@@ -475,7 +475,7 @@ const answer = (words, overrides = {}) => words.map((w) => overrides[w] ?? (w ==
 async function cli(args, { url, env = {} }) {
   const childEnv = { ...process.env, GEMINI_API_KEY: KEY, GEMINI_BASE_URL: url, RIO_ENV_FILE: '/nonexistent/.env.local', ...env }
   for (const [k, v] of Object.entries(childEnv)) if (v === undefined) delete childEnv[k]
-  const child = spawn(process.execPath, [SCRIPT, ...args], { env: childEnv })
+  const child = spawn(process.execPath, [SCRIPT, ...args], { env: childEnv, timeout: 50_000, killSignal: 'SIGKILL' })
   let stdout = ''
   let stderr = ''
   child.stdout.on('data', (c) => (stdout += c))
@@ -889,7 +889,7 @@ describe('compare-runs.mjs', () => {
     await cli(['--words', 'periódico,casa', '--run', 't-cmp-a', ...base], g)
     await cli(['--words', 'periódico,casa', '--run', 't-cmp-b', '--context', 'sense', ...base], g)
     g.server.close()
-    const child = spawn(process.execPath, [path.join(HERE, 'compare-runs.mjs'), '--runs', 't-cmp-a,t-cmp-b', '--words', 'periódico,casa', '--reasoning', 'periódico'])
+    const child = spawn(process.execPath, [path.join(HERE, 'compare-runs.mjs'), '--runs', 't-cmp-a,t-cmp-b', '--words', 'periódico,casa', '--reasoning', 'periódico'], { timeout: 50_000, killSignal: 'SIGKILL' })
     let stdout = ''
     child.stdout.on('data', (c) => (stdout += c))
     const [code] = await once(child, 'close')

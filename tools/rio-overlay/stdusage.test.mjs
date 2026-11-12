@@ -161,7 +161,7 @@ const answer = (res, rows) => {
 async function cli(args, { url, env = {} }) {
   const childEnv = { ...process.env, GEMINI_API_KEY: KEY, GEMINI_BASE_URL: url, RIO_ENV_FILE: '/nonexistent/.env.local', ...env }
   for (const [k, v] of Object.entries(childEnv)) if (v === undefined) delete childEnv[k]
-  const child = spawn(process.execPath, [SCRIPT, '--pass', 'stdusage', '--overlay', path.join(HERE, 'results', 'overlay-v1', 'overlay.v1.json'), ...args], { env: childEnv })
+  const child = spawn(process.execPath, [SCRIPT, '--pass', 'stdusage', '--overlay', path.join(HERE, 'results', 'overlay-v1', 'overlay.v1.json'), ...args], { env: childEnv, timeout: 50_000, killSignal: 'SIGKILL' })
   let out = ''
   child.stdout.on('data', (c) => (out += c))
   child.stderr.on('data', (c) => (out += c))

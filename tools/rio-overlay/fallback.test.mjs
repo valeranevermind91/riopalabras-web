@@ -226,7 +226,7 @@ const rowFor = (w, over = {}) => ({
 async function cli(args, { url, env = {} }) {
   const childEnv = { ...process.env, GEMINI_API_KEY: KEY, GEMINI_BASE_URL: url, RIO_ENV_FILE: '/nonexistent/.env.local', ...env }
   for (const [k, v] of Object.entries(childEnv)) if (v === undefined) delete childEnv[k]
-  const child = spawn(process.execPath, [SCRIPT, '--pass', 'fallback', ...args], { env: childEnv })
+  const child = spawn(process.execPath, [SCRIPT, '--pass', 'fallback', ...args], { env: childEnv, timeout: 50_000, killSignal: 'SIGKILL' })
   let out = ''
   child.stdout.on('data', (c) => (out += c))
   child.stderr.on('data', (c) => (out += c))
@@ -271,7 +271,7 @@ describe('generate-examples.mjs --pass fallback', () => {
   })
 
   it('rejects an unknown pass', async () => {
-    const child = spawn(process.execPath, [SCRIPT, '--pass', 'nope'])
+    const child = spawn(process.execPath, [SCRIPT, '--pass', 'nope'], { timeout: 50_000, killSignal: 'SIGKILL' })
     let out = ''
     child.stderr.on('data', (c) => (out += c))
     const [code] = await once(child, 'close')

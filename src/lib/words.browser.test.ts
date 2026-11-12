@@ -3,8 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { NOTICE_MS } from '../screens/Words'
 import { strings } from '../strings'
 import { ru } from '../strings.ru'
-import puppeteer, { type Browser, type Page } from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 
 /**
  * The Words list and a word's detail in a real browser, over the real 4,749-word dictionary (src/testing/wordsHarness.tsx
@@ -22,12 +23,12 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     server = await createServer({ configFile: 'vite.config.ts', logLevel: 'error', server: { host: '127.0.0.1', port: 5199, strictPort: false } })
     await server.listen()
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 60_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await server?.close()
+    await closeBrowser(browser)
+    await closeServer(server)
   })
 
   async function open(query = '') {

@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import puppeteer, { type Browser, type Page } from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 import { parseDictionary } from '../data/dictionary'
 import { parseFallbackExamples, parseRioOverlay } from '../data/rio'
 import { parseSettings } from '../data/settings'
@@ -48,12 +49,12 @@ describe.skipIf(!CHROME)('Home when the app returns to the foreground', () => {
     server = await createServer({ configFile: 'vite.config.ts', logLevel: 'error', server: { host: '127.0.0.1', port: 5216, strictPort: false } })
     await server.listen()
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 60_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await server?.close()
+    await closeBrowser(browser)
+    await closeServer(server)
   })
 
   async function open(extraScript = '') {

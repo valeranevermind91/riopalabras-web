@@ -20,6 +20,9 @@ describe('the production build of the privacy page', () => {
     execFileSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--outDir', out, '--emptyOutDir', '--logLevel', 'silent'], {
       env: { ...process.env, NODE_ENV: 'production', VITE_SUPABASE_URL: 'https://build-test.invalid', VITE_SUPABASE_ANON_KEY: 'build-test-anon-key', VITE_PROXY_URL: 'https://proxy.invalid' },
       stdio: 'pipe',
+      // a synchronous wait: while it lasts no timer in this worker fires, so vitest's own timeout cannot end it; this does
+      timeout: 150_000,
+      killSignal: 'SIGKILL',
     })
   }, 180_000)
 

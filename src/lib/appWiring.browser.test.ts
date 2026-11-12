@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core'
+import type { Browser, HTTPRequest, Page } from 'puppeteer-core'
 import { build, createServer, preview, type PreviewServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 import { ANON_KEY, createFakeServer, initDataFor } from '../testing/fakeServer'
 
 /**
@@ -50,12 +51,12 @@ describe.skipIf(!CHROME)(`the real app (${mode}): what App hands its screens`, (
       server = await preview({ configFile: 'vite.config.ts', logLevel: 'error', build: { outDir }, preview: { host: '127.0.0.1', port: 5275, strictPort: false } })
     }
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 180_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await (server as { close: () => Promise<void> } | undefined)?.close()
+    await closeBrowser(browser)
+    await closeServer(server as { close: () => Promise<void> } | undefined)
     for (const [key, value] of Object.entries(saved)) {
       if (value === undefined) delete process.env[key]
       else process.env[key] = value

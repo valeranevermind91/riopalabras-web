@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import puppeteer, { type Browser, type Page } from 'puppeteer-core'
+import type { Browser, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
+import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 
 /**
  * Cloze under a wrong or given-up answer says which dictionary word the form comes from ("vieja03s — from vieja03"), in the slot the hint used, so nothing moves;
@@ -19,12 +20,12 @@ describe.skipIf(!CHROME)('Cloze: the note under the answer', () => {
     server = await createServer({ configFile: 'vite.config.ts', logLevel: 'error', server: { host: '127.0.0.1', port: 5263, strictPort: false } })
     await server.listen()
     base = server.resolvedUrls!.local[0].replace(/\/$/, '')
-    browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
+    browser = await launchBrowser(CHROME)
   }, 60_000)
 
   afterAll(async () => {
-    await browser?.close()
-    await server?.close()
+    await closeBrowser(browser)
+    await closeServer(server)
   })
 
   async function open(query: string) {
