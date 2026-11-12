@@ -5,22 +5,44 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Riopalabras</title>
-    <!-- the main text face, fetched while the stylesheet is still loading; the rest are fetched when text needs them (src/fonts.css) -->
+    <!-- the main text face, fetched while the stylesheet is still loading; the rest are fetched when text needs them (src/fonts.css); the boot script below adds the cyrillic one for Russian -->
     <link rel="preload" href="/fonts/manrope-latin-v23.woff2" as="font" type="font/woff2" crossorigin />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- theme-bootstrap: sets data-theme before the first paint, mirroring resolveTheme() in src/lib/theme.ts (a test runs this script against it) -->
+    <!-- theme-bootstrap: sets data-theme before the first paint, mirroring resolveTheme() in src/lib/theme.ts, and preloads the cyrillic face when the language is Russian, mirroring effectiveLanguage() in src/lib/language.ts (a test runs this script against both) -->
     <script>
       (function () {
+        var tg = null
         try {
           var stored = null
           try {
             stored = localStorage.getItem('riopalabras.theme.v1')
           } catch (e) {}
-          var tg = window.Telegram && window.Telegram.WebApp
+          tg = window.Telegram && window.Telegram.WebApp
           var tgScheme = tg && tg.initData ? (tg.colorScheme === 'dark' ? 'dark' : 'light') : null
           var osDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
           var scheme = stored === 'light' || stored === 'dark' ? stored : tgScheme || (osDark ? 'dark' : 'light')
           document.documentElement.setAttribute('data-theme', scheme)
+        } catch (e) {}
+        try {
+          // the language the app will start in: the one this device last used, else what Telegram reports (effectiveLanguage)
+          var lang = null
+          try {
+            lang = localStorage.getItem('riopalabras.language.v1')
+          } catch (e) {}
+          if (lang !== 'en' && lang !== 'ru') {
+            var code = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code
+            lang = typeof code === 'string' && code.toLowerCase().indexOf('ru') === 0 ? 'ru' : 'en'
+          }
+          if (lang === 'ru') {
+            // the same URL and the same CORS mode as the @font-face in src/fonts.css, so the browser fetches the file once and the rule takes it from here
+            var link = document.createElement('link')
+            link.rel = 'preload'
+            link.as = 'font'
+            link.type = 'font/woff2'
+            link.crossOrigin = 'anonymous'
+            link.href = '/fonts/manrope-cyrillic-v23.woff2'
+            document.head.appendChild(link)
+          }
         } catch (e) {}
       })()
     </script>
