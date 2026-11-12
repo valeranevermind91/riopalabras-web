@@ -6,7 +6,7 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { headword } from './headword'
-import { NUDGE_CARDS, NUDGE_HIDES, learnSettingsPatch, markKnown, selectLearnBatch, suggestsPlacement, undoKnown, createBatchFinisher } from './learn'
+import { NUDGE_CARDS, NUDGE_HIDES, NUDGE_TOTAL, learnSettingsPatch, markKnown, selectLearnBatch, suggestsPlacement, undoKnown, createBatchFinisher } from './learn'
 import { WINDOW_SIZE, pickBatch, replaceKnown, restoreKnown, strataBounds, stratumOf } from './learnPick'
 import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch } from './mutations'
 import { clozePool, isPracticeWord, matchingPool } from './practice'
@@ -243,12 +243,12 @@ describe('"already know it": replacement keeps the batch size', () => {
   })
 })
 
-describe('the placement suggestion: three hides among the first five cards of a batch', () => {
+describe('the placement suggestion: three hides among the first five cards of a batch, or five hides anywhere in it', () => {
   const base = () => pickBatch(pool(300), 10, DAY)
   const hide = (batch: ReturnType<typeof base>, ...indexes: number[]) => indexes.reduce((b, i) => replaceKnown(b, i), batch)
 
-  it('is three hides within the first five cards', () => {
-    expect([NUDGE_HIDES, NUDGE_CARDS]).toEqual([3, 5])
+  it('is three hides within the first five cards, or five hides in all', () => {
+    expect([NUDGE_HIDES, NUDGE_CARDS, NUDGE_TOTAL]).toEqual([3, 5, 5])
   })
 
   it('is not there for none, one or two hides', () => {
@@ -263,16 +263,31 @@ describe('the placement suggestion: three hides among the first five cards of a 
     expect(suggestsPlacement(hide(base(), 1, 1, 3, 3))).toBe(true)
   })
 
-  it('does not count hides of cards past the fifth: they are not "too easy at the start"', () => {
+  it('hides of cards past the fifth do not count towards the three, but they count towards the five: four are not enough, five are', () => {
     expect(suggestsPlacement(hide(base(), 5, 6, 7))).toBe(false)
-    expect(suggestsPlacement(hide(base(), 0, 1, 5, 6, 7, 8))).toBe(false) // two early ones and four late ones
-    expect(suggestsPlacement(hide(base(), 0, 1, 4))).toBe(true) // the fifth card (index 4) counts
+    expect(suggestsPlacement(hide(base(), 5, 6, 7, 8))).toBe(false) // four anywhere
+    expect(suggestsPlacement(hide(base(), 0, 1, 4))).toBe(true) // the fifth card (index 4) counts for the three
+    expect(suggestsPlacement(hide(base(), 5, 6, 7, 8, 9))).toBe(true) // five, none of them early
+    expect(suggestsPlacement(hide(base(), 9, 9, 9, 9, 9))).toBe(true) // the last card each time
   })
 
-  it('goes away when an Undo takes the batch back under three', () => {
+  it('five in all means five of the batch, wherever they were: two early and three late is five', () => {
+    expect(suggestsPlacement(hide(base(), 0, 1, 5, 6))).toBe(false) // four
+    expect(suggestsPlacement(hide(base(), 0, 1, 5, 6, 7))).toBe(true) // five
+    expect(suggestsPlacement(hide(base(), 0, 1, 5, 6, 7, 8))).toBe(true) // and it stays as more are hidden
+  })
+
+  it('goes away when an Undo takes the batch back under both thresholds, and not before', () => {
     const three = hide(base(), 0, 1, 2)
     expect(suggestsPlacement(three)).toBe(true)
     expect(suggestsPlacement(restoreKnown(three))).toBe(false)
+    const five = hide(base(), 5, 6, 7, 8, 9)
+    expect(suggestsPlacement(five)).toBe(true)
+    expect(suggestsPlacement(restoreKnown(five))).toBe(false) // back to four, none of them early
+    const sixWithThreeEarly = hide(base(), 0, 1, 2, 6, 7, 8)
+    expect(suggestsPlacement(restoreKnown(restoreKnown(sixWithThreeEarly)))).toBe(true) // four left, but three of them early
+    expect(suggestsPlacement(restoreKnown(restoreKnown(restoreKnown(sixWithThreeEarly))))).toBe(true) // three early: still there
+    expect(suggestsPlacement(restoreKnown(restoreKnown(restoreKnown(restoreKnown(sixWithThreeEarly)))))).toBe(false) // two early
   })
 })
 

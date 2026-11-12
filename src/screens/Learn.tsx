@@ -36,7 +36,7 @@ interface LearnScreenProps {
   sendReport?: ((report: FeedbackReport) => Promise<SendResult>) | null
   onHome: () => void
   onReview: () => void
-  /** Opens the placement test. When it is passed (and the test has not been taken), a person who hides three of the first five cards is offered it. Without it Learn offers nothing of the kind. */
+  /** Opens the placement test. When it is passed, a person who hides three of the first five cards, or five of the batch, is offered it (the test again, if they have taken it). Without it Learn offers nothing of the kind. */
   onPlacement?: () => void
   /** Only passed where Telegram's native BackButton isn't available. */
   onBack?: () => void
@@ -306,9 +306,9 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
           </div>
         )}
 
-        {reading && onPlacement && data.settings.startRank === null && suggestsPlacement(batch) && (
+        {reading && onPlacement && suggestsPlacement(batch) && (
           <button type="button" className="learn-nudge" onClick={onPlacement}>
-            {strings.learn.placementNudge}
+            {data.settings.startRank === null ? strings.learn.placementNudge : strings.learn.placementNudgeRetake}
           </button>
         )}
 

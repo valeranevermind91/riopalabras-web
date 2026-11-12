@@ -5,7 +5,7 @@ import { createServer, type ViteDevServer } from 'vite'
 
 /**
  * Two things that sit under the card on the Learn screen, in a real browser at 320px (src/testing/offerHarness.tsx puts the real Learn screen on a page): the swipe hint between the two
- * arrows, and the "Too easy? Take the placement test" suggestion that shows once a person has hidden three of a batch's first five cards.
+ * arrows, and the suggestion to take the placement test (or to retake it) that shows once a person has hidden three of a batch's first five cards, or five anywhere in it.
  * Needs a Chrome or Chromium; skipped without one (CHROME_PATH).
  */
 const CHROME = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find((p) => p && existsSync(p))
@@ -58,6 +58,7 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
         navFits: nav.bottom <= window.innerHeight,
         nudgeInside: nudgeBox ? nudgeBox.left >= 0 && nudgeBox.right <= 320 : null,
         nudgeHeight: nudgeBox ? Math.round(nudgeBox.height) : null,
+        nudgeFontSize: nudgeBox ? parseFloat(getComputedStyle(document.querySelector('.learn-nudge')!).fontSize) : null,
       }
     })
 
@@ -87,15 +88,29 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
         expect(await nudge(page)).toBeNull()
         await hide(page)
         const text = await page.$eval('.learn-nudge', (e) => e.textContent)
-        expect(text).toBe(language === 'en' ? 'Too easy? Take the placement test' : 'Слишком просто? Пройдите входной тест')
-        const seen = await layout(page)
-        expect(seen).toMatchObject({ pageScrollsX: false, nudgeInside: true, navFits: true })
-        expect(seen.nudgeHeight).toBeGreaterThanOrEqual(44)
-        expect(seen.cardHeight).toBeGreaterThan(200) // the card is still a card with the undo bar and the suggestion under it
+        expect(text).toBe(language === 'en' ? "You've hidden a lot of words. Take the placement test to start with new ones" : 'Скрыли много слов? Пройдите входной тест и начните с незнакомых')
         await page.click('.learn-undo .link-btn')
         await page.waitForFunction(() => !document.querySelector('.learn-nudge'))
         await page.close()
       }, 60_000)
+
+      it.each([['for the first time', 'placement=1', 'first'], ['again once the test has been taken', 'placement=1&rank=200', 'retake']] as const)(
+        'the text %s fits two lines at 320px with the undo bar and does not squeeze the card',
+        async (_name, query, kind) => {
+          const page = await open(query, language)
+          for (let i = 0; i < 3; i++) await hide(page)
+          const text = await page.$eval('.learn-nudge', (e) => e.textContent)
+          if (kind === 'retake') expect(text).toBe(language === 'en' ? 'Still too easy? Retake the placement test' : 'Всё еще слишком просто? Пройдите входной тест заново')
+          const seen = await layout(page)
+          expect(seen).toMatchObject({ pageScrollsX: false, pageScrollsY: false, nudgeInside: true, navFits: true })
+          expect(seen.nudgeHeight).toBeGreaterThanOrEqual(44) // a full tap target
+          expect(seen.nudgeHeight).toBeLessThanOrEqual(46) // two lines at most: shortened, not shrunk
+          expect(seen.nudgeFontSize).toBe(13)
+          expect(seen.cardHeight).toBeGreaterThanOrEqual(170) // the card is still a card with the undo bar and the suggestion under it
+          await page.close()
+        },
+        60_000,
+      )
 
       it('pressing it opens the placement test, once', async () => {
         const page = await open('placement=1', language)
@@ -107,23 +122,32 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
     })
   }
 
-  it('hides of cards past the fifth do not count: three hides on card 6 and later leave no suggestion', async () => {
+  it('three hides on cards past the fifth leave no suggestion, five hides anywhere in the batch bring it, and Undo takes it away again', async () => {
     const page = await open('placement=1', 'en')
     for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight')
     await page.waitForFunction(() => document.querySelector('.learn-progress span')!.textContent!.includes('6 of'))
-    for (let i = 0; i < 3; i++) await hide(page)
+    for (let i = 0; i < 4; i++) await hide(page)
     expect(await nudge(page)).toBeNull()
+    await hide(page)
+    expect(await nudge(page)).not.toBeNull()
+    await page.click('.learn-undo .link-btn')
+    await page.waitForFunction(() => !document.querySelector('.learn-nudge'))
     await page.close()
   }, 60_000)
 
-  it('there is none where Learn has no way to the placement test, nor once the test has been taken', async () => {
+  it('once the test has been taken the suggestion is the retake one, and pressing it opens the same screen', async () => {
+    const page = await open('placement=1&rank=200', 'en')
+    for (let i = 0; i < 3; i++) await hide(page)
+    expect(await page.$eval('.learn-nudge', (e) => e.textContent)).toBe('Still too easy? Retake the placement test')
+    await page.click('.learn-nudge')
+    expect(await page.evaluate(() => (window as never as { __placement: { opened: number } }).__placement.opened)).toBe(1)
+    await page.close()
+  }, 60_000)
+
+  it('there is none where Learn has no way to the placement test', async () => {
     const without = await open('', 'en')
-    for (let i = 0; i < 3; i++) await hide(without)
+    for (let i = 0; i < 5; i++) await hide(without)
     expect(await nudge(without)).toBeNull()
     await without.close()
-    const taken = await open('placement=1&rank=200', 'en')
-    for (let i = 0; i < 3; i++) await hide(taken)
-    expect(await nudge(taken)).toBeNull()
-    await taken.close()
   }, 60_000)
 })

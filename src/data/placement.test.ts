@@ -291,6 +291,57 @@ describe('keeping the result', () => {
   })
 })
 
+describe('taking the test again from Learn\'s suggestion', () => {
+  // Learn offers the test again ("Still too easy? Retake the placement test") to someone who has one stored: it has to be able to move the start rank, and the next batch has to begin there.
+  const words = dictionary(1000)
+  const deps = (raw: Record<string, unknown>) => {
+    let current = parseSettings({ daily_new_word_limit: 10, ...raw })
+    let list: readonly Word[] = words
+    return {
+      deps: {
+        getSettings: () => current,
+        applyHidden: (esWords: readonly string[], on: boolean) => void (list = list.map((w) => (esWords.includes(w.esWord) ? { ...w, isHidden: on } : w))),
+        applySettings: (patch: Record<string, unknown>) => void (current = applySettingsPatch(current, patch)),
+        queue: { enqueueHiddenBatch: vi.fn(), enqueueSettings: vi.fn() },
+      },
+      settings: () => current,
+      words: () => list,
+    }
+  }
+  /** The answers of someone who knows every word of the first `known` bands and none of the rest. */
+  const answers = (bands: readonly PlacementBand[], known: number) => bands.map((band, k) => new Set(k < known ? band.words.map((w) => w.esWord) : []))
+
+  it('moves the stored start rank up when the person now knows more, and the next Learn batch is drawn from there', () => {
+    const t = deps({ start_rank: 201 })
+    const bands = buildPlacement(placementPool(t.words()), seededRandom(7))!
+    const result = placementResult(bands, answers(bands, 3)) // every word of three bands, none of the others: the wall is the fourth band
+    expect(result.startRank).toBe(bands[3].startRank)
+    expect(result.startRank).toBeGreaterThan(201)
+    savePlacement(result, t.deps)
+    expect(t.settings().startRank).toBe(bands[3].startRank)
+    const ranks = selectLearnBatch(t.words(), t.settings(), DAY).words.map((w) => w.rank!)
+    expect(ranks.filter((r) => r >= bands[3].startRank).length).toBeGreaterThanOrEqual(7) // most of it from the new start, as for any start rank
+    expect(Math.min(...ranks.filter((r) => r >= bands[3].startRank))).toBeGreaterThanOrEqual(bands[3].startRank) // and those are all at or past the new start
+  })
+
+  it('a retake does not hide the words that were already hidden again or un-hide them, and the pool it draws on is only what is left', () => {
+    const hiddenBefore = words.filter((w) => w.rank! <= 30).map((w) => ({ ...w, isHidden: true }))
+    const rest = words.filter((w) => w.rank! > 30)
+    const pool = placementPool([...hiddenBefore, ...rest])
+    expect(pool.map((w) => w.rank!)).not.toContain(1)
+    expect(Math.min(...pool.map((w) => w.rank!))).toBe(31)
+  })
+
+  it('a retake can also bring the start back to the beginning: the beginner pattern, with something ticked, clears it', () => {
+    const t = deps({ start_rank: 601 })
+    const bands = buildPlacement(placementPool(t.words()), seededRandom(3))!
+    const result = placementResult(bands, bands.map((band, k) => new Set(k === 0 ? [band.words[0].esWord] : []))) // one word known in the first set, nothing else
+    expect(result.startRank).toBeNull()
+    savePlacement(result, t.deps)
+    expect(t.settings().startRank).toBeNull()
+  })
+})
+
 describe('Learn starts from start_rank', () => {
   const words = dictionary(400)
   const batchRanks = (raw: Record<string, unknown>, day = DAY) => selectLearnBatch(words, parseSettings({ daily_new_word_limit: 10, ...raw }), day).words.map((w) => w.rank!)

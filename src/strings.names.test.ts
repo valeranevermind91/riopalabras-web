@@ -68,6 +68,30 @@ describe('the scan itself', () => {
   })
 })
 
+describe('the placement suggestion in Learn', () => {
+  // Shown under the card once a person has hidden three of a batch's first five words, or five anywhere in it. It asks about the hides and says what the test is for
+  // (to start with unfamiliar words); once the test has been taken it asks whether it is still too easy and offers it again.
+  it('English: first time and retake', () => {
+    expect(en.learn.placementNudge).toBe("You've hidden a lot of words. Take the placement test to start with new ones")
+    expect(en.learn.placementNudgeRetake).toBe('Still too easy? Retake the placement test')
+  })
+
+  it('Russian: first time and retake', () => {
+    expect(ru.learn.placementNudge).toBe('Скрыли много слов? Пройдите входной тест и начните с незнакомых')
+    expect(ru.learn.placementNudgeRetake).toBe('Всё еще слишком просто? Пройдите входной тест заново')
+  })
+
+  it('both name the test as the screens do (Placement test / Входной тест), and the retake says it is again', () => {
+    expect(en.learn.placementNudge).toMatch(/placement test/i)
+    expect(en.learn.placementNudgeRetake).toMatch(/placement test/i)
+    expect(en.learn.placementNudgeRetake).toMatch(/retake/i)
+    expect(ru.learn.placementNudge).toMatch(/входной тест/i)
+    expect(ru.learn.placementNudgeRetake).toMatch(/входной тест заново/i)
+    expect(en.onboarding.placement.title.toLowerCase()).toBe('placement test')
+    expect(ru.onboarding.placement.title.toLowerCase()).toBe('входной тест')
+  })
+})
+
 describe('the Learn swipe hint', () => {
   // It sits between the two arrows (52px each) at 320px, so it has about 150px: two lines of ~24 characters. The first wording the owner gave
   // ("Just swipe: a word counts once you reach its card" / «Просто листайте: слово засчитывается, когда вы дошли до его карточки») wraps to three and four lines there

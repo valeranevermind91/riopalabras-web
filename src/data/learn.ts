@@ -56,16 +56,17 @@ export function selectLearnBatch(words: readonly Word[], settings: UserSettings,
   return withCount(pickBatch(window, limit, now, waitingStars(words), below))
 }
 
-/** A person who hides this many of a batch's first NUDGE_CARDS cards is finding the words too easy: Learn then suggests the placement test. */
+/** A person who hides this many of a batch's first NUDGE_CARDS cards, or NUDGE_TOTAL of it anywhere, is finding the words too easy: Learn then suggests the placement test. */
 export const NUDGE_HIDES = 3
 export const NUDGE_CARDS = 5
+export const NUDGE_TOTAL = 5
 
 /**
- * Pure: whether the batch's hides say "too easy". The card a hide was made on is where it stood in the batch (a replacement takes the same place, so hiding
- * the card in front three times is three hides of place 0). Hides of later cards do not count, and an Undo that takes the batch back under three withdraws it.
+ * Pure: whether the batch's hides say "too easy": three of the first five cards, or five hides wherever they were. The card a hide was made on is where it stood in the
+ * batch (a replacement takes the same place, so hiding the card in front three times is three hides of place 0). An Undo that takes the batch back under both counts withdraws it.
  */
 export function suggestsPlacement(batch: Pick<LearnBatch, 'known'>): boolean {
-  return batch.known.filter((record) => record.index < NUDGE_CARDS).length >= NUDGE_HIDES
+  return batch.known.length >= NUDGE_TOTAL || batch.known.filter((record) => record.index < NUDGE_CARDS).length >= NUDGE_HIDES
 }
 
 export interface KnownDeps {
