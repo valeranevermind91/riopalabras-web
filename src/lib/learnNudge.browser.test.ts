@@ -100,7 +100,7 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
           const page = await open(query, language)
           for (let i = 0; i < 3; i++) await hide(page)
           const text = await page.$eval('.learn-nudge', (e) => e.textContent)
-          if (kind === 'retake') expect(text).toBe(language === 'en' ? 'Still too easy? Retake the placement test' : 'Всё еще слишком просто? Пройдите входной тест заново')
+          if (kind === 'retake') expect(text).toBe(language === 'en' ? 'Still too easy? Retake the placement test' : 'По-прежнему слишком просто? Пройдите входной тест заново')
           const seen = await layout(page)
           expect(seen).toMatchObject({ pageScrollsX: false, pageScrollsY: false, nudgeInside: true, navFits: true })
           expect(seen.nudgeHeight).toBeGreaterThanOrEqual(44) // a full tap target

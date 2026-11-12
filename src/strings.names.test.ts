@@ -78,7 +78,7 @@ describe('the placement suggestion in Learn', () => {
 
   it('Russian: first time and retake', () => {
     expect(ru.learn.placementNudge).toBe('Скрыли много слов? Пройдите входной тест и начните с незнакомых')
-    expect(ru.learn.placementNudgeRetake).toBe('Всё еще слишком просто? Пройдите входной тест заново')
+    expect(ru.learn.placementNudgeRetake).toBe('По-прежнему слишком просто? Пройдите входной тест заново')
   })
 
   it('both name the test as the screens do (Placement test / Входной тест), and the retake says it is again', () => {
