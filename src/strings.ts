@@ -98,7 +98,7 @@ export const en = {
   words: {
     title: 'Words',
     detailTitle: 'Word',
-    searchPlaceholder: 'Search Spanish, English, Russian',
+    searchPlaceholder: 'Spanish, English or Russian',
     searchLabel: 'Search words',
     segments: { all: 'All', started: 'Started', hidden: 'Hidden' },
     segmentsLabel: 'Which words',

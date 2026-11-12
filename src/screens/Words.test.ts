@@ -40,7 +40,7 @@ describe('the Words screen', () => {
   it('has the header, a search field, the segments All · Started · Hidden with their counts, the two buttons and the list', () => {
     const html = render(learnedSome())
     expect(html).toContain('<h1>Words</h1>')
-    expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Search Spanish, English, Russian"/)
+    expect(html).toMatch(/<input type="search" class="words-search"[^>]*placeholder="Spanish, English or Russian"/)
     expect([...html.matchAll(/class="segment[^"]*"[^>]*>(\w+) <span class="segment-count">(\d+)/g)].map((m) => `${m[1]} ${m[2]}`)).toEqual(['All 4749', 'Started 5', 'Hidden 0'])
     expect(html).toContain('role="list"')
   })

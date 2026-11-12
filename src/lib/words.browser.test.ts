@@ -200,6 +200,10 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     for (const query of ['?lang=en', '?lang=ru&ru=0']) {
       const page = await open(query)
       await page.setViewport({ width: 320, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      // measured in the app's real face: from src/testing/fonts, not whatever the machine falls back to
+      await page.evaluate(() => document.fonts.ready)
+      const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')))
+      expect(loaded.filter((family) => family === 'Manrope')).toHaveLength(2) // the latin and the cyrillic file
       const fit = await page.$eval('.words-search', (input) => {
         const style = getComputedStyle(input)
         const context = document.createElement('canvas').getContext('2d')!
