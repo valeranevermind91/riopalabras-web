@@ -28,6 +28,13 @@ for the layout only and would fail the proxy's HMAC check anyway):
 cp .env.example .env.local
 ```
 
+## Fonts
+
+Manrope (the interface) and Fraunces (the Spanish words) are served from the app's own domain: the files are in `public/fonts` (latin, plus cyrillic for Manrope;
+SIL Open Font License, the licences beside them), the `@font-face` rules in `src/fonts.css`, and `index.html` preloads the main one. Nothing is asked of Google
+Fonts, and the privacy text says nothing about it. `vercel.json` caches `/fonts/*` for a year, so a new version of a font goes under a new file name (the version
+is in the name). The browser tests load the same rules and files (`src/testing/*.html`), so they measure the real faces.
+
 ## The privacy page
 
 `/privacy` is a page of its own (`privacy.html`, drawn by `src/privacy-main.tsx`), not a screen of the Mini App: it loads without Telegram, sign-in or

@@ -58,7 +58,7 @@ describe('the privacy page, as drawn', () => {
     expect(html.match(/role="radio"/g)).toHaveLength(2)
     expect(text(html)).toContain('Riopalabras is a free app for learning the Spanish of Uruguay and Argentina, inside Telegram.')
     expect(headings(html)).toEqual(['stored:What it keeps', 'shared:Who else sees it', 'ads:What\'s not here', 'delete:Deleting your data'])
-    expect(text(html)).toContain('Last updated: 30 October 2026')
+    expect(text(html)).toContain('Last updated: 11 November 2026')
   })
 
   it('Russian: the same, in Russian, with the date written as Russian writes it', () => {
@@ -67,7 +67,7 @@ describe('the privacy page, as drawn', () => {
     expect(html).toContain('<h1>Конфиденциальность</h1>')
     expect(html).toContain('aria-label="Язык"')
     expect(headings(html)).toEqual(['stored:Что хранится', 'shared:Кто еще это видит', 'ads:Чего здесь нет', 'delete:Удаление данных'])
-    expect(text(html)).toContain('Последнее обновление: 30 октября 2026 г.')
+    expect(text(html)).toContain('Последнее обновление: 11 ноября 2026 г.')
   })
 
   it('the language switch names each language in its own language, and marks the one shown', () => {
@@ -96,8 +96,8 @@ describe('the privacy page, as drawn', () => {
     expect(wordCount(ru)).toBeLessThan(390)
   })
 
-  it('names every party that gets data, in both languages: Telegram, Supabase, Vercel, Railway, Gemini, Google Fonts', () => {
-    for (const map of [en, ru]) for (const name of ['Telegram', 'Supabase', 'Vercel', 'Railway', 'Gemini', 'Google Fonts']) expect(pageText(map), name).toContain(name)
+  it('names every party that gets data, in both languages: Telegram, Supabase, Vercel, Railway, Gemini', () => {
+    for (const map of [en, ru]) for (const name of ['Telegram', 'Supabase', 'Vercel', 'Railway', 'Gemini']) expect(pageText(map), name).toContain(name)
     expect(pageText(en)).toContain('A word you add goes to Google\'s Gemini') // the added word is said to leave for Gemini, in so many words
     expect(pageText(ru)).toContain('Добавленное вами слово уходит в Gemini')
   })
@@ -240,12 +240,14 @@ describe('what is stored on the device, and what is not used', () => {
     expect(ru.privacy.sections.find((s) => s.id === 'ads')!.paragraphs[0]).toContain('Ни рекламы, ни аналитики; данные не продаются.')
   })
 
-  it('the only other sites the app\'s own page loads from are Google Fonts and Telegram\'s script, and the page says so', () => {
+  it('the only other site the app\'s own page loads from is Telegram\'s script, and the page says so; the fonts come from the app\'s own domain (2026-11-11: no more Google Fonts)', () => {
     const hosts = new Set([...read('index.html').matchAll(/(?:src|href)="https:\/\/([^/"]+)/g)].map((m) => m[1]))
-    expect([...hosts].sort()).toEqual(['fonts.googleapis.com', 'fonts.gstatic.com', 'telegram.org'])
-    expect(pageText(en)).toContain('Google Fonts loads the fonts, so Google sees your IP address when the app opens')
+    expect([...hosts].sort()).toEqual(['telegram.org'])
+    expect(read('src/fonts.css')).not.toMatch(/https?:\/\//)
     expect(pageText(en)).toContain('the app loads its script from telegram.org')
-    expect(pageText(ru)).toContain('Google Fonts загружает шрифты, поэтому Google видит ваш IP-адрес')
+    expect(pageText(en)).toContain('Every host sees your IP address when the app opens, and the app does not store it')
+    expect(pageText(ru)).toContain('Ваш IP-адрес при открытии приложения видит любой хостинг, и приложение его не хранит')
+    for (const map of [en, ru]) expect(pageText(map)).not.toMatch(/Google Fonts|fonts\.g/i)
   })
 
   it('the app never asks Telegram for a phone number, contacts or a location, so "not stored" holds from the first step', () => {
@@ -310,7 +312,8 @@ describe('the policy text and its date move together', () => {
   // whitespace is one space. The fingerprint is still of the real text, just read that way; it never skips a word.
   // 2026-11-08: the star was renamed ("Learn sooner" → "the learning queue") and the page says so; the same data is stored under a new name, so the text changed and the policy did not:
   // the fingerprint moved and PRIVACY_UPDATED did not (the owner is told, in the commit and the report, and can move the date).
-  const FINGERPRINT = 'cc8f76195050b507'
+  // 2026-11-11: the fonts are served from the app's own domain, no longer by Google Fonts, so the sentence saying Google sees the IP address for them is gone (fewer third parties: a change of substance, the date moved).
+  const FINGERPRINT = '3e3c2d60fa3ac175'
   const normalise = (text: string) => text.replace(/ё/g, 'е').replace(/Ё/g, 'Е').replace(/\s+/g, ' ').trim()
   const fingerprintOf = (privacy: { en: unknown; ru: unknown }) =>
     createHash('sha256')
@@ -328,7 +331,7 @@ describe('the policy text and its date move together', () => {
   const raw = (privacy: { en: unknown; ru: unknown }) => JSON.stringify(privacy, (_k, v) => (typeof v === 'function' ? v('DATE') : v))
 
   it('is the text as it was when it was last dated', () => {
-    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-10-30', text: FINGERPRINT })
+    expect({ updated: PRIVACY_UPDATED, text: fingerprint() }, 'the policy changed in substance: update PRIVACY_UPDATED, then this fingerprint').toEqual({ updated: '2026-11-11', text: FINGERPRINT })
   })
 
   it('does not move for spelling or spacing: е and ё are the same letter, and a run of whitespace is one space', () => {

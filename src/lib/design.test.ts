@@ -1,8 +1,9 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync('src/index.css', 'utf8')
 const html = readFileSync('index.html', 'utf8')
+const fonts = readFileSync('src/fonts.css', 'utf8')
 
 /** The declarations of the rule that starts with `selector {`. */
 function rule(selector: string): string {
@@ -12,12 +13,31 @@ function rule(selector: string): string {
 }
 
 describe('fonts', () => {
-  it('Fraunces and Manrope are loaded from Google Fonts with preconnect and display=swap', () => {
-    expect(html).toContain('<link rel="preconnect" href="https://fonts.googleapis.com" />')
-    expect(html).toContain('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />')
-    expect(html).toContain('family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700')
-    expect(html).toContain('family=Manrope:wght@400..800')
-    expect(html).toContain('display=swap')
+  it('Fraunces and Manrope are served from the app\'s own domain (public/fonts), in the weights the app uses, with display=swap; the page preloads the main one and asks Google for nothing', () => {
+    expect(html).not.toMatch(/googleapis|gstatic|preconnect/)
+    expect(html).toContain('<link rel="preload" href="/fonts/manrope-latin-v23.woff2" as="font" type="font/woff2" crossorigin />')
+    const faces = [...fonts.matchAll(/@font-face \{([^}]*)\}/g)].map((m) => m[1])
+    expect(faces).toHaveLength(4)
+    for (const face of faces) expect(face).toContain('font-display: swap')
+    const has = (family: string, style: string, weights: string, file: string) =>
+      faces.some((f) => f.includes(`font-family: '${family}'`) && f.includes(`font-style: ${style}`) && f.includes(`font-weight: ${weights}`) && f.includes(`url(/fonts/${file})`))
+    expect(has('Manrope', 'normal', '400 800', 'manrope-latin-v23.woff2')).toBe(true)
+    expect(has('Manrope', 'normal', '400 800', 'manrope-cyrillic-v23.woff2')).toBe(true)
+    expect(has('Fraunces', 'normal', '400 700', 'fraunces-latin-v38.woff2')).toBe(true)
+    expect(has('Fraunces', 'italic', '400 700', 'fraunces-latin-italic-v38.woff2')).toBe(true)
+    for (const file of [...fonts.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1])) expect(existsSync(`public/fonts/${file}`), file).toBe(true)
+    expect(readFileSync('src/main.tsx', 'utf8')).toContain("import './fonts.css'")
+  })
+
+  it('the font files are cached for a year, and each is under a name with its version in it, so a new version is a new name', () => {
+    const rules = (JSON.parse(readFileSync('vercel.json', 'utf8')) as { headers: { source: string; headers: { key: string; value: string }[] }[] }).headers
+    const rule = rules.find((r) => r.source === '/fonts/(.*)')!
+    expect(rule.headers).toEqual([{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }])
+    for (const file of readdirSync('public/fonts').filter((f) => f.endsWith('.woff2'))) expect(file, file).toMatch(/-v\d+\.woff2$/)
+  })
+
+  it('each family ships with its SIL Open Font License', () => {
+    for (const name of ['Manrope', 'Fraunces']) expect(readFileSync(`public/fonts/${name}-OFL.txt`, 'utf8'), name).toContain('SIL OPEN FONT LICENSE Version 1.1')
   })
 
   it('Manrope is the default face; Fraunces is set only on Spanish words', () => {
@@ -27,7 +47,7 @@ describe('fonts', () => {
   })
 
   it('Cyrillic is covered by the UI face (Manrope has it), so the Russian UI of the future needs no change', () => {
-    expect(html).toContain('Manrope')
+    expect(fonts).toMatch(/font-family: 'Manrope';[^}]*cyrillic-v23\.woff2\)[^}]*unicode-range: [^;]*U\+0400-045F/)
   })
 })
 

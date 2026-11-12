@@ -75,8 +75,16 @@ describe('where the icon is used', () => {
     expect(fs.existsSync(path.join(ROOT, 'public', 'favicon.svg'))).toBe(true)
   })
 
-  it('public/ holds only what the app uses: no leftover sprite, no stock logo', () => {
-    expect(fs.readdirSync(path.join(ROOT, 'public')).sort()).toEqual(['examples_fallback.json', 'favicon.svg', 'rio_overlay.json', 'words_enriched.json'])
+  it('public/ holds only what the app uses: no leftover sprite, no stock logo; its fonts folder only the font files and their licences', () => {
+    expect(fs.readdirSync(path.join(ROOT, 'public')).sort()).toEqual(['examples_fallback.json', 'favicon.svg', 'fonts', 'rio_overlay.json', 'words_enriched.json'])
+    expect(fs.readdirSync(path.join(ROOT, 'public', 'fonts')).sort()).toEqual([
+      'Fraunces-OFL.txt',
+      'Manrope-OFL.txt',
+      'fraunces-latin-italic-v38.woff2',
+      'fraunces-latin-v38.woff2',
+      'manrope-cyrillic-v23.woff2',
+      'manrope-latin-v23.woff2',
+    ])
   })
 
   it('nothing refers to the removed Vite sprite (icons.svg) or to the Vite or React template logos', () => {

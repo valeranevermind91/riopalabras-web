@@ -369,7 +369,7 @@ export const en = {
         heading: 'Who else sees it',
         paragraphs: [
           "Telegram runs the app (the app loads its script from telegram.org) and tells it who you are. Its bot sends the reminder and passes your messages to the author; the bot's own message carries no name or ID, but the message is stored in the database under your account. Supabase holds the database and sign-in. Vercel serves the app's pages and word list. Railway runs our server, whose log has your Telegram ID at sign-in and your account ID at each lookup, not the word. Exception: if a Gemini reply cannot be parsed, it is logged in full, and it usually contains the word.",
-          "A word you add goes to Google's Gemini for translations and an example, with no account details; Google's terms apply. Google Fonts loads the fonts, so Google sees your IP address when the app opens; every host sees it, and the app does not store it.",
+          "A word you add goes to Google's Gemini for translations and an example, with no account details; Google's terms apply. Every host sees your IP address when the app opens, and the app does not store it.",
         ],
       },
       {
