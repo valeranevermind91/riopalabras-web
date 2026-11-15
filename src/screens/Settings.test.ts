@@ -209,7 +209,7 @@ describe('the Settings screen', () => {
 
     it('says why nothing arrives under a switch that is on: paused after several reminders, or Telegram cannot deliver', () => {
       const paused = render({}, { reminders: control({ shown: true, notice: 'paused' }) })
-      expect(paused).toContain('Paused — nothing was studied after several reminders. Turn it off and on to resume.</p>')
+      expect(paused).toContain('Paused: nothing was studied after several reminders. They resume when you study again.</p>')
       expect(paused).toContain('role="status"')
       const unreachable = render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })
       expect(unreachable).toContain('Open the bot&#x27;s chat and press Start, then switch this off and on again. Pressing Start alone is not enough.</p>')
@@ -219,7 +219,7 @@ describe('the Settings screen', () => {
     it('says both of them in Russian', () => {
       setLanguage('ru')
       try {
-        expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено: после нескольких напоминаний вы не занимались. Чтобы возобновить, выключите напоминание и включите снова.</p>')
+        expect(render({}, { reminders: control({ shown: true, notice: 'paused' }) })).toContain('Приостановлено: после нескольких напоминаний вы не занимались. Они возобновятся, когда вы снова начнете заниматься.</p>')
         expect(render({}, { reminders: control({ shown: true, notice: 'unreachable' }) })).toContain('Откройте чат с ботом и нажмите Start, затем выключите и снова включите напоминание. Одного нажатия Start недостаточно.</p>')
       } finally {
         setLanguage('en')

@@ -47,8 +47,9 @@ export const en = {
     streak: (n: number) => `${n}-day streak`,
     // The one line under the streak: what to do today (src/data/advice.ts). N in reviewFirst is the real number due, which may be more than one session.
     advice: {
-      // `perSession` is the size of one Review session: when more words than that are due, the line says both numbers (never when `n` is that or fewer)
-      reviewFirst: (n: number, perSession: number) => `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting${n > perSession ? ` (${perSession} per session)` : ''}`,
+      // `perSession` is the size of one Review session: when more words than that are due, the line names this session's portion and the whole ("20 of 112 words today"),
+      // not the pile; with that many or fewer it says how many are waiting. (After a session it is said again of what is left: the portion is always taken from what is due now.)
+      reviewFirst: (n: number, perSession: number) => (n > perSession ? `Review first — ${perSession} of ${n} words today` : `Review first — ${n} ${plural(n, { one: 'word is', other: 'words are' })} waiting`),
       learnNew: (n: number) => `Nothing to review — ${n} new ${plural(n, { one: 'word', other: 'words' })} ready`,
       allDoneToday: 'Done for today',
       // The end of the day, once new words were learned: what was done and what comes next (src/data/dayEnd.ts). The numbers are real: today's new words, the reviews that fall
@@ -82,6 +83,8 @@ export const en = {
     tiles: {
       learn: { label: 'Learn', sub: 'new words' },
       review: { label: 'Review', sub: 'recall what you learned' },
+      // in place of that line, once more words are due than a session holds: the tile's count is the session's portion, and this says out of how many
+      reviewOf: (n: number) => `of ${n}`,
       practice: { label: 'Practice', sub: 'exercises' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
@@ -300,7 +303,7 @@ export const en = {
     reminderDeclined: "Telegram did not allow messages. You can allow them from the bot's chat.",
     reminderFailed: 'Could not save this. Check your connection and try again.',
     // shown under a switch that is on: why nothing arrives (the user cannot change either; turning it off and on again clears them)
-    reminderPaused: 'Paused — nothing was studied after several reminders. Turn it off and on to resume.',
+    reminderPaused: 'Paused: nothing was studied after several reminders. They resume when you study again.',
     // two steps, in order: pressing Start alone does not clear the flag the job set, switching it off and on again does
     reminderUnreachable: "Open the bot's chat and press Start, then switch this off and on again. Pressing Start alone is not enough.",
     about: 'About',

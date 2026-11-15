@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'reviews-for-today',
+    at: '2026-11-14T22:01',
+    en: {
+      title: 'Today’s reviews, not the whole backlog',
+      text: 'From 14 November, when more than 20 words are due, Home shows “20 of 112” for today instead of the whole backlog, and the evening reminder says the same. A reminder that stopped after seven unanswered ones now resumes by itself when you study again.',
+    },
+    ru: {
+      title: 'Повторение: сколько на сегодня',
+      text: 'С 14 ноября, если на повторение накопилось больше 20 слов, на главном экране показано «20 из 112», а не весь накопившийся список; вечернее напоминание говорит то же. Напоминания, которые остановились после семи без ответа, теперь возобновляются сами, когда вы снова занимаетесь.',
+    },
+  },
+  {
     id: 'clearer-buttons-and-placement-hint',
     at: '2026-11-08T22:39',
     en: {

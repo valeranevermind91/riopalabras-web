@@ -4,7 +4,7 @@ import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
 import { applyProgressUpdates, applySettingsPatch } from './mutations'
-import { REVIEW_SESSION_CEILING, REVIEW_SESSION_SIZE, buildReviewSession, createRater, dueWords, overdueMs, rateWord, requeueAgain, shuffle, withUpdate } from './review'
+import { REVIEW_SESSION_CEILING, REVIEW_SESSION_SIZE, buildReviewSession, createRater, dueWords, overdueMs, rateWord, requeueAgain, reviewPortion, shuffle, withUpdate } from './review'
 import { seededRandom } from '../lib/random'
 import { selectLearnBatch } from './learn'
 import { parseSettings } from './settings'
@@ -515,9 +515,27 @@ describe('the session limit', () => {
     return { shown, cards }
   }
 
+  // The daily-reminder job (riopalabras-proxy, reminders.js: REVIEW_SESSION_SIZE) names one session's worth when more words than this are due, so the number in the
+  // reminder is the number Review serves. If this has to change, change that copy in the same breath (it is pinned there by a test in reminders.test.js).
   it('the numbers: 20 words a session, at most 40 cards', () => {
     expect(REVIEW_SESSION_SIZE).toBe(20)
     expect(REVIEW_SESSION_CEILING).toBe(40)
+  })
+
+  it('the portion Home shows: the words due, but never more than one session; and what is left after a session is shown again the same way', () => {
+    expect([0, 1, 7, 19, 20, 21, 112].map((n) => reviewPortion(n))).toEqual([0, 1, 7, 19, 20, 20, 20])
+    expect(reviewPortion(50, 30)).toBe(30) // the size is a parameter, as buildReviewSession's is
+    expect(reviewPortion(-3)).toBe(0)
+    const words = { current: backlog(50) as readonly Word[] }
+    const portion = () => reviewPortion(dueWords(words.current, NOW).length)
+    const session = () => play(buildReviewSession(words.current, NOW), 3, words)
+    expect(portion()).toBe(20) // 50 due
+    session()
+    expect(portion()).toBe(20) // 30 due
+    session()
+    expect(portion()).toBe(10) // 10 due: those 10
+    session()
+    expect(portion()).toBe(0)
   })
 
   it('a backlog of 50 gives sessions of 20, 20 and 10', () => {

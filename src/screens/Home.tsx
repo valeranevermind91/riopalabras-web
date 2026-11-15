@@ -4,7 +4,7 @@ import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
 import type { MetricsRecorder } from '../data/metrics'
 import { PRACTICE_MIN_WORDS, batchPracticeAvailable, clozeEligibleCount, matchingEligibleCount } from '../data/practice'
-import { REVIEW_SESSION_SIZE } from '../data/review'
+import { REVIEW_SESSION_SIZE, reviewPortion } from '../data/review'
 import { computeStats, type Stats } from '../data/stats'
 import { homeAdvice, primaryTile, type HomeAdvice } from '../data/advice'
 import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../data/daily'
@@ -350,7 +350,7 @@ interface Tile {
   onPress: () => void
 }
 
-/** The line of advice, with the numbers it needs: how many are due (all of them, not one session's worth; past one session it also says how many a session holds), and how many new words a batch would offer. */
+/** The line of advice, with the numbers it needs: how many are due (up to one session's worth; past that, this session's portion out of the whole), and how many new words a batch would offer. */
 function adviceText(advice: HomeAdvice, stats: Stats, day: DayEnd | null): string {
   const t = strings.home.advice
   switch (advice) {
@@ -402,7 +402,8 @@ function buildTiles(
       primary: primary === 'learn',
       onPress: on.onLearn,
     },
-    { id: 'review', label: t.review.label, sub: t.review.sub, count: stats.reviewDue, disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
+    // past one session the count is the portion (what Review serves next) and the line under the label says out of how many; up to one session it is every due word, as it was
+    { id: 'review', label: t.review.label, sub: stats.reviewDue > REVIEW_SESSION_SIZE ? t.reviewOf(stats.reviewDue) : t.review.sub, count: reviewPortion(stats.reviewDue), disabled: stats.reviewDue === 0, reason: strings.home.reviewNothingDue, primary: primary === 'review', onPress: on.onReview },
     { id: 'practice', label: t.practice.label, sub: t.practice.sub, count: null, disabled: modes.every((m) => m.disabled), reason: strings.practice.needWords, primary: primary === 'practice', onPress: on.onPractice },
   ]
 }

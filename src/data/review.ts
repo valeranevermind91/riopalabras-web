@@ -26,6 +26,13 @@ export const REVIEW_SESSION_SIZE = 20
  */
 export const REVIEW_SESSION_CEILING = 40
 
+/**
+ * One session's worth of the words due: what Home offers as "today's portion" when more are due than a session holds (the whole pile is not what the person is asked to do at once),
+ * and every due word otherwise. It is always taken again from what is due NOW, so after a session it is the next portion (or what is left, if that is less). The daily-reminder
+ * job (riopalabras-proxy, reminders.js) names the same number in its message, from its own copy of REVIEW_SESSION_SIZE.
+ */
+export const reviewPortion = (due: number, size: number = REVIEW_SESSION_SIZE): number => Math.min(Math.max(due, 0), size)
+
 /** The words that are due right now: what the Home tile counts, and what sessions are drawn from. */
 export const dueWords = (words: readonly Word[], now: Date): Word[] => words.filter((w) => isReviewDue(w, now))
 

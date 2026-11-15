@@ -38,7 +38,11 @@ export const ru: Strings = {
     streak: (n) => `${n} ${plural(n, { one: 'день', few: 'дня', many: 'дней' })} подряд`,
     streakToday: (done, needed) => `${done} / ${needed} сегодня`,
     advice: {
-      reviewFirst: (n, perSession) => `Сначала повторение — ${plural(n, { one: 'ждет', few: 'ждут', many: 'ждут' })} ${n} ${words(n)}${n > perSession ? `, за раз — ${perSession}` : ''}`,
+      // после «из» — родительный падеж: из 21 слова, из 22 слов, из 112 слов, из 121 слова
+      reviewFirst: (n, perSession) =>
+        n > perSession
+          ? `Сначала повторение — сегодня ${perSession} из ${n} ${plural(n, { one: 'слова', few: 'слов', many: 'слов' })}`
+          : `Сначала повторение — ${plural(n, { one: 'ждет', few: 'ждут', many: 'ждут' })} ${n} ${words(n)}`,
       learnNew: (n) => `Повторять нечего — можно изучить ${n} ${plural(n, { one: 'новое слово', few: 'новых слова', many: 'новых слов' })}`,
       allDoneToday: 'На сегодня всё',
       doneToday: (learned, reviews, fresh) => {
@@ -61,6 +65,7 @@ export const ru: Strings = {
     tiles: {
       learn: { label: 'Learn', sub: 'новые слова' },
       review: { label: 'Review', sub: 'вспомнить выученное' },
+      reviewOf: (n) => `из ${n}`,
       practice: { label: 'Practice', sub: 'упражнения' },
       matching: { label: 'Matching', es: 'parejas' },
       cloze: { label: 'Cloze', es: 'completar' },
@@ -255,7 +260,7 @@ export const ru: Strings = {
     reminderHint: 'Приходит около 20:00 и только если есть что повторять.',
     reminderDeclined: 'Telegram не разрешил сообщения. Разрешить их можно в чате с ботом.',
     reminderFailed: 'Не удалось сохранить. Проверьте соединение и попробуйте еще раз.',
-    reminderPaused: 'Приостановлено: после нескольких напоминаний вы не занимались. Чтобы возобновить, выключите напоминание и включите снова.',
+    reminderPaused: 'Приостановлено: после нескольких напоминаний вы не занимались. Они возобновятся, когда вы снова начнете заниматься.',
     reminderUnreachable: 'Откройте чат с ботом и нажмите Start, затем выключите и снова включите напоминание. Одного нажатия Start недостаточно.',
     about: 'О приложении',
     aboutApp: 'О Riopalabras',

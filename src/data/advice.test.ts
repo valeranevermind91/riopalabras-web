@@ -187,7 +187,7 @@ describe('the end of the day: what was done and what comes next', () => {
   })
 })
 
-describe('past one session: the line says both numbers (and not before)', () => {
+describe('past one session: the line names the portion and the whole (and not before)', () => {
   const line = (n: number) => strings.home.advice.reviewFirst(n, REVIEW_SESSION_SIZE)
 
   it('a session holds 20 (the number the line quotes is the real one: a session built from more than that has exactly that many words)', () => {
@@ -197,37 +197,36 @@ describe('past one session: the line says both numbers (and not before)', () => 
     expect(buildReviewSession(due.slice(0, 20), new Date('2026-10-20T00:00:00Z'))).toHaveLength(20)
   })
 
-  it('English: 20 or fewer is the line as it was; 21 and more adds "(20 per session)"', () => {
+  it('English: 20 or fewer is the line as it was; 21 and more says "20 of N words today"', () => {
     expect(line(1)).toBe('Review first — 1 word is waiting')
     expect(line(20)).toBe('Review first — 20 words are waiting')
-    expect(line(21)).toBe('Review first — 21 words are waiting (20 per session)')
-    expect(line(37)).toBe('Review first — 37 words are waiting (20 per session)')
-    expect(line(250)).toBe('Review first — 250 words are waiting (20 per session)')
+    expect(line(21)).toBe('Review first — 20 of 21 words today')
+    expect(line(37)).toBe('Review first — 20 of 37 words today')
+    expect(line(250)).toBe('Review first — 20 of 250 words today')
   })
 
-  it('Russian: 20 or fewer is the line as it was; 21 and more adds «, за раз — 20»', () => {
+  it('Russian: 20 or fewer is the line as it was; 21 and more says «сегодня 20 из N слов», with the noun in the genitive', () => {
     setLanguage('ru')
     expect(line(1)).toBe('Сначала повторение — ждет 1 слово')
     expect(line(20)).toBe('Сначала повторение — ждут 20 слов')
-    expect(line(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20')
-    expect(line(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20')
-    expect(line(250)).toBe('Сначала повторение — ждут 250 слов, за раз — 20')
+    expect(line(21)).toBe('Сначала повторение — сегодня 20 из 21 слова')
+    expect(line(37)).toBe('Сначала повторение — сегодня 20 из 37 слов')
+    expect(line(250)).toBe('Сначала повторение — сегодня 20 из 250 слов')
   })
 
-  it('Russian, for every count from 1 to 1000: the verb and the noun agree with the number by the rule (checked against a hand-written rule, not the library), and the second part is there exactly past 20', () => {
+  it('Russian, for every count from 1 to 1000: by a hand-written rule (not the library), the verb and the noun agree up to 20, and past 20 the noun after «из» is genitive (слова after 1, слов otherwise)', () => {
     setLanguage('ru')
     const form = (n: number) => (n % 100 >= 11 && n % 100 <= 14 ? 'many' : n % 10 === 1 ? 'one' : n % 10 >= 2 && n % 10 <= 4 ? 'few' : 'many')
     for (let n = 1; n <= 1000; n++) {
       const f = form(n)
-      const expected = `Сначала повторение — ${f === 'one' ? 'ждет' : 'ждут'} ${n} ${f === 'one' ? 'слово' : f === 'few' ? 'слова' : 'слов'}${n > 20 ? ', за раз — 20' : ''}`
+      const expected = n > 20 ? `Сначала повторение — сегодня 20 из ${n} ${f === 'one' ? 'слова' : 'слов'}` : `Сначала повторение — ${f === 'one' ? 'ждет' : 'ждут'} ${n} ${f === 'one' ? 'слово' : f === 'few' ? 'слова' : 'слов'}`
       expect(line(n), String(n)).toBe(expected)
     }
   })
 
-  it('English, for every count from 1 to 1000: "is" for one, "are" for the rest, and the second part exactly past 20', () => {
+  it('English, for every count from 1 to 1000: "is" for one, "are" for the rest up to 20, and "20 of N words today" past it', () => {
     for (let n = 1; n <= 1000; n++) {
-      expect(line(n), String(n)).toBe(`Review first — ${n} ${n === 1 ? 'word is' : 'words are'} waiting${n > 20 ? ' (20 per session)' : ''}`)
+      expect(line(n), String(n)).toBe(n > 20 ? `Review first — 20 of ${n} words today` : `Review first — ${n} ${n === 1 ? 'word is' : 'words are'} waiting`)
     }
   })
 })
-

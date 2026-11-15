@@ -242,6 +242,40 @@ describe('the action tiles', () => {
     expect(part(more, 'review', 'tile-count')).toBe('8')
   })
 
+  describe('the Review tile past one session shows the session\'s portion and the whole', () => {
+    const due = (n: number) => render({}, [...learnedWords(n + 5, n), ...unlearned(5)])
+
+    it('up to one session (7, 20 due) it is as it was: the count, and the line that says what the tile is for', () => {
+      for (const n of [7, 20]) {
+        const html = due(n)
+        expect(part(html, 'review', 'tile-count')).toBe(String(n))
+        expect(part(html, 'review', 'tile-sub')).toBe('recall what you learned')
+      }
+    })
+
+    it('past it (21, 112 due) the count is the 20 of one session and the line under the label says out of how many; Learn\'s count is untouched', () => {
+      const html = due(112)
+      expect(part(html, 'review', 'tile-count')).toBe('20')
+      expect(part(html, 'review', 'tile-sub')).toBe('of 112')
+      expect(part(html, 'learn', 'tile-count')).toBe('5')
+      expect(part(due(21), 'review', 'tile-count')).toBe('20')
+      expect(part(due(21), 'review', 'tile-sub')).toBe('of 21')
+      expect(tile(html, 'review')).not.toContain('disabled')
+    })
+
+    it('in Russian', () => {
+      setLanguage('ru')
+      try {
+        const html = due(112)
+        expect(part(html, 'review', 'tile-count')).toBe('20')
+        expect(part(html, 'review', 'tile-sub')).toBe('из 112')
+        expect(part(due(7), 'review', 'tile-sub')).toBe('вспомнить выученное')
+      } finally {
+        setLanguage('en')
+      }
+    })
+  })
+
   describe('the Practice tile and its panel', () => {
     const panel = (html: string) => html.match(/<div[^>]*class="home-panel"[^>]*>/)![0]
     const attr = (el: string, name: string) => el.match(new RegExp(` ${name}="([^"]*)"`))?.[1]
@@ -891,20 +925,28 @@ describe('the line of advice under the streak, and the tile it points at', () =>
     expect(adviceOf(states.allClear())).toBe('All caught up')
   })
 
-  it('the number due in review first is the real total, not one session\'s worth, and past one session the line says how many a session holds', () => {
-    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 57 words are waiting (20 per session) →')
+  it('past one session the line names the session\'s portion and the whole, not "waiting" and "per session"', () => {
+    expect(adviceOf(render({}, [...learnedWords(60, 57), ...unlearned(5)]))).toBe('Review first — 20 of 57 words today →')
   })
 
-  it('the boundary: 20 due is the line as it was, 21 due says both numbers — on Home, in both languages', () => {
+  it('the boundary: 20 due is the line as it was, 21 due names the portion and the whole — on Home, in both languages, with the right form after "из"', () => {
     const at = (due: number) => adviceOf(render({}, [...learnedWords(due + 5, due), ...unlearned(5)]))
+    expect(at(7)).toBe('Review first — 7 words are waiting →')
     expect(at(19)).toBe('Review first — 19 words are waiting →')
     expect(at(20)).toBe('Review first — 20 words are waiting →')
-    expect(at(21)).toBe('Review first — 21 words are waiting (20 per session) →')
+    expect(at(21)).toBe('Review first — 20 of 21 words today →')
+    expect(at(112)).toBe('Review first — 20 of 112 words today →')
     setLanguage('ru')
     try {
+      expect(at(7)).toBe('Сначала повторение — ждут 7 слов →')
       expect(at(20)).toBe('Сначала повторение — ждут 20 слов →')
-      expect(at(21)).toBe('Сначала повторение — ждет 21 слово, за раз — 20 →')
-      expect(at(37)).toBe('Сначала повторение — ждут 37 слов, за раз — 20 →')
+      expect(at(21)).toBe('Сначала повторение — сегодня 20 из 21 слова →')
+      expect(at(22)).toBe('Сначала повторение — сегодня 20 из 22 слов →')
+      expect(at(25)).toBe('Сначала повторение — сегодня 20 из 25 слов →')
+      expect(at(31)).toBe('Сначала повторение — сегодня 20 из 31 слова →')
+      expect(at(111)).toBe('Сначала повторение — сегодня 20 из 111 слов →')
+      expect(at(112)).toBe('Сначала повторение — сегодня 20 из 112 слов →')
+      expect(at(121)).toBe('Сначала повторение — сегодня 20 из 121 слова →')
     } finally {
       setLanguage('en')
     }

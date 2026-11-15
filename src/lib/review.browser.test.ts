@@ -42,6 +42,8 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
   }
 
   const tile = (page: Page) => page.$eval('[data-tile="review"] .tile-count', (e) => Number(e.textContent))
+  /** The line under the Review label: "of 50" once more than one session is due, and what the tile is for otherwise. */
+  const tileSub = (page: Page) => page.$eval('[data-tile="review"] .tile-sub', (e) => e.textContent)
   const counter = (page: Page) => page.$eval('.review-count', (e) => e.textContent ?? '')
   const headword = (page: Page) => page.$eval('.flip-front .wc-headword', (e) => e.textContent ?? '')
   const postBatch = (page: Page) => page.$eval('.post-batch', (e) => ({ title: e.querySelector('h2')!.textContent, subtitle: e.querySelector('.subtitle')!.textContent, buttons: Array.from(e.querySelectorAll('button')).map((b) => b.textContent?.trim()) }))
@@ -67,9 +69,10 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
   const number = (esWord: string) => Number(esWord.replace('vieja', ''))
   const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => `vieja${from + i}`)
 
-  it('a backlog of 50 is worked through in sessions of 20, 20 and 10, the most overdue first; the tile shows the real total throughout', async () => {
+  it('a backlog of 50 is worked through in sessions of 20, 20 and 10, the most overdue first; the tile shows the next portion, and out of how many', async () => {
     const page = await open('due=50')
-    expect(await tile(page)).toBe(50) // not 20
+    expect(await tile(page)).toBe(20) // one session's portion, not the 50
+    expect(await tileSub(page)).toBe('of 50')
 
     await page.click('[data-tile="review"]')
     await page.waitForSelector('.flip')
@@ -86,7 +89,8 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
     expect(await postBatch(page)).toEqual({ title: 'Session complete', subtitle: '30 words are still due.', buttons: ['Continue', 'Back to home'] })
     await page.evaluate(() => (Array.from(document.querySelectorAll('.post-batch button')).find((b) => b.textContent?.trim() === 'Back to home') as HTMLElement).click())
     await page.waitForSelector('[data-tile="review"]')
-    expect(await tile(page)).toBe(30) // the real total waiting, not 20 and not the session
+    expect(await tile(page)).toBe(20) // 30 are left: the next portion is 20 again
+    expect(await tileSub(page)).toBe('of 30')
 
     await page.click('[data-tile="review"]')
     await page.waitForSelector('.flip')
@@ -339,7 +343,8 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
 
   describe('the line of advice on Home, at 320px, in both languages', () => {
     const states = [
-      { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 50 words are waiting (20 per session) →', ru: 'Сначала повторение — ждут 50 слов, за раз — 20 →' },
+      { name: 'reviewFirst', query: 'due=50', primary: 'review', en: 'Review first — 20 of 50 words today →', ru: 'Сначала повторение — сегодня 20 из 50 слов →' },
+      { name: 'reviewFirstOneSession', query: 'due=7', primary: 'review', en: 'Review first — 7 words are waiting →', ru: 'Сначала повторение — ждут 7 слов →' },
       { name: 'learnNew', query: 'due=0&pool=30', primary: 'learn', en: 'Nothing to review — 10 new words ready', ru: 'Повторять нечего — можно изучить 10 новых слов' },
       { name: 'allDoneToday', query: 'due=0&pool=30&met=1', primary: null, en: 'Today: 10 new words. Tomorrow: 10 new words.', ru: 'Сегодня: 10 новых слов. Завтра: 10 новых слов.' },
       { name: 'poolEmpty', query: 'due=0', primary: null, en: 'No new words left — add your own, or practise', ru: 'Новые слова закончились — добавьте свои или потренируйтесь' },
@@ -568,14 +573,14 @@ describe.skipIf(!CHROME)('the Review session limit', () => {
       })
 
     for (const language of ['en', 'ru'] as const) {
-      for (const [digits, learn, review, query] of [[1, '5', '5', 'due=5&pool=5&limit=300'], [2, '50', '50', 'due=50&pool=50&limit=300'], [3, '300', '500', 'due=500&pool=500&limit=300']] as const) {
+      for (const [digits, learn, review, query] of [[1, '5', '5', 'due=5&pool=5&limit=300'], [2, '50', '20', 'due=50&pool=50&limit=300'], [3, '300', '20', 'due=500&pool=500&limit=300']] as const) {
         for (const width of [320, 360, 390]) {
           it(`${language === 'en' ? 'English' : 'Russian'}, ${digits}-digit counts, ${width}px: all three labels whole, nothing overflows or overlaps`, async () => {
             const page = await open(query, language === 'ru' ? 'ru' : undefined)
             await page.setViewport({ width, height: 760, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
             const tiles = await tilesOf(page)
             expect(tiles.map((t) => t.label)).toEqual(['Learn', 'Review', 'Practice'])
-            expect(tiles.map((t) => t.count)).toEqual([learn, review, null]) // Learn offers the smaller of the pool and the goal (300), Review the whole backlog
+            expect(tiles.map((t) => t.count)).toEqual([learn, review, null]) // Learn offers the smaller of the pool and the goal (300), Review one session's portion (20, with "of 500" under its label)
             for (const t of tiles) {
               expect(t.lines, `${t.id}: "${t.label}" is split over lines`).toBe(1)
               expect(t.labelOverflows, `${t.id} label overflows`).toBe(false)
