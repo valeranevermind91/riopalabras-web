@@ -8,6 +8,7 @@ import '../index.css'
 import { parseDictionary } from '../data/dictionary'
 import { createTombstoneClearer } from '../data/customWords'
 import type { EnrichResult } from '../data/enrich'
+import { parseNounGender } from '../data/gender'
 import { applyFavoriteFlag, applyHiddenFlag, applyProgressUpdates, applySettingsPatch, removeCustomWord, upsertCustomWord } from '../data/mutations'
 import { parseRioOverlay } from '../data/rio'
 import { isInLearnPool } from '../data/stats'
@@ -63,8 +64,8 @@ const reported: { shown: string; named: string }[] = []
 ;(window as never as { __reported: typeof reported }).__reported = reported
 
 async function boot() {
-  const [dictionary, rio] = await Promise.all([fetch('/words_enriched.json').then((r) => r.json()), fetch('/rio_overlay.json').then((r) => r.json())])
-  const base = parseDictionary(dictionary, parseRioOverlay(rio))
+  const [dictionary, rio, gender] = await Promise.all(['words_enriched', 'rio_overlay', 'noun_gender'].map((f) => fetch(`/${f}.json`).then((r) => r.json())))
+  const base = parseDictionary(dictionary, parseRioOverlay(rio), null, parseNounGender(gender))
   const day = 24 * 60 * 60 * 1000
   const now = Date.now()
   // Progress for the 40 most common reviewable words: some due, some well learned (interval 30), some learning (interval 5), some just seen in Learn (interval 0).

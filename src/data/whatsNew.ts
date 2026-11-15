@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'noun-articles',
+    at: '2026-11-15T19:40',
+    en: {
+      title: 'Nouns now show their article',
+      text: 'Cards for Spanish nouns now show el or la before the word — “la casa”, “el agua”, “el/la estudiante” — so you learn the gender along with the word. In Cloze you can type the article too: “casa” and “la casa” both count. A few words whose gender depends on the meaning, like “capital” and “orden”, show no article.',
+    },
+    ru: {
+      title: 'У существительных появился артикль',
+      text: 'На карточках существительных перед словом теперь стоит el или la — «la casa», «el agua», «el/la estudiante»: род запоминается вместе со словом. В Cloze артикль можно печатать: засчитываются и «casa», и «la casa». У нескольких слов, род которых зависит от значения, например «capital» и «orden», артикля нет.',
+    },
+  },
+  {
     id: 'reviews-for-today',
     at: '2026-11-14T22:01',
     en: {

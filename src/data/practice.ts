@@ -1,3 +1,4 @@
+import { answerArticles, genderArticle, type NounArticle } from './gender'
 import { headword, highlightTarget, type HighlightRange } from './headword'
 import type { MetricsRecorder } from './metrics'
 import { recordCards, type DayCardsDeps } from './dayCards'
@@ -323,6 +324,8 @@ export interface ClozeItem {
   readonly target: ClozeTarget
   /** The card's headword: also accepted as an answer. */
   readonly headword: string
+  /** The noun's article for the form the card shows (see data/gender.ts), which may stand before the answer; null for a word with none. `headword` stays the bare word. */
+  readonly article: NounArticle | null
 }
 
 /** Learned practice words that have a usable blank, one per headword. */
@@ -331,7 +334,7 @@ export function clozePool(words: readonly Word[]): ClozeItem[] {
   for (const word of words) {
     if (!isPracticeWord(word)) continue
     const target = clozeTarget(word)
-    if (target) items.push({ word, target, headword: headword(word).text })
+    if (target) items.push({ word, target, headword: headword(word).text, article: genderArticle(word) })
   }
   return uniqueByHeadword(items, (i) => i.headword)
 }
@@ -378,11 +381,43 @@ export function clozeVerbForms(word: Pick<Word, 'pos' | 'isCustom'>, head: strin
   return word.pos === 'v' && !word.isCustom ? verbForms(head) : null
 }
 
+const TYPED_ARTICLE = /^(el|la|los|las)\s+(\S.*)$/
+
 /**
  * Trimmed and case-insensitive. Accepts the form in the sentence, the headword and, for a verb, any other form of it (`forms`); a missing or
  * extra accent is still correct (the screen nudges); ñ is never folded to n.
+ * A noun may also be typed with its article ("la casa"), when it has one (`article`, from the word's data): the article of its gender in the singular goes with the
+ * headword ("la casa"), the matching plural article with the form the sentence has when that is not the headword ("las casas"); a noun that is only plural takes its
+ * plural article with either. The article never changes what the rest has to be, and the verdict is the one the bare word would get.
  */
-export function checkClozeAnswer({ typed, target, headword: head, forms = null }: { typed: string; target: string; headword: string; forms?: ReadonlySet<string> | null }): ClozeVerdict {
+export function checkClozeAnswer({
+  typed,
+  target,
+  headword: head,
+  forms = null,
+  article = null,
+}: {
+  typed: string
+  target: string
+  headword: string
+  forms?: ReadonlySet<string> | null
+  article?: NounArticle | null
+}): ClozeVerdict {
+  const bare = checkBareAnswer({ typed, target, headword: head, forms })
+  if (bare.outcome === 'correct' || !article) return bare
+
+  const m = TYPED_ARTICLE.exec(canon(typed))
+  if (!m) return bare
+  const { singular, plural, pluralOnly } = answerArticles(article)
+  const rest = foldAccents(m[2])
+  const isHead = rest === foldAccents(canon(head))
+  const isTarget = rest === foldAccents(canon(target))
+  const headwordDiffers = canon(head) !== canon(target)
+  const ok = (singular.includes(m[1]) && isHead) || (plural.includes(m[1]) && ((isTarget && (headwordDiffers || pluralOnly)) || (pluralOnly && isHead)))
+  return ok ? checkBareAnswer({ typed: m[2], target, headword: head, forms }) : bare
+}
+
+function checkBareAnswer({ typed, target, headword: head, forms }: { typed: string; target: string; headword: string; forms: ReadonlySet<string> | null }): ClozeVerdict {
   const t = canon(typed)
   if (t === '') return { outcome: 'wrong', kind: 'wrong' }
   const form = canon(target)

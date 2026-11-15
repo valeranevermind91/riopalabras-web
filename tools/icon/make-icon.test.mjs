@@ -76,7 +76,7 @@ describe('where the icon is used', () => {
   })
 
   it('public/ holds only what the app uses: no leftover sprite, no stock logo; its fonts folder only the font files and their licences', () => {
-    expect(fs.readdirSync(path.join(ROOT, 'public')).sort()).toEqual(['examples_fallback.json', 'favicon.svg', 'fonts', 'rio_overlay.json', 'words_enriched.json'])
+    expect(fs.readdirSync(path.join(ROOT, 'public')).sort()).toEqual(['examples_fallback.json', 'favicon.svg', 'fonts', 'noun_gender.json', 'rio_overlay.json', 'words_enriched.json'])
     expect(fs.readdirSync(path.join(ROOT, 'public', 'fonts')).sort()).toEqual([
       'Fraunces-OFL.txt',
       'Manrope-OFL.txt',

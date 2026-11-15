@@ -1,9 +1,12 @@
 import type { UiLanguage } from '../lib/language'
 import type { ThemeChoice } from '../lib/theme'
+import type { NounGender } from './gender'
 import type { RioExample, RioInfo, RioRegion } from './rio'
 
 export interface Word {
   readonly esWord: string
+  /** A noun's article, for the card to show before the headword (see data/gender.ts: use genderArticle(), which checks it is for the form the card shows). Display only; null for a custom word and any word with none. */
+  readonly gender: NounGender | null
   /** Legacy free-text Rioplatense form. Only set when the typed overlay failed to load (or for custom words). */
   readonly esRioplatense: string | null
   /** The typed Rioplatense overlay entry, when the word has an accepted one. */

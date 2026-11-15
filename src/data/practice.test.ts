@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fakeSupabase } from '../testing/fakeSupabase'
 import { makeWord } from '../testing/makeWord'
 import { parseDictionary } from './dictionary'
+import { parseNounGender } from './gender'
 import { createLocalMetricsStore, createMetricsRecorder } from './metrics'
 import {
   CLOZE_BLANK,
@@ -480,6 +481,114 @@ describe('Cloze: checking answers', () => {
       expect(t.gaveUp('está')).toContain('está')
       expect(t.score(3, 10)).toContain('3')
     }
+  })
+})
+
+describe('Cloze: an article typed before the noun', () => {
+  type Article = 'el' | 'la' | 'el/la' | 'los' | 'las' | null
+  const check = (typed: string, article: Article, target = 'casa', head = 'casa') => checkClozeAnswer({ typed, target, headword: head, article })
+  const right = (typed: string, article: Article, target?: string, head?: string) => check(typed, article, target, head).outcome === 'correct'
+
+  it('"casa" still counts, as before, and so does "la casa", with the same kind of verdict', () => {
+    expect(check('casa', 'la')).toEqual({ outcome: 'correct', kind: 'exact' })
+    expect(check('la casa', 'la')).toEqual({ outcome: 'correct', kind: 'exact' })
+    expect(check('  La  CASA ', 'la')).toEqual({ outcome: 'correct', kind: 'exact' })
+  })
+
+  it('the article is the word\'s own: "el casa" is wrong, so is an article alone, and so is a second word that is not the noun', () => {
+    expect(right('el casa', 'la')).toBe(false)
+    expect(right('la', 'la')).toBe(false)
+    expect(right('la mesa', 'la')).toBe(false)
+    expect(right('la la casa', 'la')).toBe(false)
+  })
+
+  it('a word with no article (not in the data, a custom word) takes none: "la casa" is wrong, "casa" is right', () => {
+    expect(right('la casa', null)).toBe(false)
+    expect(right('casa', null)).toBe(true)
+    expect(checkClozeAnswer({ typed: 'la casa', target: 'casa', headword: 'casa' }).outcome).toBe('wrong') // the field is optional: nothing given, nothing accepted
+  })
+
+  it('el/la words take either', () => {
+    expect(right('el estudiante', 'el/la', 'estudiante', 'estudiante')).toBe(true)
+    expect(right('la estudiante', 'el/la', 'estudiante', 'estudiante')).toBe(true)
+    expect(right('los estudiantes', 'el/la', 'estudiantes', 'estudiante')).toBe(true)
+    expect(right('las estudiantes', 'el/la', 'estudiantes', 'estudiante')).toBe(true)
+  })
+
+  it('the matching plural article goes with the plural form in the sentence, and only with it', () => {
+    expect(check('las casas', 'la', 'casas', 'casa')).toEqual({ outcome: 'correct', kind: 'exact' })
+    expect(right('los casas', 'la', 'casas', 'casa')).toBe(false) // not this word's gender
+    expect(right('las casa', 'la', 'casas', 'casa')).toBe(false) // the plural article with the singular
+    expect(right('la casas', 'la', 'casas', 'casa')).toBe(false) // the singular article with the plural
+    expect(right('las casas', 'la', 'casa', 'casa')).toBe(false) // the sentence has the singular: the plural is not what is asked
+    expect(right('los libros', 'el', 'libros', 'libro')).toBe(true)
+    expect(right('las libros', 'el', 'libros', 'libro')).toBe(false)
+  })
+
+  it('the singular article with the headword when the sentence has another form is the headword answer (the nudge "in this sentence: …")', () => {
+    expect(check('la casa', 'la', 'casas', 'casa')).toEqual({ outcome: 'correct', kind: 'headword' })
+    expect(check('casa', 'la', 'casas', 'casa')).toEqual({ outcome: 'correct', kind: 'headword' })
+  })
+
+  it('a plural-only noun takes its plural article, with the form it is shown in', () => {
+    expect(right('las gafas', 'las', 'gafas', 'gafas')).toBe(true)
+    expect(right('gafas', 'las', 'gafas', 'gafas')).toBe(true)
+    expect(right('la gafas', 'las', 'gafas', 'gafas')).toBe(false)
+    expect(right('los gafas', 'las', 'gafas', 'gafas')).toBe(false)
+    expect(right('los bienes', 'los', 'bienes', 'bienes')).toBe(true)
+  })
+
+  it('a missing or an extra accent after the article is still right, with the accent nudge; ñ is not n', () => {
+    expect(check('el dia', 'el', 'día', 'día')).toEqual({ outcome: 'correct', kind: 'accent' })
+    expect(check('EL DÍA', 'el', 'día', 'día')).toEqual({ outcome: 'correct', kind: 'exact' })
+    expect(right('el ano', 'el', 'año', 'año')).toBe(false)
+    expect(right('el año', 'el', 'año', 'año')).toBe(true)
+  })
+
+  it('el agua: a feminine noun with a stressed a- takes el, and "la agua" is not an answer', () => {
+    expect(right('el agua', 'el', 'agua', 'agua')).toBe(true)
+    expect(right('la agua', 'el', 'agua', 'agua')).toBe(false)
+  })
+
+  it('a multi-word headword takes the article before all of it', () => {
+    expect(right('el control remoto', 'el', 'control remoto', 'control remoto')).toBe(true)
+    expect(right('control remoto', 'el', 'control remoto', 'control remoto')).toBe(true)
+    expect(right('el control', 'el', 'control remoto', 'control remoto')).toBe(false)
+  })
+
+  it('a verb has no article: the verb forms still count and an article before one does not', () => {
+    const forms = verbForms('tener')
+    expect(checkClozeAnswer({ typed: 'tienes', target: 'tenés', headword: 'tener', forms, article: null }).kind).toBe('form')
+    expect(checkClozeAnswer({ typed: 'el tener', target: 'tenés', headword: 'tener', forms, article: null }).outcome).toBe('wrong')
+  })
+
+  it('over the real dictionary: every question that has an article accepts "article + headword" as typed, and none accepts another noun\'s article', () => {
+    const gendered = parseDictionary(
+      JSON.parse(readFileSync('public/words_enriched.json', 'utf8')),
+      parseRioOverlay(JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))),
+      parseFallbackExamples(JSON.parse(readFileSync('public/examples_fallback.json', 'utf8'))),
+      parseNounGender(JSON.parse(readFileSync('public/noun_gender.json', 'utf8'))),
+    )
+    const pool = clozePool(gendered.map((w) => ({ ...w, repetitions: 1, nextReview: past })))
+    const withArticle = pool.filter((i) => i.article)
+    expect(withArticle.length).toBeGreaterThan(300)
+    for (const item of withArticle) {
+      const typed = `${item.article === 'el/la' ? 'la' : item.article} ${item.headword}`
+      expect(checkClozeAnswer({ typed, target: item.target.target, headword: item.headword, article: item.article }).outcome, `${typed} (${item.target.target})`).toBe('correct')
+      const wrong = item.article === 'la' ? 'el' : 'la'
+      if (item.article !== 'el/la') expect(checkClozeAnswer({ typed: `${wrong} ${item.headword}`, target: item.target.target, headword: item.headword, article: item.article }).outcome, `${wrong} ${item.headword}`).toBe('wrong')
+    }
+  })
+
+  it('the question carries the word\'s article, and only for the form the card shows', () => {
+    const word = withExample('casa', 'La casa es grande.', 'casa', { gender: { article: 'la', form: 'casa' } })
+    const item = clozePool([word])[0]
+    expect(item.article).toBe('la')
+    expect(item.headword).toBe('casa') // the headword stays the bare word: the hint, the log and the uniqueness are made of it
+    const bare = clozePool([withExample('casa', 'La casa es grande.', 'casa')])[0]
+    expect(bare.article).toBeNull()
+    const other = clozePool([withExample('casa', 'La casa es grande.', 'casa', { gender: { article: 'la', form: 'hogar' } })])[0]
+    expect(other.article).toBeNull() // an entry made for another form is not this card's
   })
 })
 

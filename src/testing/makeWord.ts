@@ -3,6 +3,7 @@ import type { ProgressUpdate, Word } from '../data/types'
 export function makeWord(esWord: string, overrides: Partial<Word> = {}): Word {
   return Object.freeze({
     esWord,
+    gender: null,
     esRioplatense: null,
     rio: null,
     fallbackExample: null,

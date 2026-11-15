@@ -55,6 +55,7 @@ export function customWordFromRow(row: UserWordRow): Word {
   const ruTranslation = row.ru_translation ?? ''
   return {
     esWord: row.es_word.trim(),
+    gender: null, // a word the user added carries no article (nothing vouches for it)
     esRioplatense: row.es_rioplatense?.trim() || null,
     rio: null,
     fallbackExample: null,

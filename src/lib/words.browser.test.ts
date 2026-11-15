@@ -974,7 +974,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     ] as const) {
       it(`${language}: "boleto" (a meaning shift) has the pill and says the shift in a line of its own, above the standard meaning, inside the card`, async () => {
         const m = await marks(query, 'boleto')
-        expect(m).toMatchObject({ headword: 'boleto', pill, tag: null, shift, relationFirst: 'wc-shift', standardMeaning: true, inside: true, pageWide: true })
+        expect(m).toMatchObject({ headword: 'el boleto', pill, tag: null, shift, relationFirst: 'wc-shift', standardMeaning: true, inside: true, pageWide: true })
         // One line at 320px today (English 223px, Russian 228px of 238). If a wider font or a longer word ever wraps the Russian, it wraps (the meaning comes first,
         // and the line is balanced so the second line is never a single word): two lines at most.
         expect(m.shiftLines).toBeGreaterThanOrEqual(1)
@@ -989,7 +989,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
       it(`${language}: "casa" (an ordinary word) shows nothing Rioplatense: no pill, no tag, no shift`, async () => {
         const m = await marks(query, 'casa')
-        expect(m).toMatchObject({ headword: 'casa', pill: null, tag: null, shift: null, relationFirst: null, pageWide: true })
+        expect(m).toMatchObject({ headword: 'la casa', pill: null, tag: null, shift: null, relationFirst: null, pageWide: true })
       }, 60_000)
     }
   })
@@ -1253,7 +1253,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
       expect((await sentAll(page)).words).toEqual([])
       await clickText(page, 'button', f.openExisting('casa'))
       await page.waitForSelector('.word-detail')
-      expect(await page.$eval('.wc-headword', (e) => e.textContent)).toBe('casa')
+      expect(await page.$eval('.wc-headword', (e) => e.textContent)).toBe('la casa') // the card of the dictionary's casa, with its article
       expect(await page.$('.custom-mark')).toBeNull() // a dictionary word is not "added by you"
       await page.close()
     }, 60_000)

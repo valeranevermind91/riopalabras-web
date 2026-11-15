@@ -1,3 +1,4 @@
+import { parseNounGender, type NounGender } from './gender'
 import { parseFallbackExamples, parseRioOverlay, type RioExample, type RioInfo } from './rio'
 import type { Word } from './types'
 import { wordKey } from './words'
@@ -5,6 +6,7 @@ import { wordKey } from './words'
 const DICTIONARY_URL = '/words_enriched.json'
 const RIO_OVERLAY_URL = '/rio_overlay.json'
 const FALLBACK_EXAMPLES_URL = '/examples_fallback.json'
+const NOUN_GENDER_URL = '/noun_gender.json'
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value : ''
@@ -14,7 +16,12 @@ function optionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-function toBaseWord(entry: unknown, rio: ReadonlyMap<string, RioInfo> | null, fallback: ReadonlyMap<string, RioExample> | null): Word | null {
+function toBaseWord(
+  entry: unknown,
+  rio: ReadonlyMap<string, RioInfo> | null,
+  fallback: ReadonlyMap<string, RioExample> | null,
+  gender: ReadonlyMap<string, NounGender> | null,
+): Word | null {
   if (!entry || typeof entry !== 'object') return null
   const e = entry as Record<string, unknown>
 
@@ -24,6 +31,7 @@ function toBaseWord(entry: unknown, rio: ReadonlyMap<string, RioInfo> | null, fa
 
   return Object.freeze({
     esWord,
+    gender: pos === 'n' ? (gender?.get(wordKey(esWord)) ?? null) : null,
     // With the typed overlay loaded, it replaces the legacy free-text field for every dictionary word.
     esRioplatense: rio ? null : optionalText(e.es_rioplatense),
     rio: rio?.get(wordKey(esWord)) ?? null,
@@ -57,18 +65,20 @@ function toBaseWord(entry: unknown, rio: ReadonlyMap<string, RioInfo> | null, fa
  * Validates the raw JSON array and returns frozen base words, skipping malformed and duplicate entries.
  * `rio` is the parsed Rioplatense overlay; without it (null: it failed to load) the legacy es_rioplatense field is kept.
  * `fallback` holds the neutral replacement examples (pass 3); without it the dictionary examples stay as they are.
+ * `gender` holds the nouns' articles; without it (null: it failed to load) no card shows one.
  */
 export function parseDictionary(
   raw: unknown,
   rio: ReadonlyMap<string, RioInfo> | null = null,
   fallback: ReadonlyMap<string, RioExample> | null = null,
+  gender: ReadonlyMap<string, NounGender> | null = null,
 ): readonly Word[] {
   if (!Array.isArray(raw)) throw new Error('Dictionary is not a JSON array')
 
   const seen = new Set<string>()
   const words: Word[] = []
   for (const entry of raw) {
-    const word = toBaseWord(entry, rio, fallback)
+    const word = toBaseWord(entry, rio, fallback, gender)
     if (!word) continue
     const key = wordKey(word.esWord)
     if (seen.has(key)) continue
@@ -122,9 +132,23 @@ async function fetchFallbackExamples(): Promise<ReadonlyMap<string, RioExample> 
   }
 }
 
+/** Never throws: without the file no card shows an article. */
+async function fetchNounGender(): Promise<ReadonlyMap<string, NounGender> | null> {
+  try {
+    const res = await fetch(NOUN_GENDER_URL)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const gender = parseNounGender(await res.json())
+    if (!gender) throw new Error('not the noun gender file')
+    return gender
+  } catch (err) {
+    console.warn('Noun articles unavailable, showing the words without them:', err)
+    return null
+  }
+}
+
 async function fetchDictionary(): Promise<readonly Word[]> {
-  const [raw, rio, fallback] = await Promise.all([fetchRawDictionary(), fetchRioOverlay(), fetchFallbackExamples()])
-  return parseDictionary(raw, rio, fallback)
+  const [raw, rio, fallback, gender] = await Promise.all([fetchRawDictionary(), fetchRioOverlay(), fetchFallbackExamples(), fetchNounGender()])
+  return parseDictionary(raw, rio, fallback, gender)
 }
 
 // One download per page load; callers (prefetch + consumer) share the same promise.

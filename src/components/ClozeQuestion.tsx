@@ -48,7 +48,7 @@ export function ClozeQuestion({ item, settings, keyboardInset = 0, onAnswered, o
 
   const check = () => {
     if (answer || typed.trim() === '') return
-    const verdict = checkClozeAnswer({ typed, target, headword: item.headword, forms: clozeVerbForms(item.word, item.headword) })
+    const verdict = checkClozeAnswer({ typed, target, headword: item.headword, forms: clozeVerbForms(item.word, item.headword), article: item.article })
     setAnswer({ kind: verdict.kind, outcome: verdict.outcome })
     onChecked?.()
   }

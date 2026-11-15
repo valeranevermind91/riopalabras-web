@@ -1,9 +1,9 @@
 import type { KeyboardEvent } from 'react'
-import { headword } from '../data/headword'
 import { headwordRegion, headwordRegister, isRioplatenseWord, relationFor } from '../data/relation'
 import type { TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
 import { strings } from '../strings'
+import { CardHeadword } from './CardHeadword'
 import { RegionTag } from './RegionTag'
 import { RegisterLabel } from './RegisterLabel'
 import { RelationLines, RelationNote } from './RelationBlock'
@@ -22,7 +22,6 @@ interface ReviewCardProps {
  * rating buttons) appears at the tap, not after the 450 ms animation.
  */
 export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardProps) {
-  const head = headword(word)
   const region = headwordRegion(word)
   const register = headwordRegister(word)
   const relation = relationFor(word)
@@ -50,7 +49,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
               <RegionTag region={region} />
               <RegisterLabel register={register} />
             </div>
-            <h2 className="wc-headword rf-headword">{head.text}</h2>
+            <CardHeadword word={word} className="rf-headword" />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
@@ -61,7 +60,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
             <RegionTag region={region} />
             <RegisterLabel register={register} />
           </div>
-          <h2 className="wc-headword">{head.text}</h2>
+          <CardHeadword word={word} />
           <RelationLines relation={relation} settings={settings} />
           <hr className="wc-divider" />
           <ExampleBlock word={word} settings={settings} />

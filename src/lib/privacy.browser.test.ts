@@ -71,7 +71,7 @@ describe.skipIf(!CHROME)('the privacy page in a browser', () => {
     const origin = new URL(base).origin
     expect(requests.filter((u) => !u.startsWith(origin))).toEqual([]) // not one request leaves the page's own site (so none to Telegram, Google, Supabase or the proxy)
     // and of its own site's files, none of the app: the dev server hands out source files by path, so the app's sign-in and Supabase would show here
-    expect(requests.map((u) => new URL(u).pathname).filter((path) => /supabase|\/lib\/(auth|supabase)|\/data\/|\/enrich|\/auth\/|words_enriched|rio_overlay|examples_fallback|\/App\.tsx|\/main\.tsx/i.test(path))).toEqual([])
+    expect(requests.map((u) => new URL(u).pathname).filter((path) => /supabase|\/lib\/(auth|supabase)|\/data\/|\/enrich|\/auth\/|words_enriched|rio_overlay|examples_fallback|noun_gender|\/App\.tsx|\/main\.tsx/i.test(path))).toEqual([])
     expect(await page.evaluate(() => (window as never as { Telegram?: unknown }).Telegram)).toBeUndefined()
     expect(await page.$$eval('script[src]', (els) => els.map((e) => new URL((e as HTMLScriptElement).src).origin))).toEqual(Array(await page.$$eval('script[src]', (els) => els.length)).fill(origin))
     expect(errors).toEqual([])

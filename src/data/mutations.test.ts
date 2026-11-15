@@ -8,6 +8,7 @@ import type { Word } from './types'
 function word(esWord: string, rank: number, overrides: Partial<Word> = {}): Word {
   return Object.freeze({
     esWord,
+    gender: null,
     esRioplatense: null,
     rio: null,
     fallbackExample: null,

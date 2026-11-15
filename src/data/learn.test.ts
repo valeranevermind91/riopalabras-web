@@ -25,6 +25,7 @@ const NOW = new Date(2026, 9, 2, 14, 30) // local, Montevideo
 function synthetic(esWord: string, rank: number, overrides: Partial<Word> = {}): Word {
   return Object.freeze({
     esWord,
+    gender: null,
     esRioplatense: null,
     rio: null,
     fallbackExample: null,

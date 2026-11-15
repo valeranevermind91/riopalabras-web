@@ -65,7 +65,7 @@ describe('the production build of the privacy page', () => {
     const code = joined(loaded('privacy.html').files)
     expect(code).toContain('Last updated')
     expect(code).toContain('Конфиденциальность')
-    for (const marker of [...APP_MARKERS, 'telegram-web-app', 'googleapis', 'gstatic', 'rio_overlay', 'examples_fallback', 'build-test.invalid', 'proxy.invalid']) expect(code, marker).not.toContain(marker)
+    for (const marker of [...APP_MARKERS, 'telegram-web-app', 'googleapis', 'gstatic', 'rio_overlay', 'examples_fallback', 'noun_gender', 'build-test.invalid', 'proxy.invalid']) expect(code, marker).not.toContain(marker)
   })
 
   it('and the markers are the right ones: the app\'s own page does contain them, and is a bigger bundle than the privacy page\'s app code', () => {
