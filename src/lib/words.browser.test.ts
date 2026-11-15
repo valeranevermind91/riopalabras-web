@@ -8,7 +8,7 @@ import { createServer, type ViteDevServer } from 'vite'
 import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 
 /**
- * The Words list and a word's detail in a real browser, over the real 4,749-word dictionary (src/testing/wordsHarness.tsx
+ * The Words list and a word's detail in a real browser, over the real 4,742-word dictionary (src/testing/wordsHarness.tsx
  * swaps list and detail the way App does): windowed rendering, the list keeping its place across a detail round trip,
  * the star and "Bring back" writing through the queue. Needs a Chrome or Chromium; skipped without one (CHROME_PATH).
  */
@@ -95,11 +95,11 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.waitForSelector('.vlist, .words-empty')
   }
 
-  it('renders a window of the list, not the list: a screenful of rows for 4,749 words, in a scroller as tall as all of them', async () => {
+  it('renders a window of the list, not the list: a screenful of rows for 4,742 words, in a scroller as tall as all of them', async () => {
     const page = await open()
     await segment(page, 'All')
     await page.waitForSelector('.vlist-space')
-    expect(await page.$eval('.vlist-space', (e) => (e as HTMLElement).offsetHeight)).toBe(4749 * 72)
+    expect(await page.$eval('.vlist-space', (e) => (e as HTMLElement).offsetHeight)).toBe(4742 * 72)
     const rendered = (await rows(page)).length
     expect(rendered).toBeGreaterThan(8)
     expect(rendered).toBeLessThan(30)
@@ -113,7 +113,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
   it('opens on All, most common first: segments All · Started · Hidden, and the Filters and Sort buttons', async () => {
     const page = await open()
-    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4749', 'Started 43', 'Hidden 2'])
+    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4742', 'Started 43', 'Hidden 2'])
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])
     expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency'])
     expect((await rows(page))[0]).toBe('de')
@@ -138,7 +138,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await scrollTo(page, 72 * 1500)
     const before = { top: await scrollTop(page), names: await rows(page) }
     const opened = await openRow(page, 4)
-    expect(await page.$eval('.wc-headword', (e) => e.textContent)).toBe(opened) // the detail is that word's card
+    // the detail is that word's card (its title may carry a noun's article, which the list row does not)
+    expect(await page.$eval('.wc-headword', (e) => Array.from(e.childNodes).filter((n) => !(n as Element).classList?.contains('wc-article')).map((n) => n.textContent).join('').trim())).toBe(opened)
     await back(page)
 
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])

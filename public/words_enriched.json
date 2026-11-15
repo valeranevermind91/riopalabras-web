@@ -337,7 +337,7 @@
   },
   {
     "es_word": "te",
-    "pos": "n",
+    "pos": "pron",
     "frequency": 3154723,
     "rank": 25,
     "en_translation": "you (direct/indirect object pronoun)",
@@ -1905,7 +1905,7 @@
   },
   {
     "es_word": "mi",
-    "pos": "n",
+    "pos": "determiner",
     "frequency": 430920,
     "rank": 138,
     "en_translation": "my",
@@ -5727,7 +5727,7 @@
   },
   {
     "es_word": "malo",
-    "pos": "n",
+    "pos": "adj",
     "frequency": 116920,
     "rank": 412,
     "en_translation": "bad",
@@ -7477,11 +7477,11 @@
   },
   {
     "es_word": "través",
-    "pos": "n",
+    "pos": "prep",
     "frequency": 91507,
     "rank": 537,
-    "en_translation": "across, through (usually in 'a través de')",
-    "ru_translation": "через, сквозь (обычно в 'a través de')",
+    "en_translation": "across, through (in \"a través de\")",
+    "ru_translation": "через, сквозь (в выражении \"a través de\")",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
     "example_sentence": "La luz del sol entraba a través de las persianas de la ventana.",
@@ -8345,7 +8345,7 @@
   },
   {
     "es_word": "mía",
-    "pos": "n",
+    "pos": "determiner",
     "frequency": 77546,
     "rank": 601,
     "en_translation": "mine (feminine possessive pronoun)",
@@ -9815,7 +9815,7 @@
   },
   {
     "es_word": "i",
-    "pos": "n",
+    "pos": "letter",
     "frequency": 66142,
     "rank": 707,
     "en_translation": "i (letter)",
@@ -14463,7 +14463,7 @@
   },
   {
     "es_word": "tuya",
-    "pos": "n",
+    "pos": "determiner",
     "frequency": 44444,
     "rank": 1046,
     "en_translation": "yours (feminine singular)",
@@ -16716,18 +16716,18 @@
     "word_form_in_example": "sostener"
   },
   {
-    "es_word": "veras",
-    "pos": "n",
+    "es_word": "de veras",
+    "pos": "adv",
     "frequency": 37715,
     "rank": 1213,
-    "en_translation": "truth, earnest (as in 'de veras' - truly, really)",
-    "ru_translation": "правда, серьезность (в выражении 'de veras' - действительно, в самом деле)",
+    "en_translation": "really, truly",
+    "ru_translation": "правда, в самом деле",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
     "example_sentence": "¿En serio me decís que te vas de viaje? ¿De veras?",
     "example_translation_en": "Are you serious when you tell me you're going on a trip? Really?",
     "example_translation_ru": "Ты серьезно говоришь, что едешь в путешествие? В самом деле?",
-    "word_form_in_example": "veras"
+    "word_form_in_example": "De veras"
   },
   {
     "es_word": "solamente",
@@ -17584,12 +17584,12 @@
     "word_form_in_example": "b"
   },
   {
-    "es_word": "gana",
+    "es_word": "ganas",
     "pos": "n",
     "frequency": 35469,
     "rank": 1276,
-    "en_translation": "desire, urge, will (often used in plural 'ganas')",
-    "ru_translation": "желание, охота",
+    "en_translation": "desire, urge (in 'tener ganas de' - to feel like)",
+    "ru_translation": "желание, охота (в выражении 'tener ganas de' - хотеть)",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
     "example_sentence": "No tengo **ganas** de salir hoy, estoy cansado.",
@@ -19586,20 +19586,6 @@
     "word_form_in_example": "sombra"
   },
   {
-    "es_word": "repente",
-    "pos": "n",
-    "frequency": 30954,
-    "rank": 1423,
-    "en_translation": "suddenness (as in 'de repente' - suddenly)",
-    "ru_translation": "внезапность (как в 'de repente' - вдруг)",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "Estábamos charlando tranquilos y de **repente** se cortó la luz.",
-    "example_translation_en": "We were chatting calmly and suddenly the power went out.",
-    "example_translation_ru": "Мы спокойно болтали, и вдруг выключился свет.",
-    "word_form_in_example": "repente"
-  },
-  {
     "es_word": "cadena",
     "pos": "n",
     "frequency": 30912,
@@ -19881,7 +19867,7 @@
   },
   {
     "es_word": "federal",
-    "pos": "n",
+    "pos": "adj",
     "frequency": 30126,
     "rank": 1445,
     "en_translation": "federal",
@@ -20105,7 +20091,7 @@
   },
   {
     "es_word": "t",
-    "pos": "n",
+    "pos": "letter",
     "frequency": 29776,
     "rank": 1461,
     "en_translation": "T (the letter)",
@@ -24668,20 +24654,6 @@
     "word_form_in_example": "reserva"
   },
   {
-    "es_word": "detente",
-    "pos": "n",
-    "frequency": 22855,
-    "rank": 1800,
-    "en_translation": "detent, détente (political)",
-    "ru_translation": "фиксатор, разрядка (политическая)",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "Los líderes buscaron una detente en las relaciones internacionales.",
-    "example_translation_en": "The leaders sought a détente in international relations.",
-    "example_translation_ru": "Лидеры искали разрядки в международных отношениях.",
-    "word_form_in_example": "detente"
-  },
-  {
     "es_word": "amistad",
     "pos": "n",
     "frequency": 22853,
@@ -26348,20 +26320,6 @@
     "word_form_in_example": "libra"
   },
   {
-    "es_word": "charles",
-    "pos": "n",
-    "frequency": 21185,
-    "rank": 1920,
-    "en_translation": "Charles (proper noun)",
-    "ru_translation": "Чарльз (имя собственное)",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "Mi amigo **Charles** viene a visitarnos el fin de semana.",
-    "example_translation_en": "My friend Charles is coming to visit us this weekend.",
-    "example_translation_ru": "Мой друг Чарльз приедет к нам на выходных.",
-    "word_form_in_example": "Charles"
-  },
-  {
     "es_word": "evento",
     "pos": "n",
     "frequency": 21142,
@@ -26934,20 +26892,6 @@
     "example_translation_en": "Don't believe anything he says, he's a real liar.",
     "example_translation_ru": "Не верь ему ничему, он очень лживый.",
     "word_form_in_example": "mentiroso"
-  },
-  {
-    "es_word": "rica",
-    "pos": "n",
-    "frequency": 20506,
-    "rank": 1966,
-    "en_translation": "delicious (feminine adjective), rich",
-    "ru_translation": "вкусная (женский род), богатая",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "¡Qué rica está esta milanesa con puré!",
-    "example_translation_en": "This milanesa with mashed potatoes is so delicious!",
-    "example_translation_ru": "Какая вкусная эта миланеса с пюре!",
-    "word_form_in_example": "rica"
   },
   {
     "es_word": "consciente",
@@ -36933,17 +36877,17 @@
   },
   {
     "es_word": "católico",
-    "pos": "n",
+    "pos": "adj",
     "frequency": 13410,
     "rank": 2722,
     "en_translation": "Catholic",
-    "ru_translation": "католик",
+    "ru_translation": "католический",
     "es_rioplatense": null,
     "is_rioplatense_variant": false,
-    "example_sentence": "Mi abuela es muy católica y va a misa todos los domingos.",
-    "example_translation_en": "My grandmother is very Catholic and goes to mass every Sunday.",
-    "example_translation_ru": "Моя бабушка очень католичка и ходит на мессу каждое воскресенье.",
-    "word_form_in_example": "católica"
+    "example_sentence": "Polonia es un país muy católico.",
+    "example_translation_en": "Poland is a very Catholic country.",
+    "example_translation_ru": "Польша — очень католическая страна.",
+    "word_form_in_example": "católico"
   },
   {
     "es_word": "equilibrio",
@@ -41774,20 +41718,6 @@
     "example_translation_en": "The bishop gave a special mass in the cathedral.",
     "example_translation_ru": "Епископ провел особую мессу в соборе.",
     "word_form_in_example": "obispo"
-  },
-  {
-    "es_word": "miro",
-    "pos": "n",
-    "frequency": 11267,
-    "rank": 3091,
-    "en_translation": "I look, I watch",
-    "ru_translation": "Я смотрю",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "Siempre miro las estrellas antes de dormir.",
-    "example_translation_en": "I always look at the stars before sleeping.",
-    "example_translation_ru": "Я всегда смотрю на звезды перед сном.",
-    "word_form_in_example": "miro"
   },
   {
     "es_word": "adaptar",
@@ -47139,7 +47069,7 @@
   },
   {
     "es_word": "etcétera",
-    "pos": "n",
+    "pos": "adv",
     "frequency": 9253,
     "rank": 3497,
     "en_translation": "etcetera, and so on",
@@ -57498,20 +57428,6 @@
     "word_form_in_example": "cumplimiento"
   },
   {
-    "es_word": "house",
-    "pos": "n",
-    "frequency": 6674,
-    "rank": 4307,
-    "en_translation": "house (as a loanword, e.g., house music)",
-    "ru_translation": "хаус (как заимствованное слово, например, хаус-музыка)",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "Fuimos a un boliche donde pasaban música house toda la noche.",
-    "example_translation_en": "We went to a club where they played house music all night.",
-    "example_translation_ru": "Мы пошли в клуб, где всю ночь играла хаус-музыка.",
-    "word_form_in_example": "house"
-  },
-  {
     "es_word": "maricón",
     "pos": "n",
     "frequency": 6673,
@@ -65938,20 +65854,6 @@
     "example_translation_en": "I pricked my finger with a rose thorn while pruning.",
     "example_translation_ru": "Я уколол палец розовой колючкой, пока обрезал.",
     "word_form_in_example": "espina"
-  },
-  {
-    "es_word": "may.",
-    "pos": "n",
-    "frequency": 5244,
-    "rank": 4968,
-    "en_translation": "May (abbreviation)",
-    "ru_translation": "май (сокр.)",
-    "es_rioplatense": null,
-    "is_rioplatense_variant": false,
-    "example_sentence": "La reunión está programada para el 15 de **may.**",
-    "example_translation_en": "The meeting is scheduled for May 15th.",
-    "example_translation_ru": "Встреча запланирована на 15 мая.",
-    "word_form_in_example": "may."
   },
   {
     "es_word": "intimidar",

@@ -133,6 +133,10 @@ if os.path.exists(ov_path):
     with open(ov_path, encoding='utf-8') as f:
         overrides = json.load(f)
 ov_lines = []
+# a key the dictionary gained after the model pass (a rename, like gana -> ganas) is added to the order here
+for key in overrides.get('set', {}):
+    if key not in order:
+        order.append(key)
 for key, display in overrides.get('set', {}).items():
     m = DISPLAY.match(display)
     if key not in order or not m:

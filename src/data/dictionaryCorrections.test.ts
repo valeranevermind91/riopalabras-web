@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseDictionary } from './dictionary'
+import { genderArticle, parseNounGender } from './gender'
 import { headword, highlightTarget } from './headword'
 import { clozeTarget, isPracticeWord } from './practice'
 import { isInLearnPool } from './stats'
@@ -75,5 +76,117 @@ describe('gil: the gloss leads with the slang, not the surname, and the headword
     expect(range).not.toBeNull()
     expect(sentence.slice(range!.start, range!.end)).toBe('gil')
     expect(clozeTarget(gil)?.target).toBe('gil')
+  })
+})
+
+// The clean-up after the grammatical-gender study (the owner's list, 15 November): English words and forms of other words that the frequency list counted, entries tagged
+// as nouns that are not, and two fixed phrases that were listed as words.
+describe('the clean-up after the gender study', () => {
+  const noun = JSON.parse(readFileSync('public/noun_gender.json', 'utf8')) as { e: Record<string, string> }
+  const gendered = parseDictionary(raw, null, null, parseNounGender(noun))
+  const keyed = (esWord: string) => gendered.find((w) => w.esWord === esWord)!
+
+  describe('removed', () => {
+    // miro (I look) and detente (stop!) are forms of mirar and detener, which are taught; charles is a name; house is an English word (a music genre), like boy and baby;
+    // rica is the feminine of rico; may. is the abbreviation of May; repente only appeared in the phrase "de repente" and was listed as a noun ("suddenness").
+    const removed = ['miro', 'detente', 'charles', 'house', 'rica', 'may.', 'repente']
+    const kept = { miro: 'mirar', detente: 'detener', rica: 'rico' }
+
+    it.each(removed)('%s is in no shipped data file, not in the fallback source and has no article', (esWord) => {
+      expect(entry(esWord), 'dictionary').toBeUndefined()
+      const fallback: { es_word: string }[] = JSON.parse(readFileSync('public/examples_fallback.json', 'utf8'))
+      expect(fallback.map((e) => e.es_word), 'public fallback').not.toContain(esWord)
+      const source = JSON.parse(readFileSync('tools/rio-overlay/results/overlay-v1/examples.fallback.json', 'utf8'))
+      expect(Object.keys(source.examples), 'fallback source').not.toContain(esWord)
+      const overlay: { es_word: string }[] = JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))
+      expect(overlay.map((e) => e.es_word), 'overlay').not.toContain(esWord)
+      expect(Object.keys(noun.e), 'noun articles').not.toContain(esWord)
+    })
+
+    it.each(Object.entries(kept))('%s is gone but %s is still taught', (_removed, taught) => {
+      expect(entry(taught)).toBeDefined()
+    })
+
+    it('the dictionary has 4742 entries: the 4749 it had, less these seven', () => {
+      expect(raw.length).toBe(4742)
+    })
+  })
+
+  describe('re-tagged', () => {
+    it.each([
+      ['etcétera', 'adv'],
+      ['malo', 'adj'],
+      ['federal', 'adj'],
+      ['católico', 'adj'],
+      ['mía', 'determiner'],
+      ['tuya', 'determiner'],
+      ['te', 'pron'],
+      ['mi', 'determiner'],
+      ['i', 'letter'],
+      ['t', 'letter'],
+      ['través', 'prep'],
+    ])('%s is %s', (esWord, pos) => {
+      expect(entry(esWord)!.pos).toBe(pos)
+    })
+
+    it('the ones that are now a pronoun, a determiner, a letter or a preposition are reference only (like pa and the other letters), and the adjectives are taught', () => {
+      for (const esWord of ['mía', 'tuya', 'te', 'mi', 'i', 't', 'través']) {
+        const w = word(esWord)
+        expect(isInLearnPool(w), `${esWord} in the Learn pool`).toBe(false)
+        expect(wordStatus(w, new Date()).kind, `${esWord} status`).toBe('reference')
+      }
+      for (const esWord of ['malo', 'federal', 'católico', 'etcétera']) expect(isInLearnPool(word(esWord)), `${esWord} in the Learn pool`).toBe(true)
+    })
+
+    it('none of them has an article any more or still (an adjective, a pronoun, a letter has no gender to show)', () => {
+      for (const esWord of ['etcétera', 'malo', 'federal', 'católico', 'mía', 'tuya', 'te', 'mi', 'i', 't', 'través']) expect(genderArticle(keyed(esWord)), esWord).toBeNull()
+    })
+
+    it('católico: "Catholic" / «католический», with an example that uses it as an adjective in the form of the headword', () => {
+      const c = entry('católico') as unknown as Record<string, string>
+      expect(c.en_translation).toBe('Catholic')
+      expect(c.ru_translation).toBe('католический')
+      expect(c.example_sentence).toBe('Polonia es un país muy católico.')
+      expect(c.example_translation_en).toBe('Poland is a very Catholic country.')
+      expect(c.example_translation_ru).toBe('Польша — очень католическая страна.')
+      expect(c.word_form_in_example).toBe('católico')
+      expect(clozeTarget(word('católico'))?.target).toBe('católico')
+    })
+
+    it('través keeps its gloss, which now says it is the "a través de" of the preposition', () => {
+      expect(entry('través')!.en_translation).toBe('across, through (in "a través de")')
+    })
+  })
+
+  describe('renamed', () => {
+    // No rows for veras or gana in user_progress, user_hidden_words or user_favorites (checked by the owner in Supabase on 15 November), so the key can change.
+    it('veras is "de veras", an adverb: "really, truly", with the sentence that already had it, and the card and the highlight work with the phrase (Cloze does not blank a two-word form)', () => {
+      expect(entry('veras')).toBeUndefined()
+      const e = entry('de veras') as unknown as Record<string, string | number>
+      expect(e.pos).toBe('adv')
+      expect(e.en_translation).toBe('really, truly')
+      expect(e.ru_translation).toBe('правда, в самом деле')
+      expect(e.rank).toBe(1213)
+      const w = word('de veras')
+      expect(headword(w).text).toBe('de veras')
+      const { sentence, range } = highlightTarget(w)
+      expect(sentence.slice(range!.start, range!.end)).toBe('De veras')
+      expect(clozeTarget(w)).toBeNull() // a form of two words is never blanked (like con vos, control remoto): the phrase is taught in Learn, Review and Matching
+      expect(genderArticle(keyed('de veras'))).toBeNull()
+    })
+
+    it('gana is "ganas", the plural the example uses and "tener ganas de" is made of, with the article "las"', () => {
+      expect(entry('gana')).toBeUndefined()
+      const e = entry('ganas') as unknown as Record<string, string | number>
+      expect(e.pos).toBe('n')
+      expect(e.rank).toBe(1276)
+      expect(e.en_translation).toBe("desire, urge (in 'tener ganas de' - to feel like)")
+      expect(e.ru_translation).toBe("желание, охота (в выражении 'tener ganas de' - хотеть)")
+      expect(noun.e.ganas).toBe('las')
+      expect(genderArticle(keyed('ganas'))).toBe('las')
+      expect(Object.keys(noun.e)).not.toContain('gana')
+      const w = word('ganas')
+      expect(clozeTarget(w)?.target).toBe('ganas')
+    })
   })
 })
