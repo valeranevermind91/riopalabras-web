@@ -6,15 +6,36 @@
     "papi": "el papi",
     "bienes": "los bienes",
     "muebles": "los muebles",
-    "modales": "los modales"
+    "modales": "los modales",
+    "quinto": "el quinto"
   },
   "none": [
-    "gana", "malo", "mía", "tuya", "rica", "católico", "federal",
-    "veras", "detente", "miro", "etcétera", "charles", "house",
-    "i", "t",
-    "may."
+    "gana",
+    "malo",
+    "mía",
+    "tuya",
+    "rica",
+    "católico",
+    "federal",
+    "veras",
+    "detente",
+    "miro",
+    "etcétera",
+    "charles",
+    "house",
+    "i",
+    "t",
+    "may.",
+    "repente",
+    "través",
+    "ma"
   ],
   "none_notes": {
-    "i": "letter name", "t": "letter name", "may.": "an abbreviation (May), not a noun with an article; added by Claude, not on the owner's list"
+    "i": "letter name",
+    "t": "letter name",
+    "may.": "an abbreviation (May), not a noun with an article; added by Claude, not on the owner's list",
+    "repente": "a fixed phrase (de repente)",
+    "través": "a fixed phrase (a través de)",
+    "ma": "owner: no article"
   }
 }

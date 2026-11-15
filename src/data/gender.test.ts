@@ -53,10 +53,10 @@ describe('the data file', () => {
   })
 
   it('has the owner\'s decisions: these get the article given, the words he listed get none', () => {
-    for (const [key, article] of [['arte', 'el'], ['virgen', 'la'], ['papi', 'el'], ['bienes', 'los'], ['muebles', 'los'], ['modales', 'los']] as const) {
+    for (const [key, article] of [['arte', 'el'], ['virgen', 'la'], ['papi', 'el'], ['bienes', 'los'], ['muebles', 'los'], ['modales', 'los'], ['quinto', 'el']] as const) {
       expect(gender.get(key)?.article, key).toBe(article)
     }
-    for (const key of ['gana', 'malo', 'mía', 'tuya', 'rica', 'católico', 'federal', 'veras', 'detente', 'miro', 'etcétera', 'charles', 'house', 'i', 't']) {
+    for (const key of ['gana', 'malo', 'mía', 'tuya', 'rica', 'católico', 'federal', 'veras', 'detente', 'miro', 'etcétera', 'charles', 'house', 'i', 't', 'repente', 'través', 'ma', 'may.']) {
       expect(gender.has(key), `${key} must have no article`).toBe(false)
     }
   })
