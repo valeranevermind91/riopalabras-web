@@ -303,7 +303,7 @@ export const en = {
     reminderDeclined: "Telegram did not allow messages. You can allow them from the bot's chat.",
     reminderFailed: 'Could not save this. Check your connection and try again.',
     // shown under a switch that is on: why nothing arrives (the user cannot change either; turning it off and on again clears them)
-    reminderPaused: 'Paused: nothing was studied after several reminders. They resume when you study again.',
+    reminderPaused: 'Paused: nothing was studied after several reminders. Reminders resume when you study again.',
     // two steps, in order: pressing Start alone does not clear the flag the job set, switching it off and on again does
     reminderUnreachable: "Open the bot's chat and press Start, then switch this off and on again. Pressing Start alone is not enough.",
     about: 'About',
