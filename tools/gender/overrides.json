@@ -1,0 +1,20 @@
+{
+  "_comment": "The owner's overrides, applied by merge-decisions.py after the sheet (they win over it and over the settled rules). Keys are the dictionary keys (es_word, trimmed, lower-case).",
+  "set": {
+    "arte": "el arte",
+    "virgen": "la virgen",
+    "papi": "el papi",
+    "bienes": "los bienes",
+    "muebles": "los muebles",
+    "modales": "los modales"
+  },
+  "none": [
+    "gana", "malo", "mía", "tuya", "rica", "católico", "federal",
+    "veras", "detente", "miro", "etcétera", "charles", "house",
+    "i", "t",
+    "may."
+  ],
+  "none_notes": {
+    "i": "letter name", "t": "letter name", "may.": "an abbreviation (May), not a noun with an article; added by Claude, not on the owner's list"
+  }
+}
