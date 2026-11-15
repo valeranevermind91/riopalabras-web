@@ -42,11 +42,11 @@ export const WHATS_NEW: readonly NewsEntry[] = [
     at: '2026-11-15T20:05',
     en: {
       title: 'Dictionary clean-up',
-      text: 'We removed seven entries that are not words to learn on their own, like “house”, “charles”, “miro” and “repente”. “malo”, “federal” and “católico” are adjectives now, and “te”, “mi”, “mía”, “tuya”, “i” and “t” are marked “Reference only”, so Learn no longer offers them. “veras” became “de veras” and “gana” became “ganas”.',
+      text: 'We removed entries that are not worth learning as separate words (for example “house” and “miro”) and fixed the part of speech of several words. “veras” is now “de veras”, “gana” is “ganas”, and “repente” is “de repente”.',
     },
     ru: {
       title: 'Чистка словаря',
-      text: 'Убрали семь записей, которые не стоит учить как отдельные слова, например «house», «charles», «miro» и «repente». «malo», «federal» и «católico» теперь прилагательные, а «te», «mi», «mía», «tuya», «i» и «t» отмечены «Только для справки», поэтому Learn их больше не предлагает. «veras» стало «de veras», а «gana» — «ganas».',
+      text: 'Убрали записи, которые не стоит учить как отдельные слова (например, «house» и «miro»), и поправили части речи у нескольких слов. «veras» теперь «de veras», «gana» — «ganas», а «repente» — «de repente».',
     },
   },
   {
