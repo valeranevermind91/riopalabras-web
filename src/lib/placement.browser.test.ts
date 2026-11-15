@@ -121,7 +121,13 @@ describe.skipIf(!CHROME)('the placement test in a browser', () => {
       expect(await pressed(page)).toEqual([true, true, false, false, false])
       await page.evaluate(() => (document.querySelectorAll('.place-chip')[0] as HTMLElement).click()) // toggles back off
       expect(await pressed(page)).toEqual([false, true, false, false, false])
-      const text = await page.$eval('.place', (e) => (e as HTMLElement).innerText)
+      // The page's own words, not the five dictionary words it lists: those are picked at random (buildPlacement), and one that contains "correct" (correcto) is not praise.
+      const text = await page.$eval('.place', (e) => {
+        const copy = e.cloneNode(true) as HTMLElement
+        copy.querySelectorAll('.place-chip').forEach((chip) => chip.remove())
+        return copy.textContent ?? ''
+      })
+      expect(text.length).toBeGreaterThan(100) // the scan is of the whole page, not of nothing
       expect(text).not.toMatch(/correct|wrong|score|well done|great|nice|almost|!/i)
       expect(await page.$$eval('.place-chip', (els) => els.map((e) => e.className.includes('is-on')))).toEqual([false, true, false, false, false])
 
