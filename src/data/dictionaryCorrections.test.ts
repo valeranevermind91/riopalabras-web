@@ -88,8 +88,8 @@ describe('the clean-up after the gender study', () => {
 
   describe('removed', () => {
     // miro (I look) and detente (stop!) are forms of mirar and detener, which are taught; charles is a name; house is an English word (a music genre), like boy and baby;
-    // rica is the feminine of rico; may. is the abbreviation of May; repente only appeared in the phrase "de repente" and was listed as a noun ("suddenness").
-    const removed = ['miro', 'detente', 'charles', 'house', 'rica', 'may.', 'repente']
+    // rica is the feminine of rico; may. is the abbreviation of May. (repente, which only appeared in the phrase "de repente" and was listed as a noun, is renamed: see below.)
+    const removed = ['miro', 'detente', 'charles', 'house', 'rica', 'may.']
     const kept = { miro: 'mirar', detente: 'detener', rica: 'rico' }
 
     it.each(removed)('%s is in no shipped data file, not in the fallback source and has no article', (esWord) => {
@@ -107,8 +107,8 @@ describe('the clean-up after the gender study', () => {
       expect(entry(taught)).toBeDefined()
     })
 
-    it('the dictionary has 4742 entries: the 4749 it had, less these seven', () => {
-      expect(raw.length).toBe(4742)
+    it('the dictionary has 4743 entries: the 4749 it had, less these six and repente, which came back as "de repente"', () => {
+      expect(raw.length).toBe(4743)
     })
   })
 
@@ -173,6 +173,29 @@ describe('the clean-up after the gender study', () => {
       expect(sentence.slice(range!.start, range!.end)).toBe('De veras')
       expect(clozeTarget(w)).toBeNull() // a form of two words is never blanked (like con vos, control remoto): the phrase is taught in Learn, Review and Matching
       expect(genderArticle(keyed('de veras'))).toBeNull()
+    })
+
+    it('repente is "de repente", an adverb: "suddenly" / «вдруг, внезапно», with a voseo sentence, and the card and the highlight work with the phrase', () => {
+      // No rows for repente in user_progress, user_hidden_words or user_favorites (checked by the owner in Supabase on 15 November). It was a noun ("suddenness") that only
+      // ever appeared in "de repente"; it was removed in this clean-up and restored under the phrase, like veras.
+      expect(entry('repente')).toBeUndefined()
+      const e = entry('de repente') as unknown as Record<string, string | number>
+      expect(e.pos).toBe('adv')
+      expect(e.en_translation).toBe('suddenly')
+      expect(e.ru_translation).toBe('вдруг, внезапно')
+      expect(e.rank).toBe(1423)
+      expect(e.example_sentence).toBe('Estábamos charlando tranquilos y, de repente, me dijo: «Mirá lo que encontré».')
+      expect(e.example_translation_en).toBe('We were chatting calmly and suddenly he said: “Look what I found.”')
+      expect(e.example_translation_ru).toBe('Мы спокойно болтали, и вдруг он сказал: «Смотри, что я нашел».')
+      expect(e.word_form_in_example).toBe('de repente')
+      const w = word('de repente')
+      expect(headword(w).text).toBe('de repente')
+      const { sentence, range } = highlightTarget(w)
+      expect(sentence.slice(range!.start, range!.end)).toBe('de repente')
+      expect(clozeTarget(w)).toBeNull() // a two-word form is not blanked
+      expect(isInLearnPool(w)).toBe(true)
+      expect(Object.keys(noun.e)).not.toContain('repente')
+      expect(genderArticle(keyed('de repente'))).toBeNull()
     })
 
     it('gana is "ganas", the plural the example uses and "tener ganas de" is made of, with the article "las"', () => {

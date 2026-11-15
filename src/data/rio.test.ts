@@ -448,7 +448,7 @@ describe('highlight with the overlay', () => {
     expect(highlighted(w)).toBe('ómnibus')
   })
 
-  // One pass over all 4742 words (about 2.5 s alone, several times that when the whole suite runs at once; the global timeout covers it).
+  // One pass over all 4743 words (about 2.5 s alone, several times that when the whole suite runs at once; the global timeout covers it).
   it('finds a highlight for every dictionary word, and no ** markers remain', () => {
     const results = words.map((w) => ({ word: w.esWord, result: highlightTarget(w) }))
     expect(results.filter((r) => r.result.range === null).map((r) => r.word)).toEqual([])
@@ -633,7 +633,7 @@ describe('fallback examples (pass 3)', () => {
     expect(() => parseFallbackExamples({})).toThrow(/array/)
   })
 
-  it('across all 4742 cards, the headword is in the sentence shown, except irregular verb forms (ser, ver, oír, oler, detener, distraer), the letter r', () => {
+  it('across all 4743 cards, the headword is in the sentence shown, except irregular verb forms (ser, ver, oír, oler, detener, distraer), the letter r', () => {
     const missing = words
       .filter((w) => findFormRange(effectiveExample(w).sentence, headword(w).text, w.pos, true) === null)
       .map((w) => w.esWord)

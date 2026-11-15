@@ -19586,6 +19586,20 @@
     "word_form_in_example": "sombra"
   },
   {
+    "es_word": "de repente",
+    "pos": "adv",
+    "frequency": 30954,
+    "rank": 1423,
+    "en_translation": "suddenly",
+    "ru_translation": "вдруг, внезапно",
+    "es_rioplatense": null,
+    "is_rioplatense_variant": false,
+    "example_sentence": "Estábamos charlando tranquilos y, de repente, me dijo: «Mirá lo que encontré».",
+    "example_translation_en": "We were chatting calmly and suddenly he said: “Look what I found.”",
+    "example_translation_ru": "Мы спокойно болтали, и вдруг он сказал: «Смотри, что я нашел».",
+    "word_form_in_example": "de repente"
+  },
+  {
     "es_word": "cadena",
     "pos": "n",
     "frequency": 30912,

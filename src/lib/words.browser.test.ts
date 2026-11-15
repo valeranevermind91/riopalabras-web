@@ -8,7 +8,7 @@ import { createServer, type ViteDevServer } from 'vite'
 import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
 
 /**
- * The Words list and a word's detail in a real browser, over the real 4,742-word dictionary (src/testing/wordsHarness.tsx
+ * The Words list and a word's detail in a real browser, over the real 4,743-word dictionary (src/testing/wordsHarness.tsx
  * swaps list and detail the way App does): windowed rendering, the list keeping its place across a detail round trip,
  * the star and "Bring back" writing through the queue. Needs a Chrome or Chromium; skipped without one (CHROME_PATH).
  */
@@ -95,11 +95,11 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
     await page.waitForSelector('.vlist, .words-empty')
   }
 
-  it('renders a window of the list, not the list: a screenful of rows for 4,742 words, in a scroller as tall as all of them', async () => {
+  it('renders a window of the list, not the list: a screenful of rows for 4,743 words, in a scroller as tall as all of them', async () => {
     const page = await open()
     await segment(page, 'All')
     await page.waitForSelector('.vlist-space')
-    expect(await page.$eval('.vlist-space', (e) => (e as HTMLElement).offsetHeight)).toBe(4742 * 72)
+    expect(await page.$eval('.vlist-space', (e) => (e as HTMLElement).offsetHeight)).toBe(4743 * 72)
     const rendered = (await rows(page)).length
     expect(rendered).toBeGreaterThan(8)
     expect(rendered).toBeLessThan(30)
@@ -113,7 +113,7 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
 
   it('opens on All, most common first: segments All · Started · Hidden, and the Filters and Sort buttons', async () => {
     const page = await open()
-    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4742', 'Started 43', 'Hidden 2'])
+    expect(await page.$$eval('.segment', (els) => els.map((e) => e.textContent))).toEqual(['All 4743', 'Started 43', 'Hidden 2'])
     expect(await page.$$eval('.segment.is-active', (els) => els.map((e) => e.textContent?.split(' ')[0]))).toEqual(['All'])
     expect(await controlTexts(page)).toEqual(['Filters', 'Sort: Frequency'])
     expect((await rows(page))[0]).toBe('de')
