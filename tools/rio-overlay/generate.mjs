@@ -20,6 +20,8 @@ export const OUT_DIR = path.join(HERE, 'out')
 export const PRICING = {
   'gemini-2.5-flash': { in: 0.3, out: 2.5 },
   'gemini-2.5-flash-lite': { in: 0.1, out: 0.4 },
+  // Priced like gemini-2.5-flash, as the proxy's scripts/check-enrich-quality.js has it (Google's pricing, July 2026); not re-read on the pricing page.
+  'gemini-3.5-flash-lite': { in: 0.3, out: 2.5 },
   'gemini-3.8-flash': { in: 0.75, out: 3.75 },
   'gemini-3.5-flash': { in: 1.5, out: 9.0 },
   // Pro-class, prompts up to 200k tokens (checked 2026-10-02 on the same page).
@@ -27,7 +29,50 @@ export const PRICING = {
   'gemini-3.1-pro-preview': { in: 2.0, out: 12 },
 }
 
-export const DEFAULT_MODEL = 'gemini-2.5-flash' // what the riopalabras-proxy /enrich endpoint uses
+export const DEFAULT_MODEL = 'gemini-3.5-flash-lite' // what the riopalabras-proxy /enrich endpoint uses
+
+// A Gemini 3 model is told how hard to think with a level and is sent no temperature and no token budget; an older one takes a temperature and an optional budget.
+// The same split as the proxy's enrich-route.js (usesThinkingLevel, THINKING_LEVELS, 'low' when unset).
+export const usesThinkingLevel = (model) => model.startsWith('gemini-3')
+export const THINKING_LEVELS = ['minimal', 'low', 'medium', 'high']
+export const DEFAULT_THINKING_LEVEL = 'low'
+export const DEFAULT_TEMPERATURE = 0.2 // older models only
+
+/**
+ * The sampling settings for `model` from what was typed (`typed` holds the raw --temperature, --thinking and --thinking-level strings, any of them undefined):
+ * { temperature, thinking, thinkingLevel }, where the ones the model does not take are null. Something typed that the model does not take is an error, not silently dropped.
+ */
+export function resolveSampling(model, typed, { temperature = DEFAULT_TEMPERATURE } = {}) {
+  const num = (name, raw) => {
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n < 0) throw new Error(`--${name} must be a non-negative number`)
+    return n
+  }
+  if (usesThinkingLevel(model)) {
+    if (typed.temperature !== undefined) throw new Error(`--temperature does not apply to ${model}: a gemini-3 model takes no temperature`)
+    if (typed.thinking !== undefined) throw new Error(`--thinking N is a token budget, which ${model} does not take: use --thinking-level (${THINKING_LEVELS.join(', ')})`)
+    const level = typed['thinking-level'] ?? DEFAULT_THINKING_LEVEL
+    if (!THINKING_LEVELS.includes(level)) throw new Error(`--thinking-level must be one of ${THINKING_LEVELS.join(', ')} (got "${String(level).slice(0, 40)}")`)
+    return { temperature: null, thinking: null, thinkingLevel: level }
+  }
+  if (typed['thinking-level'] !== undefined) throw new Error(`--thinking-level is for gemini-3 models; ${model} takes --thinking N (a token budget)`)
+  return {
+    temperature: typed.temperature === undefined ? temperature : num('temperature', typed.temperature),
+    thinking: typed.thinking === undefined ? null : num('thinking', typed.thinking),
+    thinkingLevel: null,
+  }
+}
+
+/** The generationConfig for one request. The model decides its shape, whatever else the config holds, so no caller can send a Gemini 3 model a temperature or a budget. */
+export function generationConfigFor(cfg) {
+  const common = { maxOutputTokens: cfg.maxOutputTokens, responseMimeType: 'application/json', responseSchema: cfg.responseSchema }
+  if (usesThinkingLevel(cfg.model)) return { ...common, thinkingConfig: { thinkingLevel: cfg.thinkingLevel ?? DEFAULT_THINKING_LEVEL } }
+  return {
+    temperature: cfg.temperature ?? DEFAULT_TEMPERATURE,
+    ...common,
+    ...(cfg.thinking !== null && cfg.thinking !== undefined ? { thinkingConfig: { thinkingBudget: cfg.thinking } } : {}),
+  }
+}
 // Only the tests point this at a local fake server.
 const API_BASE = process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com'
 
@@ -41,12 +86,13 @@ Selection (one of):
 
 Options:
   --run NAME           names the output/checkpoint files (default: run) -> out/NAME.json, NAME.report.json, ...
-  --model ID           Gemini model (default: ${DEFAULT_MODEL})
+  --model ID           Gemini model (default: ${DEFAULT_MODEL}; any other is accepted, e.g. gemini-2.5-flash)
   --batch-size N       words per request (default 10)
   --delay-ms N         pause after each request, per worker (default 6000)
   --concurrency N      parallel workers (default 1)
-  --temperature X      default 0.2
-  --thinking N         thinkingBudget in tokens; omitted unless given (not all models accept it)
+  --thinking-level L   gemini-3 models: minimal, low, medium or high (default ${DEFAULT_THINKING_LEVEL}); they take no temperature and no budget
+  --temperature X      older models only (default ${DEFAULT_TEMPERATURE})
+  --thinking N         older models only: thinkingBudget in tokens; omitted unless given
   --max-output-tokens N  default 16384 (thinking tokens count against it)
   --retry-base-ms N    first backoff after a 429/5xx/network error, doubling per attempt (default 4000)
   --context MODE       what the model sees besides es_word (default ${DEFAULT_CONTEXT}):
@@ -87,7 +133,7 @@ export const logErr = (...parts) => console.error(redact(parts.join(' ')))
 
 function parseArgs(argv) {
   const flags = new Set(['--stage1', '--all', '--retry-invalid', '--fresh', '--verbose', '--estimate', '--print-prompt', '--help', '--no-hint', '--with-hint', '--compare-legacy'])
-  const values = new Set(['--words', '--limit', '--run', '--model', '--batch-size', '--delay-ms', '--concurrency', '--temperature', '--thinking', '--max-output-tokens', '--retry-base-ms', '--context'])
+  const values = new Set(['--words', '--limit', '--run', '--model', '--batch-size', '--delay-ms', '--concurrency', '--temperature', '--thinking', '--thinking-level', '--max-output-tokens', '--retry-base-ms', '--context'])
   const args = {}
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
@@ -108,6 +154,7 @@ function parseArgs(argv) {
   const withHint = Boolean(args['with-hint'])
   const context = args.context ?? DEFAULT_CONTEXT
   if (!CONTEXTS.includes(context)) throw new Error(`--context must be one of ${CONTEXTS.join(', ')}`)
+  const model = args.model ?? DEFAULT_MODEL
   return {
     ...args,
     withHint,
@@ -115,12 +162,11 @@ function parseArgs(argv) {
     systemPrompt: buildSystemPrompt({ withHint, context }),
     responseSchema: buildResponseSchema({ context }),
     run: args.run ?? 'run',
-    model: args.model ?? DEFAULT_MODEL,
+    model,
     batchSize: Math.max(1, num('batch-size', 10)),
     delayMs: num('delay-ms', 6000),
     concurrency: Math.max(1, num('concurrency', 1)),
-    temperature: num('temperature', 0.2),
-    thinking: args.thinking === undefined ? null : num('thinking', 0),
+    ...resolveSampling(model, args),
     maxOutputTokens: num('max-output-tokens', 16384),
     retryBaseMs: num('retry-base-ms', 4000),
     limit: args.limit === undefined ? null : num('limit', 0),
@@ -149,8 +195,7 @@ Set it in ONE of these ways (never paste the key into chat or commit it):
          GEMINI_API_KEY=your-key-here
   2. Or export it for the current shell only:
          export GEMINI_API_KEY=your-key-here
-Get a key at https://aistudio.google.com/apikey (create it in the same Google project the proxy uses if you want access to gemini-2.5-flash,
-which Google now limits to projects that have used it before). Then re-run the same command.`
+Get a key at https://aistudio.google.com/apikey (create it in the same Google project the proxy uses). Then re-run the same command.`
 
 // ---------------------------------------------------------------- dictionary
 
@@ -202,13 +247,7 @@ async function requestOnce(inputs, cfg, key) {
     systemInstruction: { parts: [{ text: cfg.systemPrompt }] },
     // cfg.userText lets another script (the example generator) reuse this request machinery with its own prompt
     contents: [{ role: 'user', parts: [{ text: cfg.userText ? cfg.userText(inputs) : buildUserPrompt(inputs, { withHint: cfg.withHint, context: cfg.context }) }] }],
-    generationConfig: {
-      temperature: cfg.temperature,
-      maxOutputTokens: cfg.maxOutputTokens,
-      responseMimeType: 'application/json',
-      responseSchema: cfg.responseSchema,
-      ...(cfg.thinking !== null ? { thinkingConfig: { thinkingBudget: cfg.thinking } } : {}),
-    },
+    generationConfig: generationConfigFor(cfg),
     safetySettings: SAFETY_OFF,
   }
 
@@ -511,7 +550,7 @@ function printEstimate(args, selected) {
   const substantive = Math.round(selected.length * share)
   const noneCount = selected.length - substantive
   const outputTokens = substantive * 280 + noneCount * 120
-  // Unbounded (default) thinking measured ~6500 tokens for one 9-word request; an explicit budget caps it.
+  // Unbounded thinking measured ~6500 tokens for one 9-word request on gemini-2.5-flash; an explicit budget caps it. A level is not measured here: 6500 stays the upper bound.
   const thinkingPerRequest = args.thinking === null ? 6500 : Math.min(args.thinking, 6500)
   const thoughtTokens = batches.length * thinkingPerRequest
   const latency = 25 // seconds per request, assumed
@@ -522,7 +561,7 @@ function printEstimate(args, selected) {
   log(`Tokens: ~${promptTokens} prompt, ~${outputTokens} output, ~${thoughtTokens} thinking`)
   for (const [model, price] of Object.entries(PRICING)) {
     const cost = (promptTokens * price.in + (outputTokens + thoughtTokens) * price.out) / 1e6
-    log(`  ${model.padEnd(24)} ≈ $${cost.toFixed(3)}  (in $${price.in} / out $${price.out} per 1M)`)
+    log(`  ${model.padEnd(24)} ≈ $${cost.toFixed(3)}  (in $${price.in} / out $${price.out} per 1M)${model === DEFAULT_MODEL ? ' (default)' : ''}`)
   }
   log(`Time: ~${formatDuration(serial * 1000)} with 1 worker; ~${formatDuration((serial * 1000) / 4)} with --concurrency 4 (rate limits permitting)`)
 }

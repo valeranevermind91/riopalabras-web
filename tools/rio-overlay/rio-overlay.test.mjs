@@ -507,7 +507,7 @@ describe('generate.mjs against a fake Gemini', () => {
 
     expect(out.code).toBe(0)
     const [req] = g.requests
-    expect(req.url).toContain('/v1beta/models/gemini-2.5-flash:generateContent')
+    expect(req.url).toContain('/v1beta/models/gemini-3.5-flash-lite:generateContent')
     expect(req.url).not.toContain(KEY)
     expect(req.url).not.toContain('key=')
     expect(req.headers['x-goog-api-key']).toBe(KEY)
@@ -516,14 +516,15 @@ describe('generate.mjs against a fake Gemini', () => {
     expect(req.body.contents[0].role).toBe('user')
     expect(req.body.generationConfig.responseMimeType).toBe('application/json')
     expect(req.body.generationConfig.responseSchema).toEqual(RESPONSE_SCHEMA)
-    expect(req.body.generationConfig.temperature).toBe(0.2)
-    expect(req.body.generationConfig).not.toHaveProperty('thinkingConfig') // opt-in only
+    // a Gemini 3 model (the default) takes a thinking level and no temperature or budget, as the proxy sends it
+    expect(req.body.generationConfig).not.toHaveProperty('temperature')
+    expect(req.body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' })
     expect(req.words).toEqual(['casa', 'periódico']) // dictionary-rank order
 
     const f = runFiles('t-happy')
     expect(readJson(f.entries).map((e) => e.es_word)).toEqual(['casa', 'periódico']) // by dictionary rank
     const report = readJson(f.report)
-    expect(report).toMatchObject({ model: 'gemini-2.5-flash', selected: 2, returned: 2, withErrors: 0 })
+    expect(report).toMatchObject({ model: 'gemini-3.5-flash-lite', selected: 2, returned: 2, withErrors: 0 })
     expect(report.usage).toMatchObject({ requests: 1, prompt: 1000, output: 400, thoughts: 100 })
     expect(out.all).not.toContain(KEY)
   })
@@ -625,11 +626,57 @@ describe('generate.mjs against a fake Gemini', () => {
     expect(readJson(runFiles('t-conc').entries)).toHaveLength(4)
   })
 
-  it('sends the thinking budget only when asked', async () => {
+  it('a Gemini 3 model gets a thinking level (low unless --thinking-level says otherwise) and never a temperature or a budget', async () => {
     const g = await fakeGemini((r, n, res) => ok(res, answer(r.words)))
-    await cli(['--words', 'casa', '--run', 't-think', '--thinking', '512', ...base], g)
+    await cli(['--words', 'casa', '--run', 't-level', '--thinking-level', 'medium', ...base], g)
+    await cli(['--words', 'casa', '--run', 't-level-3', '--model', 'gemini-3.8-flash', ...base], g)
     g.server.close()
-    expect(g.requests[0].body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 512 })
+    expect(g.requests[0].body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'medium' })
+    expect(g.requests[1].url).toContain('/models/gemini-3.8-flash:')
+    for (const r of g.requests) {
+      expect(r.body.generationConfig).not.toHaveProperty('temperature')
+      expect(JSON.stringify(r.body)).not.toContain('thinkingBudget')
+    }
+    expect(g.requests[1].body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' })
+  })
+
+  it('a Gemini 3 model refuses a temperature, a token budget and a level it does not know, and sends nothing', async () => {
+    const g = await fakeGemini((r, n, res) => ok(res, answer(r.words)))
+    const t = await cli(['--words', 'casa', '--run', 't-bad-temp', '--temperature', '0.5', ...base], g)
+    const b = await cli(['--words', 'casa', '--run', 't-bad-budget', '--thinking', '512', ...base], g)
+    const l = await cli(['--words', 'casa', '--run', 't-bad-level', '--thinking-level', 'extreme', ...base], g)
+    g.server.close()
+    expect(t.code).not.toBe(0)
+    expect(t.all).toMatch(/--temperature.*gemini-3/s)
+    expect(b.code).not.toBe(0)
+    expect(b.all).toMatch(/--thinking-level/)
+    expect(l.code).not.toBe(0)
+    expect(l.all).toMatch(/minimal, low, medium, high/)
+    expect(g.requests).toHaveLength(0)
+  })
+
+  it('--model overrides the default: an older model keeps its temperature (0.2) and sends a thinking budget only when asked', async () => {
+    const g = await fakeGemini((r, n, res) => ok(res, answer(r.words)))
+    const old = ['--model', 'gemini-2.5-flash']
+    await cli(['--words', 'casa', '--run', 't-old', ...old, ...base], g)
+    await cli(['--words', 'casa', '--run', 't-old-think', ...old, '--temperature', '0.7', '--thinking', '512', ...base], g)
+    const lvl = await cli(['--words', 'casa', '--run', 't-old-level', ...old, '--thinking-level', 'low', ...base], g)
+    g.server.close()
+    expect(g.requests[0].url).toContain('/models/gemini-2.5-flash:')
+    expect(g.requests[0].body.generationConfig.temperature).toBe(0.2)
+    expect(g.requests[0].body.generationConfig).not.toHaveProperty('thinkingConfig') // opt-in only
+    expect(g.requests[1].body.generationConfig.temperature).toBe(0.7)
+    expect(g.requests[1].body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 512 })
+    expect(lvl.code).not.toBe(0) // a level is for Gemini 3 models only
+    expect(lvl.all).toMatch(/--thinking-level.*gemini-3/s)
+    expect(g.requests).toHaveLength(2)
+  })
+
+  it('prices the default model, so the report and --estimate show a cost', async () => {
+    const g = await fakeGemini((r, n, res) => ok(res, answer(r.words)))
+    await cli(['--words', 'casa', '--run', 't-price', ...base], g)
+    g.server.close()
+    expect(readJson(runFiles('t-price').report).estimatedCostUsd).toBeGreaterThan(0)
   })
 
   it('refuses to run without a key, explains how to set one, and sends nothing', async () => {
@@ -661,6 +708,8 @@ describe('generate.mjs against a fake Gemini', () => {
     expect(estimate.code).toBe(0)
     expect(estimate.stdout).toContain('Selection: 130 words -> 13 requests')
     expect(estimate.stdout).toContain('gemini-2.5-flash')
+    expect(estimate.stdout).toMatch(/gemini-3\.5-flash-lite\s+≈ \$/)
+    expect(estimate.stdout).toContain('(default)')
     const prompt = await cli(['--print-prompt'], { url: 'http://127.0.0.1:9', env })
     expect(prompt.code).toBe(0)
     expect(prompt.stdout).toContain(SYSTEM_PROMPT.slice(0, 60))

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { EXAMPLE_SCHEMA, SYSTEM_PROMPT, buildUserText, selectScope, validateExample } from './examples.mjs'
 import { STD_USAGE_SCHEMA, STD_USAGE_SYSTEM_PROMPT, buildStdUsageUserText, selectStdUsageScope, validateStdUsage } from './stdusage.mjs'
 import { FALLBACK_SCHEMA, FALLBACK_SYSTEM_PROMPT, buildFallbackUserText, selectFallbackScope, validateFallback } from './fallback.mjs'
-import { GeminiError, OUT_DIR, PRICING, ROOT, chunk, loadApiKey, log, logErr, MISSING_KEY_HELP, request, setSecret, sleep, writeJson } from './generate.mjs'
+import { DEFAULT_THINKING_LEVEL, GeminiError, OUT_DIR, PRICING, ROOT, THINKING_LEVELS, chunk, loadApiKey, log, logErr, MISSING_KEY_HELP, request, resolveSampling, setSecret, sleep, writeJson } from './generate.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview' // best available for natural prose; dozens of sentences cost cents
@@ -82,8 +82,9 @@ Without --run: dry run (scope + cost estimate, no API call, no key needed).
   --model ID           default ${DEFAULT_MODEL}
   --batch-size N       entries per request (default 8)
   --delay-ms N         pause between requests (default 6000)
-  --temperature X      default 0.7
-  --thinking N         thinkingBudget in tokens (omitted unless given)
+  --thinking-level L   gemini-3 models (the default one is): ${THINKING_LEVELS.join(', ')}, default ${DEFAULT_THINKING_LEVEL}; they take no temperature and no budget
+  --temperature X      older models only, default 0.7
+  --thinking N         older models only: thinkingBudget in tokens (omitted unless given)
   --max-output-tokens N  default 16384
   --retry-base-ms N    backoff base after 429/5xx/network errors (default 4000)
   --retry-invalid      re-request entries whose earlier result failed validation
@@ -95,7 +96,7 @@ Without --run: dry run (scope + cost estimate, no API call, no key needed).
 
 function parseArgs(argv) {
   const flags = new Set(['--retry-invalid', '--fresh', '--verbose', '--help'])
-  const values = new Set(['--pass', '--run', '--model', '--batch-size', '--delay-ms', '--temperature', '--thinking', '--max-output-tokens', '--retry-base-ms', '--overlay', '--out'])
+  const values = new Set(['--pass', '--run', '--model', '--batch-size', '--delay-ms', '--temperature', '--thinking', '--thinking-level', '--max-output-tokens', '--retry-base-ms', '--overlay', '--out'])
   const args = {}
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
@@ -116,8 +117,7 @@ function parseArgs(argv) {
     model: args.model ?? DEFAULT_MODEL,
     batchSize: Math.max(1, num('batch-size', 8)),
     delayMs: num('delay-ms', 6000),
-    temperature: num('temperature', pass.temperature ?? 0.7),
-    thinking: args.thinking === undefined ? null : num('thinking', 0),
+    ...resolveSampling(args.model ?? DEFAULT_MODEL, args, { temperature: pass.temperature ?? 0.7 }),
     maxOutputTokens: num('max-output-tokens', 16384),
     retryBaseMs: num('retry-base-ms', 4000),
     overlay: path.resolve(ROOT, args.overlay ?? 'tools/rio-overlay/results/overlay-v1/overlay.v1.json'),
@@ -164,7 +164,7 @@ async function run(args, items, key) {
   const todo = items.filter((i) => !settled(i.es_word))
   log(`Model: ${args.model} | run: ${args.run} | ${items.length} in scope, ${items.length - todo.length} already done, ${todo.length} to request`)
 
-  const cfg = { model: args.model, systemPrompt: pass.systemPrompt, responseSchema: pass.schema, temperature: args.temperature, maxOutputTokens: args.maxOutputTokens, thinking: args.thinking, retryBaseMs: args.retryBaseMs, userText: pass.userText }
+  const cfg = { model: args.model, systemPrompt: pass.systemPrompt, responseSchema: pass.schema, temperature: args.temperature, maxOutputTokens: args.maxOutputTokens, thinking: args.thinking, thinkingLevel: args.thinkingLevel, retryBaseMs: args.retryBaseMs, userText: pass.userText }
   const byWord = new Map(items.map((i) => [i.es_word, i]))
 
   const record = (batch, response) => {

@@ -201,6 +201,8 @@ describe('generate-examples.mjs', () => {
     expect(req.headers['x-goog-api-key']).toBe(KEY)
     expect(req.body.systemInstruction.parts[0].text).toBe(SYSTEM_PROMPT)
     expect(req.body.generationConfig.responseSchema).toEqual(EXAMPLE_SCHEMA)
+    expect(req.body.generationConfig).not.toHaveProperty('temperature') // a Gemini 3 model: a thinking level, no temperature, no budget
+    expect(req.body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' })
     expect(req.words).toEqual(['autobús', 'foco'])
     expect(req.text).toContain('"meaning": "light bulb"')
     expect(req.text).toContain('"standard_meaning": "focus, spotlight"')
@@ -225,6 +227,21 @@ describe('generate-examples.mjs', () => {
     expect(result.examples['autobús']).toBeUndefined()
     expect(result.failed[0]).toMatchObject({ es_word: 'autobús', errors: [expect.stringContaining('rio_form_repeated')] })
     expect(result.failed[0].raw.example_es).toBe(bad['autobús'].example_es) // untouched
+  })
+
+  it('an older model given with --model keeps its temperature (default 0.7) and its optional budget; a Gemini 3 model refuses them', async () => {
+    const g = await fakeGemini((r, res) => answer(res, rowsFor(r.words)))
+    const old = ['--model', 'gemini-2.5-flash']
+    await cli([...base('tx-old'), ...old], g)
+    await cli([...base('tx-old-set'), ...old, '--temperature', '0.4', '--thinking', '256'], g)
+    const refused = await cli([...base('tx-new-temp'), '--temperature', '0.4'], g)
+    g.server.close()
+    expect(g.requests[0].body.generationConfig.temperature).toBe(0.7)
+    expect(g.requests[0].body.generationConfig).not.toHaveProperty('thinkingConfig')
+    expect(g.requests[1].body.generationConfig.temperature).toBe(0.4)
+    expect(g.requests[1].body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 256 })
+    expect(refused.code).not.toBe(0)
+    expect(g.requests).toHaveLength(2)
   })
 
   it('resumes from the checkpoint and refuses a different prompt or model', async () => {

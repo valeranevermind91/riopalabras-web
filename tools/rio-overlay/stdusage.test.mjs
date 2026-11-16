@@ -189,7 +189,8 @@ describe('generate-examples.mjs --pass stdusage', () => {
     expect(out.out).not.toContain(KEY)
     expect(g.requests[0].headers['x-goog-api-key']).toBe(KEY)
     expect(g.requests[0].body.systemInstruction.parts[0].text).toBe(STD_USAGE_SYSTEM_PROMPT)
-    expect(g.requests[0].body.generationConfig.temperature).toBe(0.2)
+    expect(g.requests[0].body.generationConfig).not.toHaveProperty('temperature') // the default model is a Gemini 3: a thinking level, no temperature
+    expect(g.requests[0].body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' })
     expect(g.requests.flatMap((r) => r.words).sort()).toEqual(scope.map((s) => s.es_word).sort())
     expect(g.requests[0].text).not.toMatch(/example|legacy|evidence/i)
 
