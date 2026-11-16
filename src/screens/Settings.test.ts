@@ -250,6 +250,17 @@ describe('the Settings screen', () => {
       expect(render()).not.toContain('About Riopalabras')
     })
 
+    it('"Show hints again" is in the same section, after "Run the intro again", and only where the screen can take the person Home for the tour', () => {
+      expect(rows(render({}, { onRunIntro: noop, onShowHints: noop }))).toEqual(['Run the intro again', 'Show hints again'])
+      expect(rows(render({}, { onRunIntro: noop }))).toEqual(['Run the intro again'])
+      setLanguage('ru')
+      try {
+        expect(rows(render({}, { onShowHints: noop }))).toEqual(['Показать подсказки снова'])
+      } finally {
+        setLanguage('en')
+      }
+    })
+
     it('in Russian the row is «О Riopalabras»', () => {
       setLanguage('ru')
       try {

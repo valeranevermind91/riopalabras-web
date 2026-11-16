@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'hints',
+    at: '2026-11-15T22:10',
+    en: {
+      title: 'Short hints in the app',
+      text: 'New people get a short tour of Home. A few one-time hints explain what the Word of the day is for and what happens after you add a word to the learning queue, and the Learn tile now shows how many words are waiting in it. “Show hints again” in Settings plays them once more.',
+    },
+    ru: {
+      title: 'Подсказки в приложении',
+      text: 'Тем, кто только начинает, теперь показывают короткое знакомство с главным экраном. Несколько одноразовых подсказок объясняют, зачем нужно слово дня и что происходит после добавления слова в очередь изучения, а на плитке Learn видно, сколько слов в ней ждут. «Показать подсказки снова» — в настройках.',
+    },
+  },
+  {
     id: 'dictionary-cleanup',
     at: '2026-11-15T20:05',
     en: {

@@ -3439,3 +3439,250 @@ mark {
 .settings-key {
   display: block;
 }
+
+/* ---- One-time hints (data/hints.ts) ---- */
+
+/* The Learn tile's strip: how many words wait in the learning queue. Along the foot of the tile, as a pill of the text does not fit a 86 px tile. */
+.tile-learn {
+  overflow: hidden;
+}
+
+.tile-queued {
+  display: block;
+  margin: auto -12px -9px;
+  padding: 5px 4px 6px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* The snackbar after a word is added to the learning queue: an inverted bar over the foot of the screen, gone by itself. */
+.snackbar {
+  position: fixed;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 12px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  max-width: 456px;
+  margin: 0 auto;
+  padding: 10px 6px 10px 14px;
+  border-radius: var(--radius-button);
+  background: var(--snack-bg);
+  color: var(--snack-ink);
+  font-size: 14px;
+  line-height: 1.35;
+  box-shadow: var(--shadow-pop);
+}
+
+.snackbar-check {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--snack-accent);
+}
+
+.snackbar-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.snackbar-action {
+  flex: none;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--snack-accent);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.snackbar-action:focus-visible {
+  outline: 2px solid var(--snack-accent);
+}
+
+/* the time left, as a line that runs out */
+.snackbar-timer {
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--snack-accent);
+  opacity: 0.55;
+  transform-origin: left;
+  animation: snackbar-run var(--snackbar-ms, 5000ms) linear forwards;
+}
+
+@keyframes snackbar-run {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* The one-time bubble: teal, with a pointer to its element, and a ring round that element. It is fixed to the viewport; useAnchorRect keeps it on the element. */
+.hint-ring {
+  position: fixed;
+  z-index: 30;
+  box-sizing: content-box;
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  pointer-events: none;
+}
+
+.hint-bubble {
+  position: fixed;
+  z-index: 31;
+  box-sizing: border-box;
+  padding: 12px 14px 10px;
+  border-radius: 16px;
+  background: var(--teal);
+  color: var(--teal-ink);
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: var(--shadow-pop);
+  outline: 3px solid var(--page);
+}
+
+.hint-bubble p {
+  margin: 0;
+}
+
+.hint-bubble-ok {
+  display: block;
+  margin: 6px 0 0 auto;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--teal-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hint-bubble::after,
+.tour-card::after {
+  content: '';
+  position: absolute;
+  left: var(--pointer-x, 50%);
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 3px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.hint-bubble.is-below::after,
+.tour-card.is-below::after {
+  top: -6px;
+}
+
+.hint-bubble.is-above::after,
+.tour-card.is-above::after {
+  bottom: -6px;
+}
+
+/* The first batch's line under the cards, made easier to see: in the teal ink, not the grey (the same words in the same size and weight: the English line takes three lines at 320px if it is any bolder). */
+.learn-nav .hint.hint-first {
+  color: var(--teal-on-soft);
+}
+
+/* The coach-mark tour on Home: the screen dimmed round one element at a time, and a card with its name, a line and the buttons. */
+.tour-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+}
+
+.tour-spot {
+  position: fixed;
+  z-index: 30;
+  box-shadow: 0 0 0 9999px var(--scrim);
+  pointer-events: none;
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 31;
+  box-sizing: border-box;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+
+.tour-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tour-card p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tour-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.tour-step {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tour-skip {
+  padding: 8px 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tour-next {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--teal);
+  color: var(--teal-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tour-skip:focus-visible,
+.tour-next:focus-visible,
+.hint-bubble-ok:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snackbar-timer {
+    animation: none;
+  }
+}

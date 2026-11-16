@@ -4,6 +4,7 @@ import { UnsavedNotice } from '../components/UnsavedNotice'
 import { SwipeGhost } from '../components/SwipeGhost'
 import { WordCard } from '../components/WordCard'
 import { headword } from '../data/headword'
+import { hasProgress } from '../data/hints'
 import { reportFor, type FeedbackReport, type SendResult } from '../data/feedback'
 import { learnedToday } from '../data/daily'
 import { batchPracticeAvailable, buildBatchRounds, type MatchGroup } from '../data/practice'
@@ -47,6 +48,8 @@ interface LearnScreenProps {
 export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendReport, onHome, onReview, onPlacement, onBack, registerBack }: LearnScreenProps) {
   useVerticalSwipesOff() // the card scrolls inside itself: keep Telegram's swipe-down-to-minimize out of the way
   const [batch, setBatch] = useState(() => selectLearnBatch(data.words, data.settings, new Date()))
+  // The first batch a person ever learns (no word has been through Learn when it starts): its hint under the cards is made more visible and its end screen says why the words return (see data/hints.ts). Decided when the batch starts, as the words it teaches count the moment they are reached.
+  const [firstBatch, setFirstBatch] = useState(() => !hasProgress(data.words))
   // The keeper counts the batch as it is read: a word is learned the moment its card is reached (see createBatchKeeper), not when "Finish batch" is pressed. One per batch.
   const keeper = useRef<BatchKeeper | null>(null)
   const knownDeps = { queue, applyHidden: data.applyHidden, applyFavorite: data.applyFavorite }
@@ -200,6 +203,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
     haptic('tap')
     setUndoOffer(null)
     setBatch(selectLearnBatch(data.words, data.settings, new Date()))
+    setFirstBatch(false)
     keeper.current = null
     setSessionId(reviewLog?.startSession() ?? null)
     setTicket(null)
@@ -228,6 +232,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
             queue={queue}
             reminders={reminders}
             completed={ticket !== null}
+            firstBatch={firstBatch}
             onPractise={practicable ? practise : null}
             onNextBatch={startNextBatch}
             onReview={onReview}
@@ -337,7 +342,7 @@ export function LearnScreen({ data, queue, metrics, reminders, reviewLog, sendRe
           <button type="button" className="btn btn-icon" aria-label={strings.learn.previous} disabled={!reading || index === 0} onClick={() => go(-1)}>
             ‹
           </button>
-          <span className="hint">{strings.learn.swipeHint}</span>
+          <span className={firstBatch ? 'hint hint-first' : 'hint'}>{strings.learn.swipeHint}</span>
           <button type="button" className="btn btn-icon" aria-label={strings.learn.next} disabled={!reading || onLastCard} onClick={() => go(1)}>
             ›
           </button>
@@ -360,6 +365,7 @@ function PostBatch({
   queue,
   reminders,
   completed,
+  firstBatch,
   onPractise,
   onNextBatch,
   onReview,
@@ -370,6 +376,8 @@ function PostBatch({
   reminders: RemindersControl | undefined
   /** A batch was finished on this screen (as opposed to an end screen reached because there was nothing to learn). */
   completed: boolean
+  /** The batch just finished was the first one the person ever learned: the paragraph under the title says why the words come back in Review. */
+  firstBatch: boolean
   /** The offer to practise the batch just learned; null when Matching cannot run on it (or no batch was learned here). */
   onPractise: (() => void) | null
   onNextBatch: () => void
@@ -426,6 +434,8 @@ function PostBatch({
     title = strings.learn.newWordsToday(learnedToday(settings, new Date()), settings.dailyNewWordLimit)
     canContinue = true
   }
+
+  if (completed && firstBatch) why = strings.learn.firstBatchWhy // replaces the paragraph about the daily limit (which is for the second time round), in the same place and type
 
   const canReview = stats.reviewDue > 0
   // Exactly one primary button: the first action offered.

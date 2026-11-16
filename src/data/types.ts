@@ -67,6 +67,8 @@ export interface UserSettings {
   readonly reminderOfferShows: number
   /** The `at` of the newest "What's new" entry this person has opened (see data/whatsNew.ts); null if they never have. */
   readonly whatsNewSeen: string | null
+  /** The ids of the one-time hints already shown (see data/hints.ts); empty until one has been. */
+  readonly hintsSeen: readonly string[]
   /** The Debug section of Settings was unlocked on this account (seven taps on the version row, see lib/tapCount.ts). Never set by default. */
   readonly debugUnlocked: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

@@ -1,4 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { HintBubble } from '../components/HintBubble'
+import { Tour } from '../components/Tour'
 import { UnsavedNotice } from '../components/UnsavedNotice'
 import { Notice } from '../components/Notice'
 import { ScreenHeader } from '../components/ScreenHeader'
@@ -11,6 +13,9 @@ import { cardsToday, learnedToday, streakCards, streakCountedToday } from '../da
 import { learnedTodayKeys, tomorrowPreview } from '../data/dayEnd'
 import { WHATS_NEW, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
 import { wordKey } from '../data/words'
+import { waitingStars } from '../data/starred'
+import { TOUR_FLAGS, hintSeenPatch, homeHint, type HomeHint } from '../data/hints'
+import { saveSetting } from '../data/settingsActions'
 import { activityDots } from '../data/streakDots'
 import type { Word } from '../data/types'
 import type { DataState, UserData } from '../data/useUserData'
@@ -45,9 +50,12 @@ interface HomeScreenProps {
   activity?: ReadonlySet<string> | null
   /** "Now", injectable so the word of the day and the dots are testable. */
   now?: Date
+  /** "Show hints again" was pressed in Settings: Home gives the tour (whatever the progress), and says when it is over. */
+  replayTour?: boolean
+  onTourEnd?: () => void
 }
 
-export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday, onWords, onSettings, news = WHATS_NEW, onOpenWord, queue, metrics, activity = null, now: nowProp }: HomeScreenProps) {
+export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze, onMatchingToday, onClozeToday, onWords, onSettings, news = WHATS_NEW, onOpenWord, queue, metrics, activity = null, now: nowProp, replayTour = false, onTourEnd }: HomeScreenProps) {
   // The time the counts are taken at: when Home is shown (it remounts on navigation), so "due" and "today" are never stale. A word rated Again is
   // due in ten minutes and the Review count does not hold it until then (Review would not hand it out): so that the number does not stay as it
   // was while Home stays open, the counts are taken again the moment the next such word comes due, and when the app comes back to the foreground
@@ -120,6 +128,29 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
     }
   }, [open])
   const now = nowProp ?? new Date()
+  const queued = data.status === 'ready' ? waitingStars(data.data.words).length : 0
+
+  // The one hint Home shows, decided once, when the data is first there (marking a hint seen changes the settings, and that must not end it): the tour for a person who has not started
+  // learning, a bubble on the Word of the day for one who has (data/hints.ts). Nothing without a write queue: what was shown could not be remembered.
+  const [hint, setHint] = useState<HomeHint | null | undefined>(undefined)
+  useEffect(() => {
+    if (hint !== undefined || data.status !== 'ready' || !queue) return
+    // a frame after the first paint: the tiles and rows it points at are on the screen by then
+    const frame = requestAnimationFrame(() => setHint(homeHint({ words: data.data.words, settings: data.data.settings, replay: replayTour })))
+    return () => cancelAnimationFrame(frame)
+  }, [hint, data, queue, replayTour])
+  const markSeen = (...ids: Parameters<typeof hintSeenPatch>[1][]) => {
+    if (data.status !== 'ready' || !queue) return
+    const patch = hintSeenPatch(data.data.getSettings(), ...ids)
+    if (patch) saveSetting(patch, { applySettings: data.data.applySettings, queue })
+  }
+  const wotdBubbleShown = useCallback(() => markSeen('home-wotd'), [data, queue]) // eslint-disable-line react-hooks/exhaustive-deps -- markSeen reads the latest settings itself
+  const closeWotdBubble = useCallback(() => setHint(null), [])
+  const endTour = () => {
+    setHint(null)
+    markSeen(...TOUR_FLAGS)
+    onTourEnd?.()
+  }
 
   return (
     <main className="screen home">
@@ -175,6 +206,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
                   type="button"
                   className={`tile tile-${tile.id}${tile.primary ? ' is-primary' : ''}${tile.id === 'practice' && open ? ' is-open' : ''}`}
                   data-tile={tile.id}
+                  data-hint={`tile-${tile.id}`}
                   disabled={tile.disabled}
                   {...(tile.id === 'practice' ? { 'aria-expanded': open, 'aria-controls': panelId } : {})}
                   onClick={() => {
@@ -192,6 +224,7 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
                     <span className="tile-label">{tile.label}</span>
                     <span className="tile-sub">{tile.disabled ? tile.reason : tile.sub}</span>
                   </span>
+                  {tile.id === 'learn' && queued > 0 && <span className="tile-queued">{strings.hints.queuedTile(queued)}</span>}
                 </button>
               ))}
             </div>
@@ -225,6 +258,8 @@ export function HomeScreen({ auth, data, onLearn, onReview, onMatching, onCloze,
         </section>
       )}
 
+      {hint === 'tour' && <Tour onEnd={endTour} />}
+      {hint === 'wotd' && <HintBubble target="wotd" placement="below" text={strings.hints.homeWotd} onDismiss={closeWotdBubble} onShown={wotdBubbleShown} />}
     </main>
   )
 }
@@ -293,11 +328,11 @@ function WordOfTheDayRow({ wotd, onOpen }: { wotd: WordOfTheDay; onOpen?: (word:
     </>
   )
   return onOpen ? (
-    <button type="button" className="wotd" aria-label={aria} onClick={() => onOpen(wotd.word)}>
+    <button type="button" className="wotd" aria-label={aria} data-hint="wotd" onClick={() => onOpen(wotd.word)}>
       {content}
     </button>
   ) : (
-    <div className="wotd" aria-label={aria}>
+    <div className="wotd" aria-label={aria} data-hint="wotd">
       {content}
     </div>
   )
@@ -443,7 +478,7 @@ function DegradedNotice({ data }: { data: UserData }) {
 /** The way into the Words screen: a round icon button in the header, left of the gear. */
 function WordsButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" className="icon-btn" aria-label={strings.home.wordsButton} title={strings.home.wordsButton} onClick={onClick}>
+    <button type="button" className="icon-btn" aria-label={strings.home.wordsButton} title={strings.home.wordsButton} data-hint="words" onClick={onClick}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M8 6h12M8 12h12M8 18h12" />
         <path d="M4 6h.01M4 12h.01M4 18h.01" />

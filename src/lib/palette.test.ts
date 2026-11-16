@@ -67,6 +67,11 @@ const PAIRS: [string, string, number, string][] = [
   ['--lav-on-soft-2', '--lav-soft', TEXT, 'Matching and Cloze tile Spanish words, the word-of-the-day pill'],
   // amber: the target word (and the Hard rating)
   ['--hl-text', '--hl-bg', TEXT, 'the highlighted word in a sentence, the Hard rating'],
+  ['--teal-on-soft', '--page', TEXT, 'the first batch\'s line under the cards, on the page'],
+  // the snackbar and the tour's dimmed screen
+  ['--snack-ink', '--snack-bg', TEXT, 'the snackbar text'],
+  ['--snack-accent', '--snack-bg', TEXT, 'the snackbar action'],
+  ['--teal-ink', '--teal', TEXT, 'the bubble text on the teal bubble (also under Learn tile)'],
   // feedback
   ['--ok', '--surface', TEXT, 'correct text on cards'],
   ['--ok', '--ok-bg', TEXT, 'correct text in the feedback block'],
@@ -112,6 +117,7 @@ describe('both palettes are complete', () => {
       '--hl-bg', '--hl-text',
       '--ok', '--ok-bg', '--ok-border', '--ok-text',
       '--bad', '--bad-bg', '--bad-border',
+      '--snack-bg', '--snack-ink', '--snack-accent', '--scrim', '--shadow-pop',
     ]
     for (const name of required) {
       expect(lightRaw[name], `light ${name}`).toBeDefined()

@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { BottomSheet } from '../components/WordsSheets'
+import { HintBubble } from '../components/HintBubble'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { SNACKBAR_MS, Snackbar } from '../components/Snackbar'
 import { WordForm, type SubmitResult } from '../components/WordForm'
 import { deleteCustomWord, editCustomWord, valuesOf, type WordValues } from '../data/customWords'
 import { StarIcon } from '../components/WordRow'
 import { WordCard } from '../components/WordCard'
 import { reportFor } from '../data/feedback'
 import { headword } from '../data/headword'
+import { hintSeenPatch, wordQueueHint } from '../data/hints'
+import { saveSetting } from '../data/settingsActions'
 import { canStar } from '../data/starred'
 import type { Word } from '../data/types'
 import type { UserData } from '../data/useUserData'
@@ -43,6 +47,8 @@ interface WordDetailProps {
   onReport?: (reported: { shown: string; named: string }) => void
   /** A report about this word has just been sent: a line under the action says so. */
   reportSent?: boolean
+  /** Opens Learn (the snackbar after a word is added to the learning queue offers it). Without it the snackbar has no action. */
+  onOpenLearn?: () => void
   onBack?: () => void
 }
 
@@ -50,7 +56,7 @@ interface WordDetailProps {
  * One word in full: the same card Learn shows, a line on why it reads the way it does when that is not obvious, the
  * scheduling numbers in a collapsed footnote, then what can be done with it: add it to the learning queue (a word Learn can still teach), or bring it back if it was marked as known.
  */
-export function WordDetail({ word, data, queue, registerBack, onDeleted, onReport, reportSent = false, onBack }: WordDetailProps) {
+export function WordDetail({ word, data, queue, registerBack, onDeleted, onReport, reportSent = false, onOpenLearn, onBack }: WordDetailProps) {
   const now = new Date()
   const status = wordStatus(word, now)
   const note = noteFor(word, status)
@@ -60,6 +66,16 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
   const [said, setSaid] = useState<{ esWord: string; text: string } | null>(null)
   // The learning queue (the star): only a word Learn can still teach can carry it, and the control is not there for any other.
   const starrable = canStar(word)
+  // The one-time bubble on the queue button: decided once, when the page opens (marking it seen changes the settings, and that must not end it), and counted as seen when it shows.
+  const [bubble, setBubble] = useState(() => wordQueueHint({ word, settings: data.settings }))
+  const bubbleShown = useCallback(() => {
+    const patch = hintSeenPatch(data.getSettings(), 'word-queue')
+    if (patch) saveSetting(patch, { applySettings: data.applySettings, queue })
+  }, [data, queue])
+  const closeBubble = useCallback(() => setBubble(false), [])
+  // The line at the foot of the screen after a word is added to the queue: a number says which add it is (a second add starts it over); null is none.
+  const [queuedNote, setQueuedNote] = useState<number | null>(null)
+  const closeNote = useCallback(() => setQueuedNote(null), [])
 
   // The user's own words can be edited and deleted from here.
   const [editing, setEditing] = useState(false)
@@ -96,6 +112,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
     haptic('select')
     data.applyFavorite([word.esWord], !word.isFavorite)
     queue.enqueueFavorite(word.esWord, !word.isFavorite)
+    setQueuedNote(word.isFavorite ? null : (n) => (n ?? 0) + 1)
   }
   const bringBack = () => {
     haptic('tap')
@@ -164,6 +181,7 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
               className={word.isFavorite ? 'btn btn-secondary is-on' : 'btn btn-secondary'}
               aria-pressed={word.isFavorite}
               aria-describedby="learn-sooner-hint"
+              data-hint="star"
               onClick={toggleFavourite}
             >
               <StarIcon filled={word.isFavorite} /> {word.isFavorite ? t.learnSoonerOn : t.learnSooner}
@@ -207,6 +225,9 @@ export function WordDetail({ word, data, queue, registerBack, onDeleted, onRepor
           )}
         </div>
       )}
+
+      {bubble && starrable && <HintBubble target="star" placement="below" text={strings.hints.wordQueue} onDismiss={closeBubble} onShown={bubbleShown} />}
+      {queuedNote !== null && <Snackbar key={queuedNote} message={strings.hints.queuedNote} actionLabel={onOpenLearn ? strings.hints.openLearn : undefined} onAction={onOpenLearn} onDismiss={closeNote} durationMs={SNACKBAR_MS} avoid="star" />}
 
       {confirming && (
         <BottomSheet label={t.deleteTitle(word.esWord)} onClose={() => setConfirming(false)}>

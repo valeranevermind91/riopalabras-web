@@ -51,6 +51,13 @@
   --bad: #a83c3c;
   --bad-bg: #f8e8e6;
   --bad-border: #edcfcb;
+
+  /* the snackbar (an inverted bar), the dimmed screen behind the tour, and the shadow of what floats */
+  --snack-bg: #16211f;
+  --snack-ink: #f6f4f0;
+  --snack-accent: #8fe3dc;
+  --scrim: rgba(14, 22, 24, 0.62);
+  --shadow-pop: 0 10px 26px rgba(22, 33, 31, 0.28);
 }
 
 :root[data-theme='dark'] {
@@ -90,6 +97,12 @@
   --bad: #f08080;
   --bad-bg: #2c1a1c;
   --bad-border: #5a2f31;
+
+  --snack-bg: #e9efec;
+  --snack-ink: #0e1618;
+  --snack-accent: #0a5a56;
+  --scrim: rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 10px 26px rgba(0, 0, 0, 0.5);
 }
 
 /* Shape, spacing and type: the same in both themes. */

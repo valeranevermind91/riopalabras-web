@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
+import { hintsResetPatch } from '../data/hints'
 import { WHATS_NEW, currentNews, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
 import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
@@ -34,6 +35,8 @@ interface SettingsScreenProps {
   now?: Date
   /** Replays the intro from step 1 (About). Without it the row is left out. */
   onRunIntro?: () => void
+  /** "Show hints again": the hints are reset (done here) and the app takes the person Home for the tour. Without it the row is left out. */
+  onShowHints?: () => void
   /** Opens the form for a note to the developer (About). Without it (signed out) the row is left out. */
   onOpenFeedback?: () => void
   /** A message has just been sent from here: a line under the row says so. */
@@ -54,7 +57,7 @@ const noticeText = (notice: NonNullable<RemindersControl['notice']>) => ({ decli
 
 const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: false, notice: null, set: async () => {} }
 
-export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onOpenWhatsNew, news = WHATS_NEW, now, onRunIntro, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onOpenWhatsNew, news = WHATS_NEW, now, onRunIntro, onShowHints, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
@@ -293,6 +296,22 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
           {onRunIntro && (
             <button type="button" className="setting-row setting-nav" onClick={onRunIntro}>
               <span className="setting-label">{t.runIntro}</span>
+              <span className="setting-chevron" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          )}
+          {onShowHints && (
+            <button
+              type="button"
+              className="setting-row setting-nav"
+              onClick={() => {
+                haptic('tap')
+                saveSetting(hintsResetPatch(), deps)
+                onShowHints()
+              }}
+            >
+              <span className="setting-label">{t.showHints}</span>
               <span className="setting-chevron" aria-hidden="true">
                 ›
               </span>

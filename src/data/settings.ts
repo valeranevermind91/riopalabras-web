@@ -1,5 +1,6 @@
 import { LANGUAGE_SETTING_KEY, parseUiLanguage } from '../lib/language'
 import { THEME_SETTING_KEY, parseThemeChoice } from '../lib/theme'
+import { HINTS_SEEN_KEY, parseHintsSeen } from './hints'
 import { ONBOARDING_KEY } from './onboarding'
 import { parseReminderOfferShows } from './reminderOffer'
 import type { UserSettings } from './types'
@@ -50,6 +51,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     pendingWordDeletes: strings(raw.pending_word_deletes),
     reminderOfferShows: parseReminderOfferShows(raw.reminder_offer_shown),
     whatsNewSeen: str(raw.whats_new_seen),
+    hintsSeen: parseHintsSeen(raw[HINTS_SEEN_KEY]),
     debugUnlocked: raw.debug_unlocked === true,
     raw,
   }

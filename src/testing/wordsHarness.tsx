@@ -103,7 +103,7 @@ export function Harness({ start }: { start: readonly Word[] }) {
     ;(window as never as { __pressBack: () => string }).__pressBack = () => (backInterceptor.current?.() ? 'closed-sheet' : 'left')
     ;(window as never as { __openWord: (esWord: string) => void }).__openWord = (esWord) => setOpen(wordKey(esWord))
   }, [])
-  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, a_future_key: { kept: true }, ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
+  const [settings, setSettings] = useState(() => parseSettings({ daily_new_word_limit: 10, a_future_key: { kept: true }, hints_seen: ['word-queue'], ...(new URLSearchParams(location.search).get('lang') ? { ui_language: new URLSearchParams(location.search).get('lang') } : {}), ...(new URLSearchParams(location.search).get('ru') === '0' ? { show_ru_translation: false } : {}) }))
   useEffect(() => {
     setLanguage(effectiveLanguage(settings.uiLanguage))
   }, [settings.uiLanguage])

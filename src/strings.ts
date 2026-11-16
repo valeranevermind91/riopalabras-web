@@ -30,6 +30,28 @@ export const en = {
     loadFailed: (message: string) => `Couldn't load your data: ${message}`,
   },
 
+  // One-time hints (data/hints.ts): the snackbar after adding a word to the learning queue, the two bubbles, the tour on Home.
+  hints: {
+    queuedNote: 'Added to the learning queue',
+    openLearn: 'Open Learn',
+    queuedTile: (n: number) => `queued: ${n}`,
+    gotIt: 'Got it',
+    wordQueue: 'Want to learn this word? Add it — it will show up in Learn before the others',
+    homeWotd: 'A new local word every day, just to get acquainted. To learn words, go to Learn',
+    tour: {
+      label: 'A quick tour of the app',
+      step: (n: number, of: number) => `${n} of ${of}`,
+      next: 'Next',
+      done: 'Done',
+      skip: 'Skip',
+      learn: { title: 'Learn', text: 'New words. Swipe through the cards — each word is saved to your vocabulary.' },
+      review: { title: 'Review', text: 'Words come back here when it is time to recall them. Start your day with a review.' },
+      practice: { title: 'Practice', text: 'Exercises on words you have already learned.' },
+      words: { title: 'Words', text: 'All the words, with search. You can add a word of your own here too.' },
+      wotd: { title: 'Word of the day', text: 'A new local word every day, just to get acquainted.' },
+    },
+  },
+
   home: {
     toReviewToday: 'To review today',
     newToLearn: 'New to learn',
@@ -318,6 +340,7 @@ export const en = {
     // the row's name while it has a dot
     whatsNewUnread: "What's new, unread",
     runIntro: 'Run the intro again',
+    showHints: 'Show hints again',
     debug: 'Debug',
     debugLock: 'Lock Debug',
   },
@@ -573,6 +596,7 @@ export const en = {
     capReachedTitle: "Today's new words are done",
     capReachedSubtitle: 'Nice work. Come back tomorrow for more.',
     // why the day's new words stop (shown under the line above, when the daily goal is reached)
+    firstBatchWhy: 'Tomorrow these words come back in Review — that is how they stick',
     capReachedWhy: "New words are limited each day so that tomorrow's review stays manageable: every word you learn comes back for review, and too many at once pile up.",
     poolEmptyTitle: 'No new words available right now.',
     poolEmptySubtitle: "Learn introduces new words you haven't studied yet.",

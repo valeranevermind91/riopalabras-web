@@ -148,6 +148,8 @@ function App() {
   const [feedbackSent, setFeedbackSent] = useState<{ screen: 'settings' | 'about' | 'word'; key: string | null } | null>(null)
   // A general note is started from Settings' own row or from About (the way to ask for data to be deleted); Back, and the line that says it went, return there.
   const [feedbackFrom, setFeedbackFrom] = useState<FeedbackOrigin>('settings')
+  // "Show hints again" in Settings: Home gives the tour once more (whatever the progress) and says when it is over.
+  const [replayTour, setReplayTour] = useState(false)
   // The placement test is opened from Settings' own row or from Learn's "too easy" suggestion; Back, and finishing or skipping it, return there.
   const [placementFrom, setPlacementFrom] = useState<PlacementOrigin>('settings')
   const setScreen = useCallback((to: Screen) => {
@@ -294,6 +296,10 @@ function App() {
         onOpenHow={() => setScreen('how')}
         onOpenWhatsNew={() => setScreen('whatsnew')}
         onRunIntro={() => setScreen('onboarding')}
+        onShowHints={() => {
+          setReplayTour(true)
+          setScreen('home')
+        }}
         onOpenFeedback={
           sendReport
             ? () => {
@@ -471,6 +477,7 @@ function App() {
             : undefined
         }
         reportSent={feedbackSent?.screen === 'word' && feedbackSent.key === wordKey(openedWord.esWord)}
+        onOpenLearn={() => setScreen('learn')}
         onBack={inPageBack}
       />
     )
@@ -525,6 +532,8 @@ function App() {
       }}
       queue={queue}
       metrics={metrics}
+      replayTour={replayTour}
+      onTourEnd={() => setReplayTour(false)}
     />
   )
 }

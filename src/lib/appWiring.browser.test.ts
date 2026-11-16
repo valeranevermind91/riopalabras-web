@@ -67,7 +67,7 @@ describe.skipIf(!CHROME)(`the real app (${mode}): what App hands its screens`, (
   async function open(options: { seed?: (fake: ReturnType<typeof createFakeServer>) => void } = {}) {
     const fake = createFakeServer()
     fake.users.set(TELEGRAM_ID, 'user-1')
-    fake.tables.set('user_settings', [{ user_id: 'user-1', settings: { onboarding_done: true, ui_language: 'en', daily_new_word_limit: 10, reminder_offer_shown: true } }])
+    fake.tables.set('user_settings', [{ user_id: 'user-1', settings: { onboarding_done: true, ui_language: 'en', daily_new_word_limit: 10, reminder_offer_shown: true, hints_seen: ['tour', 'home-wotd', 'word-queue'] } }])
     options.seed?.(fake)
     const page = await (await browser.createBrowserContext()).newPage()
     const outside: string[] = []

@@ -224,7 +224,9 @@ describe('spelling and address', () => {
     expect(offenders(ruTexts, /избранн|закладк|сохран[её]нные|сохран[её]нных слов|сохранить слово/i)).toEqual([])
     // every "queue" is the learning queue (or "queued", the filter chip and the how-it-works sentence), and every «очеред-» is the queue of study or the chip «В очереди» (the offline-writes notices say "saved", "sent", "unsaved", never "queue")
     expect(offenders(enTexts, /queue(?<!learning queue)(?!d\b)/i)).toEqual([])
-    expect(offenders(ruTexts, /очеред(?!ь изучения|и изучения|и на изучение|и$)/i)).toEqual([])
+    // (the two short forms the owner chose for the snackbar and the Learn tile, «Добавлено в очередь» and «в очереди: N», say it in the place where the learning queue is the only queue there is)
+    expect(offenders(ruTexts.filter((t) => !['hints.queuedNote', 'hints.queuedTile'].includes(t.path)), /очеред(?!ь изучения|и изучения|и на изучение|и$)/i)).toEqual([])
+    expect([ru.hints.queuedNote, ru.hints.queuedTile(2)]).toEqual(['Добавлено в очередь', 'в очереди: 2'])
     for (const map of [en, ru]) for (const gone of ['queued', 'queueForLearn', 'queueRow', 'unqueueRow', 'removeFromQueue', 'queuedAt', 'queueFull', 'beyondToday', 'addedNotQueued', 'favourite', 'unfavourite', 'addFavourite', 'removeFavourite', 'queueShort']) expect(gone in map.words, gone).toBe(false)
   })
 

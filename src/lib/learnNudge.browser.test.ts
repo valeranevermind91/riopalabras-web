@@ -65,8 +65,10 @@ describe.skipIf(!CHROME)('the Learn screen at 320px: the swipe hint and the plac
 
   for (const language of ['en', 'ru'] as const) {
     describe(language === 'en' ? 'English' : 'Russian', () => {
-      it('the swipe hint takes two lines between two full-size arrows, and nothing runs out of the screen', async () => {
-        const page = await open('', language)
+      // the first batch a person ever learns has the line louder (hint-first); a later one has the plain line: both fit the same
+      it.each([['the first batch', ''], ['a later batch', 'learned=1']])('the swipe hint takes two lines between two full-size arrows, and nothing runs out of the screen: %s', async (_name, query) => {
+        const page = await open(query, language)
+        expect(await page.$$eval('.learn-nav .hint-first', (els) => els.length)).toBe(query === '' ? 1 : 0)
         const seen = await page.evaluate(() => {
           const hint = document.querySelector('.learn-nav .hint') as HTMLElement
           const arrows = Array.from(document.querySelectorAll('.learn-nav .btn-icon')).map((b) => b.getBoundingClientRect().width)

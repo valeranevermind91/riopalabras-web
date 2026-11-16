@@ -4,7 +4,8 @@
 // reached by the first batch), pool=N (how many new words there are to learn,
 // default 12; the first batch is 10), offered=1 (the offer was answered: `true` is in the blob), shows=N (it has been shown N times without an answer), lang=ru, nolearn=1 (the page passes no reminders
 // control at all, as a screen that has none), placement=1 (Learn gets onPlacement: pressing the "too easy" suggestion counts in window.__placement; the hint and
-// the suggestion are measured with it by src/lib/learnNudge.browser.test.ts), rank=N (the placement test was taken: the start rank is N).
+// the suggestion are measured with it by src/lib/learnNudge.browser.test.ts), rank=N (the placement test was taken: the start rank is N), learned=1 (the person has learned
+// before: one word is already in the schedule, so the batch is not the first they ever learn; without it it is, and Learn says so, see data/hints.ts).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
@@ -31,7 +32,10 @@ const queue = createWriteQueue(
 const fakeReminders = createFakeReminders(params)
 
 const POOL = Number(params.get('pool') ?? 12)
-const WORDS: readonly Word[] = Array.from({ length: POOL }, (_, i) => makeWord(`palabra${String(i + 1).padStart(2, '0')}`, { rank: i + 1, enTranslation: `word${i + 1}`, ruTranslation: `слово${i + 1}` }))
+const WORDS: readonly Word[] = [
+  ...Array.from({ length: POOL }, (_, i) => makeWord(`palabra${String(i + 1).padStart(2, '0')}`, { rank: i + 1, enTranslation: `word${i + 1}`, ruTranslation: `слово${i + 1}` })),
+  ...(params.get('learned') === '1' ? [makeWord('vieja', { rank: 2000, repetitions: 2, interval: 3, easeFactor: 2.5, nextReview: new Date(Date.now() + 3 * 86_400_000) })] : []),
+]
 
 export function Harness() {
   useLanguage()

@@ -97,6 +97,40 @@ describe('Home structure', () => {
   })
 })
 
+describe('the Learn tile: the words waiting in the learning queue', () => {
+  const queued = (n: number) => [...learnedWords(8, 3), ...unlearned(20).map((w, i) => (i < n ? { ...w, isFavorite: true, starredAt: 1000 + i } : w))]
+  const strip = (html: string) => tile(html, 'learn').match(/<span class="tile-queued">(.*?)<\/span>/)?.[1] ?? null
+
+  it('a strip along the foot of the tile says how many wait, when some do', () => {
+    expect(strip(render({}, queued(1)))).toBe('queued: 1')
+    expect(strip(render({}, queued(4)))).toBe('queued: 4')
+  })
+
+  it('and nothing when none do; only the Learn tile has it', () => {
+    expect(strip(render({}, queued(0)))).toBeNull()
+    expect(tile(render({}, queued(2)), 'review')).not.toContain('tile-queued')
+  })
+
+  it('counts the stars that are waiting, not those of words Learn can no longer teach', () => {
+    const words = [...learnedWords(8, 3), ...unlearned(5), makeWord('vieja', { isFavorite: true, repetitions: 2, nextReview: future, rank: 3 })]
+    expect(strip(render({}, words))).toBeNull()
+  })
+
+  it('in Russian: «в очереди: N»', () => {
+    setLanguage('ru')
+    try {
+      expect(strip(render({}, queued(3)))).toBe('в очереди: 3')
+    } finally {
+      setLanguage('en')
+    }
+  })
+
+  it('each tile, the Words button and the Word of the day row carry the name the hints find them by (data-hint), so a hint follows the element and not a place', () => {
+    const html = render({ onWords: () => {}, onOpenWord: () => {} }, real)
+    for (const name of ['tile-learn', 'tile-review', 'tile-practice', 'words', 'wotd']) expect(html, name).toContain(`data-hint="${name}"`)
+  })
+})
+
 describe('the status row: the week of dots, and the stored streak', () => {
   const dotsOf = (html: string) => [...html.matchAll(/<span class="streak-day[^"]*" data-date="([\d-]+)"><span class="(streak-dot[^"]*)"><\/span><span class="streak-letter">(\w)<\/span><\/span>/g)].map((m) => ({ date: m[1], cls: m[2], letter: m[3] }))
   const YESTERDAY = '2026-10-04'
@@ -495,7 +529,7 @@ describe('the word of the day row', () => {
 
   it('is one button holding the icon, the label, the word, its translation and a chevron, and nothing else: no pill, sentence, divider, queue button or "See the card" link', () => {
     const html = card(render({ onOpenWord: () => {} }, real))
-    expect(html).toMatch(/^<button type="button" class="wotd" aria-label="Word of the day: [^"]+">/)
+    expect(html).toMatch(/^<button type="button" class="wotd" aria-label="Word of the day: [^"]+" data-hint="wotd">/)
     expect(html.match(/<button/g)).toHaveLength(1)
     expect(html).toMatch(/<span class="wotd-icon" aria-hidden="true"><svg/)
     expect(html).toContain('<span class="wotd-label">Word of the day</span>')
