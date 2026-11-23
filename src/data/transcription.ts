@@ -8,7 +8,7 @@ import { OVERRIDES } from './transcriptionOverrides'
 //   - sheísmo: ll and y before a vowel are «ш»; seseo: c before e/i and z are «с»; the s is never aspirated.
 //   - e is «е» after a consonant and «э» at the start of a word or after a vowel (or the glide у): «меса», «поэта», «уэбо».
 //   - a glide after a consonant is «я/ье/ьо/ью», after a vowel or at the start «й»; ñ is «нь», and «нья», «ни», «ньо», «нью».
-//   - x is «кс» between vowels, «с» before a consonant and at the start (México, Texas, Oaxaca: «х»).
+//   - x is «кс» everywhere except at the start of a word («с»: xilófono); México, Texas, Oaxaca: «х». xc before e/i is one «кс».
 //
 // Nothing here reads the environment or the page: it is a function of a string, so it is tested on a list, and a script can run it over the whole dictionary.
 
@@ -122,11 +122,9 @@ function tokenize(w: string): Token[] {
         if (mexican) c('х')
         else if (i === 0) c('с')
         else if (n === 'c' && isFront(n2)) {
-          c('с')
-          i++ // excelente: the x and the c are one «с», as in escena, not a doubled «сс»
-        }
-        else if (isVowel(p) && (n === undefined || isVowel(n) || (n === 'h' && isVowel(n2)))) c('кс')
-        else c('с')
+          c('кс')
+          i++ // excelente: the x and the c are one «кс», not «ксс»
+        } else c('кс') // always «кс», careful speech as it is spelled: examen, texto, extranjero, taxi
         break
       case 'y':
         if (n !== undefined && isVowel(n)) c('ш') // yo, ayer, playa

@@ -125,26 +125,31 @@ describe('the consonants, as Rioplatense says them', () => {
     expect(tr('perro')).toBe(st('пЕрро'))
   })
 
-  it('x: between vowels «кс», before a consonant «с», at the start «с»; in México, Texas, Oaxaca it is «х»', () => {
+  it('x is «кс» everywhere (careful speech, as it is spelled): between vowels, before a consonant, at the end; at the start of a word it is «с» (xilófono); in México, Texas, Oaxaca it is «х»', () => {
     expect(tr('examen')).toBe(st('эксАмен'))
     expect(tr('taxi')).toBe(st('тАкси'))
-    expect(tr('extranjero')).toBe(st('эстранхЕро'))
-    expect(tr('explicar')).toBe(st('эспликАр'))
+    expect(tr('extranjero')).toBe(st('экстранхЕро'))
+    expect(tr('explicar')).toBe(st('экспликАр'))
+    expect(tr('texto')).toBe(st('тЕксто'))
+    expect(tr('sexto')).toBe(st('сЕксто'))
+    expect(tr('próximo')).toBe(st('прОксимо'))
     expect(tr('xilófono')).toBe(st('силОфоно'))
     expect(tr('mexicano')).toBe(st('мехикАно'))
+    expect(tr('texas')).toBe(st('тЕхас'))
+    expect(tr('oaxaca')).toBe(st('оахАка'))
   })
 
-  it('x before c + e/i is one «с», not a doubled «сс» (excelente, as escena is one sound); before c + a/o/u or another consonant the c keeps its own sound', () => {
-    expect(tr('excelente')).toBe(st('эселЕнте')) // every syllable is there: э-се-ле́н-те
-    expect(tr('excepto')).toBe(st('эсЕпто'))
-    expect(tr('exceso')).toBe(st('эсЕсо'))
-    expect(tr('excepción')).toBe(st('эсепсьОн'))
-    expect(tr('excitar')).toBe(st('эситАр'))
-    expect(tr('excusa')).toBe(st('эскУса'))
-    expect(tr('exclusivo')).toBe(st('эсклусИбо'))
-    expect(tr('excursión')).toBe(st('эскурсьОн'))
-    // no x-word has a doubled «сс»: that would be said as a long consonant
-    expect(tr('exceso')).not.toMatch(/сс/)
+  it('xc before e/i is one «кс» (the c is not said twice): excelente is э-кс-е-ле́н-те, and the е after the «с» is «е» (э is only for the start of a word and after a vowel); before a, o, u or a consonant the c keeps its own sound', () => {
+    expect(tr('excelente')).toBe(st('экселЕнте'))
+    expect(tr('excepto')).toBe(st('эксЕпто'))
+    expect(tr('exceso')).toBe(st('эксЕсо'))
+    expect(tr('excepción')).toBe(st('эксепсьОн'))
+    expect(tr('excitar')).toBe(st('экситАр'))
+    expect(tr('excusa')).toBe(st('экскУса'))
+    expect(tr('exclusivo')).toBe(st('эксклусИбо'))
+    expect(tr('excursión')).toBe(st('экскурсьОн'))
+    // no doubled «сс» or «ксс»: that would be said as a long consonant
+    for (const w of ['excelente', 'exceso', 'excitar', 'excusa', 'exclusivo', 'extranjero', 'texto', 'sexo']) expect(tr(w), w).not.toMatch(/сс/)
   })
 
   it('the s is «с» everywhere: it is not aspirated', () => {
