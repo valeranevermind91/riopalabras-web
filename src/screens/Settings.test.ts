@@ -100,6 +100,38 @@ describe('the Settings screen', () => {
     })
   })
 
+  describe('the Cyrillic transcription: a switch for the Russian interface, on by default', () => {
+    const switchFor = (html: string) => html.match(/<input id="transcription"[^>]*>/)![0]
+    const inRussian = (raw: Record<string, unknown> = {}) => {
+      setLanguage('ru')
+      try {
+        return render(raw)
+      } finally {
+        setLanguage('en')
+      }
+    }
+
+    it('has a labelled switch, under the translation switches, on when nothing is stored', () => {
+      const html = inRussian()
+      expect(html).toMatch(/<label for="transcription" class="setting-label">Транскрипция кириллицей<\/label>/)
+      expect(switchFor(html)).toMatch(/type="checkbox" role="switch"/)
+      expect(switchFor(html)).toContain('checked')
+      expect(html.indexOf('id="language-en"')).toBeLessThan(html.indexOf('id="transcription"'))
+    })
+
+    it('is off when it was turned off', () => {
+      expect(switchFor(inRussian({ show_transcription: false }))).not.toContain('checked')
+    })
+
+    it('says under the switch that the pronunciation is approximate, and how ll and y sound (the owner\'s words)', () => {
+      expect(inRussian()).toContain('Произношение примерное — ориентир для начинающих. По-риоплатски ll и y звучат как «ш».')
+    })
+
+    it('is not on the screen in the English interface: it changes nothing there', () => {
+      expect(render({})).not.toContain('id="transcription"')
+    })
+  })
+
   describe('the translation language: two switches, the last one on is off-limits', () => {
     const switchFor = (html: string, id: string) => html.match(new RegExp(`<input id="${id}"[^>]*>`))![0]
 

@@ -311,6 +311,9 @@ export const en = {
     sessionsNote: "A goal of 16 or more is split into batches of 10 words, so you'll come back to Learn between them.",
     translation: 'Translations',
     translationHint: 'Show Russian, English or both. One stays on.',
+    // a switch for the Russian interface only (it is not on the screen in English): the Cyrillic transcription after a headword
+    transcription: 'Cyrillic transcription',
+    transcriptionHint: 'The pronunciation is approximate, a guide for beginners. In Rioplatense, ll and y sound like “sh”.',
     russian: 'Russian',
     english: 'English',
     language: 'Language',
@@ -530,7 +533,7 @@ export const en = {
       {
         id: 'learn',
         heading: 'Learn',
-        text: 'Learn brings new words, a few at a time, up to your daily goal. To learn a word sooner, add it to the learning queue in Words, with the star on its row in the list or the Add to learning queue button on the word\'s own page. Learn takes queued words before the others: they make up most of the new words each day, for as long as there are enough of them.\n\nEach card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. Any word can be hidden, whether you already know it or would rather not see it: it then stays out of Learn, Review and the practice exercises.',
+        text: 'Learn brings new words, a few at a time, up to your daily goal. To learn a word sooner, add it to the learning queue in Words, with the star on its row in the list or the Add to learning queue button on the word\'s own page. Learn takes queued words before the others: they make up most of the new words each day, for as long as there are enough of them.\n\nEach card has the word, an example sentence and the translation, and it marks a word that is Rioplatense, or that means something different here. When a batch is finished, the words go on to review. They come back for the first time tomorrow. Any word can be hidden, whether you already know it or would rather not see it: it then stays out of Learn, Review and the practice exercises.\n\nIn the Russian interface a word is followed, in square brackets, by an approximate transcription in Cyrillic, with the stressed vowel marked. You can turn it off in Settings.',
       },
       {
         id: 'review',

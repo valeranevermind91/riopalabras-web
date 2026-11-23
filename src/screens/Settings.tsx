@@ -3,11 +3,11 @@ import { GoalStepper } from '../components/GoalStepper'
 import { ScreenHeader } from '../components/ScreenHeader'
 import { hintsResetPatch } from '../data/hints'
 import { WHATS_NEW, currentNews, hasUnreadNews, type NewsEntry } from '../data/whatsNew'
-import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, stepDailyLimit } from '../data/settingsActions'
+import { SESSIONS_NOTE_FROM, debugUnlockedPatch, isLastLanguage, saveSetting, setLanguage, showTranscriptionPatch, stepDailyLimit } from '../data/settingsActions'
 import type { UserData } from '../data/useUserData'
 import type { WriteQueue } from '../data/writeQueue'
 import { botHandle, botLink } from '../lib/botLink'
-import { UI_LANGUAGES, effectiveLanguage, languagePatch, type UiLanguage } from '../lib/language'
+import { UI_LANGUAGES, effectiveLanguage, languagePatch, useLanguage, type UiLanguage } from '../lib/language'
 import type { RemindersControl } from '../lib/useReminders'
 import { getWebApp, haptic } from '../lib/telegram'
 import { THEME_CHOICES, type ThemeChoice } from '../lib/theme'
@@ -59,6 +59,7 @@ const NO_REMINDERS: RemindersControl = { status: 'loading', shown: false, busy: 
 
 export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO_REMINDERS, onTakePlacement, onOpenAbout, onOpenHow, onOpenWhatsNew, news = WHATS_NEW, now, onRunIntro, onShowHints, onOpenFeedback, feedbackSent = false, botUsername = import.meta.env.VITE_BOT_USERNAME, onBack }: SettingsScreenProps) {
   const { settings } = data
+  const language = useLanguage()
   const deps = { getSettings: data.getSettings, applySettings: data.applySettings, queue }
   const goal = settings.dailyNewWordLimit
   const link = botLink(botUsername)
@@ -83,6 +84,11 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
   }
   const toggleLanguage = (which: 'ru' | 'en', on: boolean) => {
     if (setLanguage(which, on, deps)) haptic('select')
+  }
+  // The Cyrillic transcription after a headword: a switch that means something only in the Russian interface, so only there is it shown.
+  const toggleTranscription = (on: boolean) => {
+    haptic('select')
+    saveSetting(showTranscriptionPatch(on), deps)
   }
   // The interface language (not the translations a word shows): saved like any setting; the app switches when the setting changes.
   const uiLanguage = effectiveLanguage(settings.uiLanguage)
@@ -168,6 +174,28 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
               />
             </div>
           </div>
+
+          {language === 'ru' && (
+            <div className="setting-row">
+              <div className="setting-text">
+                <label htmlFor="transcription" className="setting-label">
+                  {t.transcription}
+                </label>
+                <span id="transcription-hint" className="setting-hint">
+                  {t.transcriptionHint}
+                </span>
+              </div>
+              <input
+                id="transcription"
+                type="checkbox"
+                role="switch"
+                className="switch"
+                aria-describedby="transcription-hint"
+                checked={settings.showTranscription}
+                onChange={(e) => toggleTranscription(e.target.checked)}
+              />
+            </div>
+          )}
 
           {onTakePlacement && (
             <button type="button" className="setting-row setting-nav" onClick={onTakePlacement}>

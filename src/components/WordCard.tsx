@@ -3,6 +3,8 @@ import { posLabel, showPosBadge } from '../data/pos'
 import { headwordRegion, headwordRegister, isRioplatenseWord, relationFor, translationsFor } from '../data/relation'
 import { translationLines, type TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
+import { wantsTranscription } from '../data/wordTranscription'
+import { getLanguage } from '../lib/language'
 import { strings } from '../strings'
 import { CardHeadword } from './CardHeadword'
 import { HighlightedSentence } from './HighlightedSentence'
@@ -50,7 +52,7 @@ export function TranslationRows({ word, settings }: { word: Word; settings: Tran
 }
 
 /** A word's full card: pills, headword, the standard-word line, then the example, the translations and the note. Shared by Learn, the Review answer, the word of the day and the Debug preview. */
-export function WordCard({ word, settings }: { word: Word; settings: TranslationFlags }) {
+export function WordCard({ word, settings }: { word: Word; settings: TranslationFlags & { readonly showTranscription?: boolean } }) {
   const relation = relationFor(word)
 
   return (
@@ -62,7 +64,7 @@ export function WordCard({ word, settings }: { word: Word; settings: Translation
         <RegisterLabel register={headwordRegister(word)} />
       </div>
 
-      <CardHeadword word={word} />
+      <CardHeadword word={word} transcribe={wantsTranscription(settings, getLanguage())} />
 
       <RelationLines relation={relation} settings={settings} />
 

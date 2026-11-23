@@ -99,7 +99,7 @@ export function WordPreview({ defaultLang }: { defaultLang: Lang }) {
   const [selected, setSelected] = useState<Word | null>(null)
   const [lang, setLang] = useState<Lang>(defaultLang)
   // The preview's own RU / EN switch: one language at a time, so the cards can be compared in each.
-  const previewFlags = { showRuTranslation: lang === 'ru', showEnTranslation: lang === 'en' }
+  const previewFlags = { showRuTranslation: lang === 'ru', showEnTranslation: lang === 'en', showTranscription: true }
   const [revealed, setRevealed] = useState(true)
   const [flip, setFlip] = useState(0) // remounts the Review card so "flip back" replays from the front
 

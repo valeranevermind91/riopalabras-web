@@ -954,7 +954,8 @@ describe.skipIf(!CHROME)('the Words screen in a browser', () => {
         const box = card.getBoundingClientRect()
         const rects = Array.from(card.querySelectorAll('.wc-meta > *, .wc-shift, .wc-relation p')).map((e) => e.getBoundingClientRect())
         return {
-          headword: card.querySelector('.wc-headword')!.textContent,
+          // the headword's own text: the Russian interface adds a bracketed transcription (.wc-tr), which has its own test
+          headword: Array.from(card.querySelector('.wc-headword')!.childNodes).filter((n) => !(n as Element).classList?.contains('wc-tr')).map((n) => n.textContent).join('').trim(),
           pill: card.querySelector('.wc-rio')?.textContent ?? null,
           tag: card.querySelector('.wc-tag')?.textContent ?? null,
           shift: shift?.textContent ?? null,

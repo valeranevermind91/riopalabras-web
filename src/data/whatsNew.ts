@@ -38,6 +38,18 @@ export const NEWS_FILE_CAP = 30
 
 export const WHATS_NEW: readonly NewsEntry[] = [
   {
+    id: 'transcription',
+    at: '2026-11-23T18:37',
+    en: {
+      title: 'Cyrillic transcription',
+      text: 'In the Russian interface, a word on a card now has its approximate pronunciation in Cyrillic after it, in square brackets, with the stressed vowel marked. It is a guide for beginners, and it can be turned off in Settings.',
+    },
+    ru: {
+      title: 'Транскрипция кириллицей',
+      text: 'В русском интерфейсе после слова на карточке теперь стоит его примерное произношение кириллицей, в квадратных скобках, с ударением. Это ориентир для начинающих; отключить его можно в настройках.',
+    },
+  },
+  {
     id: 'hints',
     at: '2026-11-15T22:10',
     en: {

@@ -3686,3 +3686,19 @@ mark {
     animation: none;
   }
 }
+
+/* The Cyrillic transcription after a headword (CardHeadword): small and muted, on the headword's line, in the interface face (Fraunces has no Cyrillic), the stressed vowel set apart.
+   It wraps with the headword, so a long word puts it on the next line rather than off the card. */
+.wc-tr {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--muted);
+  white-space: normal;
+}
+.wc-tr .tr-stress {
+  font-weight: 800;
+  color: var(--text-2);
+}

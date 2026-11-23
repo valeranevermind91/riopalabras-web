@@ -54,6 +54,12 @@ export const DEBUG_UNLOCKED_KEY = 'debug_unlocked'
 /** Unlocking writes the key; locking again removes it (a null patch removes a key from the blob), leaving the account as it was before. */
 export const debugUnlockedPatch = (unlocked: boolean): SettingsPatch => ({ [DEBUG_UNLOCKED_KEY]: unlocked ? true : null })
 
+/** The key in the settings blob for the Cyrillic transcription after a headword. Absent means on. */
+export const SHOW_TRANSCRIPTION_KEY = 'show_transcription'
+
+/** The switch in Settings: both ways write the key (an explicit true is as good as the default, and a Flutter app reading the blob sees a plain boolean). */
+export const showTranscriptionPatch = (on: boolean): SettingsPatch => ({ [SHOW_TRANSCRIPTION_KEY]: on })
+
 /** One step on the daily goal; false when it is already at the end of the range. */
 export function stepDailyLimit(delta: 1 | -1, deps: SettingsDeps): boolean {
   const patch = dailyLimitPatch(deps.getSettings().dailyNewWordLimit, delta)

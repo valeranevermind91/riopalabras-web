@@ -292,15 +292,15 @@ describe('spelling and address', () => {
 
 describe('the Russian interface does not say «риоплатск-»', () => {
   // The adjective is awkward in Russian, so the text goes round it («местное»). It is gone from every paragraph of the intro and of "How it works" for good.
-  // SEVEN strings elsewhere still use it (the pill and the relation label on a card; the word form's check, hints and form line; the duplicate message); they are named here, so a seventh cannot appear, and the day
+  // EIGHT strings elsewhere still use it (the pill and the relation label on a card; the word form's check, hints and form line; the duplicate message; the hint under the transcription switch, «По-риоплатски ll и y звучат как «ш»», in the owner's words); they are named here, so a ninth cannot appear, and the day
   // one is reworded this test fails until it is taken off the list. Dictionary content (a word's own translation) is data, not interface.
-  const REMAINING = ['duplicate', 'pill', 'regionHint', 'rioplatense', 'rioplatenseCheck', 'rioplatenseForm', 'standardHint']
+  const REMAINING = ['duplicate', 'pill', 'regionHint', 'rioplatense', 'rioplatenseCheck', 'rioplatenseForm', 'standardHint', 'transcriptionHint']
 
   it('not in the intro or in "How it works"', () => {
     for (const text of textsIn(ru.howItWorks).concat(textsIn(ru.onboarding))) expect(text, text).not.toMatch(/риоплатск/i)
   })
 
-  it('and in the rest of the Russian strings only in the seven named ones', () => {
+  it('and in the rest of the Russian strings only in the eight named ones', () => {
     const lines = readFileSync('src/strings.ru.ts', 'utf8').split('\n')
     const keys = new Set<string>()
     lines.forEach((line, i) => {

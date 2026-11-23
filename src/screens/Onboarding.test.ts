@@ -204,9 +204,9 @@ describe('How it works', () => {
     const html = renderToStaticMarkup(createElement(HowItWorks, {}))
     expect(html).toContain('<h1>How it works</h1>')
     expect([...html.matchAll(/<h2 id="how-\w+">([^<]+)<\/h2>/g)].map((m) => m[1])).toEqual(['Learn', 'Review', 'Matching', 'Cloze', 'When a word comes back', 'Reminders'])
-    // a long section is paragraphs, not one block: Learn two, Review, Matching and Cloze one each, the schedule four, reminders one sentence
+    // a long section is paragraphs, not one block: Learn three (the last is the line about the Cyrillic transcription), Review, Matching and Cloze one each, the schedule four, reminders one sentence
     const paragraphs = (id: string) => (html.match(new RegExp(`<section class="how-section how-${id}"[\\s\\S]*?</section>`))![0].match(/<p>/g) ?? []).length
-    expect(['learn', 'review', 'matching', 'cloze', 'spaced', 'reminders'].map(paragraphs)).toEqual([2, 1, 1, 1, 4, 1])
+    expect(['learn', 'review', 'matching', 'cloze', 'spaced', 'reminders'].map(paragraphs)).toEqual([3, 1, 1, 1, 4, 1])
     expect(html).toContain('for the first time tomorrow')
     expect(html).toContain('about a week')
   })

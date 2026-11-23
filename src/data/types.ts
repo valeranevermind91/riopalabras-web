@@ -69,6 +69,8 @@ export interface UserSettings {
   readonly whatsNewSeen: string | null
   /** The ids of the one-time hints already shown (see data/hints.ts); empty until one has been. */
   readonly hintsSeen: readonly string[]
+  /** The Cyrillic transcription after a headword (the Russian interface only): the `show_transcription` key; on when not stored. */
+  readonly showTranscription: boolean
   /** The Debug section of Settings was unlocked on this account (seven taps on the version row, see lib/tapCount.ts). Never set by default. */
   readonly debugUnlocked: boolean
   /** The complete blob as read, unknown keys included — merge into this when writing settings back. */

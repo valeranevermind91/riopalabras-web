@@ -52,6 +52,7 @@ export function parseSettings(blob: Record<string, unknown> | null): UserSetting
     reminderOfferShows: parseReminderOfferShows(raw.reminder_offer_shown),
     whatsNewSeen: str(raw.whats_new_seen),
     hintsSeen: parseHintsSeen(raw[HINTS_SEEN_KEY]),
+    showTranscription: bool(raw.show_transcription, true),
     debugUnlocked: raw.debug_unlocked === true,
     raw,
   }

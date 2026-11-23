@@ -2,6 +2,8 @@ import type { KeyboardEvent } from 'react'
 import { headwordRegion, headwordRegister, isRioplatenseWord, relationFor } from '../data/relation'
 import type { TranslationFlags } from '../data/translations'
 import type { Word } from '../data/types'
+import { wantsTranscription } from '../data/wordTranscription'
+import { getLanguage } from '../lib/language'
 import { strings } from '../strings'
 import { CardHeadword } from './CardHeadword'
 import { RegionTag } from './RegionTag'
@@ -11,7 +13,7 @@ import { ExampleBlock, TranslationRows } from './WordCard'
 
 interface ReviewCardProps {
   word: Word
-  settings: TranslationFlags
+  settings: TranslationFlags & { readonly showTranscription?: boolean }
   revealed: boolean
   onReveal: () => void
 }
@@ -25,6 +27,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
   const region = headwordRegion(word)
   const register = headwordRegister(word)
   const relation = relationFor(word)
+  const transcribe = wantsTranscription(settings, getLanguage())
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (revealed || (e.key !== 'Enter' && e.key !== ' ')) return
@@ -49,7 +52,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
               <RegionTag region={region} />
               <RegisterLabel register={register} />
             </div>
-            <CardHeadword word={word} className="rf-headword" />
+            <CardHeadword word={word} className="rf-headword" transcribe={transcribe} />
           </div>
           <p className="rf-hint">{strings.review.tapToReveal}</p>
         </div>
@@ -60,7 +63,7 @@ export function ReviewCard({ word, settings, revealed, onReveal }: ReviewCardPro
             <RegionTag region={region} />
             <RegisterLabel register={register} />
           </div>
-          <CardHeadword word={word} />
+          <CardHeadword word={word} transcribe={transcribe} />
           <RelationLines relation={relation} settings={settings} />
           <hr className="wc-divider" />
           <ExampleBlock word={word} settings={settings} />
