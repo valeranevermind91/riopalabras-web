@@ -121,6 +121,10 @@ function tokenize(w: string): Token[] {
       case 'x':
         if (mexican) c('х')
         else if (i === 0) c('с')
+        else if (n === 'c' && isFront(n2)) {
+          c('с')
+          i++ // excelente: the x and the c are one «с», as in escena, not a doubled «сс»
+        }
         else if (isVowel(p) && (n === undefined || isVowel(n) || (n === 'h' && isVowel(n2)))) c('кс')
         else c('с')
         break

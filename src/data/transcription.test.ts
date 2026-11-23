@@ -134,6 +134,19 @@ describe('the consonants, as Rioplatense says them', () => {
     expect(tr('mexicano')).toBe(st('мехикАно'))
   })
 
+  it('x before c + e/i is one «с», not a doubled «сс» (excelente, as escena is one sound); before c + a/o/u or another consonant the c keeps its own sound', () => {
+    expect(tr('excelente')).toBe(st('эселЕнте')) // every syllable is there: э-се-ле́н-те
+    expect(tr('excepto')).toBe(st('эсЕпто'))
+    expect(tr('exceso')).toBe(st('эсЕсо'))
+    expect(tr('excepción')).toBe(st('эсепсьОн'))
+    expect(tr('excitar')).toBe(st('эситАр'))
+    expect(tr('excusa')).toBe(st('эскУса'))
+    expect(tr('exclusivo')).toBe(st('эсклусИбо'))
+    expect(tr('excursión')).toBe(st('эскурсьОн'))
+    // no x-word has a doubled «сс»: that would be said as a long consonant
+    expect(tr('exceso')).not.toMatch(/сс/)
+  })
+
   it('the s is «с» everywhere: it is not aspirated', () => {
     expect(tr('vos')).toBe('бос')
     expect(tr('tenés')).toBe(st('тенЕс'))
