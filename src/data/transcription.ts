@@ -144,7 +144,7 @@ function tokenize(w: string): Token[] {
         break
       case 'b':
       case 'v':
-        c('б')
+        if (p !== 'b' && p !== 'v') c('б') // b and v are one sound: bv (obviamente, subvención) is one «б», not «бб»
         break
       case 'w':
         c('у')

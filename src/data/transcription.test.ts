@@ -90,6 +90,13 @@ describe('the consonants, as Rioplatense says them', () => {
     expect(tr('escena')).toBe(st('эсЕна'))
   })
 
+  it('b and v next to each other are one «б», not «бб» (obviamente, subvención); the glide after them is still written', () => {
+    expect(tr('obviamente')).toBe(st('ОбьямЕнте'))
+    expect(tr('obvio')).toBe(st('Обьо'))
+    expect(tr('subvención')).toBe(st('субенсьОн'))
+    expect(tr('obvio')).not.toMatch(/бб/)
+  })
+
   it('b and v are «б»; h is silent; ch is «ч»', () => {
     expect(tr('vaca')).toBe(st('бАка'))
     expect(tr('hacer')).toBe(st('асЕр'))
@@ -377,6 +384,27 @@ describe('l at the end of a word or before a consonant is «ль»', () => {
     expect(tr('salud')).toBe(st('салУд'))
     expect(tr('calle')).toBe(st('кАше'))
     expect(tr('alhaja')).toBe(st('алАха'))
+  })
+})
+
+describe('over every form the app has', () => {
+  const dictionary: { es_word: string }[] = JSON.parse(readFileSync('public/words_enriched.json', 'utf8'))
+  const overlay: { rio_form: string | null; alt_form: string | null }[] = JSON.parse(readFileSync('public/rio_overlay.json', 'utf8'))
+  const forms = [...new Set([...dictionary.map((w) => w.es_word), ...overlay.flatMap((o) => [o.rio_form, o.alt_form])].filter((f): f is string => Boolean(f)))]
+  const outputs = forms.map((form) => ({ form, text: (tr(form) ?? '').replace(/\u0301/g, '') }))
+
+  it('no consonant is doubled except the Spanish rr («рр») and the nn of innecesario', () => {
+    const doubled = outputs.filter(({ form, text }) => (text.match(/([бвгдзжклмнпрстфхцчшщ])\1+/g) ?? []).some((run) => run !== 'рр' && !(run === 'нн' && form === 'innecesario')))
+    expect(doubled.map((o) => `${o.form} ${o.text}`)).toEqual([])
+  })
+
+  it('no «я», «ю» or «ё» stands straight after a consonant: after a consonant a glide is written «ья», «ью», «ьо» (only «нья», «ню» after ñ have a soft sign too)', () => {
+    expect(outputs.filter(({ text }) => /[бвгдзклмнпрстфхцчшжщй][яюё]/.test(text)).map((o) => `${o.form} ${o.text}`)).toEqual([])
+  })
+
+  it('every form with a consonant + i + a vowel in it has the soft sign or the «ни» of ñ: the glide is never lost', () => {
+    const lost = outputs.filter(({ form, text }) => /[bcdfgjklmnpqrstvxz]i[aeou]/.test(form.toLowerCase().replace(/[gq]ui/g, 'xx')) && !/ь|й/.test(text))
+    expect(lost.map((o) => `${o.form} ${o.text}`)).toEqual([])
   })
 })
 
