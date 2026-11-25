@@ -7,7 +7,9 @@ import { OVERRIDES } from './transcriptionOverrides'
 // The choices, each one the owner's:
 //   - sheísmo: ll and y before a vowel are «ш»; seseo: c before e/i and z are «с»; the s is never aspirated.
 //   - e is «е» after a consonant and «э» at the start of a word or after a vowel (or the glide у): «меса», «поэта», «уэбо».
-//   - a glide after a consonant is «я/ье/ьо/ью», after a vowel or at the start «й»; ñ is «нь», and «нья», «ни», «ньо», «нью».
+//   - a glide after a consonant is «ья/ье/ьо/ью», after a vowel or at the start «й»; ñ is «нь», and «нья», «ни», «ньо», «нью».
+//   - l at the end of a word or before a consonant is «ль» (альто, а́рболь), before a vowel «л».
+//   - an adverb in -mente has two stresses, the base word's and «ме́нте» (ра́пидаме́нте).
 //   - x is «кс» everywhere except at the start of a word («с»: xilófono); México, Texas, Oaxaca: «х». xc before e/i is one «кс».
 //
 // Nothing here reads the environment or the page: it is a function of a string, so it is tested on a list, and a script can run it over the whole dictionary.
@@ -98,7 +100,11 @@ function tokenize(w: string): Token[] {
         if (n === 'l') {
           c('ш')
           i++
-        } else c('л')
+        } else {
+          // at the end of a word or before a consonant the Spanish l is clear, not the hard Russian «л»: «ль». Before a vowel (also across a silent h) it is «л».
+          const after = n === 'h' ? n2 : n
+          c(after === undefined || !isVowel(after) ? 'ль' : 'л')
+        }
         break
       case 'r':
         if (n === 'r') {
@@ -288,7 +294,7 @@ function renderWord(w: string): Rendered[] {
           const afterStrong = inSame !== null && STRONG.includes(inSame.ch)
           if (afterStrong) cyr = 'й'
           else if (prevIsNy) cyr = ''
-          else if (before?.kind === 'c') cyr = next && next.ch === 'a' ? '' : 'ь'
+          else if (before?.kind === 'c') cyr = 'ь' // ia, ie, io, iu after a consonant: «ья ье ьо ью», the vowel after the soft sign is written as after any soft consonant
           else cyr = 'й'
         } else cyr = 'и'
         break
@@ -352,6 +358,8 @@ const capitalise = (pieces: Rendered[]): Rendered[] => {
 
 const SPANISH_WORD = /^[a-záéíóúüñ]+$/
 const ABBREVIATION = /^[A-ZÁÉÍÓÚÑ]{2,}$|\./
+const HAS_VOWEL = /[aeiouyáéíóúü]/
+const ONE_LETTER_WORDS = 'aeouyáéíóú'
 
 /** One token of a form (a word, no spaces). null when it is not Spanish spelling. */
 function transcribeToken(token: string): Rendered[] | null {
@@ -362,15 +370,25 @@ function transcribeToken(token: string): Rendered[] | null {
     const pieces = fromMarked(override)
     return startsUpper ? capitalise(pieces) : pieces
   }
-  if (ABBREVIATION.test(token)) return null // an initialism or abbreviation the overrides do not know is left alone
+  if (ABBREVIATION.test(token)) return null // an initialism or an abbreviation has none: OK, ADN, Sr.
   if (!SPANISH_WORD.test(lower)) return null
-  const pieces = renderWord(lower)
+  if (!HAS_VOWEL.test(lower)) return null // pm, km: an abbreviation in lower case
+  if (lower.length === 1 && !ONE_LETTER_WORDS.includes(lower)) return null // a letter of the alphabet (s, i, m, j…) is not a word to read: only a, e, o, u, y are
+  const pieces = ADVERB.test(lower) ? renderAdverb(lower) : renderWord(lower)
   return startsUpper ? capitalise(pieces) : pieces
+}
+
+/** An adverb in -mente: the adjective it is made from (at least four letters, so mente and demente are not one) and the ending. */
+const ADVERB = /^[a-záéíóúüñ]{4,}mente$/
+
+/** An adverb in -mente is said with two stresses: the base word's own (rápida → «ра́пида») and the ending's («ме́нте»): «ра́пидаме́нте». */
+function renderAdverb(w: string): Rendered[] {
+  return [...renderWord(w.slice(0, -5)), ...renderWord('mente')]
 }
 
 /**
  * The transcription of a Spanish form as runs (the stressed vowel apart), or null when it is not something to transcribe: not Spanish spelling (digits, other punctuation), or an
- * abbreviation the overrides do not know. A phrase is done word by word, the spaces kept; a one-syllable word has no stress mark.
+ * abbreviation (OK, ADN, Sr., pm), or a letter of the alphabet (s, i, m…). A phrase is done word by word, the spaces kept; a one-syllable word has no stress mark.
  */
 export function transcribe(spanish: string): readonly Piece[] | null {
   const form = spanish.trim()
@@ -426,7 +444,7 @@ export function transcriptionFlags(spanish: string): readonly TranscriptionFlag[
       continue
     }
     if (/x/.test(lower) && !/mexic|texas|oaxac/.test(lower)) flags.add('x')
-    if (/.mente$/.test(lower) && lower.length > 6) flags.add('mente')
+    if (ADVERB.test(lower)) flags.add('mente')
     if (/[aeiouáéíóú]h[aeiouáéíóú]/.test(lower)) flags.add('h')
     if (/^ps/.test(lower)) flags.add('ps')
     if (/^hi[aeo]/.test(lower)) flags.add('hie') // hielo, hierro: «йе» or «ше» by speaker

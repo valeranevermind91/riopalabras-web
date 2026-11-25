@@ -16,7 +16,7 @@ const tr = (spanish: string) => transcriptionText(spanish)
 
 describe('stress comes from the spelling', () => {
   it('a written accent marks its vowel', () => {
-    expect(tr('árbol')).toBe(st('Арбол'))
+    expect(tr('árbol')).toBe(st('Арболь'))
     expect(tr('canción')).toBe(st('кансьОн'))
     expect(tr('jóvenes')).toBe(st('хОбенес'))
     expect(tr('tenés')).toBe(st('тенЕс'))
@@ -28,7 +28,7 @@ describe('stress comes from the spelling', () => {
     expect(tr('casa')).toBe(st('кАса'))
     expect(tr('hablan')).toBe(st('Аблан'))
     expect(tr('virus')).toBe(st('бИрус'))
-    expect(tr('papel')).toBe(st('папЕл'))
+    expect(tr('papel')).toBe(st('папЕль'))
     expect(tr('hablar')).toBe(st('аблАр'))
     expect(tr('ciudad')).toBe(st('сьюдАд'))
     expect(tr('reloj')).toBe(st('релОх'))
@@ -46,7 +46,7 @@ describe('stress comes from the spelling', () => {
     expect(tr('leer')).toBe(st('леЭр'))
     expect(tr('poeta')).toBe(st('поЭта'))
     expect(tr('país')).toBe(st('паИс'))
-    expect(tr('baúl')).toBe(st('баУл'))
+    expect(tr('baúl')).toBe(st('баУль'))
     expect(tr('día')).toBe(st('дИа'))
   })
 
@@ -176,9 +176,9 @@ describe('the vowels', () => {
     expect(tr('Europa')).toBe(`Эуро${STRESS}па`)
   })
 
-  it('a glide: after a consonant ia is «я», ie «ье», io «ьо», iu «ью»; at the start or after a vowel it is «й»', () => {
-    expect(tr('gracias')).toBe(st('грАсяс'))
-    expect(tr('familia')).toBe(st('фамИля'))
+  it('a glide: after a consonant ia is «ья», ie «ье», io «ьо», iu «ью»; at the start or after a vowel it is «й»', () => {
+    expect(tr('gracias')).toBe(st('грАсьяс'))
+    expect(tr('familia')).toBe(st('фамИлья'))
     expect(tr('bien')).toBe('бьен')
     expect(tr('cielo')).toBe(st('сьЕло'))
     expect(tr('estudio')).toBe(st('эстУдьо'))
@@ -199,7 +199,7 @@ describe('a form is transcribed as it is headlined, word by word', () => {
   it('a phrase: each word on its own, the spaces kept, a one-syllable word unmarked', () => {
     expect(tr('de veras')).toBe(`де ${st('бЕрас')}`)
     expect(tr('con vos')).toBe('кон бос')
-    expect(tr('control remoto')).toBe(st('контрОл ремОто'))
+    expect(tr('control remoto')).toBe(st('контрОль ремОто'))
     expect(tr('casa de salud')).toBe(st('кАса де салУд'))
     expect(tr('de repente')).toBe(`де ${st('репЕнте')}`)
   })
@@ -217,11 +217,26 @@ describe('a form is transcribed as it is headlined, word by word', () => {
     expect(tr('a@b')).toBeNull()
   })
 
-  it('a short run of capitals or a word with a full stop is an abbreviation and is left alone unless the overrides know it', () => {
-    expect(tr('XYZ')).toBeNull()
-    expect(tr('Dr.')).toBeNull()
-    expect(tr('ADN')).not.toBeNull()
-    expect(tr('Sr.')).not.toBeNull()
+  it('a short run of capitals or a word with a full stop is an abbreviation: no transcription at all', () => {
+    for (const form of ['XYZ', 'Dr.', 'OK', 'IA', 'Sr.', 'ADN', 'CD', 'DANA', 'EE. UU.', 'S.A.']) expect(tr(form), form).toBeNull()
+    expect(transcribe('ADN')).toBeNull()
+  })
+
+  it('a letter of the alphabet (the dictionary lists sixteen as words) and a form with no vowel in it (pm) have none either; the one-letter words a, e, o, u, y still do', () => {
+    for (const form of ['s', 'i', 'm', 'c', 'd', 'b', 't', 'n', 'p', 'g', 'l', 'r', 'j', 'v', 'x', 'h', 'f', 'pm', 'km']) expect(tr(form), form).toBeNull()
+    expect(tr('a')).toBe('а')
+    expect(tr('o')).toBe('о')
+    expect(tr('y')).toBe('и')
+    expect(tr('e')).toBe('э')
+    expect(tr('u')).toBe('у')
+  })
+
+  it('the rules read these on their own, with no override: prohibir, psicología, deshacer', () => {
+    expect(tr('prohibir')).toBe(st('проибИр'))
+    expect(tr('psicología')).toBe(st('сиколохИа'))
+    expect(tr('psiquiatra')).toBe(st('сикьЯтра'))
+    expect(tr('deshacer')).toBe(st('десасЕр'))
+    for (const form of ['prohibir', 'psicología', 'psiquiatra', 'deshacer']) expect(OVERRIDES[form], form).toBeUndefined()
   })
 })
 
@@ -257,7 +272,8 @@ describe('what makes a form worth a second look (the review sheet lists these)',
     expect(transcriptionFlags('kilómetro')).toContain('loan')
     expect(transcriptionFlags('de veras')).toContain('phrase')
     expect(transcriptionFlags('whisky')).toContain('override')
-    expect(transcriptionFlags('ADN')).toContain('override')
+    expect(transcriptionFlags('ADN')).toContain('abbreviation')
+    expect(transcriptionFlags('ADN')).not.toContain('override')
     expect(transcriptionFlags('casa')).toEqual([])
   })
 })
@@ -281,13 +297,86 @@ describe('the overrides', () => {
     expect(transcribe('whisky')!.map((p) => p.text).join('')).toBe(OVERRIDES['whisky'].replace(/́/g, ''))
   })
 
-  it('cover the 16 letters of the alphabet the dictionary lists as words, by their names', () => {
+  it('hold loan words only: no letter of the alphabet and no abbreviation has one (they have no transcription)', () => {
     const dictionary: { es_word: string; pos: string }[] = JSON.parse(readFileSync('public/words_enriched.json', 'utf8'))
     const letters = dictionary.filter((w) => w.pos === 'letter').map((w) => w.es_word.toLowerCase())
     expect(letters).toHaveLength(16)
-    for (const letter of letters) expect(OVERRIDES[letter], letter).toBeDefined()
-    expect(tr('j')).toBe(st('хОта'))
-    expect(tr('c')).toBe('се')
+    for (const letter of letters) expect(OVERRIDES[letter], letter).toBeUndefined()
+    for (const abbreviation of ['ok', 'ia', 'sr.', 'adn', 'cd', 'dana']) expect(OVERRIDES[abbreviation], abbreviation).toBeUndefined()
+    expect(Object.keys(OVERRIDES).sort()).toEqual(['jean', 'placard', 'sándwich', 'whisky'])
+  })
+})
+
+describe('-mente: two stresses, the base word\'s and «ме́нте»', () => {
+  it('the adverb keeps the stress of the adjective it is made from, and the ending is stressed too', () => {
+    expect(tr('rápidamente')).toBe(st('рАпидамЕнте'))
+    expect(tr('simplemente')).toBe(st('сИмплемЕнте'))
+    expect(tr('lentamente')).toBe(st('лЕнтамЕнте'))
+    expect(tr('felizmente')).toBe(st('фелИсмЕнте'))
+    expect(tr('fácilmente')).toBe(st('фАсильмЕнте'))
+    expect(tr('realmente')).toBe(st('реАльмЕнте'))
+    expect(tr('actualmente')).toBe(st('актуАльмЕнте'))
+    expect(tr('desafortunadamente')).toBe(st('десафортунАдамЕнте'))
+  })
+
+  it('the page gets two stressed pieces', () => {
+    expect(transcribe('rápidamente')!.filter((p) => p.stressed).map((p) => p.text)).toEqual(['а', 'е'])
+  })
+
+  it('a word that only ends in the same letters is not an adverb: mente, demente, clemente keep one stress', () => {
+    expect(tr('mente')).toBe(st('мЕнте'))
+    expect(tr('demente')).toBe(st('демЕнте'))
+    expect(tr('clemente')).toBe(st('клемЕнте'))
+  })
+})
+
+describe('i and y as a glide after a consonant: «ья ье ьо ью»', () => {
+  it('ia is «ья» (not «я»), ie «ье», io «ьо», iu «ью»', () => {
+    expect(tr('existencia')).toBe(st('эксистЕнсья'))
+    expect(tr('galaxia')).toBe(st('галАксья'))
+    expect(tr('zanahoria')).toBe(st('санаОрья'))
+    expect(tr('gracias')).toBe(st('грАсьяс'))
+    expect(tr('experiencia')).toBe(st('эксперьЕнсья'))
+    expect(tr('estudio')).toBe(st('эстУдьо'))
+    expect(tr('ciudad')).toBe(st('сьюдАд'))
+    expect(tr('tiempo')).toBe(st('тьЕмпо'))
+  })
+
+  it('after a vowel or at the start it stays «й»; after ñ it is as before («нья»)', () => {
+    expect(tr('hay')).toBe('ай')
+    expect(tr('hielo')).toBe(st('йЕло'))
+    expect(tr('compañía')).toBe(st('компанИа'))
+    expect(tr('ñandú')).toBe(st('ньяндУ'))
+  })
+
+  it('no «я» stands for ia after a consonant that is not a soft one (the glide is always written)', () => {
+    for (const w of ['historia', 'gracias', 'existencia', 'familia', 'media', 'distancia']) expect(tr(w), w).toMatch(/ья/)
+  })
+})
+
+describe('l at the end of a word or before a consonant is «ль»', () => {
+  it('at the end', () => {
+    expect(tr('árbol')).toBe(st('Арболь'))
+    expect(tr('papel')).toBe(st('папЕль'))
+    expect(tr('azul')).toBe(st('асУль'))
+    expect(tr('excepcional')).toBe(st('эксепсьонАль'))
+    expect(tr('control')).toBe(st('контрОль'))
+    expect(tr('el')).toBe('эль')
+  })
+
+  it('before a consonant', () => {
+    expect(tr('alto')).toBe(st('Альто'))
+    expect(tr('alma')).toBe(st('Альма'))
+    expect(tr('bolsa')).toBe(st('бОльса'))
+    expect(tr('golf')).toBe('гольф')
+  })
+
+  it('before a vowel (also across a silent h) it stays «л», and ll is still «ш»', () => {
+    expect(tr('luz')).toBe('лус')
+    expect(tr('plato')).toBe(st('плАто'))
+    expect(tr('salud')).toBe(st('салУд'))
+    expect(tr('calle')).toBe(st('кАше'))
+    expect(tr('alhaja')).toBe(st('алАха'))
   })
 })
 

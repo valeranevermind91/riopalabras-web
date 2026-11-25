@@ -49,6 +49,16 @@ describe('the headword line', () => {
     expect(head(phrase)).toBe(`<h2 class="wc-headword">de veras ${TR(`де б${S('е')}рас`)}</h2>`)
   })
 
+  it('a letter of the alphabet and an abbreviation have none: the headword is what it always was', () => {
+    ru()
+    for (const key of ['s', 'j', 'x', 'OK', 'IA', 'CD', 'pm']) {
+      const w = words.find((x) => x.esWord === key)
+      expect(w, key).toBeDefined()
+      expect(head(w!), key).not.toContain('wc-tr')
+      expect(card(w!, ON), key).not.toContain('class="wc-tr"')
+    }
+  })
+
   it('the article is not transcribed: it is before the headword, the transcription after it', () => {
     const casa = makeWord('casa', { gender: { article: 'la', form: 'casa' } })
     expect(head(casa)).toBe(`<h2 class="wc-headword"><span class="wc-article">la</span> casa ${TR(`к${S('а')}са`)}</h2>`)
