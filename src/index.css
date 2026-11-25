@@ -2606,6 +2606,13 @@ mark {
   line-height: 1.35;
 }
 
+/* The link under a hint (the transcription's "More on pronunciation"): left-aligned with the hint, a little air above it. */
+.setting-more {
+  align-self: flex-start;
+  margin-top: 4px;
+  text-align: left;
+}
+
 .setting-value {
   color: var(--muted);
   font-size: 14px;
@@ -3181,6 +3188,7 @@ mark {
 }
 
 .how-learn h2,
+.how-pronunciation h2,
 .how-review h2 {
   color: var(--teal);
 }

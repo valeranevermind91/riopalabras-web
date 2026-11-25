@@ -130,6 +130,25 @@ describe('the Settings screen', () => {
     it('is not on the screen in the English interface: it changes nothing there', () => {
       expect(render({})).not.toContain('id="transcription"')
     })
+
+    it('has a link under the hint to the pronunciation memo in How it works, when the app can open it; without that there is no link', () => {
+      setLanguage('ru')
+      try {
+        const withLink = render({}, { onOpenHow: noop })
+        expect(withLink).toMatch(/<span id="transcription-hint" class="setting-hint">[^<]*<\/span><button type="button" class="link-btn setting-more">Подробнее о произношении<\/button>/)
+        expect(render({})).not.toContain('setting-more')
+      } finally {
+        setLanguage('en')
+      }
+      expect(render({}, { onOpenHow: noop })).not.toContain('setting-more') // English: no switch, so no link
+    })
+
+    it('asks for the pronunciation section by its id, and the plain How it works row asks for none', () => {
+      const source = readFileSync('src/screens/Settings.tsx', 'utf8')
+      expect(source).toContain("onOpenHow('pronunciation')")
+      expect(source).toMatch(/onClick=\{\(\) => onOpenHow\(\)\}/)
+      expect(readFileSync('src/App.tsx', 'utf8')).toMatch(/onOpenHow=\{\(section\) => \{\s*setHowSection\(section\)\s*setScreen\('how'\)/)
+    })
   })
 
   describe('the translation language: two switches, the last one on is off-limits', () => {

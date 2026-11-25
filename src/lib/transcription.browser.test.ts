@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Browser, Page } from 'puppeteer-core'
 import { createServer, type ViteDevServer } from 'vite'
 import { closeBrowser, closeServer, launchBrowser } from '../testing/browser'
+import { en } from '../strings'
+import { ru } from '../strings.ru'
 
 /**
  * The Cyrillic transcription after the headword in a real browser, at 320 and 360px (src/testing/genderHarness.tsx, with ?lang=ru&tr=1: the real WordCard and ReviewCard over the
@@ -132,4 +134,52 @@ describe.skipIf(!CHROME)('the Cyrillic transcription on the cards', () => {
     expect(await off.$$eval('.wc-tr', (els) => els.length)).toBe(0)
     await off.close()
   }, 60_000)
+  describe('the link from the Settings hint to the pronunciation memo', () => {
+    async function settings(query: string, width: number): Promise<Page> {
+      const tab = await (await browser.createBrowserContext()).newPage()
+      await tab.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
+      await tab.setViewport({ width, height: 700, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+      await tab.goto(`${base}/src/testing/settingsHarness.html?${query}`, { waitUntil: 'networkidle0' })
+      await tab.waitForSelector('main')
+      await tab.click('.screen-header-actions .icon-btn:last-child') // the gear
+      await tab.waitForSelector('#transcription, #settings-about')
+      return tab
+    }
+
+    for (const width of [320, 360]) {
+      it(`at ${width}px: under the hint, a link opens How it works at the pronunciation section, and Back returns to Settings`, async () => {
+        const page = await settings('lang=ru', width)
+        const link = await page.$eval('.setting-more', (el) => ({ text: el.textContent, hint: el.previousElementSibling?.id, rect: el.getBoundingClientRect().toJSON(), parentRight: el.closest('.setting-text')!.getBoundingClientRect().right }))
+        expect(link.text).toBe(ru.settings.transcriptionMore)
+        expect(link.hint).toBe('transcription-hint') // right under the approved hint, which is unchanged
+        expect(link.rect.right).toBeLessThanOrEqual(link.parentRight + 1)
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+        await page.click('.setting-more')
+        await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Как это работает')
+        await new Promise((r) => setTimeout(r, 200))
+        const at = await page.$eval('#how-pronunciation', (h) => ({ top: Math.round(h.getBoundingClientRect().top), text: h.textContent, scrolled: window.scrollY > 0 }))
+        expect(at.text).toBe('Произношение')
+        expect(at.scrolled).toBe(true)
+        expect(at.top).toBeGreaterThanOrEqual(0)
+        expect(at.top).toBeLessThan(120)
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+        await (await page.evaluateHandle(() => (window as never as { __pressBack: () => void }).__pressBack())).dispose()
+        await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Настройки')
+        await page.close()
+      }, 60_000)
+    }
+
+    it('the plain "How it works" row still opens at the top, and in English there is no switch and no link', async () => {
+      const page = await settings('lang=ru', 360)
+      await page.evaluate(() => [...document.querySelectorAll('button.setting-nav')].find((b) => b.textContent?.includes('Как это работает'))!.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+      await page.waitForFunction(() => document.querySelector('h1')?.textContent === 'Как это работает')
+      expect(await page.evaluate(() => window.scrollY)).toBe(0)
+      await page.close()
+      const english = await settings('lang=en', 360)
+      expect(await english.$$eval('.setting-more', (els) => els.length)).toBe(0)
+      expect(await english.$$eval('#transcription', (els) => els.length)).toBe(0)
+      expect(en.settings.transcriptionMore).toBe('More on pronunciation')
+      await english.close()
+    }, 60_000)
+  })
 })

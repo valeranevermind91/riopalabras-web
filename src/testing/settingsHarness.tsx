@@ -83,6 +83,7 @@ const taps: string[] = []
 export function Harness() {
   useLanguage() // as App does: everything below re-renders when the language changes
   const [screen, setScreen] = useState<Screen>('home')
+  const [howSection, setHowSection] = useState<string | undefined>(undefined) // as App: "How it works" can open at a section
   // The words: a few for Home, or (dict=1) the real dictionary once it has been fetched.
   const [words, setWords] = useState<readonly Word[]>(endOfDay > 0 ? END_OF_DAY_WORDS : HOME_WORDS_WITH_RELEARN)
   useEffect(() => {
@@ -158,7 +159,7 @@ export function Harness() {
   if (screen === 'whatsnew') return <WhatsNewScreen data={data} queue={queue} news={NEWS} onBack={back} />
   if (screen === 'about') return <AboutScreen data={data} queue={queue} origin="https://app.test" onBack={back} />
   // as App does: where Telegram's own BackButton exists (native=1) the header draws no Back, and the end of the page has one that does the same
-  if (screen === 'how') return <HowItWorks onBack={params.get('native') === '1' ? undefined : back} onDone={back} />
+  if (screen === 'how') return <HowItWorks onBack={params.get('native') === '1' ? undefined : back} onDone={back} section={howSection} />
   if (screen === 'placement') return <PlacementScreen data={data} queue={queue} onExit={() => setScreen('settings')} registerBack={registerBack} onBack={back} />
   if (screen === 'onboarding') return <Onboarding data={data} queue={queue} mode="replay" onExit={() => setScreen('settings')} registerBack={registerBack} />
   if (screen === 'settings')
@@ -171,7 +172,10 @@ export function Harness() {
         reminders={reminders}
         onTakePlacement={() => setScreen('placement')}
         onOpenAbout={() => setScreen('about')}
-        onOpenHow={() => setScreen('how')}
+        onOpenHow={(section) => {
+          setHowSection(section)
+          setScreen('how')
+        }}
         onOpenWhatsNew={() => setScreen('whatsnew')}
         news={NEWS}
         onRunIntro={() => setScreen('onboarding')}

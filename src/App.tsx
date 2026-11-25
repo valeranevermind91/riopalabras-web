@@ -137,6 +137,8 @@ function App() {
   }, [queue, readyData, userId])
 
   const [screen, setScreenNow] = useState<Screen>('home')
+  // the section of "How it works" to open at (the pronunciation memo, from the transcription hint in Settings); undefined opens at the top
+  const [howSection, setHowSection] = useState<string | undefined>(undefined)
   // Home's practice on the words learned today: the rounds Matching plays, or the words Cloze is limited to. Null is the usual practice, which is what the other ways in open.
   const [todayRounds, setTodayRounds] = useState<readonly MatchGroup[] | null>(null)
   const [todayScope, setTodayScope] = useState<ReadonlySet<string> | null>(null)
@@ -293,7 +295,10 @@ function App() {
           setScreen('placement')
         }}
         onOpenAbout={() => setScreen('about')}
-        onOpenHow={() => setScreen('how')}
+        onOpenHow={(section) => {
+          setHowSection(section)
+          setScreen('how')
+        }}
         onOpenWhatsNew={() => setScreen('whatsnew')}
         onRunIntro={() => setScreen('onboarding')}
         onShowHints={() => {
@@ -359,7 +364,7 @@ function App() {
     )
   }
 
-  if (screen === 'how') return <HowItWorks onBack={inPageBack} onDone={goBack} />
+  if (screen === 'how') return <HowItWorks onBack={inPageBack} onDone={goBack} section={howSection} />
 
   // "What's new": opened from Settings; opening it is what clears the dot.
   if (screen === 'whatsnew' && readyData && queue) return <WhatsNewScreen data={readyData} queue={queue} onBack={inPageBack} />

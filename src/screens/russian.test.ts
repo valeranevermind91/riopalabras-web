@@ -45,7 +45,7 @@ const learned = (n: number): Word[] =>
 const unlearned = (n: number) => Array.from({ length: n }, (_, i) => makeWord(`nueva${i}`, { rank: 100 + i, ruTranslation: `новое${i}`, enTranslation: `new${i}` }))
 
 /** The English words that may stay: screen names, and the Spanish of the content and examples. */
-const KEEP = new Set(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'boom', 'palabra', 'nueva', 'nuevo', 'para', 'Esta', 'del', 'día', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes'])
+const KEEP = new Set(['Learn', 'Review', 'Practice', 'Matching', 'Cloze', 'Words', 'Riopalabras', 'English', 'Telegram', 'boom', 'palabra', 'nueva', 'nuevo', 'para', 'Esta', 'del', 'día', 'parejas', 'completar', 'calle', 'vos', 'tenés', 'tú', 'tienes', 'llevar', 'salud' /* the pronunciation memo's Spanish examples */])
 
 /** What a person reads or hears on a screen: its text, plus the labels that are not text (aria-label, placeholder, title). */
 function visible(html: string): string[] {
@@ -116,7 +116,8 @@ describe('every screen in Russian', () => {
   it('the same screens in English have no Russian chrome (the Russian words above are the interface\'s, not the content\'s)', () => {
     setLanguage('en')
     for (const [name, render] of screens) {
-      const withoutContent = render().replace(/слово[а-я]+|новое\d+|для/g, '').replace(/Русский/g, '')
+      // the pronunciation memo explains the Cyrillic transcription, so it quotes Cyrillic letters and words in curly quotes: “шебар”, “б”
+      const withoutContent = render().replace(/слово[а-я]+|новое\d+|для/g, '').replace(/Русский/g, '').replace(/“[А-Яа-яЁё]+”/g, '')
       expect(withoutContent, name).not.toMatch(/[А-Яа-яЁё]/)
     }
   })

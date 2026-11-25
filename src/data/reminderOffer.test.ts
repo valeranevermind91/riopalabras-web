@@ -167,7 +167,7 @@ describe('the words of the offer, its two answers, and the sentence in How it wo
       expect(reminders(map).text.split(/[.!?](?:\s|$)/).filter(Boolean)).toHaveLength(1)
       expect(reminders(map).text).not.toContain('\n')
     }
-    expect(en.howItWorks.sections.map((x) => x.id)).toEqual(['learn', 'review', 'matching', 'cloze', 'spaced', 'reminders'])
+    expect(en.howItWorks.sections.map((x) => x.id)).toEqual(['learn', 'pronunciation', 'review', 'matching', 'cloze', 'spaced', 'reminders'])
     expect(ru.howItWorks.sections.map((x) => x.id)).toEqual(en.howItWorks.sections.map((x) => x.id))
     expect([en.howItWorks.sections.at(-1)!.heading, ru.howItWorks.sections.at(-1)!.heading]).toEqual(['Reminders', 'Напоминания'])
   })

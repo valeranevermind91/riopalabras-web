@@ -27,7 +27,8 @@ interface SettingsScreenProps {
   /** Opens the About screen: who made the app, where its words come from, the privacy policy, the version. Without it the row is left out. */
   onOpenAbout?: () => void
   /** Opens "How it works" (About). Without it the row is left out. */
-  onOpenHow?: () => void
+  /** Opens How it works; with a section id it opens at that section (the pronunciation memo, from the transcription switch's hint). */
+  onOpenHow?: (section?: string) => void
   /** Opens "What's new". Without it, or with no current entry, the row is left out. */
   onOpenWhatsNew?: () => void
   /** The entries and the moment, for a test; the real ones otherwise. */
@@ -184,6 +185,11 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
                 <span id="transcription-hint" className="setting-hint">
                   {t.transcriptionHint}
                 </span>
+                {onOpenHow && (
+                  <button type="button" className="link-btn setting-more" onClick={() => onOpenHow('pronunciation')}>
+                    {t.transcriptionMore}
+                  </button>
+                )}
               </div>
               <input
                 id="transcription"
@@ -313,7 +319,7 @@ export function SettingsScreen({ data, queue, theme, onOpenDebug, reminders = NO
             </button>
           )}
           {onOpenHow && (
-            <button type="button" className="setting-row setting-nav" onClick={onOpenHow}>
+            <button type="button" className="setting-row setting-nav" onClick={() => onOpenHow()}>
               <span className="setting-label">{t.howItWorks}</span>
               <span className="setting-chevron" aria-hidden="true">
                 ›
